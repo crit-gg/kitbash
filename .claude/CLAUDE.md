@@ -1,0 +1,95 @@
+# Dev Toolbox
+
+Cross platform desktop app hosting designer facing tools for the Slopworks Godot
+project at `/home/jason/Projects/godot/slopworks/godot`.
+
+The point of this app existing outside Godot: the Godot editor's inspector and
+save/load behavior are awkward for authoring gameplay data, and designers should
+be able to work without the editor open.
+
+## Layout
+
+```
+Workbench.slnx
+src/Workbench.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
+src/Workbench/         the launcher app, Avalonia 12
+src/tools/             one project per tool, empty until the first tool is named
+```
+
+**Workbench** is the launcher, and it is its own executable. `Workbench` is also the
+project name prefix for anything above the tool level; individual tools are
+separately named products and are not prefixed.
+
+Each tool is its own executable, started by Workbench as a separate OS process —
+tools are not loaded in-process and Workbench does not construct their windows.
+`Workbench.Core` is the contract shared by Workbench and every tool, which is why it
+has no dependencies; keep it that way.
+
+Opening a tool goes through `IToolActivation`, which says nothing about *how* a tool
+opens. Most tools will start another application, but some will run a script and some
+will open a web page, so the launcher asks the tool to activate itself and only
+reports the `ToolActivationResult` that comes back.
+
+`Program.cs` builds the Avalonia app. `App.axaml.cs` composes the tool registry and
+opens `LauncherWindow`. Tools are registered explicitly in `App.BuildRegistry` rather
+than discovered by assembly scanning, so adding one is a visible code change.
+
+## Commands
+
+```
+dotnet build
+dotnet run --project src/Workbench
+```
+
+## Stack
+
+- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2
+- Avalonia 12 notes: compiled bindings are on by default (so `x:DataType` is
+  required on views and templates), data annotations validation is off by default,
+  `SystemDecorations` is now `WindowDecorations`, and there is no `Avalonia.Diagnostics`
+  package for 12.x
+
+## Status
+
+Scaffolding only. The launcher lists three placeholder tools and the Open button
+does nothing. No tool is implemented, and no file format or Godot integration
+work has started.
+
+## Open decisions, deliberately not made yet
+
+Do not assume any of these. Ask before building on one.
+
+- Whether designer data moves to a custom format at all, and what that format is
+- How the Godot side consumes it (EditorImportPlugin was the leading candidate,
+  a runtime ResourceFormatLoader was the alternative)
+- How references between data files are expressed (source file path was the
+  leading candidate)
+
+## Verified constraints about the Godot side
+
+These were established by reading Godot 4.7.1 source at
+`/home/jason/Projects/godot/godot-src-471` and by running probes. They are
+expensive to rediscover.
+
+- **GodotSharp cannot be used outside the engine.** Its native calls resolve
+  against the host process, so with no engine present `new Resource()` and
+  `new StringName("x")` segfault the process (exit 139), not throw. Pure managed
+  types (`Vector3`, `Color`, `Aabb`, `Transform3D`, `Mathf`, `Variant` over
+  primitives) work fine. Never reference GodotSharp from this app.
+- **Type schemas can be read without the engine.** `MetadataLoadContext` over
+  `.godot/mono/temp/bin/Debug/Slopworks.dll` loads cleanly and exposes `[Export]`
+  hints, custom attributes with their constructor arguments, base types, and
+  `ScriptPathAttribute`. Roughly 110 Resource derived types. Prefer consuming a
+  committed schema manifest over reading the game's build output directly, so this
+  app does not depend on the game being built.
+- **UIDs can be read but should not be minted here.** `.godot/uid_cache.bin` is
+  `u32 count` then per entry `{u64 id, u32 pathLen, utf8 path}`. The `uid://` text
+  form is base 34 over the alphabet `a..y` then `0..8` (no `z`, no `9`). Godot mints
+  UIDs itself on import, and `create_id_for_path` is seeded partly from the file's
+  md5 so it is not stable across content edits.
+- **Catalog addresses cannot be derived here.** `slopworks:machine.moldurr` style
+  addresses come from a native GDExtension (`addons/resource_catalog/bin/*.so`),
+  and the `CritGG.ResourceCatalog` NuGet package is only a GodotSharp facade over it.
+  Already resolved entries are readable from the committed
+  `addon_data/resource_catalog/collections/*.tres`, but new files have no entry
+  until the plugin runs.
