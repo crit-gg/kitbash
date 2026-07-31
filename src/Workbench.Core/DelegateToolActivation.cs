@@ -1,9 +1,9 @@
 namespace Workbench.Core;
 
 /// <summary>
-/// Adapts a callback to <see cref="IToolActivation"/>. Useful for one off cases and
-/// for placeholders; a tool with real launch behavior should implement the interface
-/// directly so that behavior has somewhere to live.
+/// Wraps a callback as an <see cref="IToolActivation"/>. Intended for placeholders
+/// and simple cases. A tool with real launch behavior should implement the interface
+/// so that behavior has somewhere to live.
 /// </summary>
 public sealed class DelegateToolActivation : IToolActivation
 {
@@ -14,7 +14,7 @@ public sealed class DelegateToolActivation : IToolActivation
         _activate = activate;
     }
 
-    /// <summary>For activations that complete without doing any IO.</summary>
+    /// <summary>For activations that do no IO.</summary>
     public static DelegateToolActivation Sync(Func<ToolActivationResult> activate) =>
         new(_ => new ValueTask<ToolActivationResult>(activate()));
 

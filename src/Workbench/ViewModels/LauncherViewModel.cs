@@ -20,7 +20,7 @@ public partial class LauncherViewModel : ViewModelBase
         SelectedTool = Tools.FirstOrDefault();
     }
 
-    /// <summary>Parameterless overload so the XAML previewer has something to bind to.</summary>
+    /// <summary>Used by the XAML previewer.</summary>
     public LauncherViewModel() : this(new ToolRegistry())
     {
     }
@@ -31,9 +31,6 @@ public partial class LauncherViewModel : ViewModelBase
 
     private bool CanOpenSelected() => SelectedTool is not null;
 
-    // The launcher hands off to the tool's activation and reports what came back.
-    // It deliberately does not know whether that started a process, ran a script or
-    // opened a web page.
     [RelayCommand(CanExecute = nameof(CanOpenSelected))]
     private async Task OpenSelectedAsync(CancellationToken cancellationToken)
     {

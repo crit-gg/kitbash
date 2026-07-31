@@ -1,4 +1,4 @@
-# Dev Toolbox
+# Workbench
 
 Cross platform desktop app hosting designer facing tools for the Slopworks Godot
 project at `/home/jason/Projects/godot/slopworks/godot`.
@@ -6,6 +6,25 @@ project at `/home/jason/Projects/godot/slopworks/godot`.
 The point of this app existing outside Godot: the Godot editor's inspector and
 save/load behavior are awkward for authoring gameplay data, and designers should
 be able to work without the editor open.
+
+## Comment and documentation style
+
+Applies to code comments, XML docs, markdown, and anything else written as prose.
+
+- No semicolons.
+- No hyphenated words. Write "read only", not the hyphenated form. Identifiers,
+  paths, and package names keep their real spelling.
+- No em dashes.
+- Keep language simple. Short sentences.
+- No conversational context. A comment explains the code, not the discussion that
+  produced it.
+- Keep comments to a minimum. Prefer code that does not need one.
+- Write for maintenance. Say what a reader needs in order to change the code safely.
+
+## Commits
+
+Commits have one author, the user. Never add a coauthor trailer and never list the
+agent as an author.
 
 ## Layout
 
@@ -16,23 +35,57 @@ src/Workbench/         the launcher app, Avalonia 12
 src/tools/             one project per tool, empty until the first tool is named
 ```
 
-**Workbench** is the launcher, and it is its own executable. `Workbench` is also the
-project name prefix for anything above the tool level; individual tools are
-separately named products and are not prefixed.
+**Workbench** is the launcher and is its own executable. `Workbench` is also the
+project name prefix for anything above the tool level. Tools are separately named
+products and are not prefixed.
 
-Each tool is its own executable, started by Workbench as a separate OS process —
-tools are not loaded in-process and Workbench does not construct their windows.
-`Workbench.Core` is the contract shared by Workbench and every tool, which is why it
-has no dependencies; keep it that way.
+Each tool is its own executable, started by Workbench as a separate OS process.
+Tools are not loaded in process and Workbench does not construct their windows.
+`Workbench.Core` is the contract shared by Workbench and every tool. Its only
+dependency is Tomlyn, for settings. Keep it that lean.
 
-Opening a tool goes through `IToolActivation`, which says nothing about *how* a tool
-opens. Most tools will start another application, but some will run a script and some
-will open a web page, so the launcher asks the tool to activate itself and only
-reports the `ToolActivationResult` that comes back.
+Opening a tool goes through `IToolActivation`, which says nothing about how a tool
+opens. Most tools will start another application, some will run a script, and some
+will open a web page. The launcher asks the tool to activate itself and reports the
+`ToolActivationResult` that comes back.
 
 `Program.cs` builds the Avalonia app. `App.axaml.cs` composes the tool registry and
-opens `LauncherWindow`. Tools are registered explicitly in `App.BuildRegistry` rather
-than discovered by assembly scanning, so adding one is a visible code change.
+opens `LauncherWindow`. Tools are registered explicitly in `App.BuildRegistry`
+rather than discovered by assembly scanning, so adding one is a visible code change.
+
+## Settings
+
+TOML, layered, in `Workbench.Core/Settings`. Two independent axes:
+
+- **Scope**: `Global` for the launcher and every tool, or `ForTool(id)`. These are
+  separate namespaces, not a fallback chain. A missing tool setting does not
+  resolve to a global value of the same name. Tools read both.
+- **Layer**: `TeamShared` then `User`, lowest precedence first.
+
+```
+<workspace root>/.workbench/
+  .gitignore          generated on first user write, ignores user/
+  config/             team shared, committed to git
+    workbench.toml      global scope
+    tools/<id>.toml     tool scope
+  user/               one person's overrides, never committed
+    workbench.toml
+    tools/<id>.toml
+```
+
+A workspace is any directory containing `.workbench`. `WorkspacePaths.Discover`
+walks up to find it the way git finds `.git`, so a tool launched from a
+subdirectory resolves the same settings the launcher does.
+
+Merging is per key, not per file. A user file holding one override does not hide
+the rest of the shared config. Keys are dotted paths onto nested TOML tables, such
+as `editor.font.size`. A value that exists but will not convert to the requested
+type counts as absent and falls through to the layer below.
+
+Reads go through `ISettings`. Writes go through `ISettingsService.Set`, which names
+its layer explicitly because writing to `TeamShared` changes the setting for
+everyone. Writes rewrite the file from the model and do not keep comments. There is
+no file watching, so one process does not see another's write until it reloads.
 
 ## Commands
 
@@ -43,19 +96,22 @@ dotnet run --project src/Workbench
 
 ## Stack
 
-- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2
-- Avalonia 12 notes: compiled bindings are on by default (so `x:DataType` is
-  required on views and templates), data annotations validation is off by default,
-  `SystemDecorations` is now `WindowDecorations`, and there is no `Avalonia.Diagnostics`
-  package for 12.x
+- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1
+- Avalonia 12 notes: compiled bindings are on by default, so `x:DataType` is
+  required on views and templates. Data annotations validation is off by default.
+  `SystemDecorations` is now `WindowDecorations`. There is no `Avalonia.Diagnostics`
+  package for 12.x.
+- Tomlyn 2.10 is a redesign. The old `Toml` static class is gone, replaced by
+  `TomlSerializer` with a `System.Text.Json` style API.
 
 ## Status
 
-Scaffolding only. The launcher lists three placeholder tools and the Open button
-does nothing. No tool is implemented, and no file format or Godot integration
-work has started.
+Scaffolding. The launcher lists three placeholder tools and opening one reports
+that it is not built. The settings system is in place but is not yet wired into
+the launcher. No tool is implemented, and no file format or Godot integration work
+has started.
 
-## Open decisions, deliberately not made yet
+## Open decisions
 
 Do not assume any of these. Ask before building on one.
 

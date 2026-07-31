@@ -1,8 +1,8 @@
 namespace Workbench.Core;
 
 /// <summary>
-/// Source of the tools the launcher offers. Registration is deliberately explicit
-/// rather than assembly scanned so that adding a tool is a visible code change.
+/// Source of the tools the launcher offers. Registration is explicit rather than
+/// assembly scanned, so adding a tool is a visible code change.
 /// </summary>
 public interface IToolRegistry
 {

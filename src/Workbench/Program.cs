@@ -4,8 +4,8 @@ namespace Workbench;
 
 internal static class Program
 {
-    // Avalonia needs to be initialized before any UI type is referenced, so keep
-    // this method free of anything that could pull one in early.
+    // Avalonia must initialize before any UI type is referenced. Keep this method
+    // free of anything that would load one early.
     [STAThread]
     public static int Main(string[] args) =>
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

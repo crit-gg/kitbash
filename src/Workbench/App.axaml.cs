@@ -24,8 +24,7 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    // Placeholder entries so the launcher has something to show. Replace these
-    // with real tools as they are built.
+    // Placeholders until real tools exist.
     private static IToolRegistry BuildRegistry() =>
         new ToolRegistry()
             .Add(new ToolDescriptor(

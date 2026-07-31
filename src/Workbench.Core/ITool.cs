@@ -1,11 +1,9 @@
 namespace Workbench.Core;
 
-/// <summary>
-/// A single tool that the launcher can list and open.
-/// </summary>
+/// <summary>A tool the launcher can list and open.</summary>
 public interface ITool
 {
-    /// <summary>Stable identifier, used for recents and persisted state.</summary>
+    /// <summary>Stable identifier. Used for recents and stored state.</summary>
     string Id { get; }
 
     /// <summary>Name shown in the launcher list.</summary>
@@ -17,9 +15,6 @@ public interface ITool
     /// <summary>Grouping label for the launcher sidebar.</summary>
     string Category { get; }
 
-    /// <summary>
-    /// What happens when the tool is opened. The launcher does not know or care what
-    /// this does, only that it can be asked to do it.
-    /// </summary>
+    /// <summary>What happens when the tool is opened.</summary>
     IToolActivation Activation { get; }
 }
