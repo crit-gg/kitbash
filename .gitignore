@@ -1,7 +1,51 @@
+# Build output
 bin/
 obj/
+artifacts/
+publish/
+*.binlog
+
+# Visual Studio
 .vs/
-.idea/
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
 *.DotSettings.user
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Test output
+TestResults/
+*.trx
+*.coverage
+coverage*.json
+coverage*.xml
+
+# Local machine settings, not shared
+.claude/settings.local.json
+*.local.json
+
+# Personal Workbench settings for any workspace inside the repo
+.workbench/user/
+
+# Partial writes left behind by an interrupted save
+*.tmp
+
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor scratch files
+*.swp
+*~
