@@ -42,27 +42,27 @@
     </Style>
 
     <Style Selector="views|WindowTitleBar /template/ Button.caption Path">
-        <Setter Property="Stroke" Value="{DynamicResource InkBright}" />
+        <Setter Property="Stroke" Value="{DynamicResource LegacyInkBright}" />
         <Setter Property="StrokeThickness" Value="1" />
     </Style>
 
     <!-- Minimize and maximize only. Close declares its own flood after these. -->
     <Style Selector="views|WindowTitleBar /template/ Button.caption:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource CaptionHover}" />
+        <Setter Property="Background" Value="{DynamicResource LegacyCaptionHover}" />
     </Style>
 
     <Style Selector="views|WindowTitleBar /template/ Button.caption:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource CaptionPressed}" />
+        <Setter Property="Background" Value="{DynamicResource LegacyCaptionPressed}" />
     </Style>
 
     <!-- Close floods red the way every system close button does. It is declared
          after the shared pressed state so the flood wins while the button is held. -->
     <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource Close}" />
+        <Setter Property="Background" Value="{DynamicResource LegacyClose}" />
     </Style>
 
     <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource ClosePressed}" />
+        <Setter Property="Background" Value="{DynamicResource LegacyClosePressed}" />
     </Style>
 
     <!-- Maximized swaps the glyph and the tooltip, the way a system button does. -->
@@ -84,8 +84,8 @@
          when the desktop draws the frame and the window added nothing. -->
     <Style Selector="views|WindowTitleBar">
         <Setter Property="Height" Value="{StaticResource CaptionBarHeight}" />
-        <Setter Property="Background" Value="{DynamicResource GroundChrome}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource LineChrome}" />
+        <Setter Property="Background" Value="{DynamicResource LegacyGroundChrome}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LegacyLineChrome}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
 
         <Setter Property="Template">
@@ -106,7 +106,7 @@
                         <TextBlock Grid.Column="1" Text="{TemplateBinding Title}"
                                    Margin="11,0,0,0"
                                    FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
-                                   Foreground="{DynamicResource InkBright}"
+                                   Foreground="{DynamicResource LegacyInkBright}"
                                    VerticalAlignment="Center" />
 
                         <ContentPresenter Grid.Column="2"
@@ -170,8 +170,8 @@
                     <Grid Margin="{TemplateBinding Padding}"
                           Effect="drop-shadow(0 0 12 #60000000)">
                         <Border x:Name="PART_ContentRoot"
-                                Background="{DynamicResource GroundWindow}"
-                                BorderBrush="{DynamicResource LineSoft}"
+                                Background="{DynamicResource LegacyGroundWindow}"
+                                BorderBrush="{DynamicResource LegacyLineSoft}"
                                 BorderThickness="1"
                                 CornerRadius="{TemplateBinding CornerRadius}">
                             <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">

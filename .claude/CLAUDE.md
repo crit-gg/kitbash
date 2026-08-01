@@ -106,6 +106,7 @@ agent as an author.
 ```
 Workbench.slnx
 src/Workbench.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
+src/Workbench.Ui/      the look: tokens, type, control themes, fonts
 src/Workbench/         the launcher app, Avalonia 12
 src/tools/             one project per tool, empty until the first tool is named
 ```
@@ -113,6 +114,19 @@ src/tools/             one project per tool, empty until the first tool is named
 **Workbench** is the launcher and is its own executable. `Workbench` is also the
 project name prefix for anything above the tool level. Tools are separately named
 products and are not prefixed.
+
+**`Workbench.Ui`** is the look, shared by the launcher and every tool. It references
+Avalonia and `Workbench.Core`, and the reference only ever points that way, so the
+contract stays free of a UI framework. A consumer takes one line:
+
+```xml
+<StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
+```
+
+That brings the tokens and the type scale. Nothing outside `Themes/Tokens.axaml` writes
+a colour, a size or a radius. Names say what a value is for rather than what it looks
+like, and two names may share a value when they are genuinely different roles, which is
+noted in the file where it happens.
 
 Each tool is its own executable, started by Workbench as a separate OS process.
 Tools are not loaded in process and Workbench does not construct their windows.
@@ -415,6 +429,17 @@ Scaffolding. The launcher lists three placeholder tools and opening one reports
 that it is not built. The settings system is in place but is not yet wired into
 the launcher. No tool is implemented, and no file format or Godot integration work
 has started.
+
+The app is being moved to the Slate design, in the eleven stages under
+`.claude/plans/`. Stage 1 is done: `Workbench.Ui` exists and carries the Slate tokens
+and type scale. Nothing consumes them yet, so the launcher still looks as it did.
+
+It keeps that look through `Themes/LegacyTokens.axaml`, which holds the old palette at
+its old values under `Legacy` prefixed names. The prefix is deliberate. Nine of the old
+names collide with a Slate token of the same name and a different value, and `AccentInk`
+means opposite things in the two palettes, so merging them would have silently restyled
+the launcher. **That file is temporary and stage 5 deletes it.** Do not use a `Legacy`
+key in new work. A grep for the prefix lists everything stage 5 has to replace.
 
 ## Open decisions
 

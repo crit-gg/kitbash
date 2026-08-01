@@ -22,8 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
-
     <!-- Linked rather than copied, so icons/ stays the one source for the app mark
          and for packaging later. -->
     <AvaloniaResource Include="../../icons/icon_*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
@@ -31,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Workbench.Core\Workbench.Core.csproj" />
+    <ProjectReference Include="..\Workbench.Ui\Workbench.Ui.csproj" />
   </ItemGroup>
 
 </Project>

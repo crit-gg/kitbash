@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+  </ItemGroup>
+
+  <!-- Core is the contract and stays free of a UI framework, so the reference only
+       ever points this way. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Workbench.Core\Workbench.Core.csproj" />
+  </ItemGroup>
+
+</Project>

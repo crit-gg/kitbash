@@ -1,0 +1,157 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The Slate palette. Every colour in Workbench and in every tool comes from here,
+         and nothing below this file writes a hex value.
+
+         Names say what a value is for, never what it looks like. Two names may share a
+         value when they are different roles, which is noted where it happens. What must
+         not appear is one role written twice. -->
+
+    <!-- Surfaces.
+
+         The root tone is unique and never appears again inside the window. Everything
+         nested below it cycles three tones and starts over, so a grandchild never
+         matches its grandparent. Nothing lightens progressively with depth.
+
+             root      SurfaceRoot
+               level 1 SurfaceNest1
+                 level 2 SurfaceNest2
+                   level 3 SurfaceNest3
+                     level 4 SurfaceNest1, back to the first
+
+         Controls do not ride this ramp. An input well is SurfaceWell and a button is
+         SurfaceNest2 however deep it sits. -->
+    <SolidColorBrush x:Key="SurfaceRoot" Color="#1e1f22" />
+    <SolidColorBrush x:Key="SurfaceNest1" Color="#25262a" />
+    <SolidColorBrush x:Key="SurfaceNest2" Color="#2b2d31" />
+    <SolidColorBrush x:Key="SurfaceNest3" Color="#31343a" />
+    <SolidColorBrush x:Key="SurfaceWell" Color="#161719" />
+    <SolidColorBrush x:Key="SurfaceRowAlt" Color="#212328" />
+    <SolidColorBrush x:Key="SurfaceControlOff" Color="#232427" />
+
+    <!-- Lines. Which one a control draws depends on the tone it sits on: LineSeam on the
+         root or level 1, LineControl on level 2, LineControlDeep on level 3. -->
+    <SolidColorBrush x:Key="LineSeam" Color="#33353a" />
+    <SolidColorBrush x:Key="LineRow" Color="#2a2c30" />
+    <SolidColorBrush x:Key="LineControl" Color="#3d4045" />
+    <SolidColorBrush x:Key="LineControlDeep" Color="#43464e" />
+    <SolidColorBrush x:Key="LineWindow" Color="#4a4e55" />
+    <SolidColorBrush x:Key="LineWell" Color="#565d66" />
+    <SolidColorBrush x:Key="LineControlOff" Color="#2c2e32" />
+
+    <!-- States. StatePressed carries the same value as LineControl and is kept apart
+         because one is a fill and the other is a line. Every use of the first is a
+         surface and every use of the second is an edge, so a later change to either
+         would otherwise mean reading each one to find out which it was. -->
+    <SolidColorBrush x:Key="StateHover" Color="#34363c" />
+    <SolidColorBrush x:Key="StatePressed" Color="#3d4045" />
+
+    <!-- Selection is the tint alone. No left marker, and a row never carries a fill and
+         an outline at once. AccentTint is both the selection tint and any accent tinted
+         surface, because they are one idea. -->
+    <SolidColorBrush x:Key="AccentTint" Color="#14293f" />
+    <SolidColorBrush x:Key="AccentTintLine" Color="#2b4a6b" />
+    <SolidColorBrush x:Key="AccentTintInk" Color="#8fbef5" />
+    <SolidColorBrush x:Key="AccentTintStrong" Color="#1d3a58" />
+    <SolidColorBrush x:Key="SelectionInk" Color="#cfe2fb" />
+
+    <!-- Accent. The one accent, used as a line and a mark rather than a flood. The
+         primary button and the destructive button are the only fills in the system. -->
+    <SolidColorBrush x:Key="Accent" Color="#569eff" />
+    <SolidColorBrush x:Key="AccentHover" Color="#6fadff" />
+    <SolidColorBrush x:Key="AccentPressed" Color="#3f86e0" />
+    <SolidColorBrush x:Key="AccentInk" Color="#0d1a29" />
+    <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
+    <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
+
+    <!-- Focus is a soft halo hugging the control, outside its border, never replacing
+         one. It is a colour and a thickness together, so both live here. -->
+    <SolidColorBrush x:Key="FocusHalo" Color="#569eff" Opacity="0.3" />
+    <x:Double x:Key="FocusHaloThickness">2</x:Double>
+
+    <!-- Text. Disabled keeps its shape and flattens its fill, never its opacity. -->
+    <SolidColorBrush x:Key="InkTitle" Color="#e6ebf2" />
+    <SolidColorBrush x:Key="InkPrimary" Color="#e3e5e9" />
+    <SolidColorBrush x:Key="InkSecondary" Color="#a9aeb6" />
+    <SolidColorBrush x:Key="InkMuted" Color="#7b8089" />
+    <SolidColorBrush x:Key="InkDisabled" Color="#5c6169" />
+    <SolidColorBrush x:Key="InkCaption" Color="#eef1f4" />
+    <SolidColorBrush x:Key="InkChip" Color="#c9ced6" />
+
+    <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text.
+         The mark and the text are separate because a 5px mark needs saturation where
+         11px text needs contrast. Status always reads as colour plus icon plus label,
+         so a mark on its own is never enough. -->
+    <SolidColorBrush x:Key="Ok" Color="#4ec98a" />
+    <SolidColorBrush x:Key="OkSurface" Color="#1a2b22" />
+    <SolidColorBrush x:Key="OkLine" Color="#2b4a38" />
+    <SolidColorBrush x:Key="OkInk" Color="#7cd6ad" />
+
+    <SolidColorBrush x:Key="Warn" Color="#e0a94a" />
+    <SolidColorBrush x:Key="WarnSurface" Color="#2d2416" />
+    <SolidColorBrush x:Key="WarnLine" Color="#4d3d1c" />
+    <SolidColorBrush x:Key="WarnInk" Color="#e8bd72" />
+
+    <SolidColorBrush x:Key="Error" Color="#ef6a6e" />
+    <SolidColorBrush x:Key="ErrorSurface" Color="#2f1e20" />
+    <SolidColorBrush x:Key="ErrorLine" Color="#573034" />
+    <SolidColorBrush x:Key="ErrorInk" Color="#f4878a" />
+
+    <SolidColorBrush x:Key="Graph" Color="#a78bfa" />
+    <SolidColorBrush x:Key="Data" Color="#5bc8a8" />
+
+    <!-- Destructive is a solid fill, the one exception to the no flood rule. -->
+    <SolidColorBrush x:Key="Destructive" Color="#b0454a" />
+    <SolidColorBrush x:Key="DestructiveHover" Color="#c25055" />
+    <SolidColorBrush x:Key="DestructivePressed" Color="#973b40" />
+    <SolidColorBrush x:Key="DestructiveInk" Color="#fff1f1" />
+    <SolidColorBrush x:Key="DestructiveInkPressed" Color="#ffe8e8" />
+
+    <!-- The close button belongs to the window rather than to a control, and it is the
+         only red that is not a destructive action. -->
+    <SolidColorBrush x:Key="CloseHover" Color="#d9494f" />
+
+    <!-- Graph pin colours by type, for the tool that draws graphs. PinFloat carries the
+         same value as Data on purpose: a float pin is data, and if the data colour moves
+         the pin should move with it. They are named apart so a graph can be retinted
+         without touching status colours. -->
+    <SolidColorBrush x:Key="PinFloat" Color="#5bc8a8" />
+    <SolidColorBrush x:Key="PinInt" Color="#6ea8e8" />
+    <SolidColorBrush x:Key="PinBool" Color="#d97b7b" />
+    <SolidColorBrush x:Key="PinEnum" Color="#a78bfa" />
+    <SolidColorBrush x:Key="PinStruct" Color="#dde3ea" />
+
+    <!-- Shape. Every control is 5px and every pill, card, panel and window shell is 8px.
+         Nothing is square cornered. -->
+    <CornerRadius x:Key="RadiusControl">5</CornerRadius>
+    <CornerRadius x:Key="RadiusPill">8</CornerRadius>
+    <CornerRadius x:Key="RadiusMark">2</CornerRadius>
+
+    <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these
+         stay soft and are never stacked. -->
+    <BoxShadows x:Key="ShadowFloating">0 6 18 #80000000</BoxShadows>
+    <BoxShadows x:Key="ShadowPopup">0 10 28 #8c000000</BoxShadows>
+    <BoxShadows x:Key="ShadowOverlay">0 20 48 #99000000</BoxShadows>
+    <BoxShadows x:Key="ShadowWindow">0 26 64 #b3000000, 0 2 6 #80000000</BoxShadows>
+
+    <!-- Density. This system is dense on purpose, so these are as much a part of the
+         theme as the palette. -->
+    <x:Double x:Key="HeightTitleBar">32</x:Double>
+    <x:Double x:Key="HeightCaptionButton">32</x:Double>
+    <x:Double x:Key="HeightControl">26</x:Double>
+    <x:Double x:Key="HeightControlTall">27</x:Double>
+    <x:Double x:Key="HeightTreeRow">25</x:Double>
+    <x:Double x:Key="HeightGridRow">31</x:Double>
+    <x:Double x:Key="HeightChip">21</x:Double>
+    <x:Double x:Key="HeightPill">17</x:Double>
+    <x:Double x:Key="SizeIconButton">24</x:Double>
+    <x:Double x:Key="IndentTree">14</x:Double>
+    <x:Double x:Key="SpacingRow">2</x:Double>
+
+    <!-- Icons are 16 in tables, trees, the status bar and inline chips, and 20 in the
+         activity rail, tool cards and empty states. -->
+    <x:Double x:Key="IconSizeSmall">16</x:Double>
+    <x:Double x:Key="IconSizeLarge">20</x:Double>
+
+</ResourceDictionary>

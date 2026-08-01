@@ -67,8 +67,12 @@ form and the rule violation goes away on its own.
 
 ## Delete
 
-- `src/Workbench/Themes/Tokens.axaml`, already replaced in stage 1.
-- The stage 1 alias sheet.
+- `src/Workbench/Themes/Tokens.axaml`, already gone in stage 1.
+- `src/Workbench/Themes/LegacyTokens.axaml`, the temporary old palette from stage 1, and
+  with it every `Legacy` prefixed key. Grep the prefix to find them. At the end of stage
+  1 there were 83 references across `LauncherWindow.axaml` and `WindowChrome.axaml`, and
+  the second file moves to `Workbench.Ui` in stage 3, so it should be on Slate tokens
+  before this stage begins. A grep returning nothing is the check that this is finished.
 - `src/Workbench/Themes/Icons.axaml`, replaced by the generated one.
 - Every brush, radius and size literal in `LauncherWindow.axaml`.
 
