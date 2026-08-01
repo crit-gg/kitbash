@@ -175,11 +175,15 @@ thing that knows the OS layout. `ApplicationPaths` names the files under them.
 
 | | Linux | Windows |
 |---|---|---|
-| Configuration | `$XDG_CONFIG_HOME` or `~/.config` | `%APPDATA%`, roams |
-| State | `$XDG_DATA_HOME` or `~/.local/share` | `%LOCALAPPDATA%\Workbench\State` |
-| Cache | `$XDG_CACHE_HOME` or `~/.cache` | `%LOCALAPPDATA%\Workbench\Cache` |
+| Configuration | `$XDG_CONFIG_HOME/workbench` or `~/.config/workbench` | `%APPDATA%\Workbench`, roams |
+| State | `$XDG_DATA_HOME/workbench` or `~/.local/share/workbench` | `%LOCALAPPDATA%\Workbench\State` |
+| Cache | `$XDG_CACHE_HOME/workbench` or `~/.cache/workbench` | `%LOCALAPPDATA%\Workbench\Cache` |
 
 An XDG variable holding a relative path is ignored, which the spec requires.
+
+The application folder is lower case on Unix and keeps its written case on Windows,
+which is what each platform does with its own directories. `IUserDirectories` folds it,
+so a caller passes the application name once and never thinks about case.
 
 State sits in the data directory by choice. The spec would put it under
 `$XDG_STATE_HOME`, since a workspace list is a recently used list. It is here instead,
@@ -188,7 +192,9 @@ fourth one. Do not move it back without asking.
 
 **`IApplicationSettings`** is configuration. Choices a person may edit by hand. It has
 no layer to choose, so these can never be shared through a workspace's team config.
-Nothing reads it yet.
+
+Typed readers sit over it rather than call sites naming keys. `IWindowSettings` is the
+first, and it carries `window.nativeChrome`, covered under Window style.
 
 **`IApplicationState`** is what the app remembers for itself. The list of workspaces,
 which one is open, and window geometry when that arrives. The app writes it, a person
@@ -302,14 +308,60 @@ as a child of `game`, so the separator is part of the test.
 Every Workbench window draws its own title bar. This is the house style, so a new
 window conforms rather than inventing its own frame.
 
-Derive from `ChromelessWindow`. `Themes/WindowChrome.axaml` supplies the frame, the
-corner radius, the eight resize grips and the caption button look and glyphs. The
-window itself supplies only its title bar row, which must:
+Derive from `ChromelessWindow` and put a `WindowTitleBar` at the top of the content.
+`Themes/WindowChrome.axaml` supplies the frame, the corner radius, the eight resize
+grips and the whole title bar, so a window writes one element:
 
-- carry `WindowDecorationProperties.ElementRole="TitleBar"`
-- wire `PointerPressed` to `BeginMoveWindow` and `DoubleTapped` to `ToggleMaximized`
-- use `Button` with class `caption`, plus `captionMaximize` or `captionClose`, each
-  with a tooltip and an `AutomationProperties.Name`
+```xml
+<views:WindowTitleBar Title="Workbench"
+                      Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
+```
+
+`WindowTitleBar` owns the icon, the title, the caption buttons, the move drag and the
+double click. Its content is whatever else the window wants in the chrome, such as a
+menu or a toolbar, and it is empty by default. Do not hand write a title bar row, and
+do not wire the gestures at the window, because both are already done here and doing
+them twice fights the built in behaviour.
+
+The bar reads the window it sits in and mirrors it onto itself as classes, so every
+selector in the theme matches on the bar alone rather than reaching across the window
+and into a template. The classes are `nativeChrome`, `maximized` and `fixedSize`.
+
+### The desktop can draw the frame instead
+
+`window.nativeChrome` in `IWindowSettings` hands the frame to the desktop. It is global
+and user only, so a workspace can never set it for everyone. It is read once when a
+window is built and is not watched, so a change applies at the next launch.
+
+`ChromelessWindow.UsesNativeChrome` carries it and keeps two mutually exclusive classes
+in step. Style against the class, never against the property, and never assume the
+drawn frame.
+
+| Class | Frame | Caption buttons | Drag | Double click |
+|---|---|---|---|---|
+| `chromeless` | Workbench draws it, `WindowDecorations="None"` | shown | moves the window | toggles maximise |
+| `nativeChrome` | the desktop draws it, `WindowDecorations="Full"` | hidden | nothing | nothing |
+
+Under `nativeChrome` the row is ordinary content. It is not a title bar, because the
+desktop already supplies one, so both gestures are disabled at their entry points,
+`BeginMoveWindow` and `ToggleMaximizedFromTitleBar`.
+
+**A bar with nothing of its own disappears.** Under `nativeChrome` the row is hidden
+outright when the window put no content in it, since the desktop's title bar already
+says everything it would have said. A bar that carries content stays, minus the caption
+buttons, because that content has nowhere else to go. An empty `Panel` counts as
+nothing, so a window can leave a container in place and still collapse.
+
+Measured, the three cases:
+
+| Frame | Content | Row | Caption buttons |
+|---|---|---|---|
+| drawn | either | 36px | shown |
+| native | none | gone, height 0, template never realised | none |
+| native | some | 36px | hidden |
+
+`ToggleMaximized` stays unguarded and available to code, so a window can still maximise
+itself under either frame.
 
 Behavior that is deliberate and should not be reported as missing: right click on the
 title bar does nothing, and so does middle click. Both match the desktop defaults

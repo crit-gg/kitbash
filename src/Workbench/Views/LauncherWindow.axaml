@@ -128,46 +128,11 @@
     <Panel>
             <Grid RowDefinitions="Auto,*">
 
-                <!-- title bar -->
-                <Border Grid.Row="0"
-                        Height="{StaticResource CaptionBarHeight}"
-                        Background="{StaticResource GroundChrome}"
-                        BorderBrush="{StaticResource LineChrome}"
-                        BorderThickness="0,0,0,1"
-                        WindowDecorationProperties.ElementRole="TitleBar"
-                        PointerPressed="OnTitleBarPressed"
-                        DoubleTapped="OnTitleBarDoubleTapped">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="15,0,0,0">
-                        <Image Grid.Column="0" Width="18" Height="18"
-                               VerticalAlignment="Center"
-                               RenderOptions.BitmapInterpolationMode="HighQuality"
-                               Source="avares://Workbench/Assets/Icons/icon_64x64.png" />
-                        <TextBlock Grid.Column="1" Text="Workbench" Margin="11,0,0,0"
-                                   FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
-                                   Foreground="{StaticResource InkBright}" VerticalAlignment="Center" />
-
-                        <StackPanel Grid.Column="3" Orientation="Horizontal">
-                            <Button Classes="caption" Click="OnMinimizeClick"
-                                    ToolTip.Tip="Minimize"
-                                    AutomationProperties.Name="Minimize"
-                                    WindowDecorationProperties.ElementRole="MinimizeButton">
-                                <Path Data="{StaticResource GlyphMinimize}" />
-                            </Button>
-                            <Button Classes="caption captionMaximize" Click="OnMaximizeClick"
-                                    ToolTip.Tip="Maximize"
-                                    AutomationProperties.Name="Maximize"
-                                    WindowDecorationProperties.ElementRole="MaximizeButton">
-                                <Path Data="{StaticResource GlyphMaximize}" />
-                            </Button>
-                            <Button Classes="caption captionClose" Click="OnCloseClick"
-                                    ToolTip.Tip="Close"
-                                    AutomationProperties.Name="Close"
-                                    WindowDecorationProperties.ElementRole="CloseButton">
-                                <Path Data="{StaticResource GlyphClose}" />
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                <!-- The launcher adds nothing of its own here, so this row disappears
+                     entirely when the desktop draws the frame. -->
+                <views:WindowTitleBar Grid.Row="0"
+                                      Title="Workbench"
+                                      Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 
                 <Panel Grid.Row="1">
                     <Grid IsVisible="{Binding HasWorkspaces}"

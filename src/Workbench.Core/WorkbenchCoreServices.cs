@@ -108,6 +108,7 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
         services.TryAddSingleton<IApplicationSettings, ApplicationSettings>();
         services.TryAddSingleton<IApplicationState, ApplicationState>();
+        services.TryAddSingleton<IWindowSettings, WindowSettings>();
 
         return services;
     }

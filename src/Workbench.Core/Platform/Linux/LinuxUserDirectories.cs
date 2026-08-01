@@ -37,6 +37,9 @@ internal sealed class LinuxUserDirectories : IUserDirectories
             ? configured
             : Path.Combine(_environment.GetHomeDirectory(), fallback);
 
-        return Path.Combine(root, application);
+        // Unix names these directories in lower case, and the filesystem is case
+        // sensitive, so the name is folded once here rather than at every caller.
+        // Invariant because a Turkish locale would otherwise fold I to a dotless i.
+        return Path.Combine(root, application.ToLowerInvariant());
     }
 }

@@ -20,6 +20,14 @@ namespace Workbench.Views;
 /// </remarks>
 public class ChromelessWindow : Window
 {
+    /// <summary>
+    /// Whether the desktop draws the frame. Set from
+    /// <see cref="Workbench.Core.Settings.IWindowSettings"/> when the window is built.
+    /// It is not watched, so changing the setting takes effect on the next launch.
+    /// </summary>
+    public static readonly StyledProperty<bool> UsesNativeChromeProperty =
+        AvaloniaProperty.Register<ChromelessWindow, bool>(nameof(UsesNativeChrome));
+
     private static readonly string[] ResizeGripNames =
     [
         "PART_ResizeTopLeft",
@@ -34,7 +42,7 @@ public class ChromelessWindow : Window
 
     public ChromelessWindow()
     {
-        Classes.Add("chromeless");
+        Classes.Set("chromeless", true);
 
         // The desktop shows this in the task bar and the window list. The largest
         // size is used so the desktop scales down rather than up.
@@ -44,25 +52,74 @@ public class ChromelessWindow : Window
         Icon = new WindowIcon(icon);
     }
 
+    /// <inheritdoc cref="UsesNativeChromeProperty"/>
+    public bool UsesNativeChrome
+    {
+        get => GetValue(UsesNativeChromeProperty);
+        set => SetValue(UsesNativeChromeProperty, value);
+    }
+
     /// <summary>Styles target Window, so a derived window keeps the same frame.</summary>
     protected override Type StyleKeyOverride => typeof(Window);
 
     /// <summary>
-    /// Moves the window. The second click of a double click is ignored so it can
-    /// reach <see cref="ToggleMaximized"/> instead.
+    /// The two classes pick the frame. <c>chromeless</c> selects the drawn template and
+    /// its resize grips, <c>nativeChrome</c> drops the caption buttons because the
+    /// desktop supplies its own. They are mutually exclusive.
     /// </summary>
-    protected void BeginMoveWindow(PointerPressedEventArgs e)
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
+        base.OnPropertyChanged(change);
+
+        if (change.Property != UsesNativeChromeProperty)
+        {
+            return;
+        }
+
+        var native = change.GetNewValue<bool>();
+
+        Classes.Set("chromeless", !native);
+        Classes.Set("nativeChrome", native);
+    }
+
+    /// <summary>
+    /// Moves the window. The second click of a double click is ignored so it can
+    /// reach <see cref="ToggleMaximizedFromTitleBar"/> instead. It does nothing when
+    /// the desktop draws the frame, since the desktop's own title bar carries the
+    /// gesture and ours is then ordinary content.
+    /// </summary>
+    protected internal void BeginMoveWindow(PointerPressedEventArgs e)
+    {
+        if (UsesNativeChrome)
+        {
+            return;
+        }
+
         if (e.ClickCount == 1 && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             BeginMoveDrag(e);
         }
     }
 
-    protected void ToggleMaximized() =>
+    protected internal void ToggleMaximized() =>
         WindowState = WindowState == WindowState.Maximized
             ? WindowState.Normal
             : WindowState.Maximized;
+
+    /// <summary>
+    /// The double click gesture on the title bar. It does nothing when the desktop
+    /// draws the frame, since the desktop's own title bar already carries the gesture
+    /// and ours is then ordinary content.
+    /// </summary>
+    protected internal void ToggleMaximizedFromTitleBar()
+    {
+        if (UsesNativeChrome)
+        {
+            return;
+        }
+
+        ToggleMaximized();
+    }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

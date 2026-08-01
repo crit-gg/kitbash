@@ -65,6 +65,11 @@ every brush, every icon, the window shell and the overlay surfaces.
   and it is MIT.
 - Keep the current caption button glyphs. Everything else about the title bar may
   change to match Slate.
+- A window has two frames, not one. `window.nativeChrome` is a global user only setting
+  that hands the frame to the desktop, which hides the caption buttons and disables the
+  title bar double click. Any styling that assumes Workbench draws the edge, the corner
+  radius or the shadow has to be scoped to the `chromeless` class. Stage 3 has the
+  detail.
 
 ## Stages
 

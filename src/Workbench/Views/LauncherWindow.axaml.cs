@@ -12,20 +12,6 @@ public partial class LauncherWindow : ChromelessWindow
 
     private LauncherViewModel? Model => DataContext as LauncherViewModel;
 
-    private void OnTitleBarPressed(object? sender, PointerPressedEventArgs e) => BeginMoveWindow(e);
-
-    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        ToggleMaximized();
-        e.Handled = true;
-    }
-
-    private void OnMinimizeClick(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-
-    private void OnMaximizeClick(object? sender, RoutedEventArgs e) => ToggleMaximized();
-
-    private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
-
     private void OnWorkspacePressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Control { DataContext: WorkspaceViewModel workspace })

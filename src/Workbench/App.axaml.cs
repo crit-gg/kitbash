@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Workbench.Core;
 using Workbench.Core.IO;
+using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 using Workbench.ViewModels;
 using Workbench.Views;
@@ -22,8 +23,13 @@ public partial class App : Application
         {
             _services = BuildServices();
 
+            // Read once here. The window does not watch the setting, so a change to it
+            // takes effect the next time Workbench starts.
+            var windows = _services.GetRequiredService<IWindowSettings>();
+
             desktop.MainWindow = new LauncherWindow
             {
+                UsesNativeChrome = windows.UseNativeChrome,
                 DataContext = _services.GetRequiredService<LauncherViewModel>(),
             };
 

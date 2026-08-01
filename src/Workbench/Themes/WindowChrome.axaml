@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Workbench.Views">
 
     <Styles.Resources>
         <!-- The title bar row and the caption buttons share this, which keeps the
@@ -15,7 +16,7 @@
 
     <!-- Caption buttons are real buttons so they take focus, answer the keyboard and
          report themselves to assistive technology, the way a system title bar does. -->
-    <Style Selector="Window.chromeless Button.caption">
+    <Style Selector="views|WindowTitleBar /template/ Button.caption">
         <Setter Property="Width" Value="{StaticResource CaptionBarHeight}" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="Background" Value="Transparent" />
@@ -33,40 +34,110 @@
         </Setter>
     </Style>
 
-    <Style Selector="Window.chromeless Button.caption Path">
+    <Style Selector="views|WindowTitleBar /template/ Button.caption Path">
         <Setter Property="Stroke" Value="{DynamicResource InkBright}" />
         <Setter Property="StrokeThickness" Value="1" />
     </Style>
 
-    <Style Selector="Window.chromeless Button.caption:pointerover /template/ Border#PART_Root">
+    <Style Selector="views|WindowTitleBar /template/ Button.caption:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceMenu}" />
     </Style>
 
-    <Style Selector="Window.chromeless Button.caption:pressed /template/ Border#PART_Root">
+    <Style Selector="views|WindowTitleBar /template/ Button.caption:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource SurfaceControl}" />
     </Style>
 
     <!-- Close floods red the way every system close button does. It is declared
          after the shared pressed state so the flood wins while the button is held. -->
-    <Style Selector="Window.chromeless Button.captionClose:pointerover /template/ Border#PART_Root">
+    <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource Close}" />
     </Style>
 
-    <Style Selector="Window.chromeless Button.captionClose:pressed /template/ Border#PART_Root">
+    <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pressed /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource ClosePressed}" />
     </Style>
 
     <!-- Maximized swaps the glyph and the tooltip, the way a system button does. -->
-    <Style Selector="Window.chromeless[WindowState=Maximized] Button.captionMaximize Path">
+    <Style Selector="views|WindowTitleBar.maximized /template/ Button.captionMaximize Path">
         <Setter Property="Data" Value="{StaticResource GlyphRestore}" />
     </Style>
 
-    <Style Selector="Window.chromeless[WindowState=Maximized] Button.captionMaximize">
+    <Style Selector="views|WindowTitleBar.maximized /template/ Button.captionMaximize">
         <Setter Property="ToolTip.Tip" Value="Restore" />
     </Style>
 
     <!-- A window that cannot resize has no maximize button at all. -->
-    <Style Selector="Window.chromeless[CanResize=False] Button.captionMaximize">
+    <Style Selector="views|WindowTitleBar.fixedSize /template/ Button.captionMaximize">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The title bar row. It owns the icon, the title and the caption buttons, so a
+         window supplies only what it wants to add. WindowTitleBar hides the whole row
+         when the desktop draws the frame and the window added nothing. -->
+    <Style Selector="views|WindowTitleBar">
+        <Setter Property="Height" Value="{StaticResource CaptionBarHeight}" />
+        <Setter Property="Background" Value="{DynamicResource GroundChrome}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineChrome}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Background is on the border rather than the control, so the whole
+                     row is hit tested and a drag can start anywhere on it. -->
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        WindowDecorationProperties.ElementRole="TitleBar">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="15,0,0,0">
+                        <Image Grid.Column="0" Width="18" Height="18"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding $parent[views:WindowTitleBar].Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"
+                               Source="{TemplateBinding Icon}" />
+
+                        <TextBlock Grid.Column="1" Text="{TemplateBinding Title}"
+                                   Margin="11,0,0,0"
+                                   FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
+                                   Foreground="{DynamicResource InkBright}"
+                                   VerticalAlignment="Center" />
+
+                        <ContentPresenter Grid.Column="2"
+                                          Margin="11,0,0,0"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Stretch"
+                                          HorizontalAlignment="Stretch" />
+
+                        <StackPanel Grid.Column="3" Name="PART_CaptionButtons"
+                                    Orientation="Horizontal">
+                            <Button Classes="caption" Name="PART_MinimizeButton"
+                                    ToolTip.Tip="Minimize"
+                                    AutomationProperties.Name="Minimize"
+                                    WindowDecorationProperties.ElementRole="MinimizeButton">
+                                <Path Data="{StaticResource GlyphMinimize}" />
+                            </Button>
+                            <Button Classes="caption captionMaximize" Name="PART_MaximizeButton"
+                                    ToolTip.Tip="Maximize"
+                                    AutomationProperties.Name="Maximize"
+                                    WindowDecorationProperties.ElementRole="MaximizeButton">
+                                <Path Data="{StaticResource GlyphMaximize}" />
+                            </Button>
+                            <Button Classes="caption captionClose" Name="PART_CloseButton"
+                                    ToolTip.Tip="Close"
+                                    AutomationProperties.Name="Close"
+                                    WindowDecorationProperties.ElementRole="CloseButton">
+                                <Path Data="{StaticResource GlyphClose}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- The desktop draws the frame, so it supplies the caption buttons and ours go.
+         A row that still carries content keeps everything else. -->
+    <Style Selector="views|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 

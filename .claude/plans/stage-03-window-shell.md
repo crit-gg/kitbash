@@ -10,10 +10,54 @@ that matches the launcher.
 
 ## Build
 
-**Move.** `Views/ChromelessWindow.cs` and `Themes/WindowChrome.axaml` go to
-`Workbench.Ui`. The icon it loads is launcher specific, so the base class takes the
-icon rather than reaching for a fixed `avares://` path. That is the one real change to
-its behaviour.
+**Move.** `Views/ChromelessWindow.cs`, `Views/WindowTitleBar.cs` and
+`Themes/WindowChrome.axaml` go to `Workbench.Ui`. The icon `ChromelessWindow` loads is
+launcher specific, so the base class takes the icon rather than reaching for a fixed
+`avares://` path. That is the one real change to its behaviour.
+
+`WindowTitleBar` already exists and already owns the icon, the title, the caption
+buttons, the move drag and the double click, with the window's content slot for
+anything a window adds. So the Slate restyle is values in one `ControlTheme` rather than
+markup in every window. It mirrors its window onto itself as the classes
+`nativeChrome`, `maximized` and `fixedSize`, so no selector reaches across the window
+into a template. Keep that, and add new state the same way.
+
+`IWindowSettings` moves nowhere. It already lives in `Workbench.Core/Settings` and is
+already registered by `AddWorkbenchApplicationStorage`, so a tool that composes core
+services gets it without doing anything.
+
+**Two frames, not one.** The window already supports both, and the Slate restyle has to
+keep that working rather than assume the drawn frame.
+
+`UsesNativeChrome` on `ChromelessWindow` is fed from
+`IWindowSettings.UseNativeChrome`, a global user only setting under the key
+`window.nativeChrome`. It drives two mutually exclusive classes, and every style in
+`WindowChrome.axaml` hangs off one of them:
+
+| Class | Frame | Caption buttons | Drag | Double click |
+|---|---|---|---|---|
+| `chromeless` | drawn by Workbench, `WindowDecorations="None"` | shown | moves the window | toggles maximise |
+| `nativeChrome` | drawn by the desktop, `WindowDecorations="Full"` | hidden | nothing | nothing |
+
+So every value in the table below applies to the `chromeless` case. Under
+`nativeChrome` the desktop owns the outer edge, the corner radius and the shadow, and
+Workbench must not draw its own. The title bar row itself stays either way, because it
+carries the icon and the title, and because the launcher hangs its own content off it.
+
+Under `nativeChrome` the row is ordinary content rather than a title bar, so both of
+its gestures are off. `BeginMoveWindow` and `ToggleMaximizedFromTitleBar` each return
+early, which means a window that wires the row the standard way needs no test of its
+own.
+
+The row also collapses entirely under `nativeChrome` when the window put no content in
+it, which is the launcher's case. Restyling must not break that, so check all three:
+drawn frame, native with no content, native with content. Measured today, the row is
+36px, absent with height 0 and its template never realised, and 36px with the caption
+panel hidden.
+
+`ToggleMaximized` stays unguarded and remains available to code. Measured: under
+`nativeChrome` the gesture leaves the window `Normal` while a direct `WindowState`
+assignment still maximises.
 
 **Restyle to Slate.**
 
@@ -75,3 +119,9 @@ footer sits on `SurfaceRoot`.
 - Activating and deactivating the window moves the whole chrome between tiers.
 - A second window created from `Workbench.Ui` alone, with no launcher code, looks the
   same.
+- Both frames still work. With `window.nativeChrome` on, the desktop draws the frame,
+  the caption buttons are gone, the title bar double click does nothing, and Workbench
+  draws no edge, radius or shadow of its own. Verify by running, not by reading. A
+  dispatcher pump will not do it, since the window manager's state notification only
+  arrives when the platform event loop runs, so use a `DispatcherTimer` and let the
+  loop turn between the action and the check.

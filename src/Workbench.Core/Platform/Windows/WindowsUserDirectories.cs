@@ -41,6 +41,8 @@ internal sealed class WindowsUserDirectories : IUserDirectories
             : Path.Combine(_environment.GetHomeDirectory(), "AppData", fallback);
     }
 
+    // Windows names an application folder the way the application is written, so the
+    // case is kept. Unix folds it to lower case instead.
     private static string Named(string application)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(application);
