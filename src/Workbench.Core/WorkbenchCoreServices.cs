@@ -50,6 +50,23 @@ public static class WorkbenchCoreServices
         return services;
     }
 
+    /// <summary>
+    /// Settings for this user on this machine. Available without a workspace, so it
+    /// can be read at startup.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchApplicationSettings(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchIO();
+        services.TryAddSingleton<ApplicationPaths>();
+        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
+        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<IApplicationSettings, ApplicationSettings>();
+
+        return services;
+    }
+
     /// <summary>Settings for one workspace. Find it first with <see cref="IWorkspaceLocator"/>.</summary>
     public static IServiceCollection AddWorkbenchSettings(this IServiceCollection services, WorkspacePaths paths)
     {

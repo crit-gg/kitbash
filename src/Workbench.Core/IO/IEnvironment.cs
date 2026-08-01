@@ -4,4 +4,7 @@ namespace Workbench.Core.IO;
 public interface IEnvironment
 {
     string? GetVariable(string name);
+
+    /// <summary>The user's configuration directory for this machine.</summary>
+    string GetConfigurationDirectory();
 }
