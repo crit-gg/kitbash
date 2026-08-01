@@ -44,6 +44,36 @@ the semantic table.
 **Progress.** A determinate bar, and an indeterminate form that is the same bar with a
 fill of 30 percent width travelling across it. One control, two modes.
 
+## Amended by the launcher design
+
+**A coloured fill takes its states as a wash, not as a state tone.** The launcher's
+engine action is filled accent, warn or destructive depending on the engine state, and
+its hover and press are a white wash at 14 percent and a black wash at 18 percent over
+that fill. `StateHover` over a semantic fill reads as mud, which is why the design does
+not do it.
+
+That is a rule the system did not have. It applies to every coloured fill, so the primary
+and danger kinds above should take it too rather than naming a second and third tone
+each. Whether to keep their existing per kind hover tones or move both onto the wash is
+the decision to make when implementing it, and the answer should be one rule, not two.
+
+**A badge is not a status pill.** The launcher carries two badge kinds: a round dot with
+a monospace label, and a label on its own. Neither has an icon, because neither is a
+status. A runtime name and a workspace's access are labels.
+
+`StatusPill` draws a mark, an icon and a label and lets none of them be turned off, which
+is right for a file's status and wrong for these. So add a `Badge` beside it: a label in a
+17px pill at 8px radius, with an optional round dot, taking a surface, a border and a text
+colour. Do not loosen the pill to cover both. A pill whose icon can be dropped is a pill
+that will be built wrong, which is the whole reason the icon is mandatory.
+
+That gives the library three small label kinds, which is what this stage's goal already
+promised: the chip, the status pill and the badge.
+
+**The split button takes the same kinds as the button.** The engine action is a split
+button in a semantic fill, so `primary`, `danger` and the rest have to reach it. Today
+the split button has one look.
+
 ## States
 
 Every control gets all five: normal, hover, pressed, focus, disabled.

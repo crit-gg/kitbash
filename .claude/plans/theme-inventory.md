@@ -20,6 +20,12 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
    active tab, highlighted menu item, selected and focused together.
 5. **Status pill** (5) colour plus icon plus label, never colour alone. synced,
    modified, conflict, checked out, archived.
+
+   The launcher uses a smaller thing that is not this: a badge, which is a label in a
+   17px pill with an optional round dot and no icon. The engine strip's runtime badge and
+   the workspace row's access badge are both that. A badge names something, a status pill
+   reports a state, and only the second one is bound by the colour plus icon plus label
+   rule. Stage 4 builds both.
 6. **Progress** (2) determinate, and indeterminate as the same bar with a travelling
    fill at 30 percent width.
 7. **Panels** (5) panel header, panel footer, the depth ladder, the splitter, the
@@ -107,6 +113,7 @@ accent line instead, so focus survives the selection tint.
 | `InkDisabled` | `#5c6169` | disabled text |
 | `InkCaption` | `#eef1f4` | caption button glyphs |
 | `InkChip` | `#c9ced6` | chip text, and the toggle knob |
+| `InkRail` | `#9ba6b0` | the resting icon in the activity rail, from the launcher design |
 
 Disabled keeps its shape and flattens its fill. Never opacity.
 
@@ -125,9 +132,9 @@ Each role carries four values: the mark, the tinted surface, its border and its 
 Destructive is the one solid fill in the system: `#b0454a`, hover `#c25055`, pressed
 `#973b40`, text `#fff1f1` and `#ffe8e8` when pressed. The close button hover is
 `#d9494f`, which is its own value because it belongs to the window and not to a
-control. The design gives that hover alone, so stage 3 derived the pressed tone from
-it the way every other pressed tone here is derived, by darkening the hover rather
-than by reaching for the destructive red. `ClosePressed` is `#bd3a41`.
+control. `ClosePressed` is `#b53c42`, taken from the launcher design. Stage 3 had
+derived `#bd3a41` from the hover before the design gave the value, so a checkout still
+carrying the derived one is out of date rather than wrong on purpose.
 
 Graph pin colours, from the spec rather than this page, for the tool that needs them
 later: Float `#5bc8a8`, Int `#6ea8e8`, Bool `#d97b7b`, Enum `#a78bfa`, Struct and Exec

@@ -108,6 +108,23 @@ from `InkTitle` to `InkMuted`, caption glyphs from `InkCaption` to `InkSecondary
 accent mark to `AccentMuted` `#3f5f85`. Drive it from the window's active state, not
 from focus of a child.
 
+## Amended by the launcher design
+
+Two things the launcher design settled after this stage was built. Both belong here.
+
+**The leading slot takes a mark, not only an image.** `WindowTitleBar.Icon` is an
+`IImage`. The design's app mark is a 15px rounded square in `Accent` carrying a letter in
+`AccentInk`, which is drawn rather than a bitmap. Give the bar a content slot for the
+mark, so a tool can put its own there. The image stays for the case where a bitmap is
+what a window has.
+
+That also removes the inactive icon rule's awkwardness. A drawn mark can take a tier
+like everything else, where the bitmap could only drop its opacity.
+
+**The close button pressed tone is given, not derived.** This stage derived
+`ClosePressed` as `#bd3a41` because the design showed only the hover. The design now
+gives it directly as `#b53c42`. Correct the token and drop the note about deriving it.
+
 ## Cross platform
 
 The design targets Windows. This project targets both, and the Linux path is the

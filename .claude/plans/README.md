@@ -16,9 +16,16 @@ The design lives in the Claude Design project **Workbench**,
 |---|---|
 | `CLAUDE.md` | the written spec, palette, density and icon rules |
 | `Theme Slate.dc.html` | the built control inventory, every control in every state |
-| `Workbench Launcher.dc.html` | the launcher layout |
+| `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
+| `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 5 |
+| `Workbench Settings.dc.html` | the settings page, and a v2 beside it, not yet planned |
 | `Foundry Editor.dc.html` | the tool that consumes the library, not built here |
 | `icons/` | 48 named SVGs, all present in the Box Icons set |
+
+**The design moves.** The launcher was redrawn after these plans were written, which
+turned it into a shell with an activity rail and added two pages that have no stage yet.
+Read the file before working a stage rather than trusting the stage's summary of it, and
+when it has moved, amend the stages it affects rather than only the one being worked.
 
 The design project's own `CLAUDE.md` says the Nocturne design system was unbound and
 must not be re added. Nocturne is a separate project in the same account. Ignore it.
@@ -41,7 +48,10 @@ as its only dependency, so nothing in the contract pulls in a UI framework.
 
 What counts as launcher specific: the workspace selector, the engine strip, the git
 strip, the tool card list and the empty state. What counts as library: every control,
-every brush, every icon, the window shell and the overlay surfaces.
+every brush, every icon, the window shell, the activity rail and the overlay surfaces.
+
+The rail moved to the library side when the launcher was redrawn around one. A tool will
+want the same shell, so it is not the launcher's.
 
 ## Rules that apply to every stage
 
@@ -80,6 +90,14 @@ every brush, every icon, the window shell and the overlay surfaces.
 - No third party control package for something this library should own. Dock in stage 11
   is the one exception and it is MIT.
 
+- Keep the current caption button glyphs. Everything else about the title bar may
+  change to match Slate.
+- A window has two frames, not one. `window.nativeChrome` is a global user only setting
+  that hands the frame to the desktop, which hides the caption buttons and disables the
+  title bar double click. Any styling that assumes Workbench draws the edge, the corner
+  radius or the shadow has to be scoped to the `chromeless` class. Stage 3 has the
+  detail.
+
 **What the built in set gives each stage.** Checked by reflecting over
 `Avalonia.Controls` 12.1.1 rather than read from a page.
 
@@ -95,13 +113,6 @@ every brush, every icon, the window shell and the overlay surfaces.
 Only two things in this plan have no built in type and stay hand built: the chip and the
 status pill in stage 4. Everything else in stages 4 to 10 is a theme over the list above.
 Stage 11's docking surface comes from Dock.
-- Keep the current caption button glyphs. Everything else about the title bar may
-  change to match Slate.
-- A window has two frames, not one. `window.nativeChrome` is a global user only setting
-  that hands the frame to the desktop, which hides the caption buttons and disables the
-  title bar double click. Any styling that assumes Workbench draws the edge, the corner
-  radius or the shadow has to be scoped to the `chromeless` class. Stage 3 has the
-  detail.
 
 ## Stages
 
@@ -111,7 +122,7 @@ Stage 11's docking surface comes from Dock.
 | 2 | `stage-02-icons.md` | 1 |
 | 3 | `stage-03-window-shell.md` | 1, 2 |
 | 4 | `stage-04-buttons-and-pills.md` | 1, 2 |
-| 5 | `stage-05-launcher-relayout.md` | 1, 2, 3, 4 |
+| 5 | `stage-05-launcher-relayout.md` | 1, 2, 3, 4, 8 |
 | 6 | `stage-06-input-controls.md` | 1, 2, 4 |
 | 7 | `stage-07-panels-and-splitters.md` | 1, 3 |
 | 8 | `stage-08-overlays.md` | 1, 2, 4 |
@@ -119,6 +130,12 @@ Stage 11's docking surface comes from Dock.
 | 10 | `stage-10-data-grid.md` | 1, 2, 6, 9 |
 | 11 | `stage-11-docking.md` | 1, 2, 7, 8, 9 |
 
-Stage 5 is the first point where the app looks like the design. Stages 6 to 11 build
-what Foundry will need and are not visible in the launcher, so they can be reordered
-or paused without leaving the app half themed.
+Stage 5 is the first point where the app looks like the design.
+
+**Stage 5 now needs stage 8**, which is new. The redrawn launcher opens three menus and a
+tooltip, so the overlay surfaces have to exist before the launcher can be rebuilt on
+them. Either run stage 8 before stage 5, or build stage 5 twice. Running 8 first is the
+cheaper answer, and it costs nothing else, since 8 only depends on 1, 2 and 4.
+
+Stages 6, 7, 9, 10 and 11 build what Foundry will need and are not visible in the
+launcher, so they can be reordered or paused without leaving the app half themed.

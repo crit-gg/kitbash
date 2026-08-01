@@ -31,8 +31,10 @@ open one over every recipe or every attribute, and a popup is the easiest place 
 forget that. Build it on `ListBox`, which already virtualises, rather than on a stack of
 items in an `ItemsControl`, which does not.
 
-**Tooltip.** Small, same surface, a title line and an optional body. Delay and placement
-come from Avalonia defaults unless they look wrong.
+**Tooltip.** Small, same surface, a title line and an optional body. Delay comes from
+Avalonia defaults unless it looks wrong. Placement does not: the launcher's activity rail
+puts its tooltip to the right of a 32px item, 22px tall, and it drops in over 80ms, so
+placement and the drop are part of the theme rather than left to the default.
 
 **Popover.** A larger floating card, 8px radius, used for content rather than a list of
 actions.
@@ -42,6 +44,15 @@ scrim. This is a departure from the usual pattern and the reason `DialogWindow` 
 built in stage 3. The modal here is the content convention: 15px weight 600 title, body,
 and a footer of actions sitting on `SurfaceRoot`, with the destructive action as the
 solid danger button.
+
+**The scrim, which is a real decision.** The launcher design darkens the whole window
+behind the workspace list with `rgba(9,10,11,.62)`. A `Flyout` gives light dismiss but
+draws nothing, so either brush Avalonia's light dismiss overlay layer or keep an explicit
+scrim panel over the window. Decide it once here, because a modal and a workspace list
+that dim the window differently would be obvious.
+
+Note the spec's other rule alongside it: a dialog has no scrim. So the scrim belongs to a
+popup that covers a page, not to every floating thing.
 
 **Workspace list popup.** The launcher already has one. Move its surface definition to
 the library and leave its content in the launcher. It is the worked example of a popup
