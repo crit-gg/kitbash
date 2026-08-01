@@ -147,7 +147,7 @@ Two things follow that are easy to get wrong.
 
 The spec says dialogs are real windows with their own title bar and a deep shadow, and
 that there is no scrim. That is a departure from the usual Avalonia modal, so build a
-`DialogWindow` in `Workbench.Ui` now rather than discovering it in stage 8. It differs
+`DialogWindow` in `Workbench.Ui` now rather than discovering it in stage 5. It differs
 from the main window in that it is not resizable, has only a close button, and its
 footer sits on `SurfaceRoot`.
 
@@ -211,5 +211,5 @@ The caption glyphs are unchanged, compared against the committed file rather tha
 the probe, because a `StreamGeometry` does not report its path data back.
 
 Not built here: the accent mark the design shows on the window. Nothing in the launcher
-carries one yet, so `AccentMuted` has no consumer. Stage 5 decides whether the mark
+carries one yet, so `AccentMuted` has no consumer. Stage 6 decides whether the mark
 exists at all.

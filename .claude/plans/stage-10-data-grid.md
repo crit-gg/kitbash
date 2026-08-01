@@ -52,7 +52,7 @@ values for the group. Distinct from a tree grid branch row: this one is flat gro
 not hierarchy.
 
 **Toolbar.** Above the grid: a search field, a columns chooser and a primary action.
-Uses stage 4 and stage 6 controls with no new styling.
+Uses stage 4 and stage 8 controls with no new styling.
 
 **Footer.** Below the grid: selection count, the shown of total count and the sort in
 force, all in monospace.

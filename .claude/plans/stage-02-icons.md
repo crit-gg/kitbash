@@ -86,7 +86,7 @@ in use is visible.
 
 The custom marks. The per tool launcher marks and the data type glyphs for recipe,
 machine, product, attribute, stat, effect, tag and the four graph kinds are drawn in
-house and none of them exist yet. The tool card in stage 5 shows the tool's own icon in
+house and none of them exist yet. The tool card in stage 6 shows the tool's own icon in
 its square. The design draws a letter there, and that is a placeholder rather than a
 lettermark to build. A tool supplies an icon or the square is empty.
 

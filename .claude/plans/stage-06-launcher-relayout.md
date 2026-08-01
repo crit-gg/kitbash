@@ -1,4 +1,4 @@
-# Stage 5: launcher relayout
+# Stage 6: launcher relayout
 
 Rewrite `LauncherWindow.axaml` against the library. This is the milestone where the
 app becomes Slate.
@@ -20,7 +20,7 @@ launcher a shell that holds pages rather than a single page.
 - **An activity rail** down the left, 48px wide, holding Workspace, Godot engines and
   Settings. Settings sits at the bottom.
 - **Godot engines is its own page**, `Engine Installs.dc.html`, reached from the rail.
-  Not built in this stage. Stage 5 builds the shell that can host it and the workspace
+  Not built in this stage. Stage 6 builds the shell that can host it and the workspace
   page that fills it.
 - **The settings action left the workspace bar** and became the bottom rail item.
 - **The tool card is down to four things**: the mark, the name with a version beside it,
@@ -40,11 +40,11 @@ layout. If this stage finds itself writing a control, that control belongs in
 |---|---|
 | title bar | `WindowTitleBar` from stage 3 |
 | rail item | `ListBoxItem` in a `ListBox`, so selection is the control's own |
-| rail tooltip | `ToolTip`, from stage 8 |
+| rail tooltip | `ToolTip`, from stage 5 |
 | workspace selector | a `DropDownButton` with a `Flyout`, from stages 4 and 8 |
-| workspace row menu | `MenuFlyout`, from stage 8 |
+| workspace row menu | `MenuFlyout`, from stage 5 |
 | engine action | the stage 4 split button, in a semantic fill |
-| engine menu | `MenuFlyout`, from stage 8 |
+| engine menu | `MenuFlyout`, from stage 5 |
 | engine and workspace badges | not the stage 4 status pill, see below |
 | launch action | the stage 4 primary button |
 | tool list | `ItemsControl`, or `ListBox` if a card ever becomes selectable |
@@ -98,7 +98,7 @@ The Settings item is pushed to the bottom.
 
 **Rail tooltip.** Shown to the right of the item, 22px tall, `SurfaceNest2` on
 `LineControl`, 5px radius, `ShadowPopup`, 11.5px Archivo `InkPrimary`, and it drops in
-over 80ms. This is the stage 8 tooltip with a placement, not a launcher control.
+over 80ms. This is the stage 5 tooltip with a placement, not a launcher control.
 
 **Title bar icon.** The design draws a 15px square holding a letter. That is a
 placeholder for an icon, not a lettermark to build. The launcher passes its own icon to
@@ -182,7 +182,7 @@ takes `Error` text while keeping the ordinary hover. The footer holds two action
 
 **The scrim is real.** The design darkens the whole window behind the workspace list with
 `rgba(9,10,11,.62)`. A `Flyout` gives light dismiss but not a visible scrim, so decide in
-stage 8 whether to brush Avalonia's light dismiss overlay or keep an explicit scrim panel.
+stage 5 whether to brush Avalonia's light dismiss overlay or keep an explicit scrim panel.
 Note it there rather than solving it here.
 
 ## Amendments this design forces on earlier stages
@@ -197,7 +197,7 @@ because the design gave only the hover. The design gives the pressed value direc
 destructive depending on the engine state, so the split button needs the same kinds the
 plain button has, each naming its own hover and pressed tone. Done.
 
-**Stage 8, tooltip placement and the scrim**, both noted above.
+**Stage 5, tooltip placement and the scrim**, both noted above.
 
 ## No mock data
 

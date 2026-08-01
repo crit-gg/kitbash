@@ -33,7 +33,7 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
 7a. **Value editors** (10) spinbox, colour, date, time, date and time, hyperlink, and
    four sliders: continuous, stepped, range, and paired with a spinbox. Each in all five
    states. Then three popovers: the colour picker in three shape modes, the calendar, and
-   the clock. Stage 6 builds the editors, stage 8 the shell they share, stage 12 the
+   the clock. Stage 8 builds the editors, stage 5 the shell they share, stage 12 the
    picker.
 8. **Tree** (7) disclosure arrow, indent guides at 14px per level, and the row states:
    normal, hover, selected, selected with focus, modified, drop target, disabled.

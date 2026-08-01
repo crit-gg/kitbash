@@ -133,7 +133,7 @@
                 <Border Classes="panel">
                     <StackPanel Spacing="14">
                         <TextBlock Classes="note"
-                                   Text="Both open a real menu. Hover the caret and then the label to see each half take its own state without moving the other. The menu itself is not themed until stage 8." />
+                                   Text="Both open a real menu. Hover the caret and then the label to see each half take its own state without moving the other. The menu itself is not themed until stage 5." />
 
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <SplitButton Content="Run">

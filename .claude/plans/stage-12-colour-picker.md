@@ -4,12 +4,12 @@ The one control in this library with no Avalonia type behind it and no way to av
 building it. A data tool that authors materials, tints and graph colours needs it, and
 the design specifies it in more detail than anything else on the theme page.
 
-Its own stage because it is the largest single control in the plan. Folded into stage 6
-it would make that stage unschedulable, and stage 6 is otherwise a day of theming.
+Its own stage because it is the largest single control in the plan. Folded into stage 8
+it would make that stage unschedulable, and stage 8 is otherwise a day of theming.
 
 ## Depends on
 
-Stage 4 for buttons, stage 6 for the spinbox it reuses unchanged, and stage 8 for the
+Stage 4 for buttons, stage 8 for the spinbox it reuses unchanged, and stage 5 for the
 shell it opens in. Last in the plan for that reason, not because it matters least.
 
 ## Goal
@@ -27,7 +27,7 @@ The rule the design states outright, and the thing to build for from the first l
 | footer | Cancel and Apply, so the edit commits on purpose | reads the literal back, value applies live |
 
 The body is identical either way. Build it as a control that knows nothing about its
-host, and let the shell from stage 8 supply the frame and the buttons.
+host, and let the shell from stage 5 supply the frame and the buttons.
 
 ## The body
 
@@ -41,8 +41,8 @@ a colour rather than clamping on the way through. That last part is a correctnes
 requirement, not a display one, and it is the easiest thing here to get quietly wrong.
 
 **Channel rows** are a monospace letter, a gradient ramp 9px tall on `LineControlDeep`
-with a handle, and a spinbox. The spinbox is stage 6's, unchanged. If it needs changing,
-change it in stage 6 so a channel and a property panel agree.
+with a handle, and a spinbox. The spinbox is stage 8's, unchanged. If it needs changing,
+change it in stage 8 so a channel and a property panel agree.
 
 **Hex with alpha**, eight digits, beside a copy action.
 
@@ -89,7 +89,7 @@ different problem.
   frame, the shadow and the footer.
 - Every value mode round trips: a colour set in one mode reads back the same in the other
   three, and a RAW value above 1 survives the trip.
-- The channel spinbox is stage 6's control with no changes of its own.
+- The channel spinbox is stage 8's control with no changes of its own.
 - Swatches and recents start empty.
 - Nothing in the control writes a brush that is not a token, other than the colour being
   edited and the ramps derived from it.

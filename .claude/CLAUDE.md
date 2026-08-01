@@ -604,23 +604,24 @@ that it is not built. The settings system is in place but is not yet wired into
 the launcher. No tool is implemented, and no file format or Godot integration work
 has started.
 
-The app is being moved to the Slate design, in the eleven stages under
-`.claude/plans/`. Stages 1 to 4 are done: `Workbench.Ui` carries the Slate tokens, the
+The app is being moved to the Slate design, in the twelve stages under
+`.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
+ones, so the plan runs straight through. Stages 1 to 4 are done: `Workbench.Ui` carries the Slate tokens, the
 type scale, the 48 icons, the window shell and the first control themes, which are the
 five button kinds, the split button, the dropdown, the chip, the status pill and the
 progress bar.
 
 The launcher wears a Slate title bar on a Slate frame, and its body is still the old
 palette. Nothing in it consumes a control theme yet, since its own `Button.action` style
-sits in `Window.Styles` and a style beats a control theme. Both are expected and stage 5
+sits in `Window.Styles` and a style beats a control theme. Both are expected and stage 6
 ends both.
 
 The body keeps its old look through `Themes/LegacyTokens.axaml`, which holds the old palette at
 its old values under `Legacy` prefixed names. The prefix is deliberate. Nine of the old
 names collide with a Slate token of the same name and a different value, and `AccentInk`
 means opposite things in the two palettes, so merging them would have silently restyled
-the launcher. **That file is temporary and stage 5 deletes it.** Do not use a `Legacy`
-key in new work. A grep for the prefix lists everything stage 5 has to replace.
+the launcher. **That file is temporary and stage 6 deletes it.** Do not use a `Legacy`
+key in new work. A grep for the prefix lists everything stage 6 has to replace.
 
 ## Open decisions
 

@@ -17,7 +17,7 @@ The design lives in the Claude Design project **Workbench**,
 | `CLAUDE.md` | the written spec, palette, density and icon rules |
 | `Theme Slate.dc.html` | the built control inventory, every control in every state |
 | `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
-| `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 5 |
+| `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 6 |
 | `Workbench Settings.dc.html` | the settings page, and a v2 beside it, not yet planned |
 | `Foundry Editor.dc.html` | the tool that consumes the library, not built here |
 | `icons/` | 48 named SVGs, all present in the Box Icons set |
@@ -111,7 +111,7 @@ want the same shell, so it is not the launcher's.
 | 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
 
 Five things in this plan have no built in type and stay hand built: the chip, the status
-pill and the badge in stage 4, the range slider in stage 6, and the colour picker in
+pill and the badge in stage 4, the range slider in stage 8, and the colour picker in
 stage 12. Everything else in stages 4 to 10 is a theme over the list above. Stage 11's
 docking surface comes from Dock.
 
@@ -128,23 +128,25 @@ custom well.
 | 2 | `stage-02-icons.md` | 1 |
 | 3 | `stage-03-window-shell.md` | 1, 2 |
 | 4 | `stage-04-buttons-and-pills.md` | 1, 2 |
-| 5 | `stage-05-launcher-relayout.md` | 1, 2, 3, 4, 8 |
-| 6 | `stage-06-input-controls.md` | 1, 2, 4, 8 |
+| 5 | `stage-05-overlays.md` | 1, 2, 4 |
+| 6 | `stage-06-launcher-relayout.md` | 1, 2, 3, 4, 5 |
 | 7 | `stage-07-panels-and-splitters.md` | 1, 3 |
-| 8 | `stage-08-overlays.md` | 1, 2, 4 |
+| 8 | `stage-08-input-controls.md` | 1, 2, 4, 5 |
 | 9 | `stage-09-lists-and-trees.md` | 1, 2, 7 |
-| 10 | `stage-10-data-grid.md` | 1, 2, 6, 9 |
-| 11 | `stage-11-docking.md` | 1, 2, 7, 8, 9 |
-| 12 | `stage-12-colour-picker.md` | 1, 2, 4, 6, 8 |
+| 10 | `stage-10-data-grid.md` | 1, 2, 8, 9 |
+| 11 | `stage-11-docking.md` | 1, 2, 5, 7, 9 |
+| 12 | `stage-12-colour-picker.md` | 1, 2, 4, 5, 8 |
 
-Stage 5 is the first point where the app looks like the design.
+**The numbers are the order.** Every stage depends only on lower numbers, so the plan
+runs straight through and nothing has to be scheduled around.
 
-**Stage 8 moved to the front of the queue.** Stage 5 needs it, because the redrawn
-launcher opens three menus and a tooltip. Stage 6 needs it too, because the date, time
-and colour editors all open a picker in the shell stage 8 defines. So 8 runs before both,
-and it costs nothing to move, since it only depends on 1, 2 and 4.
+That took one reordering. Overlays used to be stage 8 and ran after the two stages that
+need it: the launcher, which opens three menus and a tooltip, and the input controls,
+whose date, time and colour editors all open a picker in the shell overlays defines. So
+overlays became stage 5 and the two moved down. Panels stayed at 7.
 
-The order that follows from the dependencies is 8, then 5, then the rest.
+Stage 6 is the first point where the app looks like the design.
 
-Stages 6, 7, 9, 10, 11 and 12 build what Foundry will need and are not visible in the
-launcher, so they can be reordered or paused without leaving the app half themed.
+Stages 7 to 12 build what Foundry will need and are not visible in the launcher, so they
+can be reordered or paused without leaving the app half themed. Stages 1 to 6 cannot,
+because each is the ground the next stands on.

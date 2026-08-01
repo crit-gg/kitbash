@@ -24,7 +24,7 @@ states, with no view ever setting a brush.
 **Split button.** A label part and a 24px caret part with a 1px divider between them,
 the whole thing sharing one radius and one fill. The caret part darkens on its own
 without the label part moving. Used by the launcher engine strip, so it has to exist
-before stage 5.
+before stage 6.
 
 **Dropdown.** A button that carries a value and a chevron, 26px, `SurfaceNest2` on
 `LineSeam`. The chevron rotates 180 degrees when open. Rotation is a transform child
@@ -201,7 +201,7 @@ so a comparison has to write the value out. Layout snaps to whole device pixels,
 5px mark measures 5.33 at 150 percent and a size is compared within a pixel.
 
 The launcher is unchanged. Its `Button.action` style sits in `Window.Styles`, and a
-style beats a control theme, so the old look still wins there. Stage 5 deletes it.
+style beats a control theme, so the old look still wins there. Stage 6 deletes it.
 
 **One regression, caught by rerunning stage 3's probe rather than by looking.** Giving
 the `Button` theme a height reached the window's caption buttons, which had relied on

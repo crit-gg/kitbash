@@ -1,4 +1,4 @@
-# Stage 6: input controls
+# Stage 8: input controls
 
 The controls that take a value. None of these appear in the launcher, so this stage is
 invisible in the app and is verified in a harness.

@@ -52,9 +52,8 @@ become resources too. The density table is as much a part of the theme as the pa
 look and carry six near identical grounds, which is the duplication the new set exists
 to avoid. Nothing may reference the old keys after this stage.
 
-The launcher keeps working through stage 4 because stage 5 is where its markup is
-rewritten. Until then it needs the old palette, in one temporary file deleted in stage
-5, so the old names cannot leak into new work.
+The launcher keeps working through stage 4 because stage 6 is where its markup is
+rewritten. Until then it needs the old palette, in one temporary file deleted in stage 6, so the old names cannot leak into new work.
 
 **As built, the old names carry a `Legacy` prefix.** The plan first assumed the old
 names could simply map onto the new brushes. They cannot. Nine collide with a Slate
@@ -73,8 +72,7 @@ silently restyled the launcher, with every build still green.
 So `src/Workbench/Themes/LegacyTokens.axaml` holds the 47 old brushes at their old
 values under `Legacy` prefixed names, and 83 references across `LauncherWindow.axaml`
 and `WindowChrome.axaml` were rewritten to match. The prefix is the point: new work
-cannot reach an old value by accident, and a grep for `Legacy` lists exactly what stage
-5 has to replace.
+cannot reach an old value by accident, and a grep for `Legacy` lists exactly what stage 6 has to replace.
 
 Fonts are the exception and took no prefix. Nothing about them changed except the
 assembly they live in, so the launcher moved straight to `FontFamilyUi` and
