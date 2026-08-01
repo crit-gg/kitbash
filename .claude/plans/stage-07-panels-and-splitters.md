@@ -43,18 +43,37 @@ stage 11 and the answer has to survive that.
 
 ## Build
 
+**Built in types.** A panel is a header over content, which is what
+`HeaderedContentControl` already is, and a collapsible one is an `Expander`, which is a
+`HeaderedContentControl` itself. A splitter is a `GridSplitter`, which is a `Thumb` and
+already carries the drag. A sidebar that slides away is a `SplitView`.
+
+| Thing | Type |
+|---|---|
+| panel | `HeaderedContentControl`, plus a `Footer` of ours |
+| collapsible panel | `Expander` |
+| splitter | `GridSplitter` |
+| collapsing sidebar | `SplitView` |
+
+The only new member in the list is the footer, because no built in type carries a
+header, a body and a footer at once. Add that and nothing else.
+
 **Panel.** A header, a content area and an optional footer. Header carries a title at
 12.5px weight 600 `InkTitle`, optional actions on the right, and a `LineSeam` under it.
 Footer sits on `SurfaceRoot` as chrome does. 8px radius on the panel shell.
 
-**Panel header actions.** Icon buttons at the 24 by 24 minimum, `InkSecondary`, going
-to `InkPrimary` on hover.
+A dialog already has this shape, so reuse `DialogFooter` from stage 3 rather than
+building a second footer, or rename it if a panel footer and a dialog footer turn out to
+differ.
 
-**Splitter.** A draggable seam between panels. It reads as a `LineSeam` at rest, widens
-its hit area beyond its visual width, and takes `Accent` while dragging. The hit area is
-the part that gets forgotten. A one pixel line is not draggable, so the control needs a
-transparent grab margin, and it needs a `Background` or it will not be hit tested at
-all.
+**Panel header actions.** Icon buttons at the 24 by 24 minimum, `InkSecondary`, going
+to `InkPrimary` on hover. That is the stage 4 icon kind with no new styling.
+
+**Splitter.** A draggable seam between panels, themed from `GridSplitter`. It reads as a
+`LineSeam` at rest, widens its hit area beyond its visual width, and takes `Accent`
+while dragging. The hit area is the part that gets forgotten. A one pixel line is not
+draggable, so it needs a transparent grab margin, and it needs a `Background` or it will
+not be hit tested at all.
 
 **Empty panel.** A centred message at `InkSecondary` and a single action. The design
 shows `No graph assigned` with an `Assign` button. Build the pattern, not that content.

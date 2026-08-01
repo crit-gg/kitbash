@@ -8,6 +8,14 @@ every tool gets the same window without copying anything.
 A tool author derives from one base class, supplies a title bar row, and has a window
 that matches the launcher.
 
+## Why this stage builds controls rather than theming them
+
+Avalonia has no type for any of it. `Window` draws either the desktop's frame or none at
+all, and there is no built in title bar, no caption button set and no dialog shell. So
+`ChromelessWindow`, `WindowTitleBar`, `DialogWindow` and `DialogFooter` are ours, and
+they are the only window level types that ever should be. The caption buttons inside
+them are ordinary `Button` controls with a keyed theme.
+
 ## Build
 
 **Move.** `Views/ChromelessWindow.cs`, `Views/WindowTitleBar.cs` and

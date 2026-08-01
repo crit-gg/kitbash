@@ -48,7 +48,17 @@ src/Workbench.Ui/Themes/Icons.axaml   generated, committed
 
 Commit the output. The build must not depend on a path in the user's asset library.
 
-**The control.** An `Icon` control in `Workbench.Ui` with a `Glyph` property and a
+**The control.** Avalonia ships `PathIcon`, a `TemplatedControl` with a `Data` geometry,
+so the icon control should be that type with a glyph lookup added rather than a fresh
+one. What is ours is the `Glyph` enum and its resolution to a geometry, not the drawing.
+
+As built this was missed: `Icon` derives from `TemplatedControl` and declares its own
+read only `Data`. It behaves correctly, so this is tidiness rather than a fault, but it
+is the one control in the library that has a built in type behind it and does not use
+it. Deriving from `PathIcon` and dropping the local `Data` is the change. Do it when
+next in this file.
+
+An `Icon` control in `Workbench.Ui` with a `Glyph` property and a
 `Size`. It wraps the path in a fixed 24 by 24 `Canvas` inside a `Viewbox`, which is
 the shape the existing `PathIcon` control theme already uses and the reason the
 launcher chevron is the right size. `.claude/avalonia.md` records why the stock

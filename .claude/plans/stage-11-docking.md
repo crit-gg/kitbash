@@ -36,6 +36,12 @@ Start with one tab and one drop target. That is a spike to learn how Dock's them
 put together and where they resist, not a decision point about whether to continue. If
 the spike goes badly the answer is a different theming technique, not a smaller scope.
 
+Dock is the one third party control package in this project, and it is the exception to
+the rule that a control is a built in Avalonia type with a theme over it. The rule still
+applies underneath it: where Dock builds on a stock type, such as a `TabItem`, a
+`ScrollViewer` or a `GridSplitter`, the theme for that type is the one already written,
+not a second one for docking.
+
 Techniques in order of preference, and expect to need more than one:
 
 1. Override the `ControlTheme` for a Dock type in `Workbench.Ui`. A `Style` beats a

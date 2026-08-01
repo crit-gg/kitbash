@@ -8,6 +8,23 @@ app becomes Slate.
 561 lines of one off markup replaced by composition of `Workbench.Ui` controls, with
 only launcher specific layout left behind.
 
+## Nothing new is built here
+
+Every piece below already exists as a themed control from stages 3, 4, 6 and 7. The
+launcher composes them and adds layout, and that is all. If this stage finds itself
+writing a control, that control belongs in `Workbench.Ui` and probably belongs to an
+earlier stage.
+
+| Launcher piece | What it is |
+|---|---|
+| title bar | `WindowTitleBar` from stage 3 |
+| workspace selector | a `DropDownButton` with a `Flyout`, from stages 4 and 8 |
+| settings action | the stage 4 icon button |
+| engine strip action | the stage 4 split button |
+| status chips and pills | the stage 4 chip and status pill |
+| tool list | `ItemsControl`, or `ListBox` if a card ever becomes selectable |
+| section label | a text style from stage 7, not a control |
+
 ## Layout, from Workbench Launcher.dc.html
 
 The window is 940 by 700, a column of five bands.
