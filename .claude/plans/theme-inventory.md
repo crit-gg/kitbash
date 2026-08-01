@@ -4,6 +4,17 @@ Everything `Theme Slate.dc.html` covers, and the token table the stages build fr
 Values are taken from the design page and cross checked against the design project's
 `CLAUDE.md`, which is the written spec.
 
+## Where the theme lives
+
+Three documents now rather than one, because the page crossed the read cap. Read the one
+that carries the section being worked.
+
+| Document | Sections |
+|---|---|
+| `Theme Slate.dc.html` | Window, Control inventory, Panels, Value editors |
+| `Theme Slate - Surfaces.dc.html` | Tree, Tree data grid, Data grid, Docking, Overlays |
+| `Theme Slate - Toasts.dc.html` | Toasts, Regions, In content alerts |
+
 ## What the theme page contains
 
 Thirteen sections. The count in brackets is how many distinct pieces the section shows.
@@ -45,6 +56,11 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
     drop target states, the three tab states, the floating tool window.
 12. **Overlays** (6) context menu, dropdown popup, tooltip, popover, modal, and the
     workspace list popup.
+12a. **Toasts** (5 tiers, 4 variants) transient status on the popover treatment, with the
+    eight regions they anchor to. The busy tier spins its glyph and never its square.
+12b. **In content alerts** (4 forms) block, strip, inline and in place. An alert is
+    content rather than a popover, so no shadow and no dwell, and it never draws a
+    coloured bar down its left side. Stage 13 builds both.
 13. **Notes** the written rules repeated inline next to the controls they govern.
 
 ## Tokens

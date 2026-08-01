@@ -1,6 +1,6 @@
 # Slate build plan
 
-Twelve stages that take Workbench from the old dark theme to the Slate visual
+Thirteen stages that take Workbench from the old dark theme to the Slate visual
 direction, and turn the launcher's one off markup into a control library that
 every tool shares.
 
@@ -15,7 +15,9 @@ The design lives in the Claude Design project **Workbench**,
 | File | What it carries |
 |---|---|
 | `CLAUDE.md` | the written spec, palette, density and icon rules |
-| `Theme Slate.dc.html` | the built control inventory, every control in every state |
+| `Theme Slate.dc.html` | the window, the control inventory, panels and the value editors |
+| `Theme Slate - Surfaces.dc.html` | the tree, both grids, docking and the overlays |
+| `Theme Slate - Toasts.dc.html` | toasts, their eight regions, and in content alerts |
 | `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
 | `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 6 |
 | `Workbench Settings.dc.html` | the settings page, and a v2 beside it, not yet planned |
@@ -26,6 +28,13 @@ The design lives in the Claude Design project **Workbench**,
 turned it into a shell with an activity rail and added two pages that have no stage yet.
 Read the file before working a stage rather than trusting the stage's summary of it, and
 when it has moved, amend the stages it affects rather than only the one being worked.
+
+**Read the right file, and check it came back whole.** The theme page was one document
+until it crossed `DesignSync.get_file`'s 256 KiB cap, which truncates without failing and
+cost stage 5 most of its Overlays detail. It is three documents now, listed above, and
+each reads whole with room to spare. Check the `truncated` flag and that the content ends
+on `</html>`. Copies sit in `~/.cache/workbench-design` with a README, as a fallback
+rather than a source of truth.
 
 The design project's own `CLAUDE.md` says the Nocturne design system was unbound and
 must not be re added. Nocturne is a separate project in the same account. Ignore it.
@@ -110,9 +119,11 @@ want the same shell, so it is not the launcher's.
 | 9 | `ListBox`, `ListBoxItem`, `TreeView`, `TreeViewItem`, `TabControl`, `TabItem` |
 | 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
 
-Five things in this plan have no built in type and stay hand built: the chip, the status
-pill and the badge in stage 4, the range slider in stage 8, and the colour picker in
-stage 12. Everything else in stages 4 to 10 is a theme over the list above. Stage 11's
+Six things in this plan have no built in type and stay hand built: the chip, the status
+pill and the badge in stage 4, the range slider in stage 8, the colour picker in stage 12,
+and the toast in stage 13. The toast is hand built by decision rather than by absence.
+Libraries exist and none is taken, because a toast here is a control with an injected
+service behind it rather than a global. Everything else in stages 4 to 10 is a theme over the list above. Stage 11's
 docking surface comes from Dock.
 
 Two near misses worth naming, because both look hand built and are not. A stepped slider
@@ -136,6 +147,7 @@ custom well.
 | 10 | `stage-10-data-grid.md` | 1, 2, 8, 9 |
 | 11 | `stage-11-docking.md` | 1, 2, 5, 7, 9 |
 | 12 | `stage-12-colour-picker.md` | 1, 2, 4, 5, 8 |
+| 13 | `stage-13-toasts-and-alerts.md` | 1, 2, 4, 5, 7 |
 
 **The numbers are the order.** Every stage depends only on lower numbers, so the plan
 runs straight through and nothing has to be scheduled around.
