@@ -35,5 +35,7 @@
     <!-- Control themes go in the resources above. A control whose look is a set of
          styles rather than one theme, such as the window frame, is included here. -->
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/WindowChrome.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/StatusBar.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Motion.axaml" />
 
 </Styles>

@@ -71,6 +71,11 @@
             </ControlTemplate>
         </Setter>
 
+        <!-- Order is the whole of precedence here. Every selector below carries a pseudo
+             class, so they all bind at the same strength and the later one wins. Resting
+             look in the setters above, then unselected states, then selected and its
+             states, then focus, then disabled last. -->
+
         <Style Selector="^:pointerover /template/ Border#PART_Root">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
         </Style>
@@ -81,20 +86,47 @@
 
         <!-- Selection is the tint alone, the way it is everywhere else in this system.
              No marker down the edge, and the icon carries the accent instead. -->
+        <Style Selector="^:selected">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
         <Style Selector="^:selected /template/ Border#PART_Root">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
         </Style>
 
-        <Style Selector="^:selected">
-            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        <!-- The open page answers the pointer too. Without these the selected item would be
+             the one item in the rail that looks dead under the cursor, because the plain
+             hover above loses to the selected fill whatever order they are written in. -->
+        <Style Selector="^:selected:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <Style Selector="^:selected:pressed /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource AccentHover}" />
         </Style>
 
         <Style Selector="^:focus-visible /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
+        <!-- Last, so nothing above can put colour back into a page nobody can open. An item
+             at rest carries no fill, so disabled keeps none. A selected one carries the
+             accent tint, so disabled flattens it, which is what every other control here
+             does with a fill it has to give up. -->
         <Style Selector="^:disabled">
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Root">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="^:disabled:selected /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
         </Style>
 
     </ControlTheme>

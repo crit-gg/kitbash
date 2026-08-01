@@ -1,0 +1,30 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- Movement that anything may ask for by name. Styles rather than control themes,
+         since an animation belongs to a class and not to a type. -->
+
+    <!-- Something is running and nobody knows for how long. Put it on the icon that says
+         what is running rather than beside it, so the row does not change width when work
+         starts. One turn every 1.1 seconds at a steady rate, which is the design's.
+
+         A key frame has to name RotateTransform.Angle. Avalonia builds the transform
+         itself and the control ends up holding a TransformGroup of all five kinds, so code
+         looking for a RotateTransform on RenderTransform will not find one. Animating
+         RenderTransform directly does not work: a key frame against it throws, and one
+         against a TransformOperations value does nothing and says nothing. -->
+    <Style Selector="ui|Icon.spin">
+        <Style.Animations>
+            <Animation Duration="0:0:1.1" IterationCount="Infinite" Easing="LinearEasing">
+                <KeyFrame Cue="0%">
+                    <Setter Property="RotateTransform.Angle" Value="0" />
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="RotateTransform.Angle" Value="360" />
+                </KeyFrame>
+            </Animation>
+        </Style.Animations>
+    </Style>
+
+</Styles>
