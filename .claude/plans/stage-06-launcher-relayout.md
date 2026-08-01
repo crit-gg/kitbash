@@ -255,8 +255,72 @@ All eight the design names are already generated: `window`, `cube`,
 
 - The launcher matches the design at 940 by 700, with the rail selecting the workspace
   page.
+- The workspace list is the library's popover rather than the launcher's own panel.
 - No hex literal, no font size and no radius appears in the launcher markup.
 - The rail keeps its selection through the keyboard as well as the pointer.
 - The empty state still works and uses library controls.
 - Nothing invented is on screen.
 - The window still opens, moves, resizes, maximises and closes on Linux.
+
+## As built
+
+The launcher is a shell now: a title bar over a rail and a page. `ActivityRail` and
+`ActivityRailItem` are keyed themes in `Workbench.Ui` over `ListBox` and `ListBoxItem`,
+so selection, keyboard navigation and the selected state are the control's own and what
+was written is a look. A tool will want the same rail, which is why it is in the library.
+
+**The rail is two groups, and that was forced.** The settings item sits at the foot, and
+the intended way to say that was a `DockPanel` items panel with the last item docked
+bottom. It does not work: an `ItemsPanel` setter is accepted and ignored. Measured, the
+rail's `ItemsPanel` reports a `DockPanel` while the realised panel is a `StackPanel`, in a
+control theme and as a local value alike, because the presenter builds its panel once and
+does not rebuild when `ItemsPanel` changes.
+
+So the rail is two `ListBox` groups, the second docked to the bottom, both wearing the
+same theme. They draw the same ground, the same width and the same seam, so they read as
+one rail. Selection being per group is right rather than a compromise: settings is a
+different kind of destination from a page.
+
+`InkRail` is the rail's resting tone, `WidthActivityRail` and `SizeRailItem` its
+measurements.
+
+**The workspace list dims the page behind it.** `Dimmer` is an attached property on any
+flyout, so `ui:Dimmer.Dims="True"` gives a popup that covers a page its scrim. The scrim
+goes in the window's overlay layer, which is why this could not be built until the window
+gained its layer manager, and the flyout's popup is its own window and draws above it. Not
+for a dialog: a dialog is a real window and the window manager owns modality.
+
+The workspace list is a `DropDownButton` opening a `Flyout` holding stage 5's `Popover`.
+That replaces the hand rolled panel and scrim, and with it the bug where the list only
+closed if the click landed exactly on the scrim.
+
+**Everything invented is gone.** `EngineViewModel` and `GitStatViewModel` are deleted,
+along with the hardcoded Godot version, branch, ahead and behind counts, stat rows, tool
+name, version and state. The tool list comes from `IToolRegistry`, so the launcher shows
+the three placeholder tools the app actually registers. `WorkspaceViewModel` carries no
+brushes at all now: it reports what is true and the view turns that into classes.
+
+`LegacyTokens.axaml` is deleted and a grep for the prefix returns nothing, which is the
+check stage 1 asked for. So is the `Button.action` style, which was a `Style` and beat
+the stage 4 control theme. The launcher markup holds no hex, no font size and no radius,
+and the launcher project holds no brush anywhere.
+
+**Two bands are not built, and this is the one scope call in this stage.** The design
+shows an engine strip and a git status bar. Both need data this app cannot read: the
+engine strip wants installed Godot versions and the git strip wants a repository. Filling
+either with plausible numbers is exactly what the no mock data rule forbids, and a band
+of blanks is worse than no band, so both are absent. The status bar reports the workspace
+root, which is true.
+
+That means this stage does not meet its own first line: the launcher does not yet match
+the design at 940 by 700. It matches the parts of the design that have something real
+behind them. Wiring the engine strip needs engine discovery and wiring the git strip needs
+git, and each is its own piece of work.
+
+The tool card has no version and no mark for the same reason. `ITool` carries neither, and
+adding them changes the contract, which the plan already says belongs in its own commit.
+
+Verified by driving the app's own composition root rather than a copy: 20 checks over the
+rail's width, ground, seam, item size, docking, selection tint and disabled pages, the
+tools coming from the registry with a card and a primary action each, and the selector's
+size and flyout.

@@ -1,0 +1,102 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- The rail down the left of a Workbench window, switching which page is shown.
+
+         A ListBox rather than a control of its own, so selection, keyboard navigation
+         and the selected state all come from Avalonia. What is written here is a look.
+
+         A tool wants the same rail, which is why this is in the library rather than in
+         the launcher. -->
+    <ControlTheme x:Key="ActivityRail" TargetType="ListBox">
+        <Setter Property="Width" Value="{DynamicResource WidthActivityRail}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+        <Setter Property="Padding" Value="0,8" />
+
+        <!-- Measured: an ItemsPanel setter does not take here. The presenter builds its
+             panel once and does not rebuild when ItemsPanel changes, so the rail keeps
+             the ordinary stack and a rail that wants something at its foot uses a second
+             group docked to the bottom. Both draw the same ground and the same seam, so
+             they read as one rail. -->
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}">
+                    <ItemsPresenter Name="PART_ItemsPresenter" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="ActivityRailItem" TargetType="ListBoxItem">
+        <Setter Property="Width" Value="{DynamicResource SizeRailItem}" />
+        <Setter Property="Height" Value="{DynamicResource SizeRailItem}" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkRail}" />
+        <Setter Property="DockPanel.Dock" Value="Top" />
+
+        <!-- See Button.axaml. ContentControl clips by default and would cut the halo. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            ClipToBounds="True">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="^:pressed /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+        </Style>
+
+        <!-- Selection is the tint alone, the way it is everywhere else in this system.
+             No marker down the edge, and the icon carries the accent instead. -->
+        <Style Selector="^:selected /template/ Border#PART_Root">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        </Style>
+
+        <Style Selector="^:selected">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+    </ControlTheme>
+
+</ResourceDictionary>

@@ -236,8 +236,14 @@ shell a picker opens in, and its `inPanel` class drops the shadow and the surfac
 same body works dropped into a property panel.
 
 **A dialog has no scrim.** It is a real window and the window manager owns modality. A
-scrim belongs only to a popup that covers a page, and it is an element that page draws,
-because Avalonia's light dismiss layer is not public and cannot be brushed.
+scrim belongs only to a popup that covers a page, and it is `ui:Dimmer.Dims="True"` on
+that popup's flyout. The scrim goes in the window's overlay layer, so it needs the named
+layer manager above, and the popup draws over it because a popup is its own window.
+
+**An `ItemsPanel` setter is accepted and ignored.** Measured on a `ListBox`: the property
+reports the panel that was asked for while the realised panel is the default one, from a
+control theme and from a local value alike, because the presenter builds its panel once
+and does not rebuild. Lay items out some other way rather than assuming it took.
 
 A `BoxShadow` cannot be cleared by a setter with an empty value, which throws at layout
 rather than at build. Use `ShadowNone`.
@@ -626,29 +632,29 @@ dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
 
 ## Status
 
-Scaffolding. The launcher lists three placeholder tools and opening one reports
-that it is not built. The settings system is in place but is not yet wired into
-the launcher. No tool is implemented, and no file format or Godot integration work
-has started.
+Scaffolding, on the Slate design. The launcher lists the three placeholder tools the
+registry holds and opening one reports that it is not built. No tool is implemented, and
+no file format or Godot integration work has started.
 
 The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
-ones, so the plan runs straight through. Stages 1 to 5 are done: `Workbench.Ui` carries the Slate tokens, the
-type scale, the 48 icons, the window shell and the first control themes, which are the
-five button kinds, the split button, the dropdown, the chip, the badge, the status pill,
-the progress bar and every overlay surface.
+ones, so the plan runs straight through.
 
-The launcher wears a Slate title bar on a Slate frame, and its body is still the old
-palette. Nothing in it consumes a control theme yet, since its own `Button.action` style
-sits in `Window.Styles` and a style beats a control theme. Both are expected and stage 6
-ends both.
+Stages 1 to 6 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 48
+icons, the window shell, the activity rail, every overlay surface, and the control themes
+built so far: five button kinds, the split button, the dropdown, the chip, the badge, the
+status pill and the progress bar.
 
-The body keeps its old look through `Themes/LegacyTokens.axaml`, which holds the old palette at
-its old values under `Legacy` prefixed names. The prefix is deliberate. Nine of the old
-names collide with a Slate token of the same name and a different value, and `AccentInk`
-means opposite things in the two palettes, so merging them would have silently restyled
-the launcher. **That file is temporary and stage 6 deletes it.** Do not use a `Legacy`
-key in new work. A grep for the prefix lists everything stage 6 has to replace.
+The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
+It is a shell now, a title bar over a rail and a page, with only the workspace page built.
+
+**Two bands the design shows are absent on purpose.** The engine strip needs to know which
+Godot versions are installed and the git strip needs to read a repository, and this app
+can do neither yet. Filling them with plausible numbers is what the no mock data rule
+forbids, so they are not there. Wiring each is its own piece of work.
+
+The rail's other two pages, Godot engines and Settings, are drawn and disabled. Both have
+designs in the Claude Design project and neither has a stage yet.
 
 ## Open decisions
 

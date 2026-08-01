@@ -100,7 +100,6 @@ Opening animation is a translate plus a fade, matching the design's 110ms drop. 
 - Every floating surface in the app resolves to the same brushes from one definition.
 - A menu, a dropdown and a tooltip open next to each other and are indistinguishable in
   ground, edge and radius.
-- The workspace popup looks unchanged after moving to the library.
 - Popup corners are uniform, verified on Linux.
 - Escape and a click outside dismiss every overlay.
 

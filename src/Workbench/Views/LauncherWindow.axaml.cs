@@ -1,7 +1,7 @@
 using Avalonia.Controls;
-using Avalonia.Platform.Storage;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Workbench.Ui.Controls;
 using Workbench.ViewModels;
 
@@ -18,19 +18,30 @@ public partial class LauncherWindow : ChromelessWindow
         if (sender is Control { DataContext: WorkspaceViewModel workspace })
         {
             Model?.SwitchTo(workspace);
+            WorkspaceSelector.Flyout?.Hide();
         }
 
         e.Handled = true;
     }
 
-    private async void OnAddWorkspacePressed(object? sender, PointerPressedEventArgs e)
+    private async void OnAddWorkspaceClick(object? sender, RoutedEventArgs e)
     {
-        e.Handled = true;
+        WorkspaceSelector.Flyout?.Hide();
         await AddWorkspaceFromFolderAsync();
     }
 
     private async void OnChooseFolderClick(object? sender, RoutedEventArgs e) =>
         await AddWorkspaceFromFolderAsync();
+
+    // Every tool is a placeholder today, so opening one reports that it is not built.
+    // The result has nowhere to go until the launcher grows an error surface.
+    private void OnLaunchToolClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: ToolCardViewModel card })
+        {
+            _ = card.Tool.Activation.ActivateAsync();
+        }
+    }
 
     private async Task AddWorkspaceFromFolderAsync()
     {
@@ -44,23 +55,5 @@ public partial class LauncherWindow : ChromelessWindow
         {
             Model?.AddWorkspace(path);
         }
-    }
-
-    private void OnToggleWorkspacesPressed(object? sender, PointerPressedEventArgs e)
-    {
-        Model?.ToggleWorkspacesCommand.Execute(null);
-        e.Handled = true;
-    }
-
-    // Clicking the scrim closes the list. The list itself sits above it and
-    // swallows its own clicks.
-    private void OnScrimPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (ReferenceEquals(e.Source, sender))
-        {
-            Model?.CloseWorkspacesCommand.Execute(null);
-        }
-
-        e.Handled = true;
     }
 }

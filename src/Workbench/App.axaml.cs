@@ -48,7 +48,8 @@ public partial class App : Application
             .AddSingleton(BuildRegistry())
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
-                provider.GetRequiredService<IPathShortener>()))
+                provider.GetRequiredService<IPathShortener>(),
+                provider.GetRequiredService<IToolRegistry>()))
             .BuildServiceProvider();
 
     // Placeholders until real tools exist.

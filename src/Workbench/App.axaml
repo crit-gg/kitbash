@@ -3,14 +3,6 @@
              x:Class="Workbench.App"
              RequestedThemeVariant="Dark">
 
-    <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://Workbench/Themes/LegacyTokens.axaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Application.Resources>
-
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />

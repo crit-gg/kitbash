@@ -10,512 +10,351 @@
         MinWidth="844" MinHeight="584"
         WindowStartupLocation="CenterScreen"
         FontFamily="{StaticResource FontFamilyUi}"
-        FontSize="13">
+        FontSize="{StaticResource FontSizeBody}">
 
-    <!-- The size above is 24 more than the design's 940 by 700 on each axis, because
-         the window carries a 12px transparent gutter on every side for its shadow to
-         fall into. The visible frame is the design size. -->
-
-    <Window.KeyBindings>
-        <KeyBinding Gesture="Escape" Command="{Binding CloseWorkspacesCommand}" />
-    </Window.KeyBindings>
+    <!-- The size is 24 more than the design's 940 by 700 on each axis, because the window
+         carries a 12px transparent gutter on every side for its shadow to fall into. The
+         visible frame is the design size. -->
 
     <Window.Styles>
-        <!-- Base looks live in styles, never on the element. A locally set value
-             beats every style, so a control that sets its own brush can never be
-             restyled on hover. States are declared after the bases, because later
-             styles win in Avalonia and there is no selector specificity. -->
-        <Style Selector="Border.card">
-            <Setter Property="Background" Value="{StaticResource LegacySurface}" />
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyLineSoft}" />
-        </Style>
-        <Style Selector="Border.accentAction">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Border.outlined">
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyLineControl}" />
-        </Style>
-        <Style Selector="Border.outlinedSoft">
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyLineSoft}" />
-        </Style>
-        <Style Selector="Border.wsRow">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Border.wsRowFooter">
-            <Setter Property="Background" Value="{StaticResource LegacyGroundRaised}" />
-        </Style>
-        <Style Selector="Border.wsRow.current">
-            <Setter Property="Background" Value="{StaticResource LegacyAccentSelected}" />
-        </Style>
-
-        <!-- states -->
-        <Style Selector="Border.card:pointerover">
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyAccent}" />
-            <Setter Property="Background" Value="{StaticResource LegacySurfaceHover}" />
-        </Style>
-        <Style Selector="Border.outlined:pointerover">
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyAccent}" />
-        </Style>
-        <Style Selector="Border.accentAction:pointerover">
-            <Setter Property="Background" Value="{StaticResource LegacyAccentTint}" />
-        </Style>
-        <Style Selector="Border.wsRow:pointerover">
-            <Setter Property="Background" Value="{StaticResource LegacySurfaceMenuHover}" />
-        </Style>
-
-        <!-- The selector takes the accent while its list is open. Hover comes from
-             Border.outlined above. Both are classes rather than a bound brush,
-             because a locally set value beats a style and would block the hover. -->
-        <Style Selector="Border.wsSelector.open">
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyAccent}" />
-        </Style>
-
-        <!-- the popup drops in, matching the design's 110ms ease out -->
-        <Style Selector="Panel.open > Border.wsPopup">
-            <Style.Animations>
-                <Animation Duration="0:0:0.11" Easing="CubicEaseOut" FillMode="Forward">
-                    <KeyFrame Cue="0%">
-                        <Setter Property="Opacity" Value="0" />
-                        <Setter Property="TranslateTransform.Y" Value="-6" />
-                    </KeyFrame>
-                    <KeyFrame Cue="100%">
-                        <Setter Property="Opacity" Value="1" />
-                        <Setter Property="TranslateTransform.Y" Value="0" />
-                    </KeyFrame>
-                </Animation>
-            </Style.Animations>
-        </Style>
-
-        <!-- accent outlined action, the shape every launcher action takes -->
-        <Style Selector="Button.action">
-            <Setter Property="Height" Value="31" />
-            <Setter Property="Padding" Value="16,0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{StaticResource LegacyAccent}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="5" />
-            <Setter Property="Foreground" Value="{StaticResource LegacyAccentBright}" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Border Name="PART_Root"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter Content="{TemplateBinding Content}"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                </ControlTemplate>
-            </Setter>
-        </Style>
-        <Style Selector="Button.action:pointerover /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{StaticResource LegacyAccentTint}" />
-        </Style>
-        <Style Selector="Button.action:pressed /template/ Border#PART_Root">
-            <Setter Property="Background" Value="{StaticResource LegacyAccentSelected}" />
-        </Style>
-
-        <!-- section heading -->
+        <!-- Launcher layout only. Every control look comes from Workbench.Ui, so nothing
+             here sets a brush, a radius or a size that belongs to a control. -->
         <Style Selector="TextBlock.sectionLabel">
-            <Setter Property="FontSize" Value="9.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="LetterSpacing" Value="1.14" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingLabel}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
         </Style>
+
         <Style Selector="TextBlock.mono">
-            <Setter Property="FontFamily" Value="{StaticResource FontFamilyMono}" />
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        </Style>
+
+        <!-- The bands. SurfaceRoot at top and bottom brackets the SurfaceNest1 middle,
+             which is the depth rule doing its job rather than a decision. -->
+        <Style Selector="Border.band">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        </Style>
+
+        <Style Selector="Border.page">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        </Style>
+
+        <!-- A tool card. A card is a surface rather than a control, so it is styled
+             here and its contents are library controls. -->
+        <Style Selector="Border.toolCard">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+            <Setter Property="Padding" Value="15,14" />
+        </Style>
+
+        <Style Selector="Border.toolMark">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        </Style>
+
+        <!-- A row in the workspace list. Full bleed rather than an inset pill, because it
+             carries two lines and a badge, which is the rule stage 5 recorded. -->
+        <Style Selector="Border.workspaceRow">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="13,10" />
+        </Style>
+
+        <Style Selector="Border.workspaceRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="Border.workspaceRow.current">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        </Style>
+
+        <!-- The state square beside a workspace, and the one in the selector. -->
+        <Style Selector="Border.stateMark">
+            <Setter Property="Width" Value="9" />
+            <Setter Property="Height" Value="9" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource Ok}" />
+        </Style>
+
+        <Style Selector="Border.stateMark.local">
+            <Setter Property="Background" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="Border.stateMark.missing">
+            <Setter Property="Background" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="TextBlock.rowAction">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.rowAction.inert">
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
         </Style>
     </Window.Styles>
 
-    <!-- the frame, the shadow and the resize grips come from Themes/WindowChrome.axaml -->
-    <Panel>
-            <Grid RowDefinitions="Auto,*">
+    <!-- the frame, the shadow and the resize grips come from Workbench.Ui -->
+    <Grid RowDefinitions="Auto,*">
 
-                <!-- The launcher adds nothing of its own here, so this row disappears
-                     entirely when the desktop draws the frame. -->
-                <ui:WindowTitleBar Grid.Row="0"
-                                   Title="Workbench"
-                                   Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
+        <!-- The launcher adds nothing of its own to the chrome, so this row disappears
+             entirely when the desktop draws the frame. -->
+        <ui:WindowTitleBar Grid.Row="0" Title="Workbench"
+                           Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 
-                <Panel Grid.Row="1">
-                    <Grid IsVisible="{Binding HasWorkspaces}"
-                          RowDefinitions="Auto,Auto,*,32">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+
+            <!-- The rail. Selection, keyboard navigation and the selected state all come
+                 from ListBox. Only the workspace page exists, so the other two are here
+                 and disabled rather than absent, which is what the design shows. -->
+            <!-- The rail. Selection, keyboard navigation and the selected state all come
+                 from ListBox, so what the library supplies is a look.
+
+                 Two groups rather than one, because the settings item sits at the foot and
+                 the items panel cannot be changed from a theme. Both groups draw the same
+                 ground and the same seam, so they read as one rail. -->
+            <DockPanel Grid.Column="0">
+                <ListBox DockPanel.Dock="Bottom" Name="RailFoot"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,0,0,8"
+                         SelectedIndex="-1">
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 IsEnabled="False"
+                                 ToolTip.Tip="Settings" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Settings">
+                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+                </ListBox>
+
+                <ListBox DockPanel.Dock="Top" Name="Rail"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,8,0,0"
+                         VerticalAlignment="Stretch"
+                         SelectedIndex="0">
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Workspace" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Workspace">
+                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 IsEnabled="False"
+                                 ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Godot engines">
+                        <ui:Icon Glyph="Cube" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+
+            <!-- The workspace page. The engines page and the settings page are separate
+                 designs and are not built here, so the rail leads nowhere yet. -->
+            <Panel Grid.Column="1">
+                <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,*,Auto">
+
                     <!-- workspace bar -->
-                    <Border Grid.Row="0"
-                            Background="{StaticResource LegacyGroundBar}"
-                            BorderBrush="{StaticResource LegacyLineChrome}"
-                            BorderThickness="0,0,0,1"
+                    <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1"
                             Padding="20,14,20,13">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Border Grid.Column="0" Classes="outlined wsSelector"
-                                    Classes.open="{Binding WorkspacesOpen}"
-                                    Height="40" Width="266" Padding="12,0"
-                                    Background="{StaticResource LegacySurface}"
-                                    BorderThickness="1"
-                                    CornerRadius="6"
-                                    PointerPressed="OnToggleWorkspacesPressed">
-                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                    <Border Grid.Column="0" Width="9" Height="9" CornerRadius="2"
-                                            Background="{StaticResource LegacyOk}" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding WorkspaceName}" FontSize="13"
-                                                   FontWeight="SemiBold" LineHeight="15"
-                                                   Foreground="{StaticResource LegacyInkBright}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
-                                                   Margin="0,3,0,0" FontSize="10" LineHeight="12"
-                                                   Foreground="{StaticResource LegacyInkFaint}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                    <ui:Icon Glyph="ChevronDown" Size="18" Grid.Column="2" Foreground="{StaticResource LegacyInkDim}"
-                                              RenderTransformOrigin="50%,50%">
-                                        <ui:Icon.RenderTransform>
-                                            <RotateTransform Angle="{Binding WorkspaceChevronAngle}" />
-                                        </ui:Icon.RenderTransform>
-                                    </ui:Icon>
-                                </Grid>
-                            </Border>
+                        <DropDownButton Name="WorkspaceSelector"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="266" Height="40"
+                                        HorizontalContentAlignment="Stretch">
+                            <DropDownButton.Flyout>
+                                <!-- The list covers the page, so the page is put aside
+                                     rather than merely overlapped. -->
+                                <Flyout Placement="BottomEdgeAlignedLeft"
+                                        FlyoutPresenterClasses="popover"
+                                        ui:Dimmer.Dims="True">
+                                    <ui:Popover Width="436" Header="WORKSPACES">
+                                        <ScrollViewer MaxHeight="296"
+                                                      HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Workspaces}" Margin="0,5">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:WorkspaceViewModel">
+                                                        <Border Classes="workspaceRow"
+                                                                Classes.current="{Binding IsCurrent}"
+                                                                PointerPressed="OnWorkspacePressed">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="11">
+                                                                <Border Grid.Column="0" Classes="stateMark"
+                                                                        Classes.local="{Binding IsLocal}"
+                                                                        Classes.missing="{Binding IsMissing}" />
 
-                            <Border Grid.Column="2" Classes="outlined" Width="30" Height="30"
-                                    Background="{StaticResource LegacySurfaceControl}"
-                                    BorderThickness="1"
-                                    CornerRadius="5">
-                                <ui:Icon Glyph="Cog" Size="16" Foreground="{StaticResource LegacyInkMuted}" />
-                            </Border>
-                        </Grid>
-                    </Border>
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                        <TextBlock Text="{Binding Name}"
+                                                                                   FontSize="{DynamicResource FontSizeTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                   Foreground="{DynamicResource InkPrimary}"
+                                                                                   VerticalAlignment="Center" />
+                                                                        <ui:Badge Content="{Binding Badge}"
+                                                                                  IsVisible="{Binding HasBadge}" />
+                                                                    </StackPanel>
+                                                                    <TextBlock Classes="mono" Text="{Binding Path}"
+                                                                               Margin="0,4,0,0"
+                                                                               FontSize="{DynamicResource FontSizeBody}"
+                                                                               Foreground="{DynamicResource InkSecondary}"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
 
-                    <!-- engine strip -->
-                    <Border Grid.Row="1"
-                            Background="{StaticResource LegacyGroundStrip}"
-                            BorderBrush="{StaticResource LegacyLineChrome}"
-                            BorderThickness="0,0,0,1">
-                        <Grid ColumnDefinitions="Auto,*,Auto" Height="56" Margin="20,0">
-                            <Border Grid.Column="0" Width="28" Height="28" CornerRadius="5"
-                                    Background="#131c23" BorderBrush="#2a3a47" BorderThickness="1"
-                                    VerticalAlignment="Center">
-                                <TextBlock Classes="mono" Text="GD" FontSize="8.5" FontWeight="Bold"
-                                           Foreground="{StaticResource LegacyAccentInk}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
+                                                                <TextBlock Grid.Column="2" Classes="rowAction"
+                                                                           Classes.inert="{Binding !CanSwitch}"
+                                                                           Text="{Binding Action}" />
 
-                            <StackPanel Grid.Column="1" Margin="11,0" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="{Binding Engine.Version}" FontSize="12.5"
-                                               FontWeight="SemiBold"
-                                               Foreground="{StaticResource LegacyInkBright}"
-                                               VerticalAlignment="Center" />
-                                    <Border Height="17" Padding="7,0" CornerRadius="9"
-                                            Background="{Binding Engine.PillBackground}"
-                                            BorderBrush="{Binding Engine.PillBorder}" BorderThickness="1"
-                                            VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="6"
-                                                    VerticalAlignment="Center">
-                                            <Border Width="5" Height="5" CornerRadius="2.5"
-                                                    Background="{Binding Engine.Dot}"
-                                                    VerticalAlignment="Center" />
-                                            <TextBlock Classes="mono" Text="{Binding Engine.State}"
-                                                       FontSize="8.5" FontWeight="SemiBold"
-                                                       LetterSpacing="0.43"
-                                                       Foreground="{Binding Engine.StateForeground}"
-                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Border>
+                                                                <Button Grid.Column="3" Classes="icon"
+                                                                        ToolTip.Tip="More"
+                                                                        AutomationProperties.Name="More">
+                                                                    <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                </Button>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+
+                                        <ui:Popover.Footer>
+                                            <StackPanel>
+                                                <MenuItem Header="Add workspace from folder"
+                                                          Click="OnAddWorkspaceClick">
+                                                    <MenuItem.Icon>
+                                                        <ui:Icon Glyph="FolderOpen" />
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </StackPanel>
+                                        </ui:Popover.Footer>
+                                    </ui:Popover>
+                                </Flyout>
+                            </DropDownButton.Flyout>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Grid.Column="0" Classes="stateMark" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WorkspaceName}"
+                                               FontSize="{DynamicResource FontSizeSubhead}"
+                                               FontWeight="{DynamicResource FontWeightStrong}"
+                                               Foreground="{DynamicResource InkPrimary}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                               Margin="0,3,0,0"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource InkSecondary}"
+                                               TextTrimming="CharacterEllipsis" />
                                 </StackPanel>
-                                <TextBlock Classes="mono" Text="{Binding Engine.Note}" Margin="0,4,0,0"
-                                           FontSize="10" LineHeight="12"
-                                           Foreground="{StaticResource LegacyInkFaint}"
-                                           TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-
-                            <Border Grid.Column="2" Classes="accentAction" Height="29" CornerRadius="5"
-                                    BorderBrush="{Binding Engine.ButtonBorder}" BorderThickness="1"
-                                    VerticalAlignment="Center" ClipToBounds="True">
-                                <Grid ColumnDefinitions="Auto,Auto">
-                                    <TextBlock Grid.Column="0" Text="{Binding Engine.Action}"
-                                               Margin="12,0" FontSize="11.5" FontWeight="SemiBold"
-                                               Foreground="{Binding Engine.ButtonForeground}"
-                                               VerticalAlignment="Center" />
-                                    <Border Grid.Column="1" Width="22"
-                                            BorderBrush="{Binding Engine.ButtonBorder}"
-                                            BorderThickness="1,0,0,0">
-                                        <ui:Icon Glyph="ChevronDown" Size="13" Foreground="{Binding Engine.ButtonForeground}" />
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </Grid>
+                            </Grid>
+                        </DropDownButton>
                     </Border>
 
                     <!-- tools -->
-                    <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
-                        <StackPanel Margin="20,16,20,18">
+                    <Border Grid.Row="1" Classes="page" BorderThickness="0">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Margin="20,16,20,18">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,11">
+                                    <TextBlock Grid.Column="0" Classes="sectionLabel" Text="TOOLS"
+                                               VerticalAlignment="Center" />
+                                    <Rectangle Grid.Column="1" Height="1"
+                                               Fill="{DynamicResource LineSeam}"
+                                               VerticalAlignment="Center" />
+                                </Grid>
 
-                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,11">
-                                <TextBlock Grid.Column="0" Classes="sectionLabel" Text="TOOLS"
-                                           Foreground="{StaticResource LegacyInkDim}" VerticalAlignment="Center" />
-                                <Rectangle Grid.Column="1" Height="1" Margin="10,0"
-                                           Fill="{StaticResource LegacyLineRule}" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Classes="mono" Text="{Binding ToolsSummary}"
-                                           FontSize="10" Foreground="{StaticResource LegacyInkGhost}"
-                                           VerticalAlignment="Center" />
-                            </Grid>
-
-                            <ItemsControl ItemsSource="{Binding Tools}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Spacing="7" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:ToolCardViewModel">
-                                        <Border Classes="card" Padding="15,14" CornerRadius="7"
-                                                BorderThickness="1">
-                                            <Grid ColumnDefinitions="48,*,Auto">
-                                                <Border Grid.Column="0" Width="48" Height="48" CornerRadius="7"
-                                                        Background="{StaticResource LegacyAccentTint}"
-                                                        BorderBrush="{StaticResource LegacyAccentTintLine}"
-                                                        BorderThickness="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Mark}" FontSize="16"
-                                                               FontWeight="Bold"
-                                                               Foreground="{StaticResource LegacyAccent}"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" />
-                                                </Border>
-
-                                                <StackPanel Grid.Column="1" Margin="15,0" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="9">
-                                                        <TextBlock Text="{Binding Name}" FontSize="14.5"
-                                                                   FontWeight="SemiBold" LineHeight="17"
-                                                                   Foreground="{StaticResource LegacyInkBright}"
-                                                                   VerticalAlignment="Center" />
-                                                        <Border Height="18" Padding="7,0" CornerRadius="9"
-                                                                Background="{StaticResource LegacyOkTint}"
-                                                                BorderBrush="{StaticResource LegacyOkTintLine}"
-                                                                BorderThickness="1" VerticalAlignment="Center">
-                                                            <TextBlock Classes="mono" Text="{Binding State}"
-                                                                       FontSize="9" FontWeight="SemiBold"
-                                                                       LetterSpacing="0.45"
-                                                                       Foreground="{StaticResource LegacyOkInk}"
-                                                                       VerticalAlignment="Center" />
-                                                        </Border>
-                                                        <TextBlock Classes="mono" Text="{Binding Version}"
-                                                                   FontSize="10.5"
-                                                                   Foreground="{StaticResource LegacyInkFaint}"
-                                                                   VerticalAlignment="Center" />
-                                                    </StackPanel>
-
-                                                    <TextBlock Text="{Binding Description}" Margin="0,6,0,0"
-                                                               FontSize="12" LineHeight="17.4"
-                                                               TextWrapping="Wrap"
-                                                               Foreground="{StaticResource LegacyInkMuted}" />
-                                                </StackPanel>
-
-                                                <Border Grid.Column="2" Classes="accentAction" Height="31"
-                                                        Padding="16,0" CornerRadius="5"
-                                                        BorderBrush="{StaticResource LegacyAccent}" BorderThickness="1"
-                                                        VerticalAlignment="Center">
-                                                    <TextBlock Text="Launch" FontSize="12" FontWeight="SemiBold"
-                                                               Foreground="{StaticResource LegacyAccentBright}"
-                                                               VerticalAlignment="Center" />
-                                                </Border>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- git status bar -->
-                    <Border Grid.Row="3"
-                            Background="{StaticResource LegacyGroundChrome}"
-                            BorderBrush="{StaticResource LegacyLineChrome}"
-                            BorderThickness="0,1,0,0"
-                            Padding="16,0">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                            <Border Grid.Column="0" Classes="outlined outlinedSoft" Height="22" Padding="9,0"
-                                    CornerRadius="11"
-                                    Background="{StaticResource LegacyGroundRaised}"
-                                    BorderThickness="1"
-                                    VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <ui:Icon Glyph="GitBranch" Size="14" Foreground="{StaticResource LegacyInkDim}" />
-                                    <TextBlock Classes="mono" Text="{Binding GitBranch}" MinWidth="96"
-                                               FontSize="11.5" FontWeight="Medium"
-                                               Foreground="{StaticResource LegacyInkBright}"
-                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                    <TextBlock Classes="mono" FontSize="10.5" FontWeight="Medium"
-                                               Foreground="{StaticResource LegacyInkDim}" VerticalAlignment="Center">
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="↑{0} ↓{1}">
-                                                <Binding Path="GitAhead" />
-                                                <Binding Path="GitBehind" />
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                    <ui:Icon Glyph="ChevronDown" Size="12" Foreground="{StaticResource LegacyInkDim}" />
-                                </StackPanel>
-                            </Border>
-
-                            <ItemsControl Grid.Column="2" ItemsSource="{Binding GitStats}"
-                                          Margin="0,0,13,0" VerticalAlignment="Center">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="13" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:GitStatViewModel">
-                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                            <Border Width="6" Height="6" CornerRadius="2"
-                                                    Background="{Binding Color}" VerticalAlignment="Center" />
-                                            <TextBlock Classes="mono" Text="{Binding Value}" FontSize="11"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="{StaticResource LegacyInkBody}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Text="{Binding Label}" FontSize="10.5"
-                                                       Foreground="{StaticResource LegacyInkFaint}"
-                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <Border Grid.Column="3" Classes="outlined outlinedSoft" Height="22" Padding="9,0"
-                                    CornerRadius="5"
-                                    Background="{StaticResource LegacyGroundRaised}"
-                                    BorderThickness="1"
-                                    VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                                    <ui:Icon Glyph="RefreshCw" Size="13" Foreground="{StaticResource LegacyInkMuted}" />
-                                    <TextBlock Text="Fetch" FontSize="11.5" FontWeight="Medium"
-                                               Foreground="{StaticResource LegacyInkBody}" VerticalAlignment="Center" />
-                                    <TextBlock Classes="mono" Text="{Binding GitFetched}" FontSize="9.5"
-                                               Foreground="{StaticResource LegacyInkFaint}" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Border>
-                    </Grid>
-
-                    <!-- nothing above makes sense without a workspace, so the whole
-                         body is replaced rather than emptied -->
-                    <StackPanel IsVisible="{Binding !HasWorkspaces}"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                MaxWidth="400">
-                        <Border Width="52" Height="52" CornerRadius="10"
-                                Background="{StaticResource LegacyAccentTint}"
-                                BorderBrush="{StaticResource LegacyAccentTintLine}" BorderThickness="1"
-                                HorizontalAlignment="Center">
-                            <ui:Icon Glyph="FolderOpen" Size="22" Foreground="{StaticResource LegacyAccent}" />
-                        </Border>
-
-                        <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
-                                   FontSize="16" FontWeight="SemiBold"
-                                   Foreground="{StaticResource LegacyInkBright}"
-                                   HorizontalAlignment="Center" />
-
-                        <TextBlock Margin="0,8,0,0" FontSize="12" LineHeight="18"
-                                   TextWrapping="Wrap" TextAlignment="Center"
-                                   Foreground="{StaticResource LegacyInkMuted}"
-                                   Text="A workspace is a project folder. Tools, settings and git status all follow the one you have open." />
-
-                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,22,0,0"
-                                    HorizontalAlignment="Center">
-                            <Button Classes="action" Content="Choose a folder"
-                                    Click="OnChooseFolderClick" />
-                        </StackPanel>
-                    </StackPanel>
-                </Panel>
-            </Grid>
-
-            <!-- workspace switcher, over everything -->
-            <Panel IsVisible="{Binding WorkspacesOpen}"
-                   Classes.open="{Binding WorkspacesOpen}"
-                   Background="{StaticResource LegacyScrim}"
-                   PointerPressed="OnScrimPressed">
-                <Border Classes="wsPopup" Width="436" HorizontalAlignment="Left" VerticalAlignment="Top"
-                        Margin="20,100,0,0" CornerRadius="6"
-                        Background="{StaticResource LegacySurface}"
-                        BorderBrush="{StaticResource LegacyLineMenu}" BorderThickness="1"
-                        BoxShadow="0 22 54 0 #b3000000">
-                    <Border.RenderTransform>
-                        <TranslateTransform />
-                    </Border.RenderTransform>
-                    <Border CornerRadius="6" ClipToBounds="True">
-                        <StackPanel>
-                            <Border Background="{StaticResource LegacySurfaceMenu}"
-                                    BorderBrush="{StaticResource LegacyLineRule}" BorderThickness="0,0,0,1"
-                                    Padding="13,10">
-                                <TextBlock Classes="sectionLabel" Text="WORKSPACES"
-                                           Foreground="{StaticResource LegacyInkDim}" VerticalAlignment="Center" />
-                            </Border>
-
-                            <ScrollViewer MaxHeight="296" HorizontalScrollBarVisibility="Disabled">
-                                <ItemsControl ItemsSource="{Binding Workspaces}" Margin="0,5">
+                                <ItemsControl ItemsSource="{Binding Tools}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="7" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:WorkspaceViewModel">
-                                            <Border Classes="wsRow" Classes.current="{Binding IsCurrent}"
-                                                    PointerPressed="OnWorkspacePressed">
-                                              <Panel>
-                                                <!-- painted over the row, so it costs no layout -->
-                                                <Rectangle Width="2" HorizontalAlignment="Left"
-                                                           Fill="{Binding EdgeMark}" />
-                                                <Grid ColumnDefinitions="Auto,*,Auto" Margin="13,10">
-                                                    <Border Grid.Column="0" Width="9" Height="9" CornerRadius="2"
-                                                            Background="{Binding Dot}" VerticalAlignment="Center" />
-                                                    <StackPanel Grid.Column="1" Margin="11,0" VerticalAlignment="Center">
-                                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                                            <TextBlock Text="{Binding Name}" FontSize="12.5"
-                                                                       FontWeight="SemiBold" LineHeight="15"
-                                                                       Foreground="{StaticResource LegacyInkBright}"
-                                                                       VerticalAlignment="Center" />
-                                                            <Border Height="17" Padding="6,0" CornerRadius="9"
-                                                                    IsVisible="{Binding HasBadge}"
-                                                                    Background="{Binding BadgeBackground}"
-                                                                    BorderBrush="{Binding BadgeBorder}"
-                                                                    BorderThickness="1" VerticalAlignment="Center">
-                                                                <TextBlock Classes="mono" Text="{Binding Badge}"
-                                                                           FontSize="8.5" FontWeight="SemiBold"
-                                                                           LetterSpacing="0.43"
-                                                                           Foreground="{Binding BadgeForeground}"
-                                                                           VerticalAlignment="Center" />
-                                                            </Border>
-                                                        </StackPanel>
-                                                        <TextBlock Classes="mono" Text="{Binding Path}"
-                                                                   Margin="0,4,0,0" FontSize="10.5" LineHeight="13.6"
-                                                                   Foreground="{StaticResource LegacyInkFaint}"
-                                                                   TextTrimming="CharacterEllipsis" />
+                                        <DataTemplate x:DataType="vm:ToolCardViewModel">
+                                            <Border Classes="toolCard">
+                                                <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="15">
+                                                    <!-- The square holds the tool's icon. The
+                                                         design draws a letter there and that is
+                                                         a placeholder, so it stays empty until a
+                                                         tool supplies one. -->
+                                                    <Border Grid.Column="0" Classes="toolMark"
+                                                            Width="48" Height="48"
+                                                            VerticalAlignment="Center" />
+
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                   Foreground="{DynamicResource InkPrimary}" />
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Margin="0,6,0,0"
+                                                                   FontSize="{DynamicResource FontSizeControl}"
+                                                                   LineHeight="17.4"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{DynamicResource InkSecondary}" />
                                                     </StackPanel>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Action}" FontSize="11"
-                                                               FontWeight="Medium"
-                                                               Foreground="{Binding ActionForeground}"
-                                                               VerticalAlignment="Center" />
+
+                                                    <Button Grid.Column="2" Classes="primary"
+                                                            Content="Launch"
+                                                            VerticalAlignment="Center"
+                                                            Click="OnLaunchToolClick" />
                                                 </Grid>
-                                              </Panel>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </ScrollViewer>
-
-                            <Border Classes="wsRow wsRowFooter"
-                                    BorderBrush="{StaticResource LegacyLineRule}" BorderThickness="0,1,0,0"
-                                    Padding="13,10"
-                                    PointerPressed="OnAddWorkspacePressed">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ui:Icon Glyph="FolderOpen" Size="15" Foreground="{StaticResource LegacyInkDim}" />
-                                    <TextBlock Text="Add workspace from folder" FontSize="11.5"
-                                               FontWeight="Medium" Foreground="{StaticResource LegacyInkDim}"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Border>
+
+                    <!-- The status bar reports the workspace and nothing invented. The
+                         design also shows a branch, counts and a fetch action. Those need
+                         git, which this app cannot read yet, so they are absent rather
+                         than filled with numbers that are not true. -->
+                    <Border Grid.Row="2" Classes="band" BorderThickness="0,1,0,0"
+                            Height="{DynamicResource HeightTitleBar}" Padding="16,0">
+                        <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Border>
+                </Grid>
+
+                <!-- Nothing above makes sense without a workspace, so the whole page is
+                     replaced rather than emptied. Derived rather than designed: the
+                     design shows a launcher that always has one. -->
+                <Border Classes="page" BorderThickness="0"
+                        IsVisible="{Binding !HasWorkspaces}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                MaxWidth="400">
+                        <Border Classes="toolMark" Width="52" Height="52"
+                                HorizontalAlignment="Center">
+                            <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeLarge}"
+                                     Foreground="{DynamicResource Accent}" />
+                        </Border>
+
+                        <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
+                                   FontSize="{DynamicResource FontSizeDialogTitle}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   Foreground="{DynamicResource InkPrimary}"
+                                   HorizontalAlignment="Center" />
+
+                        <TextBlock Margin="0,8,0,0"
+                                   FontSize="{DynamicResource FontSizeControl}"
+                                   LineHeight="18"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{DynamicResource InkSecondary}"
+                                   Text="A workspace is a project folder. Tools and settings follow the one you have open." />
+
+                        <Button Classes="primary" Content="Choose a folder"
+                                Margin="0,22,0,0"
+                                HorizontalAlignment="Center"
+                                Click="OnChooseFolderClick" />
+                    </StackPanel>
                 </Border>
             </Panel>
-    </Panel>
+        </Grid>
+    </Grid>
 </ui:ChromelessWindow>

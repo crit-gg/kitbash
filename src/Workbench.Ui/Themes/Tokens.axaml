@@ -91,6 +91,11 @@
     <SolidColorBrush x:Key="InkCaption" Color="#eef1f4" />
     <SolidColorBrush x:Key="InkChip" Color="#c9ced6" />
 
+    <!-- The activity rail's resting icon. Between InkSecondary and InkMuted, and a value
+         the rest of the palette does not have, because the rail sits on the root tone
+         where a muted icon disappears and a secondary one shouts. -->
+    <SolidColorBrush x:Key="InkRail" Color="#9ba6b0" />
+
     <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text.
          The mark and the text are separate because a 5px mark needs saturation where
          11px text needs contrast. Status always reads as colour plus icon plus label,
@@ -191,6 +196,8 @@
     <x:Double x:Key="HeightPill">17</x:Double>
     <x:Double x:Key="HeightTooltip">22</x:Double>
     <x:Double x:Key="SizeIconButton">24</x:Double>
+    <x:Double x:Key="WidthActivityRail">48</x:Double>
+    <x:Double x:Key="SizeRailItem">32</x:Double>
     <x:Double x:Key="IndentTree">14</x:Double>
     <x:Double x:Key="SpacingRow">2</x:Double>
 
