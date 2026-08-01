@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 
@@ -31,7 +32,17 @@ public class ChromelessWindow : Window
         "PART_ResizeBottomRight",
     ];
 
-    public ChromelessWindow() => Classes.Add("chromeless");
+    public ChromelessWindow()
+    {
+        Classes.Add("chromeless");
+
+        // The desktop shows this in the task bar and the window list. The largest
+        // size is used so the desktop scales down rather than up.
+        using var icon = AssetLoader.Open(
+            new Uri("avares://Workbench/Assets/Icons/icon_256x256.png"));
+
+        Icon = new WindowIcon(icon);
+    }
 
     /// <summary>Styles target Window, so a derived window keeps the same frame.</summary>
     protected override Type StyleKeyOverride => typeof(Window);

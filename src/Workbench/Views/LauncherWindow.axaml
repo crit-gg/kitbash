@@ -138,13 +138,10 @@
                         PointerPressed="OnTitleBarPressed"
                         DoubleTapped="OnTitleBarDoubleTapped">
                     <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="15,0,0,0">
-                        <Border Grid.Column="0" Width="18" Height="18" CornerRadius="4"
-                                BorderBrush="{StaticResource Accent}" BorderThickness="1.5"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="W" FontSize="9.5" FontWeight="Bold"
-                                       Foreground="{StaticResource Accent}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <Image Grid.Column="0" Width="18" Height="18"
+                               VerticalAlignment="Center"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"
+                               Source="avares://Workbench/Assets/Icons/icon_64x64.png" />
                         <TextBlock Grid.Column="1" Text="Workbench" Margin="11,0,0,0"
                                    FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
                                    Foreground="{StaticResource InkBright}" VerticalAlignment="Center" />

@@ -5,6 +5,11 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <!-- Gives the executable its icon in Explorer and on the Windows task bar.
+         Ignored on Linux, where the desktop reads the icon from a .desktop entry
+         at packaging time instead. -->
+    <ApplicationIcon>../../icons/icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +23,10 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+
+    <!-- Linked rather than copied, so icons/ stays the one source for the app mark
+         and for packaging later. -->
+    <AvaloniaResource Include="../../icons/icon_*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
