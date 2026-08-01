@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
 using Workbench.Core;
 using Workbench.ViewModels;
 using Workbench.Views;
@@ -9,20 +10,36 @@ namespace Workbench;
 
 public partial class App : Application
 {
+    private ServiceProvider? _services;
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _services = BuildServices();
+
             desktop.MainWindow = new LauncherWindow
             {
-                DataContext = new LauncherViewModel(BuildRegistry()),
+                DataContext = _services.GetRequiredService<LauncherViewModel>(),
             };
+
+            desktop.ShutdownRequested += (_, _) => _services?.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    // The composition root. Everything the launcher needs is registered here and
+    // nowhere else.
+    private static ServiceProvider BuildServices() =>
+        new ServiceCollection()
+            .AddWorkbenchPlatform()
+            .AddWorkbenchWorkspace()
+            .AddSingleton(BuildRegistry())
+            .AddSingleton(provider => new LauncherViewModel(provider.GetRequiredService<IToolRegistry>()))
+            .BuildServiceProvider();
 
     // Placeholders until real tools exist.
     private static IToolRegistry BuildRegistry() =>

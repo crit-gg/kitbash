@@ -1,12 +1,10 @@
 using System.Globalization;
-using Tomlyn.Model;
 
 namespace Workbench.Core.Settings;
 
-/// <summary>Converts values as TOML stores them into the types callers ask for.</summary>
-internal static class SettingsValueConverter
+internal sealed class SettingsValueConverter : ISettingsValueConverter
 {
-    public static bool TryConvert<T>(object? raw, out T value)
+    public bool TryConvert<T>(object? raw, out T value)
     {
         if (TryConvert(raw, typeof(T), out var converted) && converted is T typed)
         {
@@ -18,7 +16,7 @@ internal static class SettingsValueConverter
         return false;
     }
 
-    private static bool TryConvert(object? raw, Type target, out object? value)
+    private bool TryConvert(object? raw, Type target, out object? value)
     {
         value = null;
 
@@ -47,14 +45,14 @@ internal static class SettingsValueConverter
             return false;
         }
 
-        if (underlying.IsArray && raw is TomlArray array)
+        if (underlying.IsArray && raw is object?[] items)
         {
             var elementType = underlying.GetElementType()!;
-            var result = Array.CreateInstance(elementType, array.Count);
+            var result = Array.CreateInstance(elementType, items.Length);
 
-            for (var index = 0; index < array.Count; index++)
+            for (var index = 0; index < items.Length; index++)
             {
-                if (!TryConvert(array[index], elementType, out var element))
+                if (!TryConvert(items[index], elementType, out var element))
                 {
                     return false;
                 }

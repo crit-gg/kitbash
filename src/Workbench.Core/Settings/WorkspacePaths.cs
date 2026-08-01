@@ -2,7 +2,7 @@ namespace Workbench.Core.Settings;
 
 /// <summary>
 /// Where a workspace keeps its settings files. A workspace is any directory holding
-/// a <c>.workbench</c> folder.
+/// a <c>.workbench</c> folder. Use <see cref="IWorkspaceLocator"/> to find one.
 /// </summary>
 public sealed class WorkspacePaths
 {
@@ -27,29 +27,6 @@ public sealed class WorkspacePaths
 
     /// <summary>Personal settings, kept out of git.</summary>
     public string UserDirectory => Path.Combine(WorkbenchDirectory, "user");
-
-    /// <summary>
-    /// Walks up from <paramref name="startDirectory"/> looking for a workspace, the
-    /// way git finds <c>.git</c>. Returns null when there is none, which is normal.
-    /// </summary>
-    public static WorkspacePaths? Discover(string startDirectory)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(startDirectory);
-
-        var directory = new DirectoryInfo(Path.GetFullPath(startDirectory));
-
-        while (directory is not null)
-        {
-            if (Directory.Exists(Path.Combine(directory.FullName, WorkbenchDirectoryName)))
-            {
-                return new WorkspacePaths(directory.FullName);
-            }
-
-            directory = directory.Parent;
-        }
-
-        return null;
-    }
 
     /// <summary>Path backing one scope in one layer. The file need not exist.</summary>
     public string FileFor(SettingsScope scope, SettingsLayer layer)

@@ -21,6 +21,34 @@ Applies to code comments, XML docs, markdown, and anything else written as prose
 - Keep comments to a minimum. Prefer code that does not need one.
 - Write for maintenance. Say what a reader needs in order to change the code safely.
 
+## Code
+
+No static classes, so collaborators stay replaceable. Two exceptions:
+
+- A container for extension methods must be static. `WorkbenchCoreServices` is the
+  only one.
+- Static factory methods on an instance type are fine, such as `WebAddress.Parse`
+  and `ToolActivationResult.Failure`.
+
+Dependencies arrive through the constructor. Nothing builds a collaborator inside a
+method, and nothing reaches for ambient state. Filesystem access goes through
+`IFileSystem` and environment variables through `IEnvironment`.
+
+## Composition
+
+Microsoft.Extensions.DependencyInjection. Each executable is its own composition root
+and builds one provider at startup. `App.BuildServices` is the launcher's.
+
+Core exposes registration methods rather than a container of its own:
+
+- `AddWorkbenchIO` filesystem and environment
+- `AddWorkbenchPlatform` the services that differ per OS
+- `AddWorkbenchWorkspace` workspace discovery
+- `AddWorkbenchSettings(paths)` settings for one workspace
+
+They use `TryAdd`, so calling several is safe and a caller can substitute any service
+by registering its own first.
+
 ## Commits
 
 Commits have one author, the user. Never add a coauthor trailer and never list the
@@ -87,6 +115,47 @@ its layer explicitly because writing to `TeamShared` changes the setting for
 everyone. Writes rewrite the file from the model and do not keep comments. There is
 no file watching, so one process does not see another's write until it reloads.
 
+`ISettingsDocumentStore` is the only place the file format lives. `SettingsDocument`
+holds nested tables and no format specific types, so moving off TOML would touch one
+class.
+
+## Platforms
+
+Linux and Windows, 64 bit only. `Directory.Build.props` sets `RuntimeIdentifiers`
+to `linux-x64` and `win-x64`.
+
+Behavior that differs per OS goes behind `IPlatformServices` in
+`Workbench.Core/Platform`, with one folder per OS.
+
+```
+Platform/
+  IPlatformServices.cs, PlatformKind.cs
+  DesktopPlatform.cs                  shared behavior, subclasses supply Open
+  WebAddress.cs, DirectoryLocation.cs
+  IProcessRunner.cs, ProcessRunner.cs, ProcessRequest.cs, ProcessStartException.cs
+  IExecutableFinder.cs, ExecutableFinder.cs
+  Linux/                              LinuxPlatform, launcher resolution
+  Windows/                            WindowsPlatform
+```
+
+`DesktopPlatform` holds everything shared and leaves one abstract member, `Open`,
+which is the only thing that varies. Resolve `IPlatformServices` from the container
+and never test the running OS at the call site.
+
+Targets are value objects. `WebAddress` accepts absolute http and https only, and
+`DirectoryLocation` requires a rooted path. Parsing is the only way to make either,
+so an unchecked target cannot reach the platform. This matters because the shell open
+commands will run a local program given one. Whether a directory still exists is
+checked when it opens, since the filesystem changes after a value is made.
+
+Windows hands the target to the shell, so a replaced browser or file browser is
+honored.
+
+Linux assumes no particular distribution. `DesktopLauncherResolver` uses the first
+launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE,
+MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
+what it looked for. Add candidates there rather than in `LinuxPlatform`.
+
 ## Commands
 
 ```
@@ -94,9 +163,17 @@ dotnet build
 dotnet run --project src/Workbench
 ```
 
+A runtime identifier cannot be passed to the solution, only to a project.
+
+```
+dotnet publish src/Workbench/Workbench.csproj -r win-x64 --self-contained
+dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
+```
+
 ## Stack
 
-- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1
+- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1,
+  Microsoft.Extensions.DependencyInjection 10.0.10
 - Avalonia 12 notes: compiled bindings are on by default, so `x:DataType` is
   required on views and templates. Data annotations validation is off by default.
   `SystemDecorations` is now `WindowDecorations`. There is no `Avalonia.Diagnostics`

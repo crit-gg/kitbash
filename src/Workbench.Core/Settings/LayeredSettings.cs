@@ -7,18 +7,24 @@ namespace Workbench.Core.Settings;
 internal sealed class LayeredSettings : ISettings
 {
     private readonly IReadOnlyList<SettingsDocument> _highestPrecedenceFirst;
+    private readonly ISettingsValueConverter _converter;
 
-    public LayeredSettings(IReadOnlyList<SettingsDocument> highestPrecedenceFirst)
+    public LayeredSettings(
+        IReadOnlyList<SettingsDocument> highestPrecedenceFirst,
+        ISettingsValueConverter converter)
     {
+        ArgumentNullException.ThrowIfNull(highestPrecedenceFirst);
+        ArgumentNullException.ThrowIfNull(converter);
+
         _highestPrecedenceFirst = highestPrecedenceFirst;
+        _converter = converter;
     }
 
     public bool TryGet<T>(string key, out T value)
     {
         foreach (var document in _highestPrecedenceFirst)
         {
-            if (document.TryGetValue(key, out var raw)
-                && SettingsValueConverter.TryConvert<T>(raw, out var converted))
+            if (document.TryGetValue(key, out var raw) && _converter.TryConvert<T>(raw, out var converted))
             {
                 value = converted;
                 return true;

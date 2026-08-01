@@ -2,7 +2,7 @@ using Avalonia;
 
 namespace Workbench;
 
-internal static class Program
+internal sealed class Program
 {
     // Avalonia must initialize before any UI type is referenced. Keep this method
     // free of anything that would load one early.

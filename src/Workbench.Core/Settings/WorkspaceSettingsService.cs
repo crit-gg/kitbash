@@ -1,27 +1,42 @@
+using Workbench.Core.IO;
+
 namespace Workbench.Core.Settings;
 
 /// <summary>
-/// Reads and writes a workspace's settings files. Loaded scopes are cached until a
-/// write or a call to <see cref="Reload"/>.
+/// Reads and writes a workspace's settings. Loaded scopes are cached until a write or
+/// a call to <see cref="Reload"/>.
 /// </summary>
 /// <remarks>
-/// Synchronous because config files are small and callers need settings before they
-/// can start. Nothing watches the filesystem, so a write in one process is not seen
-/// by another until that process reloads.
+/// Synchronous because settings files are small and callers need them before they can
+/// start. Nothing watches the filesystem, so a write in one process is not seen by
+/// another until that process reloads.
 /// </remarks>
-public sealed class WorkspaceSettingsService : ISettingsService
+internal sealed class WorkspaceSettingsService : ISettingsService
 {
     private readonly WorkspacePaths _paths;
+    private readonly ISettingsDocumentStore _store;
+    private readonly ISettingsValueConverter _converter;
+    private readonly IFileSystem _fileSystem;
+
     private readonly Dictionary<SettingsScope, ISettings> _cache = [];
     private readonly Lock _gate = new();
 
-    public WorkspaceSettingsService(WorkspacePaths paths)
+    public WorkspaceSettingsService(
+        WorkspacePaths paths,
+        ISettingsDocumentStore store,
+        ISettingsValueConverter converter,
+        IFileSystem fileSystem)
     {
         ArgumentNullException.ThrowIfNull(paths);
-        _paths = paths;
-    }
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(converter);
+        ArgumentNullException.ThrowIfNull(fileSystem);
 
-    public WorkspacePaths Paths => _paths;
+        _paths = paths;
+        _store = store;
+        _converter = converter;
+        _fileSystem = fileSystem;
+    }
 
     public ISettings Global => ForScope(SettingsScope.Global);
 
@@ -37,10 +52,10 @@ public sealed class WorkspaceSettingsService : ISettingsService
         {
             var path = _paths.FileFor(scope, layer);
 
-            // Load again so a change made outside this process is not reverted.
-            var document = SettingsDocument.Load(path);
+            // Read again so a change made outside this process is not reverted.
+            var document = _store.Read(path);
             document.SetValue(key, value);
-            document.Save(path);
+            _store.Write(path, document);
 
             if (layer == SettingsLayer.User)
             {
@@ -70,10 +85,11 @@ public sealed class WorkspaceSettingsService : ISettingsService
 
             // Highest precedence first.
             var settings = new LayeredSettings(
-            [
-                SettingsDocument.Load(_paths.FileFor(scope, SettingsLayer.User)),
-                SettingsDocument.Load(_paths.FileFor(scope, SettingsLayer.TeamShared)),
-            ]);
+                [
+                    _store.Read(_paths.FileFor(scope, SettingsLayer.User)),
+                    _store.Read(_paths.FileFor(scope, SettingsLayer.TeamShared)),
+                ],
+                _converter);
 
             _cache[scope] = settings;
             return settings;
@@ -88,13 +104,13 @@ public sealed class WorkspaceSettingsService : ISettingsService
     {
         var path = Path.Combine(_paths.WorkbenchDirectory, ".gitignore");
 
-        if (File.Exists(path))
+        if (_fileSystem.FileExists(path))
         {
             return;
         }
 
-        Directory.CreateDirectory(_paths.WorkbenchDirectory);
-        File.WriteAllText(
+        _fileSystem.CreateDirectory(_paths.WorkbenchDirectory);
+        _fileSystem.WriteAllText(
             path,
             $"# Personal Workbench settings. Not shared.{Environment.NewLine}user/{Environment.NewLine}");
     }
