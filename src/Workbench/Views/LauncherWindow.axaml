@@ -19,13 +19,6 @@
     <Window.Styles>
         <!-- Launcher layout only. Every control look comes from Workbench.Ui, so nothing
              here sets a brush, a radius or a size that belongs to a control. -->
-        <Style Selector="TextBlock.sectionLabel">
-            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
-            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
-            <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingLabel}" />
-            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
-        </Style>
-
         <Style Selector="TextBlock.mono">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
         </Style>
@@ -37,16 +30,18 @@
             <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
         </Style>
 
+        <!-- The page and the cards on it ride the depth ramp rather than naming a tone,
+             so the page is one step below the window and a card one below the page. They
+             land on the same two pairs that were written here by hand, and now anything
+             dropped into the page is on the tone the page really is. -->
         <Style Selector="Border.page">
-            <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+            <Setter Property="(ui:Surface.Nests)" Value="True" />
         </Style>
 
         <!-- A tool card. A card is a surface rather than a control, so it is styled
              here and its contents are library controls. -->
         <Style Selector="Border.toolCard">
-            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+            <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
             <Setter Property="Padding" Value="15,14" />
@@ -345,13 +340,8 @@
                     <Border Grid.Row="2" Classes="page" BorderThickness="0">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="20,16,20,18">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,11">
-                                    <TextBlock Grid.Column="0" Classes="sectionLabel" Text="TOOLS"
-                                               VerticalAlignment="Center" />
-                                    <Rectangle Grid.Column="1" Height="1"
-                                               Fill="{DynamicResource LineSeam}"
-                                               VerticalAlignment="Center" />
-                                </Grid>
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="TOOLS" Margin="0,0,0,11" />
 
                                 <ItemsControl ItemsSource="{Binding Tools}">
                                     <ItemsControl.ItemsPanel>

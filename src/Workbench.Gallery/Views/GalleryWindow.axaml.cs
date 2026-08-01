@@ -30,6 +30,7 @@ public partial class GalleryWindow : ChromelessWindow
         base.OnLoaded(e);
 
         HoldStates();
+        ShowNomadLevel();
     }
 
     /// <summary>
@@ -95,6 +96,26 @@ public partial class GalleryWindow : ChromelessWindow
     private void ShowValue() => DeterminateValue.Text = $"{Determinate.Value:0}%";
 
     private void OnMaximize(object? sender, RoutedEventArgs e) => ToggleMaximized();
+
+    private void OnTogglePane(object? sender, RoutedEventArgs e) =>
+        Sidebar.IsPaneOpen = !Sidebar.IsPaneOpen;
+
+    /// <summary>
+    /// Moves a panel between two grounds of different depth, which is what docking will
+    /// do to it. Nothing tells it its new tone and nothing recounts anything.
+    /// </summary>
+    private void OnMovePanel(object? sender, RoutedEventArgs e)
+    {
+        var home = ReferenceEquals(Nomad.Parent, ShallowGround);
+
+        ShallowGround.Content = home ? null : Nomad;
+        DeeperGround.Content = home ? Nomad : null;
+
+        ShowNomadLevel();
+    }
+
+    private void ShowNomadLevel() =>
+        NomadLevel.Text = $"it is on level {Surface.GetLevel(Nomad)}";
 
     // Built here rather than in a view, so the shape a real dialog takes is visible:
     // a title bar, content, and a footer holding the actions.
