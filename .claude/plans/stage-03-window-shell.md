@@ -142,3 +142,50 @@ footer sits on `SurfaceRoot`.
   dispatcher pump will not do it, since the window manager's state notification only
   arrives when the platform event loop runs, so use a `DispatcherTimer` and let the
   loop turn between the action and the check.
+
+## As built
+
+`ChromelessWindow`, `WindowTitleBar`, `DialogWindow` and `DialogFooter` live in
+`Workbench.Ui/Controls`, in the one namespace `Workbench.Ui.Controls`, so a consumer
+declares a single xmlns for the window shell and the icons together.
+`Themes/Controls/WindowChrome.axaml` carries the frame and the bar and is pulled in by
+`WorkbenchTheme.axaml`, so the launcher includes nothing of its own.
+
+The base class no longer loads the app icon. `Window.Icon` takes an `avares://` string
+in XAML, so the launcher names its own icon and a tool names its own.
+
+Two states were added, each mirrored onto the control that draws it rather than
+selected across the window.
+
+- `inactive`, on both the window and the bar, from `Window.IsActive`. Derived, since
+  the design states the tier drop without mapping it: title `InkTitle` to `InkMuted`,
+  caption glyphs `InkCaption` to `InkSecondary`, window edge `LineWindow` to `LineSeam`.
+  The window icon is a bitmap and cannot be retinted, so it gives up the same presence
+  through opacity. A hovered caption button comes back to full strength, so the close
+  glyph is never dim on its red flood.
+- `noMinimize`, from `Window.CanMinimize`, which Avalonia already defines. A dialog sets
+  it and keeps its close button alone.
+
+Two token changes came out of the work. `RadiusPill` is now `RadiusSurface`, because
+the window shell takes the same 8px and the old name told a window to read a pill.
+`ClosePressed` `#bd3a41` is new, derived from `CloseHover` the way the other pressed
+tones are derived.
+
+The row is 32px including its seam, so a caption button is 32 wide by the room left
+under the seam. At 150 percent scaling that measures 30.67, since layout rounds the
+1px seam up to 2 device pixels. The button is not a fixed 32 by 32 square, and forcing
+it to be one would overflow the seam.
+
+Verified by running, in a probe built from `Workbench.Ui` alone with no launcher code,
+which is also what proves a tool gets the same window. 79 checks: the metrics and every
+token above, all three caption buttons hit tested at four corners and the centre,
+maximise dropping the gutter, the radius, the edge and the grips, and the three title
+bar cases. Each window manager round trip is set on one dispatcher tick and read on the
+next, since a same tick read returns the state the window had before.
+
+The caption glyphs are unchanged, compared against the committed file rather than in
+the probe, because a `StreamGeometry` does not report its path data back.
+
+Not built here: the accent mark the design shows on the window. Nothing in the launcher
+carries one yet, so `AccentMuted` has no consumer. Stage 5 decides whether the mark
+exists at all.

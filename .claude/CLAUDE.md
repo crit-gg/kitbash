@@ -106,7 +106,7 @@ agent as an author.
 ```
 Workbench.slnx
 src/Workbench.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
-src/Workbench.Ui/      the look: tokens, type, control themes, fonts
+src/Workbench.Ui/      the look: tokens, type, control themes, fonts, the window shell
 src/Workbench/         the launcher app, Avalonia 12
 src/tools/             one project per tool, empty until the first tool is named
 ```
@@ -123,10 +123,17 @@ contract stays free of a UI framework. A consumer takes one line:
 <StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
 ```
 
-That brings the tokens, the type scale and the icons. Nothing outside
+That brings the tokens, the type scale, the icons and the window shell. Nothing outside
 `Themes/Tokens.axaml` writes a colour, a size or a radius. Names say what a value is for
 rather than what it looks like, and two names may share a value when they are genuinely
 different roles, which is noted in the file where it happens.
+
+Everything a consumer names lives in one namespace, `Workbench.Ui.Controls`, so a view
+declares one xmlns:
+
+```xml
+xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+```
 
 ## Icons
 
@@ -347,13 +354,15 @@ as a child of `game`, so the separator is part of the test.
 Every Workbench window draws its own title bar. This is the house style, so a new
 window conforms rather than inventing its own frame.
 
-Derive from `ChromelessWindow` and put a `WindowTitleBar` at the top of the content.
-`Themes/WindowChrome.axaml` supplies the frame, the corner radius, the eight resize
-grips and the whole title bar, so a window writes one element:
+Everything here lives in `Workbench.Ui`, so a tool gets the same window without copying
+anything. Derive from `ui:ChromelessWindow` and put a `ui:WindowTitleBar` at the top of
+the content. `Workbench.Ui/Themes/Controls/WindowChrome.axaml` supplies the frame, the
+corner radius, the eight resize grips and the whole title bar, and
+`WorkbenchTheme.axaml` already includes it, so a window writes one element:
 
 ```xml
-<views:WindowTitleBar Title="Workbench"
-                      Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
+<ui:WindowTitleBar Title="Workbench"
+                   Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 ```
 
 `WindowTitleBar` owns the icon, the title, the caption buttons, the move drag and the
@@ -362,9 +371,31 @@ menu or a toolbar, and it is empty by default. Do not hand write a title bar row
 do not wire the gestures at the window, because both are already done here and doing
 them twice fights the built in behaviour.
 
+The window's own icon, the one the desktop shows in the task bar, is set on the window
+rather than in the base class, since it belongs to the app that is running:
+
+```xml
+Icon="avares://Workbench/Assets/Icons/icon_256x256.png"
+```
+
 The bar reads the window it sits in and mirrors it onto itself as classes, so every
 selector in the theme matches on the bar alone rather than reaching across the window
-and into a template. The classes are `nativeChrome`, `maximized` and `fixedSize`.
+and into a template. The classes are `nativeChrome`, `maximized`, `fixedSize`,
+`noMinimize` and `inactive`. The window mirrors `inactive` onto itself as well, for the
+one thing it draws rather than the bar, which is the outer edge.
+
+**Inactive drops the chrome one tier.** The design states that without mapping it per
+token, so stage 3 derived it: title `InkTitle` to `InkMuted`, caption glyphs
+`InkCaption` to `InkSecondary`, outer edge `LineWindow` to `LineSeam`. The window icon
+is a bitmap and cannot be retinted, so it gives up the same presence through opacity. A
+hovered caption button comes back to full strength, so the close glyph is never dim on
+its red flood.
+
+**A dialog is a real window.** `ui:DialogWindow` is a `ChromelessWindow` that cannot be
+resized or minimised, so its title bar keeps the close button alone. It centres on the
+window that opened it and stays out of the task bar. There is no scrim behind it.
+`ui:DialogFooter` is the row its actions sit in, on `SurfaceRoot` with a seam above.
+The dialog lays out its own content between the two.
 
 ### The desktop can draw the frame instead
 
@@ -395,9 +426,14 @@ Measured, the three cases:
 
 | Frame | Content | Row | Caption buttons |
 |---|---|---|---|
-| drawn | either | 36px | shown |
+| drawn | either | 32px | shown |
 | native | none | gone, height 0, template never realised | none |
-| native | some | 36px | hidden |
+| native | some | 32px | hidden |
+
+The row is 32px including its seam, so a caption button is 32 wide by the room left
+under the seam. That is not a fixed 32 by 32 square, and forcing it to be one would
+overflow the seam. At 150 percent scaling it measures 30.67, because layout rounds the
+1px seam up to 2 device pixels.
 
 `ToggleMaximized` stays unguarded and available to code, so a window can still maximise
 itself under either frame.
@@ -456,10 +492,12 @@ the launcher. No tool is implemented, and no file format or Godot integration wo
 has started.
 
 The app is being moved to the Slate design, in the eleven stages under
-`.claude/plans/`. Stage 1 is done: `Workbench.Ui` exists and carries the Slate tokens
-and type scale. Nothing consumes them yet, so the launcher still looks as it did.
+`.claude/plans/`. Stages 1 to 3 are done: `Workbench.Ui` carries the Slate tokens, the
+type scale, the 48 icons and the window shell. The chrome is Slate now, so the launcher
+wears a 32px title bar on a Slate frame while its body is still the old palette. That
+mismatch is expected and stage 5 ends it.
 
-It keeps that look through `Themes/LegacyTokens.axaml`, which holds the old palette at
+The body keeps its old look through `Themes/LegacyTokens.axaml`, which holds the old palette at
 its old values under `Legacy` prefixed names. The prefix is deliberate. Nine of the old
 names collide with a Slate token of the same name and a different value, and `AccentInk`
 means opposite things in the two palettes, so merging them would have silently restyled

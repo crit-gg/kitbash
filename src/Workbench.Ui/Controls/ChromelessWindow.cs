@@ -1,14 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Platform;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 
-namespace Workbench.Views;
+namespace Workbench.Ui.Controls;
 
 /// <summary>
 /// A window that draws its own title bar. The frame lives in
-/// Themes/WindowChrome.axaml, which supplies the resize grips wired up here.
+/// Themes/Controls/WindowChrome.axaml, which supplies the resize grips wired up here.
 /// </summary>
 /// <remarks>
 /// The view also tags its title bar and caption buttons with
@@ -22,8 +21,8 @@ public class ChromelessWindow : Window
 {
     /// <summary>
     /// Whether the desktop draws the frame. Set from
-    /// <see cref="Workbench.Core.Settings.IWindowSettings"/> when the window is built.
-    /// It is not watched, so changing the setting takes effect on the next launch.
+    /// <c>Workbench.Core.Settings.IWindowSettings</c> when the window is built. It is
+    /// not watched, so changing the setting takes effect on the next launch.
     /// </summary>
     public static readonly StyledProperty<bool> UsesNativeChromeProperty =
         AvaloniaProperty.Register<ChromelessWindow, bool>(nameof(UsesNativeChrome));
@@ -43,13 +42,7 @@ public class ChromelessWindow : Window
     public ChromelessWindow()
     {
         Classes.Set("chromeless", true);
-
-        // The desktop shows this in the task bar and the window list. The largest
-        // size is used so the desktop scales down rather than up.
-        using var icon = AssetLoader.Open(
-            new Uri("avares://Workbench/Assets/Icons/icon_256x256.png"));
-
-        Icon = new WindowIcon(icon);
+        Classes.Set("inactive", !IsActive);
     }
 
     /// <inheritdoc cref="UsesNativeChromeProperty"/>
@@ -63,23 +56,27 @@ public class ChromelessWindow : Window
     protected override Type StyleKeyOverride => typeof(Window);
 
     /// <summary>
-    /// The two classes pick the frame. <c>chromeless</c> selects the drawn template and
-    /// its resize grips, <c>nativeChrome</c> drops the caption buttons because the
-    /// desktop supplies its own. They are mutually exclusive.
+    /// The classes the frame selects on. <c>chromeless</c> picks the drawn template and
+    /// its resize grips, <c>nativeChrome</c> drops it because the desktop supplies its
+    /// own, and the two are mutually exclusive. <c>inactive</c> drops the chrome to the
+    /// muted tier. Every control carries its own classes rather than a selector reaching
+    /// across the window, so the title bar mirrors the same state onto itself.
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property != UsesNativeChromeProperty)
+        if (change.Property == UsesNativeChromeProperty)
         {
-            return;
+            var native = change.GetNewValue<bool>();
+
+            Classes.Set("chromeless", !native);
+            Classes.Set("nativeChrome", native);
         }
-
-        var native = change.GetNewValue<bool>();
-
-        Classes.Set("chromeless", !native);
-        Classes.Set("nativeChrome", native);
+        else if (change.Property == IsActiveProperty)
+        {
+            Classes.Set("inactive", !change.GetNewValue<bool>());
+        }
     }
 
     /// <summary>

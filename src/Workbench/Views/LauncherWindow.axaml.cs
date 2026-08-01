@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Workbench.Ui.Controls;
 using Workbench.ViewModels;
 
 namespace Workbench.Views;

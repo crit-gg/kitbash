@@ -14,7 +14,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
-        <StyleInclude Source="avares://Workbench/Themes/WindowChrome.axaml" />
     </Application.Styles>
 
 </Application>

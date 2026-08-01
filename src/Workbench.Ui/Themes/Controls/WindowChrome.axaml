@@ -1,12 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:views="clr-namespace:Workbench.Views">
+        xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
     <Styles.Resources>
-        <!-- The title bar row and the caption buttons share this, which keeps the
-             buttons square. A window sets its own title bar to this height. -->
-        <x:Double x:Key="CaptionBarHeight">36</x:Double>
-
         <!-- The window is larger than its visible frame by this much on every side, and
              the extra is transparent so the shadow has somewhere to fall. It matches the
              shadow's blur, and the shadow has no offset, so the shadow is symmetric and
@@ -23,8 +19,8 @@
 
     <!-- Caption buttons are real buttons so they take focus, answer the keyboard and
          report themselves to assistive technology, the way a system title bar does. -->
-    <Style Selector="views|WindowTitleBar /template/ Button.caption">
-        <Setter Property="Width" Value="{StaticResource CaptionBarHeight}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption">
+        <Setter Property="Width" Value="{DynamicResource HeightCaptionButton}" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
@@ -41,51 +37,56 @@
         </Setter>
     </Style>
 
-    <Style Selector="views|WindowTitleBar /template/ Button.caption Path">
-        <Setter Property="Stroke" Value="{DynamicResource LegacyInkBright}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkCaption}" />
         <Setter Property="StrokeThickness" Value="1" />
     </Style>
 
     <!-- Minimize and maximize only. Close declares its own flood after these. -->
-    <Style Selector="views|WindowTitleBar /template/ Button.caption:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource LegacyCaptionHover}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource StateHover}" />
     </Style>
 
-    <Style Selector="views|WindowTitleBar /template/ Button.caption:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource LegacyCaptionPressed}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource StatePressed}" />
     </Style>
 
     <!-- Close floods red the way every system close button does. It is declared
          after the shared pressed state so the flood wins while the button is held. -->
-    <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource LegacyClose}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.captionClose:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource CloseHover}" />
     </Style>
 
-    <Style Selector="views|WindowTitleBar /template/ Button.captionClose:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource LegacyClosePressed}" />
+    <Style Selector="ui|WindowTitleBar /template/ Button.captionClose:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource ClosePressed}" />
     </Style>
 
     <!-- Maximized swaps the glyph and the tooltip, the way a system button does. -->
-    <Style Selector="views|WindowTitleBar.maximized /template/ Button.captionMaximize Path">
+    <Style Selector="ui|WindowTitleBar.maximized /template/ Button.captionMaximize Path">
         <Setter Property="Data" Value="{StaticResource GlyphRestore}" />
     </Style>
 
-    <Style Selector="views|WindowTitleBar.maximized /template/ Button.captionMaximize">
+    <Style Selector="ui|WindowTitleBar.maximized /template/ Button.captionMaximize">
         <Setter Property="ToolTip.Tip" Value="Restore" />
     </Style>
 
-    <!-- A window that cannot resize has no maximize button at all. -->
-    <Style Selector="views|WindowTitleBar.fixedSize /template/ Button.captionMaximize">
+    <!-- A window that cannot resize has no maximize button, and a dialog has no
+         minimize button either. -->
+    <Style Selector="ui|WindowTitleBar.fixedSize /template/ Button.captionMaximize">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.noMinimize /template/ Button.captionMinimize">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <!-- The title bar row. It owns the icon, the title and the caption buttons, so a
          window supplies only what it wants to add. WindowTitleBar hides the whole row
          when the desktop draws the frame and the window added nothing. -->
-    <Style Selector="views|WindowTitleBar">
-        <Setter Property="Height" Value="{StaticResource CaptionBarHeight}" />
-        <Setter Property="Background" Value="{DynamicResource LegacyGroundChrome}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource LegacyLineChrome}" />
+    <Style Selector="ui|WindowTitleBar">
+        <Setter Property="Height" Value="{DynamicResource HeightTitleBar}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
 
         <Setter Property="Template">
@@ -96,21 +97,24 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         WindowDecorationProperties.ElementRole="TitleBar">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="15,0,0,0">
-                        <Image Grid.Column="0" Width="18" Height="18"
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="10,0,0,0">
+                        <Image Grid.Column="0" Name="PART_Icon" Width="16" Height="16"
                                VerticalAlignment="Center"
-                               IsVisible="{Binding $parent[views:WindowTitleBar].Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               IsVisible="{Binding $parent[ui:WindowTitleBar].Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
                                RenderOptions.BitmapInterpolationMode="HighQuality"
                                Source="{TemplateBinding Icon}" />
 
-                        <TextBlock Grid.Column="1" Text="{TemplateBinding Title}"
-                                   Margin="11,0,0,0"
-                                   FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
-                                   Foreground="{DynamicResource LegacyInkBright}"
+                        <TextBlock Grid.Column="1" Name="PART_Title"
+                                   Text="{TemplateBinding Title}"
+                                   Margin="8,0,0,0"
+                                   FontSize="{DynamicResource FontSizeTitle}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   LetterSpacing="{DynamicResource LetterSpacingTitle}"
+                                   Foreground="{DynamicResource InkTitle}"
                                    VerticalAlignment="Center" />
 
                         <ContentPresenter Grid.Column="2"
-                                          Margin="11,0,0,0"
+                                          Margin="10,0,0,0"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
                                           VerticalAlignment="Stretch"
@@ -118,7 +122,7 @@
 
                         <StackPanel Grid.Column="3" Name="PART_CaptionButtons"
                                     Orientation="Horizontal">
-                            <Button Classes="caption" Name="PART_MinimizeButton"
+                            <Button Classes="caption captionMinimize" Name="PART_MinimizeButton"
                                     ToolTip.Tip="Minimize"
                                     AutomationProperties.Name="Minimize"
                                     WindowDecorationProperties.ElementRole="MinimizeButton">
@@ -145,13 +149,34 @@
 
     <!-- The desktop draws the frame, so it supplies the caption buttons and ours go.
          A row that still carries content keeps everything else. -->
-    <Style Selector="views|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons">
+    <Style Selector="ui|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
-    <!-- The frame for windows that draw their own title bar. No shadow is drawn here,
-         so the window is exactly its visible size and the resize grips sit just
-         inside its edges. -->
+    <!-- An inactive window drops its whole chrome one tier. The design states the drop
+         and does not map it per token, so it is derived here: the title falls to the
+         muted ink, the caption glyphs to the secondary ink, and the icon, which cannot
+         be recoloured, gives up the same presence through its opacity. -->
+    <Style Selector="ui|WindowTitleBar.inactive /template/ TextBlock#PART_Title">
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.inactive /template/ Image#PART_Icon">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.inactive /template/ Button.caption Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkSecondary}" />
+    </Style>
+
+    <!-- A hovered caption button comes back to full strength, so the close glyph is
+         never dim on its red flood. Declared last so it wins over the tier drop above
+         while the pointer is on the button. -->
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption:pointerover Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkCaption}" />
+    </Style>
+
+    <!-- The frame for windows that draw their own title bar. -->
 
     <Style Selector="Window.chromeless">
         <Setter Property="Background" Value="Transparent" />
@@ -159,7 +184,7 @@
         <Setter Property="WindowDecorations" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="{StaticResource WindowShadowGutter}" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
 
         <Setter Property="Template">
             <ControlTemplate>
@@ -170,8 +195,8 @@
                     <Grid Margin="{TemplateBinding Padding}"
                           Effect="drop-shadow(0 0 12 #60000000)">
                         <Border x:Name="PART_ContentRoot"
-                                Background="{DynamicResource LegacyGroundWindow}"
-                                BorderBrush="{DynamicResource LegacyLineSoft}"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineWindow}"
                                 BorderThickness="1"
                                 CornerRadius="{TemplateBinding CornerRadius}">
                             <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
@@ -228,6 +253,13 @@
                 </Panel>
             </ControlTemplate>
         </Setter>
+    </Style>
+
+    <!-- The outer edge is a step lighter than any line inside the window, because the
+         desktop sits behind it. Inactive drops it to the seam tone, which is the same
+         tier drop the title bar takes. -->
+    <Style Selector="Window.chromeless.inactive /template/ Border#PART_ContentRoot">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
     </Style>
 
     <!-- Maximized fills the work area, so the rounding, the border, the grips, the

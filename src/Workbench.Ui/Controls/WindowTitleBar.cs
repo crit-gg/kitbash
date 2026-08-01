@@ -6,7 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
-namespace Workbench.Views;
+namespace Workbench.Ui.Controls;
 
 /// <summary>
 /// The title bar row a Workbench window uses. It supplies the icon, the title and the
@@ -89,8 +89,10 @@ public class WindowTitleBar : ContentControl
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
         if (e.Property == ChromelessWindow.UsesNativeChromeProperty
+            || e.Property == Window.CanMinimizeProperty
             || e.Property == Window.WindowStateProperty
-            || e.Property == Window.CanResizeProperty)
+            || e.Property == Window.CanResizeProperty
+            || e.Property == Window.IsActiveProperty)
         {
             Apply();
         }
@@ -160,6 +162,10 @@ public class WindowTitleBar : ContentControl
         Classes.Set("nativeChrome", native);
         Classes.Set("maximized", _window?.WindowState == WindowState.Maximized);
         Classes.Set("fixedSize", _window is { CanResize: false });
+        Classes.Set("noMinimize", _window is { CanMinimize: false });
+
+        // A bar with no window reads as active, which is what a preview should show.
+        Classes.Set("inactive", _window is { IsActive: false });
 
         // SetCurrentValue rather than a local write, so a window that binds IsVisible
         // for its own reasons is not overridden for good.

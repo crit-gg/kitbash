@@ -1,11 +1,11 @@
-<views:ChromelessWindow xmlns="https://github.com/avaloniaui"
+<ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Workbench.ViewModels"
-        xmlns:views="clr-namespace:Workbench.Views"
         xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
+        Icon="avares://Workbench/Assets/Icons/icon_256x256.png"
         Width="964" Height="724"
         MinWidth="844" MinHeight="584"
         WindowStartupLocation="CenterScreen"
@@ -135,9 +135,9 @@
 
                 <!-- The launcher adds nothing of its own here, so this row disappears
                      entirely when the desktop draws the frame. -->
-                <views:WindowTitleBar Grid.Row="0"
-                                      Title="Workbench"
-                                      Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
+                <ui:WindowTitleBar Grid.Row="0"
+                                   Title="Workbench"
+                                   Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 
                 <Panel Grid.Row="1">
                     <Grid IsVisible="{Binding HasWorkspaces}"
@@ -518,4 +518,4 @@
                 </Border>
             </Panel>
     </Panel>
-</views:ChromelessWindow>
+</ui:ChromelessWindow>

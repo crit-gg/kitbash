@@ -18,8 +18,13 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Typography.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Icons.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Icon.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/DialogFooter.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
+
+    <!-- Control themes go in the resources above. A control whose look is a set of
+         styles rather than one theme, such as the window frame, is included here. -->
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/WindowChrome.axaml" />
 
 </Styles>

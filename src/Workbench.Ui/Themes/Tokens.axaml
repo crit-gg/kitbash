@@ -109,8 +109,11 @@
     <SolidColorBrush x:Key="DestructiveInkPressed" Color="#ffe8e8" />
 
     <!-- The close button belongs to the window rather than to a control, and it is the
-         only red that is not a destructive action. -->
+         only red that is not a destructive action. The design gives the hover alone, so
+         the pressed tone is derived from it the way every other pressed tone here is,
+         by darkening the hover rather than by reaching for the destructive red. -->
     <SolidColorBrush x:Key="CloseHover" Color="#d9494f" />
+    <SolidColorBrush x:Key="ClosePressed" Color="#bd3a41" />
 
     <!-- Graph pin colours by type, for the tool that draws graphs. PinFloat carries the
          same value as Data on purpose: a float pin is data, and if the data colour moves
@@ -123,9 +126,10 @@
     <SolidColorBrush x:Key="PinStruct" Color="#dde3ea" />
 
     <!-- Shape. Every control is 5px and every pill, card, panel and window shell is 8px.
-         Nothing is square cornered. -->
+         Nothing is square cornered. The 8px name is Surface rather than Pill because a
+         window shell takes it too, and a window has no business reading a pill. -->
     <CornerRadius x:Key="RadiusControl">5</CornerRadius>
-    <CornerRadius x:Key="RadiusPill">8</CornerRadius>
+    <CornerRadius x:Key="RadiusSurface">8</CornerRadius>
     <CornerRadius x:Key="RadiusMark">2</CornerRadius>
 
     <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these

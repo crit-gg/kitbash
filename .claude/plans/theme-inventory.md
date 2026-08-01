@@ -125,7 +125,9 @@ Each role carries four values: the mark, the tinted surface, its border and its 
 Destructive is the one solid fill in the system: `#b0454a`, hover `#c25055`, pressed
 `#973b40`, text `#fff1f1` and `#ffe8e8` when pressed. The close button hover is
 `#d9494f`, which is its own value because it belongs to the window and not to a
-control.
+control. The design gives that hover alone, so stage 3 derived the pressed tone from
+it the way every other pressed tone here is derived, by darkening the hover rather
+than by reaching for the destructive red. `ClosePressed` is `#bd3a41`.
 
 Graph pin colours, from the spec rather than this page, for the tool that needs them
 later: Float `#5bc8a8`, Int `#6ea8e8`, Bool `#d97b7b`, Enum `#a78bfa`, Struct and Exec
@@ -158,6 +160,8 @@ Letter spacing: `.02em` on the window title, `.05em` on pill text, and `.1em` to
 
 Radius is 5px on every control and 8px on pills, cards, panels and window shells.
 Nothing is square cornered. Small marks use 2px and 3px, and a knob or dot is round.
+The 8px token is `RadiusSurface` rather than `RadiusPill`, because a window shell takes
+it too and a window has no business reading a pill.
 
 | Token | Value | Where |
 |---|---|---|
