@@ -119,6 +119,17 @@ no file watching, so one process does not see another's write until it reloads.
 holds nested tables and no format specific types, so moving off TOML would touch one
 class.
 
+### Application settings
+
+`IApplicationSettings` is a separate store for this user on this machine, kept outside
+any workspace under the OS configuration directory. It has no layer to choose, so
+these settings can never be shared through a workspace's team config. Use it for
+choices that belong to the person and the machine, or that must be read before a
+workspace is known.
+
+Nothing reads it yet. It was added for a Wayland backend toggle that has since been
+removed, and it is kept because window geometry and recent workspaces belong there.
+
 ## Platforms
 
 Linux and Windows, 64 bit only. `Directory.Build.props` sets `RuntimeIdentifiers`
@@ -156,6 +167,30 @@ launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE
 MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
 what it looked for. Add candidates there rather than in `LinuxPlatform`.
 
+## Window style
+
+Every Workbench window draws its own title bar. This is the house style, so a new
+window conforms rather than inventing its own frame.
+
+Derive from `ChromelessWindow`. `Themes/WindowChrome.axaml` supplies the frame, the
+corner radius, the eight resize grips and the caption button look and glyphs. The
+window itself supplies only its title bar row, which must:
+
+- carry `WindowDecorationProperties.ElementRole="TitleBar"`
+- wire `PointerPressed` to `BeginMoveWindow` and `DoubleTapped` to `ToggleMaximized`
+- use `Button` with class `caption`, plus `captionMaximize` or `captionClose`, each
+  with a tooltip and an `AutomationProperties.Name`
+
+Behavior that is deliberate and should not be reported as missing: right click on the
+title bar does nothing, and so does middle click. Both match the desktop defaults
+recorded in `.claude/avalonia.md`.
+
+No shadow is drawn by the app. The window is exactly its visible size.
+
+Anything clickable needs a `Background`, even `Transparent`. A control with no
+background is not hit tested, so a look that only appears on `:pointerover` can never
+be reached.
+
 ## Commands
 
 ```
@@ -174,10 +209,8 @@ dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
 
 - .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1,
   Microsoft.Extensions.DependencyInjection 10.0.10
-- Avalonia 12 notes: compiled bindings are on by default, so `x:DataType` is
-  required on views and templates. Data annotations validation is off by default.
-  `SystemDecorations` is now `WindowDecorations`. There is no `Avalonia.Diagnostics`
-  package for 12.x.
+- Avalonia 12 changed a lot from 11 and most material online still describes 11.
+  Read `.claude/avalonia.md` before working on views, styling or window chrome.
 - Tomlyn 2.10 is a redesign. The old `Toml` static class is gone, replaced by
   `TomlSerializer` with a `System.Text.Json` style API.
 
