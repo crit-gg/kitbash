@@ -164,7 +164,14 @@ Nothing is square cornered. Small marks use 2px and 3px, and a knob or dot is ro
 | `ShadowFloating` | `0 6px 18px rgba(0,0,0,.5)` | a raised control |
 | `ShadowPopup` | `0 10px 28px rgba(0,0,0,.55)` | menus and dropdowns |
 | `ShadowOverlay` | `0 20px 48px rgba(0,0,0,.6)` | large popups and modals |
-| `ShadowWindow` | `0 26px 64px rgba(0,0,0,.7)` plus `0 2px 6px rgba(0,0,0,.5)` | a window or a floating tool window |
+| `ShadowWindow` | `0 26px 64px rgba(0,0,0,.7)` plus `0 2px 6px rgba(0,0,0,.5)` | see below |
+
+`ShadowWindow` is the one token the app deliberately does not use. A window that draws
+its own frame casts its shadow into a transparent gutter, and both parts of this token
+carry a vertical offset the gutter would clip into a hard line. The window shadow is
+`drop-shadow(0 0 12 #60000000)` in a 12px gutter instead, decided and not open. Stage 3
+has the reasoning. The token stays defined because it is what the design specifies and a
+future technique may be able to draw it.
 
 ### Density
 
