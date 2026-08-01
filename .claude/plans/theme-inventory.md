@@ -30,6 +30,11 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
    fill at 30 percent width.
 7. **Panels** (5) panel header, panel footer, the depth ladder, the splitter, the
    empty panel with a call to action.
+7a. **Value editors** (10) spinbox, colour, date, time, date and time, hyperlink, and
+   four sliders: continuous, stepped, range, and paired with a spinbox. Each in all five
+   states. Then three popovers: the colour picker in three shape modes, the calendar, and
+   the clock. Stage 6 builds the editors, stage 8 the shell they share, stage 12 the
+   picker.
 8. **Tree** (7) disclosure arrow, indent guides at 14px per level, and the row states:
    normal, hover, selected, selected with focus, modified, drop target, disabled.
 9. **Tree data grid** (1) hierarchy in the first column with aggregates on the branch
@@ -57,6 +62,7 @@ lightens progressively with depth.
 | `SurfaceNest2` | `#2b2d31` | second level, and the resting fill of every control |
 | `SurfaceNest3` | `#31343a` | third level, then the cycle repeats at Nest1 |
 | `SurfaceWell` | `#161719` | input wells |
+| `SurfaceWellFocus` | `#1a1b1e` | an input well while it is focused, from the value editors |
 | `SurfaceRowAlt` | `#212328` | the alternating row in a data grid |
 | `SurfaceControlOff` | `#232427` | a disabled control's flattened fill |
 
@@ -211,6 +217,24 @@ future technique may be able to draw it.
 
 Icon sizes are 16px in tables, trees, the status bar and inline chips, and 20px in the
 activity rail, launcher tool cards and empty states.
+
+## The value editors dedupe
+
+Worth recording because the section is the largest on the page and almost all of it is
+already paid for. 47 distinct colours, 31 of them tokens that exist. One is new,
+`#1a1b1e`, the focused well. The rest are the page's own furniture, gradient endpoints
+and mock content.
+
+The focus halo in that section is byte for byte the one stage 4 built, ticks are
+`LineControl`, today's ring on the calendar is `AccentTintLine`, selection is
+`AccentTint`, and adjacent month days are `InkDisabled`. Nothing new was needed for any
+of it.
+
+**One trap, measured.** The colour picker's swatch and recent grids are filled with the
+Slate palette as example content, so a naive scan reads them as the section using those
+tokens. It does not. `Destructive` appears five times in the section and all five are
+swatches. Count a colour as used only where it is chrome. Stage 12 records the matching
+rule that the grids ship empty.
 
 ## Where the design repeats a value
 

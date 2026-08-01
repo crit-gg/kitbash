@@ -39,6 +39,20 @@ placement and the drop are part of the theme rather than left to the default.
 **Popover.** A larger floating card, 8px radius, used for content rather than a list of
 actions.
 
+**The picker shell, which three editors share.** Colour, date and time all open the same
+way: the popup edge, a deep shadow, and a monospace readout in the footer of exactly what
+will be written. Build the shell once here and let stage 6 and stage 12 fill it, because
+three pickers that drift apart is the failure this section exists to prevent.
+
+The footer carries Cancel and Apply when the edit commits more than one value at once,
+which is the date and time case and the colour popover case.
+
+**One body, two hosts.** A picker body has to work in the shell above and dropped
+straight into a panel. In a panel it loses the shadow, takes the panel surface and loses
+the buttons, because the value applies live and the footer only reads the literal back.
+That is a rule about the body, so build the body knowing it, rather than discovering it
+when a property panel wants a colour editor inline.
+
 **Modal.** A real window, per the spec, with its own title bar and a deep shadow, and no
 scrim. This is a departure from the usual pattern and the reason `DialogWindow` was
 built in stage 3. The modal here is the content convention: 15px weight 600 title, body,

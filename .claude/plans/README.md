@@ -1,6 +1,6 @@
 # Slate build plan
 
-Eleven stages that take Workbench from the old dark theme to the Slate visual
+Twelve stages that take Workbench from the old dark theme to the Slate visual
 direction, and turn the launcher's one off markup into a control library that
 every tool shares.
 
@@ -104,15 +104,21 @@ want the same shell, so it is not the launcher's.
 | Stage | Theme these |
 |---|---|
 | 4 | `Button`, `SplitButton`, `DropDownButton`, `ProgressBar` |
-| 6 | `TextBox`, `AutoCompleteBox`, `MaskedTextBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `Slider`, `NumericUpDown`, `ComboBox` |
+| 6 | `TextBox`, `AutoCompleteBox`, `MaskedTextBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `Slider`, `TickBar`, `NumericUpDown`, `ComboBox`, `CalendarDatePicker`, `TimePicker` |
 | 7 | `GridSplitter`, `Expander`, `SplitView` |
 | 8 | `ContextMenu`, `Menu`, `MenuItem`, `MenuFlyout`, `Flyout`, `Popup`, `ToolTip`, `Separator` |
 | 9 | `ListBox`, `ListBoxItem`, `TreeView`, `TreeViewItem`, `TabControl`, `TabItem` |
 | 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
 
-Only two things in this plan have no built in type and stay hand built: the chip and the
-status pill in stage 4. Everything else in stages 4 to 10 is a theme over the list above.
-Stage 11's docking surface comes from Dock.
+Five things in this plan have no built in type and stay hand built: the chip, the status
+pill and the badge in stage 4, the range slider in stage 6, and the colour picker in
+stage 12. Everything else in stages 4 to 10 is a theme over the list above. Stage 11's
+docking surface comes from Dock.
+
+Two near misses worth naming, because both look hand built and are not. A stepped slider
+is `Slider` with `TickFrequency` and `IsSnapToTickEnabled` and a `TickBar` whose `Fill`
+is the tick colour. A value editor's adorner is `NumericUpDown.InnerRightContent`, not a
+custom well.
 
 ## Stages
 
@@ -123,19 +129,22 @@ Stage 11's docking surface comes from Dock.
 | 3 | `stage-03-window-shell.md` | 1, 2 |
 | 4 | `stage-04-buttons-and-pills.md` | 1, 2 |
 | 5 | `stage-05-launcher-relayout.md` | 1, 2, 3, 4, 8 |
-| 6 | `stage-06-input-controls.md` | 1, 2, 4 |
+| 6 | `stage-06-input-controls.md` | 1, 2, 4, 8 |
 | 7 | `stage-07-panels-and-splitters.md` | 1, 3 |
 | 8 | `stage-08-overlays.md` | 1, 2, 4 |
 | 9 | `stage-09-lists-and-trees.md` | 1, 2, 7 |
 | 10 | `stage-10-data-grid.md` | 1, 2, 6, 9 |
 | 11 | `stage-11-docking.md` | 1, 2, 7, 8, 9 |
+| 12 | `stage-12-colour-picker.md` | 1, 2, 4, 6, 8 |
 
 Stage 5 is the first point where the app looks like the design.
 
-**Stage 5 now needs stage 8**, which is new. The redrawn launcher opens three menus and a
-tooltip, so the overlay surfaces have to exist before the launcher can be rebuilt on
-them. Either run stage 8 before stage 5, or build stage 5 twice. Running 8 first is the
-cheaper answer, and it costs nothing else, since 8 only depends on 1, 2 and 4.
+**Stage 8 moved to the front of the queue.** Stage 5 needs it, because the redrawn
+launcher opens three menus and a tooltip. Stage 6 needs it too, because the date, time
+and colour editors all open a picker in the shell stage 8 defines. So 8 runs before both,
+and it costs nothing to move, since it only depends on 1, 2 and 4.
 
-Stages 6, 7, 9, 10 and 11 build what Foundry will need and are not visible in the
+The order that follows from the dependencies is 8, then 5, then the rest.
+
+Stages 6, 7, 9, 10, 11 and 12 build what Foundry will need and are not visible in the
 launcher, so they can be reordered or paused without leaving the app half themed.
