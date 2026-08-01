@@ -46,7 +46,7 @@ public sealed class EngineViewModel
         {
             Version = "Godot 4.3 stable",
             State = "VERSION MISMATCH",
-            Note = "project.godot requests 4.4 · 4.4.1 is installed but not selected",
+            Note = "project.godot requests 4.4, and 4.4.1 is installed but not selected",
             Action = "Switch to 4.4.1",
             PillBackground = Brush("#1f1a10"),
             PillBorder = Brush("#3b2f16"),
@@ -58,9 +58,9 @@ public sealed class EngineViewModel
 
         EngineStatus.Missing => new EngineViewModel(status)
         {
-            Version = "Godot 4.4 — not installed",
+            Version = "Godot 4.4 is not installed",
             State = "NOT FOUND",
-            Note = "project.godot requests 4.4 · no matching install on this machine",
+            Note = "project.godot requests 4.4, with no matching install on this machine",
             Action = "Install 4.4.1",
             PillBackground = Brush("#1e1416"),
             PillBorder = Brush("#3a1e21"),
@@ -74,7 +74,7 @@ public sealed class EngineViewModel
         {
             Version = "Godot 4.4.1 stable",
             State = "MATCHES PROJECT",
-            Note = "project.godot requests 4.4 · installed at C:/godot/4.4.1",
+            Note = "project.godot requests 4.4, installed at C:/godot/4.4.1",
             Action = "Open in Godot",
             PillBackground = Brush("#112019"),
             PillBorder = Brush("#23452f"),

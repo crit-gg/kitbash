@@ -59,7 +59,8 @@
     <SolidColorBrush x:Key="BadInk" Color="#ea8a8a" />
     <SolidColorBrush x:Key="BadTint" Color="#1e1416" />
     <SolidColorBrush x:Key="BadTintLine" Color="#3a1e21" />
-    <SolidColorBrush x:Key="Close" Color="#c95f52" />
+    <SolidColorBrush x:Key="Close" Color="#e13c2f" />
+    <SolidColorBrush x:Key="ClosePressed" Color="#bd2c21" />
 
     <SolidColorBrush x:Key="Neutral" Color="#5c6772" />
     <SolidColorBrush x:Key="Scrim" Color="#05070a" Opacity="0.5" />

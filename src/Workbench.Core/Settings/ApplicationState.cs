@@ -1,17 +1,17 @@
 namespace Workbench.Core.Settings;
 
-internal sealed class ApplicationSettings : IApplicationSettings
+internal sealed class ApplicationState : IApplicationState
 {
     private readonly ScopedDocuments _documents;
 
-    public ApplicationSettings(
+    public ApplicationState(
         ApplicationPaths paths,
         ISettingsDocumentStore store,
         ISettingsValueConverter converter)
     {
         ArgumentNullException.ThrowIfNull(paths);
 
-        _documents = new ScopedDocuments(paths.SettingsFileFor, store, converter);
+        _documents = new ScopedDocuments(paths.StateFileFor, store, converter);
     }
 
     public ISettings Global => _documents.For(SettingsScope.Global);

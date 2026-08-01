@@ -1,32 +1,65 @@
 using Avalonia.Media;
+using Workbench.Core.Workspaces;
 
 namespace Workbench.ViewModels;
 
-/// <summary>One workspace in the switcher.</summary>
+/// <summary>One workspace in the switcher. Everything shown is derived from the model.</summary>
 public sealed class WorkspaceViewModel
 {
-    public required string Name { get; init; }
+    public WorkspaceViewModel(Workspace workspace, bool isCurrent, string displayPath)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
 
-    public required string Path { get; init; }
+        Workspace = workspace;
+        IsCurrent = isCurrent;
+        Path = displayPath;
+    }
 
-    public required string Badge { get; init; }
+    public Workspace Workspace { get; }
 
-    public required string Action { get; init; }
+    public bool IsCurrent { get; }
 
-    public required bool IsCurrent { get; init; }
+    public string Name => Workspace.Name;
 
-    public required IBrush Dot { get; init; }
+    /// <summary>Shortened for display. Use <see cref="Workspace"/> for the real root.</summary>
+    public string Path { get; }
 
-    public required IBrush BadgeBackground { get; init; }
+    /// <summary>A workspace in good order carries no badge.</summary>
+    public bool HasBadge => Workspace.IsMissing || Workspace.IsLocal;
 
-    public required IBrush BadgeBorder { get; init; }
+    public string Badge => Workspace.IsMissing ? "MISSING" : "LOCAL";
 
-    public required IBrush BadgeForeground { get; init; }
+    public string Action => (IsCurrent, Workspace.IsMissing) switch
+    {
+        (true, _) => "current",
+        (_, true) => "not found",
+        _ => "switch",
+    };
 
-    public required IBrush ActionForeground { get; init; }
+    public bool CanSwitch => !IsCurrent && !Workspace.IsMissing;
 
-    /// <summary>The current workspace carries a tinted row and an accent edge.</summary>
-    public IBrush RowBackground => IsCurrent ? SolidColorBrush.Parse("#16212c") : Brushes.Transparent;
+    public IBrush Dot => Workspace switch
+    {
+        { IsMissing: true } => Brush("#ea5257"),
+        { IsLocal: true } => Brush("#5c6772"),
+        _ => Brush("#52cfa5"),
+    };
 
-    public IBrush EdgeMark => IsCurrent ? SolidColorBrush.Parse("#58a6f0") : Brushes.Transparent;
+    public IBrush BadgeBackground => Workspace.IsMissing ? Brush("#1e1416") : Brush("#171b20");
+
+    public IBrush BadgeBorder => Workspace.IsMissing ? Brush("#3a1e21") : Brush("#272d34");
+
+    public IBrush BadgeForeground => Workspace.IsMissing ? Brush("#ea8a8a") : Brush("#8b959e");
+
+    public IBrush ActionForeground => (IsCurrent, Workspace.IsMissing) switch
+    {
+        (true, _) => Brush("#6e7982"),
+        (_, true) => Brush("#49535b"),
+        _ => Brush("#58a6f0"),
+    };
+
+    /// <summary>The current workspace carries an accent edge.</summary>
+    public IBrush EdgeMark => IsCurrent ? Brush("#58a6f0") : Brushes.Transparent;
+
+    private static IBrush Brush(string color) => SolidColorBrush.Parse(color);
 }

@@ -5,6 +5,6 @@ public interface IEnvironment
 {
     string? GetVariable(string name);
 
-    /// <summary>The user's configuration directory for this machine.</summary>
-    string GetConfigurationDirectory();
+    /// <summary>The user's home directory.</summary>
+    string GetHomeDirectory();
 }

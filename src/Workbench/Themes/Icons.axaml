@@ -4,6 +4,29 @@
     <!-- BoxIcons v3 Pro, path data only, on a 24 by 24 view box. Draw with a
          PathIcon so the fill follows the foreground. -->
 
+    <!-- The stock PathIcon template stretches the geometry's own ink to fill the
+         control, which throws the 24 unit box away and blows up any glyph that does
+         not fill it. A chevron is mostly empty space, so it came out about two and a
+         half times too large. Holding the box on a Canvas keeps every icon at the
+         size the design asks for. -->
+    <ControlTheme x:Key="{x:Type PathIcon}" TargetType="PathIcon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}">
+                    <Viewbox Width="{TemplateBinding Width}"
+                             Height="{TemplateBinding Height}"
+                             Stretch="Uniform">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{TemplateBinding Foreground}"
+                                  Data="{TemplateBinding Data}" />
+                        </Canvas>
+                    </Viewbox>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
     <StreamGeometry x:Key="IconChevronDown">m7.29 10.71 4 4c.2.2.45.29.71.29s.51-.1.71-.29l4-4A.996.996 0 1 0 15.3 9.3l-3.29 3.29L8.72 9.3a.996.996 0 1 0-1.41 1.41Z</StreamGeometry>
 
     <StreamGeometry x:Key="IconCog">m21.16 7.86-1-1.73a1.997 1.997 0 0 0-2.73-.73l-.53.31c-.58-.46-1.22-.83-1.9-1.11V4c0-1.1-.9-2-2-2h-2c-1.1 0-2 .9-2 2v.6c-.67.28-1.31.66-1.9 1.11l-.53-.31c-.96-.55-2.18-.22-2.73.73l-1 1.73c-.55.96-.22 2.18.73 2.73l.5.29c-.05.37-.08.74-.08 1.11s.03.74.08 1.11l-.5.29c-.96.55-1.28 1.78-.73 2.73l1 1.73c.55.95 1.78 1.28 2.73.73l.53-.31c.58.46 1.22.83 1.9 1.11v.6c0 1.1.9 2 2 2h2c1.1 0 2-.9 2-2v-.6a8.7 8.7 0 0 0 1.9-1.11l.53.31c.96.55 2.18.22 2.73-.73l1-1.73c.55-.96.22-2.18-.73-2.73l-.5-.29c.05-.37.08-.74.08-1.11s-.03-.74-.08-1.11l.5-.29c.96-.55 1.28-1.78.73-2.73M12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4</StreamGeometry>

@@ -3,6 +3,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Workbench.Core;
+using Workbench.Core.IO;
+using Workbench.Core.Workspaces;
 using Workbench.ViewModels;
 using Workbench.Views;
 
@@ -36,9 +38,11 @@ public partial class App : Application
     private static ServiceProvider BuildServices() =>
         new ServiceCollection()
             .AddWorkbenchPlatform()
-            .AddWorkbenchWorkspace()
+            .AddWorkbenchWorkspaces()
             .AddSingleton(BuildRegistry())
-            .AddSingleton<LauncherViewModel>()
+            .AddSingleton(provider => new LauncherViewModel(
+                provider.GetRequiredService<IWorkspaceRegistry>(),
+                provider.GetRequiredService<IPathShortener>()))
             .BuildServiceProvider();
 
     // Placeholders until real tools exist.
@@ -65,5 +69,5 @@ public partial class App : Application
 
     private static IToolActivation NotBuiltYet(string name) =>
         DelegateToolActivation.Sync(() =>
-            ToolActivationResult.Failure($"'{name}' has no implementation yet."));
+            ToolActivationResult.Failure($"{name} is not built yet."));
 }

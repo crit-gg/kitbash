@@ -2,28 +2,49 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Workbench.Core.IO;
+using Workbench.Core.Workspaces;
 
 namespace Workbench.ViewModels;
 
 public partial class LauncherViewModel : ViewModelBase
 {
+    /// <summary>Roughly what fits the selector and a switcher row at their fixed widths.</summary>
+    private const int SubtitleLength = 34;
+    private const int RowPathLength = 48;
+
+    private readonly IWorkspaceRegistry _workspaces;
+    private readonly IPathShortener _paths;
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(WorkspaceBorder))]
     [NotifyPropertyChangedFor(nameof(WorkspaceChevronAngle))]
     private bool _workspacesOpen;
 
     [ObservableProperty]
     private EngineViewModel _engine = EngineViewModel.For(EngineStatus.Matched);
 
-    public string AppVersion => "0.9.2";
+    [ObservableProperty]
+    private string _workspaceName = "No workspace";
 
-    public string WorkspaceName => "Overpressure";
+    [ObservableProperty]
+    private string _workspaceSubtitle = "Add one to get started";
 
-    public string WorkspaceSubtitle => "D:/dev/overpressure/godot · 12 unsaved";
+    [ObservableProperty]
+    private string _toolsSummary = "1 installed";
 
-    public string ToolsSummary => "1 installed · scoped to Overpressure";
+    /// <summary>False shows the empty state instead of the whole body.</summary>
+    [ObservableProperty]
+    private bool _hasWorkspaces;
 
-    public string WorkspacesNote => "one game project on disk";
+    public LauncherViewModel(IWorkspaceRegistry workspaces, IPathShortener paths)
+    {
+        ArgumentNullException.ThrowIfNull(workspaces);
+        ArgumentNullException.ThrowIfNull(paths);
+
+        _workspaces = workspaces;
+        _paths = paths;
+        ReloadWorkspaces();
+    }
 
     public string GitBranch => "feature/heat-rebalance";
 
@@ -33,11 +54,9 @@ public partial class LauncherViewModel : ViewModelBase
 
     public string GitFetched => "4m";
 
-    /// <summary>The workspace button takes an accent border while the list is open.</summary>
-    public IBrush WorkspaceBorder =>
-        WorkspacesOpen ? SolidColorBrush.Parse("#58a6f0") : SolidColorBrush.Parse("#313943");
-
     public double WorkspaceChevronAngle => WorkspacesOpen ? 180 : 0;
+
+    public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
 
     public IReadOnlyList<ToolCardViewModel> Tools { get; } =
     [
@@ -48,8 +67,8 @@ public partial class LauncherViewModel : ViewModelBase
             State = "INSTALLED",
             Version = "0.9.2",
             Description =
-                "Data editor — author attributes, stats, effects, machines and recipes, "
-                + "plus the designer-facing graphs: pure, exec, state machines and behavior trees.",
+                "Author attributes, stats, effects, machines and recipes. "
+                + "Also the graphs: pure, exec, state machines and behavior trees.",
         },
     ];
 
@@ -60,52 +79,75 @@ public partial class LauncherViewModel : ViewModelBase
         new GitStatViewModel("1", "conflict", "#ea5257"),
     ];
 
-    public ObservableCollection<WorkspaceViewModel> Workspaces { get; } =
-    [
-        new WorkspaceViewModel
+    /// <summary>
+    /// Registers a folder and opens it. A folder inside a workspace already added is
+    /// refused and nothing happens.
+    /// </summary>
+    public void AddWorkspace(string folder)
+    {
+        Workspace added;
+
+        try
         {
-            Name = "Overpressure",
-            Path = "D:/dev/overpressure/godot",
-            Badge = "OPEN",
-            Action = "current",
-            IsCurrent = true,
-            Dot = SolidColorBrush.Parse("#52cfa5"),
-            BadgeBackground = SolidColorBrush.Parse("#112019"),
-            BadgeBorder = SolidColorBrush.Parse("#23452f"),
-            BadgeForeground = SolidColorBrush.Parse("#7cd6b2"),
-            ActionForeground = SolidColorBrush.Parse("#6e7982"),
-        },
-        new WorkspaceViewModel
+            added = _workspaces.Add(folder);
+        }
+        catch (NestedWorkspaceException)
         {
-            Name = "Overpressure — demo build",
-            Path = "D:/dev/overpressure-demo/godot",
-            Badge = "READ ONLY",
-            Action = "switch →",
-            IsCurrent = false,
-            Dot = SolidColorBrush.Parse("#e0a943"),
-            BadgeBackground = SolidColorBrush.Parse("#1f1a10"),
-            BadgeBorder = SolidColorBrush.Parse("#3b2f16"),
-            BadgeForeground = SolidColorBrush.Parse("#e0a943"),
-            ActionForeground = SolidColorBrush.Parse("#58a6f0"),
-        },
-        new WorkspaceViewModel
+            // Caught only so the refusal does not take the app down from an async void
+            // handler. There is nowhere to report it yet. Give it one.
+            return;
+        }
+
+        _workspaces.SetCurrent(added.Root);
+
+        ReloadWorkspaces();
+        WorkspacesOpen = false;
+    }
+
+    public void SwitchTo(WorkspaceViewModel workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        if (!workspace.CanSwitch)
         {
-            Name = "Tinkering sandbox",
-            Path = "C:/Users/you/Documents/wb-sandbox",
-            Badge = "LOCAL",
-            Action = "switch →",
-            IsCurrent = false,
-            Dot = SolidColorBrush.Parse("#5c6772"),
-            BadgeBackground = SolidColorBrush.Parse("#171b20"),
-            BadgeBorder = SolidColorBrush.Parse("#272d34"),
-            BadgeForeground = SolidColorBrush.Parse("#8b959e"),
-            ActionForeground = SolidColorBrush.Parse("#58a6f0"),
-        },
-    ];
+            return;
+        }
+
+        _workspaces.SetCurrent(workspace.Workspace.Root);
+
+        ReloadWorkspaces();
+        WorkspacesOpen = false;
+    }
 
     [RelayCommand]
     private void ToggleWorkspaces() => WorkspacesOpen = !WorkspacesOpen;
 
     [RelayCommand]
     private void CloseWorkspaces() => WorkspacesOpen = false;
+
+    // Names and states are read from disk again, so a renamed project or a folder
+    // that has gone missing shows up without anyone maintaining a list.
+    private void ReloadWorkspaces()
+    {
+        _workspaces.Refresh();
+
+        var current = _workspaces.Current;
+
+        Workspaces.Clear();
+
+        foreach (var workspace in _workspaces.All)
+        {
+            Workspaces.Add(new WorkspaceViewModel(
+                workspace,
+                workspace.Root == current?.Root,
+                _paths.Shorten(workspace.Root, RowPathLength)));
+        }
+
+        HasWorkspaces = Workspaces.Count > 0;
+        WorkspaceName = current?.Name ?? "No workspace";
+        WorkspaceSubtitle = current is null
+            ? "Add one to get started"
+            : _paths.Shorten(current.Root, SubtitleLength);
+        ToolsSummary = current is null ? "1 installed" : $"1 installed, scoped to {current.Name}";
+    }
 }

@@ -20,4 +20,7 @@ public interface IFileSystem
     void WriteAllText(string path, string contents);
 
     void MoveFile(string sourcePath, string destinationPath, bool overwrite);
+
+    /// <summary>Immediate subdirectories, ordered by name so a search is repeatable.</summary>
+    IReadOnlyList<string> EnumerateDirectories(string path);
 }

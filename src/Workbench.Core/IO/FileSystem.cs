@@ -33,4 +33,22 @@ public sealed class FileSystem : IFileSystem
 
     public void MoveFile(string sourcePath, string destinationPath, bool overwrite) =>
         File.Move(sourcePath, destinationPath, overwrite);
+
+    public IReadOnlyList<string> EnumerateDirectories(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            return [];
+        }
+
+        try
+        {
+            return [.. Directory.EnumerateDirectories(path).Order(StringComparer.Ordinal)];
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            // A folder we cannot read is a folder with nothing in it, for our purposes.
+            return [];
+        }
+    }
 }

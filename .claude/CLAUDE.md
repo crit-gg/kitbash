@@ -7,6 +7,37 @@ The point of this app existing outside Godot: the Godot editor's inspector and
 save/load behavior are awkward for authoring gameplay data, and designers should
 be able to work without the editor open.
 
+## Cross platform is a requirement, not a goal
+
+Every change is written for Windows and for Linux, and on Linux for any distribution
+and any desktop. Development happens on one machine, so the other cases are never
+the ones being looked at. They are still the ones that break.
+
+Before writing anything that touches the filesystem, the environment, a path, a
+process, a window or a user visible directory, answer three questions:
+
+1. **What does the other OS do here?** If the answer differs, it goes behind an
+   interface with one implementation per OS, chosen by a factory in
+   `WorkbenchCoreServices`. That file is the only place allowed to test the running
+   OS. Never branch on the OS at a call site, and never assume a separator, a
+   directory layout, a case sensitive filesystem or a shell.
+2. **What does the other distribution do here?** Assume no particular distribution,
+   package manager, init system, desktop or file manager. Read the standard, honor
+   the environment variable, and probe for what is installed rather than naming one
+   thing. `DesktopLauncherResolver` is the shape to copy: a list of candidates, the
+   first one present wins, and a message that lists what was tried when none are.
+3. **What happens when it is not there?** A variable can be unset, empty, relative or
+   nonsense. A directory can be missing. A program can be absent. Each of those has a
+   defined answer, and the answer is never a crash.
+
+Sandboxes count as distributions. Flatpak and Snap move every user directory, and
+they say so through the standard variables, so code that reads the variable works and
+code that hardcodes a path does not.
+
+State the assumption in a comment when behavior is pinned to something external, such
+as a spec rule or a variable a platform always sets. Verify what can be verified here,
+and say plainly what could not be tested because this machine is Linux.
+
 ## Comment and documentation style
 
 Applies to code comments, XML docs, markdown, and anything else written as prose.
@@ -20,6 +51,20 @@ Applies to code comments, XML docs, markdown, and anything else written as prose
   produced it.
 - Keep comments to a minimum. Prefer code that does not need one.
 - Write for maintenance. Say what a reader needs in order to change the code safely.
+
+## User facing copy
+
+Applies to every string a person reads in the app. Labels, buttons, tooltips,
+menu items, headings, placeholders, status text, error messages, dialogs.
+
+- No em dashes.
+- No semicolons. Split the sentence instead.
+- Avoid hyphenated words. Reword rather than hyphenate. Proper names and product
+  names keep their real spelling.
+- Keep it short. A label is a few words, a message is a sentence.
+- No special characters. No middle dots, arrows, ellipsis characters, bullets or
+  anything else decorative. Ordinary letters, digits and plain punctuation only,
+  unless asked for one directly.
 
 ## Code
 
@@ -41,8 +86,10 @@ and builds one provider at startup. `App.BuildServices` is the launcher's.
 
 Core exposes registration methods rather than a container of its own:
 
-- `AddWorkbenchIO` filesystem and environment
+- `AddWorkbenchIO` filesystem, environment, user directories, path display
 - `AddWorkbenchPlatform` the services that differ per OS
+- `AddWorkbenchApplicationStorage` settings, state and the cache for this machine
+- `AddWorkbenchWorkspaces` the list of workspaces a person has added
 - `AddWorkbenchWorkspace` workspace discovery
 - `AddWorkbenchSettings(paths)` settings for one workspace
 
@@ -119,24 +166,50 @@ no file watching, so one process does not see another's write until it reloads.
 holds nested tables and no format specific types, so moving off TOML would touch one
 class.
 
-### Application settings
+## Application storage
 
-`IApplicationSettings` is a separate store for this user on this machine, kept outside
-any workspace under the OS configuration directory. It has no layer to choose, so
-these settings can never be shared through a workspace's team config. Use it for
-choices that belong to the person and the machine, or that must be read before a
-workspace is known.
+What Workbench keeps for one person on one machine, outside any workspace, so it can
+be read before a workspace is known. Three places, because they are backed up, roamed
+and cleared differently. `IUserDirectories` says where each one is and is the only
+thing that knows the OS layout. `ApplicationPaths` names the files under them.
 
-Nothing reads it yet. It was added for a Wayland backend toggle that has since been
-removed, and it is kept because window geometry and recent workspaces belong there.
+| | Linux | Windows |
+|---|---|---|
+| Configuration | `$XDG_CONFIG_HOME` or `~/.config` | `%APPDATA%`, roams |
+| State | `$XDG_DATA_HOME` or `~/.local/share` | `%LOCALAPPDATA%\Workbench\State` |
+| Cache | `$XDG_CACHE_HOME` or `~/.cache` | `%LOCALAPPDATA%\Workbench\Cache` |
+
+An XDG variable holding a relative path is ignored, which the spec requires.
+
+State sits in the data directory by choice. The spec would put it under
+`$XDG_STATE_HOME`, since a workspace list is a recently used list. It is here instead,
+so a later directory for real user data would share this folder rather than take a
+fourth one. Do not move it back without asking.
+
+**`IApplicationSettings`** is configuration. Choices a person may edit by hand. It has
+no layer to choose, so these can never be shared through a workspace's team config.
+Nothing reads it yet.
+
+**`IApplicationState`** is what the app remembers for itself. The list of workspaces,
+which one is open, and window geometry when that arrives. The app writes it, a person
+does not. Deleting the state directory resets Workbench without touching anything
+anyone chose, which is the whole reason it is not in the config file.
+
+Both take the same shape, scopes and all, and both are TOML through the same
+`ISettingsDocumentStore`. They share `ScopedDocuments` and differ only in which
+directory their files land in. `ISettings` is the read side of both, so read its name
+as a typed read over a document rather than as a claim about settings.
+
+The cache has a directory and `ApplicationPaths.CacheFileFor`, and no API beyond that.
+Nothing caches anything yet, so the first thing that does picks its own shape.
 
 ## Platforms
 
 Linux and Windows, 64 bit only. `Directory.Build.props` sets `RuntimeIdentifiers`
 to `linux-x64` and `win-x64`.
 
-Behavior that differs per OS goes behind `IPlatformServices` in
-`Workbench.Core/Platform`, with one folder per OS.
+Behavior that differs per OS lives in `Workbench.Core/Platform`, with one folder per
+OS. Most of it sits behind `IPlatformServices`.
 
 ```
 Platform/
@@ -145,13 +218,27 @@ Platform/
   WebAddress.cs, DirectoryLocation.cs
   IProcessRunner.cs, ProcessRunner.cs, ProcessRequest.cs, ProcessStartException.cs
   IExecutableFinder.cs, ExecutableFinder.cs
-  Linux/                              LinuxPlatform, launcher resolution
-  Windows/                            WindowsPlatform
+  Linux/                              LinuxPlatform, launcher resolution,
+                                      user directories, path display
+  Windows/                            WindowsPlatform, user directories, path display
 ```
 
 `DesktopPlatform` holds everything shared and leaves one abstract member, `Open`,
 which is the only thing that varies. Resolve `IPlatformServices` from the container
 and never test the running OS at the call site.
+
+Three IO services also vary, each with its own interface because each is asked for by
+itself. They are registered together by `AddPlatformIO`, so a new one costs no extra
+OS test.
+
+- `IUserDirectories` the per user directories, covered under Application storage
+- `IPathShortener` writes a path for display. `PathShortener` in `IO` holds the
+  elision and a subclass per OS supplies the separator, the display form and the root
+- `IPathRules` says whether two paths mean the same place, and whether one sits inside
+  another. Only case sensitivity differs, so the subclasses are one line each
+
+`AddPlatformIO` and `CreatePlatform`, both in `WorkbenchCoreServices`, are the only
+places that test the running OS.
 
 Targets are value objects. `WebAddress` accepts absolute http and https only, and
 `DirectoryLocation` requires a rooted path. Parsing is the only way to make either,
@@ -166,6 +253,49 @@ Linux assumes no particular distribution. `DesktopLauncherResolver` uses the fir
 launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE,
 MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
 what it looked for. Add candidates there rather than in `LinuxPlatform`.
+
+## Workspaces
+
+A workspace is any folder. What makes it one is a `.workbench` directory, which
+Workbench creates when the folder is added. `IWorkspaceRegistry` holds the list of
+workspaces a person has added and which one is open, stored in application state so
+it follows the user rather than any workspace.
+
+Only the root path is stored. The name and the states are read from disk on every
+refresh, so a renamed project or a folder that has gone missing shows up without
+anyone maintaining a list.
+
+**Name**, in order, from `IWorkspaceNameResolver`:
+
+1. `workspace.name` in the workspace's team config
+2. `config/name` from the first `project.godot` found under the folder, searched four
+   levels deep, skipping `.git`, `.godot`, `node_modules` and similar. Note that
+   `project.godot` is not TOML, since its keys contain slashes, so it is read by line.
+3. the folder name
+
+**States.** `IsLocal` means no repository, so there is no branch or history to show.
+`IsMissing` means the folder is gone. A missing workspace is kept in the list rather
+than dropped, so removing one is always a deliberate act.
+
+**No nesting.** A folder inside a workspace that is already added is refused, and
+`Add` throws `NestedWorkspaceException` naming the workspace it sits in. Settings are
+found by walking up to the nearest `.workbench`, so a nested pair would leave a tool
+started in the inner folder and one started in the outer folder disagreeing about
+which workspace they are in. The check runs before anything is written, so a refused
+folder is not left with a `.workbench` directory in it.
+
+The launcher catches the exception and does nothing, so picking a nested folder is
+silently ignored. That is deliberate and temporary. There is no error surface in the
+launcher yet, and the catch exists only so a throw does not take the app down from an
+async void handler. When a surface arrives, report the refusal there.
+
+Adding the other way around, a folder that contains a workspace already added, is
+still allowed. It makes the same overlap, so it is worth closing, but it was not asked
+for and blocking it would refuse a legitimate move to a parent repository.
+
+Roots are compared through `IPathRules`, not with string equality, because Windows
+ignores case and Linux does not. A prefix test on its own would also read `game-tools`
+as a child of `game`, so the separator is part of the test.
 
 ## Window style
 
