@@ -221,6 +221,27 @@ gained a height, which shrank them inside the title bar. Where a control only re
 the shared one, give it a keyed theme instead. `CaptionButton`, `SplitButtonPart` and
 `ChipRemoveButton` are all keyed for that reason.
 
+### Overlays
+
+Everything that floats lives in `Themes/Controls/Overlays.axaml`: menus, context menus,
+flyouts, tooltips and the popover. They all sit on `SurfaceNest2` with a `LineControl`
+edge at `RadiusControl`, with `ShadowPopup` for a menu or a tooltip and `ShadowOverlay`
+for a popover.
+
+**One radius for everything that floats**, the control radius. A popover is not a larger
+card, it reads as an extension of the trigger that opened it.
+
+`ui:Popover` is a header, a body and a footer. It is both the workspace list and the
+shell a picker opens in, and its `inPanel` class drops the shadow and the surface so the
+same body works dropped into a property panel.
+
+**A dialog has no scrim.** It is a real window and the window manager owns modality. A
+scrim belongs only to a popup that covers a page, and it is an element that page draws,
+because Avalonia's light dismiss layer is not public and cannot be brushed.
+
+A `BoxShadow` cannot be cleared by a setter with an empty value, which throws at layout
+rather than at build. Use `ShadowNone`.
+
 ### The gallery
 
 ```
@@ -461,7 +482,13 @@ Every Workbench window draws its own title bar. This is the house style, so a ne
 window conforms rather than inventing its own frame.
 
 Everything here lives in `Workbench.Ui`, so a tool gets the same window without copying
-anything. Derive from `ui:ChromelessWindow` and put a `ui:WindowTitleBar` at the top of
+anything. **A window template must carry `<VisualLayerManager Name="PART_VisualLayerManager">`.**
+`TopLevel` finds that part by name and installs the overlay and adorner layers into it,
+and those are what adorners, tooltips and the light dismiss layer attach to. Without it a
+window has no overlay layer, nothing is logged, and the symptom shows up much later as a
+menu that will not close when a click lands inside the window.
+
+Derive from `ui:ChromelessWindow` and put a `ui:WindowTitleBar` at the top of
 the content. `Workbench.Ui/Themes/Controls/WindowChrome.axaml` supplies the frame, the
 corner radius, the eight resize grips and the whole title bar, and
 `WorkbenchTheme.axaml` already includes it, so a window writes one element:
@@ -606,10 +633,10 @@ has started.
 
 The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
-ones, so the plan runs straight through. Stages 1 to 4 are done: `Workbench.Ui` carries the Slate tokens, the
+ones, so the plan runs straight through. Stages 1 to 5 are done: `Workbench.Ui` carries the Slate tokens, the
 type scale, the 48 icons, the window shell and the first control themes, which are the
-five button kinds, the split button, the dropdown, the chip, the status pill and the
-progress bar.
+five button kinds, the split button, the dropdown, the chip, the badge, the status pill,
+the progress bar and every overlay surface.
 
 The launcher wears a Slate title bar on a Slate frame, and its body is still the old
 palette. Nothing in it consumes a control theme yet, since its own `Button.action` style

@@ -124,6 +124,20 @@ specification, and it is not one.
 `ClosePressed` as `#bd3a41` because the design showed only the hover. The design now
 gives it directly as `#b53c42`. Correct the token and drop the note about deriving it.
 
+## The window has to carry a named layer manager
+
+```xml
+<VisualLayerManager Name="PART_VisualLayerManager">
+```
+
+`TopLevel` finds this part by name and installs the overlay and adorner layers into it.
+Those layers are what adorners, tooltips and the light dismiss layer attach to. A window
+template without it has no overlay layer at all, and nothing complains: the symptom turns
+up much later as a menu that will not close when a click lands inside the window.
+
+This template was written from scratch and omitted it, which stage 5 then spent a long
+time chasing. The probe asserts the part is present and named.
+
 ## Cross platform
 
 The design targets Windows. This project targets both, and the Linux path is the

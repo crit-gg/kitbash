@@ -259,6 +259,72 @@
                 </Border>
 
                 <!-- section -->
+                <TextBlock Classes="section" Text="OVERLAYS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Everything that floats shares one surface. Open a menu, a dropdown and a tooltip next to each other and the ground, the edge and the radius are the same. Right click the panel for a context menu." />
+
+                        <StackPanel.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Open in new tab" InputGesture="Ctrl+Enter" />
+                                <MenuItem Header="Duplicate" InputGesture="Ctrl+D" />
+                                <MenuItem Header="Assign graph">
+                                    <MenuItem Header="Pure graph" />
+                                    <MenuItem Header="Exec graph" />
+                                </MenuItem>
+                                <MenuItem Header="Check in" InputGesture="Ctrl+K" />
+                                <Separator />
+                                <MenuItem Header="Delete recipe" InputGesture="Delete" Classes="danger" />
+                            </ContextMenu>
+                        </StackPanel.ContextMenu>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Menu" ToolTip.Tip="A tooltip on the same surface">
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Open in new tab" InputGesture="Ctrl+Enter" />
+                                        <MenuItem Header="Duplicate" InputGesture="Ctrl+D" />
+                                        <Separator />
+                                        <MenuItem Header="Delete recipe" InputGesture="Delete" Classes="danger" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+
+                            <Button Content="Popover">
+                                <Button.Flyout>
+                                    <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover">
+                                        <ui:Popover Width="320" Header="WORKSPACES">
+                                            <StackPanel>
+                                                <TextBlock Text="The launcher supplies the rows. This is the surface only."
+                                                           Classes="note" Margin="13,10" />
+                                            </StackPanel>
+                                            <ui:Popover.Footer>
+                                                <StackPanel>
+                                                    <MenuItem Header="Add workspace from folder" />
+                                                    <MenuItem Header="Clone workspace from git" />
+                                                </StackPanel>
+                                            </ui:Popover.Footer>
+                                        </ui:Popover>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+
+                            <Button Classes="ghost" Content="Hover me for a tooltip"
+                                    ToolTip.Tip="Run all validators" />
+                        </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="The same popover dropped into a panel loses its shadow and its surface and keeps its body. That is what lets a picker open in a popover and also sit inside a property panel." />
+
+                        <ui:Popover Classes="inPanel" Header="IN A PANEL" HorizontalAlignment="Left" Width="320">
+                            <TextBlock Text="Same body, no shadow, no surface of its own."
+                                       Classes="note" Margin="13,10" />
+                        </ui:Popover>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
                 <TextBlock Classes="section" Text="WINDOW AND DIALOG" />
                 <Border Classes="panel">
                     <StackPanel Spacing="14">

@@ -26,6 +26,7 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Badge.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/StatusPill.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ProgressBar.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Overlays.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

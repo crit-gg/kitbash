@@ -212,11 +212,25 @@
                                 BorderThickness="1"
                                 CornerRadius="{TemplateBinding CornerRadius}">
                             <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
-                                <ContentPresenter Name="PART_ContentPresenter"
-                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                  Content="{TemplateBinding Content}"
-                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                <!-- The name is the whole thing. TopLevel finds this part
+                                     by name and installs the overlay and adorner layers
+                                     into it, so a manager without the name gets neither
+                                     and nothing complains.
+
+                                     Those layers are what adorners, tooltips and the light
+                                     dismiss layer attach to. Without them a menu never saw
+                                     a press inside the window that opened it and stayed
+                                     open until the pointer landed outside the application.
+
+                                     Copied from Avalonia's own Window template, read at
+                                     runtime rather than guessed. -->
+                                <VisualLayerManager Name="PART_VisualLayerManager">
+                                    <ContentPresenter Name="PART_ContentPresenter"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      Content="{TemplateBinding Content}"
+                                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                </VisualLayerManager>
                             </Border>
                         </Border>
                     </Grid>

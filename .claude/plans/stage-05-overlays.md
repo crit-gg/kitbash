@@ -10,9 +10,13 @@ dropdown cannot drift apart.
 ## The overlay surface
 
 Anything floating sits on `SurfaceNest2` `#2b2d31` with a `LineControl` `#3d4045` edge
-and is separated internally only by hairlines. That is the whole rule. Radius 5px for
-menus and dropdowns, 8px for larger cards. Shadow is `ShadowPopup` for menus and
-`ShadowOverlay` for anything larger.
+and is separated internally only by hairlines. That is the whole rule. Shadow is
+`ShadowPopup` for menus and `ShadowOverlay` for anything larger.
+
+**Radius is 5px, including the popover.** An earlier note here said 8px for larger cards.
+The design says otherwise, in as many words: the radius matches the control that opened
+it, so a popover reads as an extension of its trigger rather than a separate floating
+card. One radius for everything that floats.
 
 ## Build
 
@@ -99,3 +103,73 @@ Opening animation is a translate plus a fade, matching the design's 110ms drop. 
 - The workspace popup looks unchanged after moving to the library.
 - Popup corners are uniform, verified on Linux.
 - Escape and a click outside dismiss every overlay.
+
+## As built
+
+`Themes/Controls/Overlays.axaml` holds every floating thing in one file, so a grep for
+`SurfaceNest2` there finds all of them at once. `MenuItem`, `Separator`,
+`MenuFlyoutPresenter`, `ContextMenu`, `FlyoutPresenter` and `ToolTip` are all built in
+types with a theme over them. `Popover` is ours.
+
+**The surface is not aliased into a token.** Each theme names `SurfaceNest2`,
+`LineControl` and `RadiusControl` itself, and a probe opens a menu, a popover and a
+tooltip and asserts all three resolve to the same ground, edge and radius. Enforcement is
+the measurement rather than a shared name, which is the same approach the rest of this
+library takes.
+
+**`Popover` is a `HeaderedContentControl` with a footer**, since a header over content is
+exactly what that type already is and only the footer was missing. That one control is
+both the workspace list and the picker shell: the shell is a popover whose footer holds a
+readout and its buttons. Two uses, one control, which is why no separate `PickerShell` was
+written.
+
+Its `inPanel` class is the two hosts rule. Floating it takes the overlay surface and
+`ShadowOverlay`. In a panel it drops both and keeps its body, which is what lets a picker
+open in a popover and also sit inside a property panel without being built twice.
+
+The template is two borders, the outer drawing the stroke and the shadow and the inner
+clipping, because one border cannot do both without the corner artefact the launcher hit
+once already.
+
+**The scrim is an element a page draws, decided.** Avalonia's `LightDismissOverlayLayer`
+is not public, so it cannot be brushed from a theme. `Scrim` is a token and the page that
+covers itself draws it. That also keeps the design's other rule intact, which is that a
+dialog has no scrim at all, because it is a real window and the window manager owns
+modality rather than a dimming layer.
+
+**A shortcut hint is spelled without symbols.** `GestureText` writes `Ctrl Return` rather
+than the platform's punctuation, in the order a person says the modifiers, which keeps a
+column of hints lining up in monospace and keeps the copy rules intact.
+
+Two things measured on the way.
+
+A `BoxShadow` cannot be cleared by a setter with an empty value. It throws
+`InvalidCastException` at layout, not at build. `ShadowNone` is a zero shadow that is also
+transparent, and it is what a control takes when it gives up its shadow.
+
+A popup on X11 is its own operating system window, already recorded, and it bites the
+test rather than the code: a menu and a tooltip are not descendants of the window that
+opened them, so a probe has to reach them through a control it put inside them.
+
+**A menu would not close on a click inside the window, and the cause was the window.**
+Clicking outside the application dismissed it, clicking inside did not, which is the
+signature of the light dismiss layer being absent rather than of anything in this stage.
+
+`ChromelessWindow` was written from scratch in stage 3 and its template had no
+`VisualLayerManager`. Adding one changed nothing, because `TopLevel` finds that part **by
+name** and installs the overlay and adorner layers into it. Unnamed, it gets neither, and
+nothing is logged. The fix is one attribute:
+
+```xml
+<VisualLayerManager Name="PART_VisualLayerManager">
+```
+
+Read out of Avalonia's own `Window` template by dumping a plain window's visual tree at
+runtime, rather than guessed. Two wrong turns preceded it and are worth not repeating:
+forcing `ShouldUseOverlayLayer` on every popup throws `Unable to create IPopupImpl and no
+overlay layer is found`, which is the same missing layer reported from the other end, and
+an unnamed manager looks right in the tree and does nothing.
+
+This was a stage 3 defect, not a stage 5 one. Every Workbench window had no overlay layer
+at all, so adorners and tooltips had nowhere to attach either. `stage-03`'s probe now
+asserts the named part exists.
