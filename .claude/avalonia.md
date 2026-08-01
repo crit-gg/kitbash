@@ -1,15 +1,148 @@
 # Avalonia 12 notes
 
-Researched against the 12.1.1 tag, the official v12 breaking changes page and the
+Researched against the 12.1.1 source, the official v12 breaking changes page and the
 12.0 and 12.1 release notes. Avalonia 12 is recent and much online material still
 describes 11, so prefer this file and the sources at the bottom over memory.
+
+Anything below marked **measured** was run on this machine against 12.1.1 rather than
+read. See "How these were checked" at the end.
 
 ## Baseline
 
 - Avalonia 12.1.1 on .NET 10. Version 12 dropped .NET Framework and netstandard.
 - Skia is the only rendering backend. Direct2D was removed.
 - `Avalonia.Diagnostics` was removed. The replacement is `AvaloniaUI.DiagnosticsSupport`
-  with `AttachDeveloperTools()`, which is a paid tier.
+  with `AttachDeveloperTools()`, which is a paid tier. There is still a free overlay,
+  covered under Diagnostics below.
+- Text shaping is no longer tied to the renderer. An app that calls `UseSkia` by hand
+  must also call `UseHarfBuzz`, or startup throws "No text shaping system configured".
+  `UsePlatformDetect` from `Avalonia.Desktop` calls it first, so our launcher is fine.
+- Tizen and the Blazor variant of the browser backend were removed.
+
+## Property system
+
+Registration lives on `AvaloniaProperty`.
+
+- `Register<TOwner, TValue>(name, defaultValue, inherits, defaultBindingMode, validate,
+  coerce, enableDataValidation)` for a styled property. Only styled properties can be
+  set by a style.
+- `RegisterDirect<TOwner, TValue>(name, getter, setter, unsetValue, defaultBindingMode,
+  enableDataValidation)` wraps a normal CLR field. Cheaper, but a style cannot set it.
+  `Window.WindowState` became direct in 12, which is why it can no longer be styled.
+- `RegisterAttached<THost, TTarget, TValue>` for attached properties.
+
+Declare what a property invalidates in the static constructor, or nothing repaints:
+`AffectsRender<T>` on `Visual`, `AffectsMeasure<T>` and `AffectsArrange<T>` on
+`Layoutable`.
+
+`StyleKeyOverride` picks the type a control is styled as. Return the base type when a
+subclass should keep the base look. `ChromelessWindow` does this so every derived
+window still matches `Window` styles.
+
+Value writes:
+
+- `SetValue` writes a local value, which beats every style.
+- `SetCurrentValue` changes the value without writing a local value, so styles and
+  animations still apply later. Use it when reacting to input inside a control.
+- `ClearValue` drops the local value and lets styles resolve again. **Measured**: a
+  `Border` styled to width 200, assigned 50 locally, then `SetCurrentValue(75)`, then
+  cleared, reads 200 again.
+
+Properties registered with `enableDataValidation` now report errors automatically.
+Remove `UpdateDataValidation` overrides that only forwarded the error.
+
+## Styling and theming
+
+### Precedence, measured rather than assumed
+
+`BindingPriority` from strongest to weakest is `Animation`, `LocalValue`,
+`StyleTrigger`, `Template`, `Style`, `Inherited`. Three rules decide a winner, in this
+order.
+
+**1. A selector that varies at runtime binds at `StyleTrigger` and beats one that does
+not.** `StyleInstance` chooses `StyleTrigger` when the selector produced an activator
+and `Style` when it did not. Classes, pseudo classes, `[Property=Value]` and nth child
+all make an activator. A plain type or name selector does not.
+
+**Measured**: a style on `Border.specific.more` set height 10, a later style on plain
+`Border` set height 20. The result was 10. This is not CSS specificity. The class
+selector simply lands in a stronger bucket, and adding more classes to the loser would
+not change anything.
+
+**2. Within one priority, the setters closest to the control win.** The frame order is
+plain styles, then a templated parent's theme, then the control's own `ControlTheme`.
+
+**Measured**: a `ControlTheme` for `Border` set height 33 and a `Style` set height 44.
+The result was 44. So a `ControlTheme` is a default that any style overrides, which is
+what makes retheming a control safe.
+
+**3. Within one priority and one frame type, the style declared later wins.**
+
+**Measured**: a style on `Border.a.b.c` set height 10, a later style on `Border.a` set
+height 20. Both are `StyleTrigger`. The result was 20, the later one, despite the
+earlier one matching three classes.
+
+The working rule for our own themes: write base looks and state looks with selectors of
+the same shape, and order them base first, states after. Mixing a plain type selector
+for the base with a class selector for the state means the state wins whatever the
+order, which reads as a style that cannot be overridden.
+
+### Style versus ControlTheme
+
+A `Style` matches by selector and layers on top. A `ControlTheme` replaces a control's
+whole look and is keyed by type. Use `ControlTheme` to redefine a control, `Style` to
+adjust one. `BasedOn` inherits another theme.
+
+### Selectors
+
+The grammar supports type, `Is(Type)`, name, class, pseudo class, attached property,
+`[Property=Value]`, child `>`, descendant, `/template/`, `:not()`, `:nth-child()`,
+`:nth-last-child()`, comma for a list, and `^` for nesting inside a `ControlTheme`.
+
+### Container queries
+
+Styling can react to the size of an ancestor rather than the window. Mark the ancestor,
+then wrap styles in a `ContainerQuery`.
+
+```xml
+xmlns:styling="clr-namespace:Avalonia.Styling;assembly=Avalonia.Base"
+
+<Panel styling:Container.Name="shell" styling:Container.Sizing="WidthAndHeight">
+```
+
+```xml
+<ContainerQuery Name="shell" Query="max-width:400">
+  <Style Selector="Border.probe">
+    <Setter Property="Height" Value="11" />
+  </Style>
+</ContainerQuery>
+```
+
+Keywords are `width`, `height`, `min-width`, `max-width`, `min-height` and
+`max-height`, joined with `and` or `or`. `Container.Sizing` must name the axis being
+queried, and defaults to `Normal`, which answers nothing.
+
+**Measured**: with the query above, a window resized from 600 to 300 and back changed
+the styled height on every layout pass. This is the right tool for a docked panel that
+must relayout when it is narrow, rather than binding to `Bounds` in a view model.
+
+### Resources
+
+Styles belong in `Application.Styles` or `Control.Styles`. Resources belong in
+`Application.Resources`. A `Styles` file is included with `StyleInclude` and a
+`ResourceDictionary` with `ResourceInclude`. Swapping the two fails at runtime, not at
+build.
+
+Use `DynamicResource` inside control templates so a theme change is picked up.
+`StaticResource` resolves once.
+
+Theme variants are `ThemeVariant.Default`, `Light` and `Dark`, with
+`RequestedThemeVariant` and the read only `ActualThemeVariant`. `Default` on the
+application means follow the system. A custom variant can name another variant to
+inherit from when a key is missing. `ThemeVariantScope` applies a variant to a subtree.
+
+`ResourcesChangedEventArgs` is a struct in 12. `Empty` is gone, use
+`ResourcesChangedEventArgs.Create()`.
 
 ## Window chrome
 
@@ -47,8 +180,7 @@ Other notes:
   the platform and the theme, not to app drawn effects.
 - `WindowState` is now a direct property, so it cannot be set from a style. Selectors
   such as `[WindowState=Maximized]` still read it.
-- `TopLevel` is no longer guaranteed to be the visual root. Use
-  `TopLevel.GetTopLevel(visual)` rather than casting.
+- Windows 12.1 added `Win32Properties.WindowCornerPreference` for Windows 11 corners.
 
 ### Roles do not work on Linux yet
 
@@ -61,44 +193,177 @@ hint=True titleBarHint=-1 decorations=Full extended=False   backend=Wayland
 
 `IsExtendedIntoWindowDecorations` stays false, so the roles never take effect.
 
-The cause is in `X11Window.SetExtendClientAreaToDecorationsHint`, which returns early
-unless `X11PlatformOptions.EnableDrawnDecorations` is set. That option is
-`[Experimental("AVALONIA_X11_CSD")]` and its own message reads "Experimental, used
-mostly for testing". When it is enabled, X11 maps the roles onto `_NET_WM_MOVERESIZE`,
-which is the real native move and resize protocol, so the design is right and only the
-gate is closed.
+`X11Window.SetExtendClientAreaToDecorationsHint` returns immediately unless
+`X11PlatformOptions.EnableDrawnDecorationsInternal` is true, which needs either
+`EnableDrawnDecorations`, marked `[Experimental("AVALONIA_X11_CSD")]` with the message
+"Experimental, used mostly for testing", or `ForceDrawnDecorations`, which is
+experimental too and takes the choice away from the app entirely. When enabled, X11
+maps the roles onto `_NET_WM_MOVERESIZE`, which is the real native move and resize
+protocol, so the design is right and only the gate is closed.
 
-`WaylandPlatformOptions` has no equivalent option at all, so on a Wayland session there
-is currently no way to turn this on.
+`WaylandPlatformOptions` has `ForceDrawnDecorations` as well, but it means something
+different. It suppresses `zxdg_decoration_manager_v1` so the compositor never offers
+server side decorations, and it exists to test the client drawn path on compositors
+that would otherwise force server side ones. There is no per window opt in on Wayland.
 
 So on Linux, custom chrome still needs `WindowDecorations="None"` with `BeginMoveDrag`
 and `BeginResizeDrag`, which is what our `ChromelessWindow` does. The launcher keeps
 its `ElementRole` tags anyway: they cost one attribute each, they document intent, and
 they become live if the option is ever enabled or on a platform that honors the hint.
 
-## Styling and theming
+## Layout
 
-- A `Style` matches controls by selector and layers on top. A `ControlTheme` replaces a
-  control's whole look and is keyed by type. Use `ControlTheme` to redefine a control,
-  `Style` to adjust one.
-- Selectors support `/template/` to reach template parts, `^` to refer to the styled
-  control inside a `ControlTheme`, `[Property=Value]`, classes and pseudo classes.
-- Styles belong in `Application.Styles` or `Control.Styles`. Resources belong in
-  `Application.Resources`. A `Styles` file is included with `StyleInclude` and a
-  `ResourceDictionary` with `ResourceInclude`. Swapping the two fails at runtime, not
-  at build.
-- Use `DynamicResource` inside control templates so a theme change is picked up.
-  `StaticResource` resolves once.
+`MeasureOverride(Size availableSize)` returns the size wanted. `ArrangeOverride(Size
+finalSize)` places children and returns the size used. Call `InvalidateMeasure` or
+`InvalidateArrange` when something outside the property system changes, or declare the
+property with `AffectsMeasure` and `AffectsArrange` instead.
+
+`UpdateLayout()` on any `Layoutable` runs a synchronous layout pass. In 12 the layout
+root interfaces are no longer public, so reaching for a `LayoutManager` does not
+compile. Use `UpdateLayout`.
+
+`EffectiveViewportChanged` reports the part of a control actually visible through its
+scroll parents. That is the hook for loading content only when it scrolls into view.
+
+`UseLayoutRounding` is on by default and snaps layout to whole device pixels. Turn it
+off on a control only when a fractional position is deliberate.
+
+## Items controls and virtualization
+
+`ItemsSource` is the collection, `Items` is the direct collection, and setting both
+throws. `ItemsSourceView` is the wrapper the framework reads through.
+
+Containers are observed through events rather than a generator:
+`PreparingContainer`, `ContainerPrepared`, `ContainerIndexChanged` and
+`ContainerClearing`, plus `ContainerFromIndex` and `IndexFromContainer`. Override
+`CreateContainerForItemOverride`, `NeedsContainerOverride` and
+`PrepareContainerForItemOverride` on a custom items control.
+
+Containers are recycled, so anything set in `ContainerPrepared` must be reset there
+too, never only on first use. `ContainerIndexChanged` fires when a recycled container
+is reused at a different index.
+
+`VirtualizingStackPanel` is the default panel for `ListBox`. Writing another
+virtualizing panel means deriving from `VirtualizingPanel` and implementing
+`GetControl` for keyboard navigation.
+
+Selection in 12 changed: touch and pen select on release rather than press.
+`UpdateSelection` and `UpdateSelectionFromEventSource` are obsolete. Override
+`ShouldTriggerSelection` and `UpdateSelectionFromEvent`, and use the helpers in
+`ItemSelectionEventTriggers`.
+
+## Controls added in 12
+
+Worth knowing before hand building something that already ships.
+
+- `TableView`, a read only tabular control built on `ListBox` with configurable
+  columns. Added in 12.1. It is not an editable grid, so it does not replace
+  TreeDataGrid for editing, but it covers a plain columnar list.
+- `GroupBox`, a `HeaderedContentControl`.
+- `CommandBar` with `CommandBarButton`, `CommandBarToggleButton`, `CommandBarSeparator`
+  and overflow handling.
+- `PipsPager`.
+- A page navigation stack under `Page`, with `NavigationPage`, `TabbedPage`,
+  `CarouselPage`, `DrawerPage`, `INavigation` and navigation lifecycle events. Aimed at
+  mobile shells more than at a desktop tool.
+
+`HyperlinkButton` is often listed with these but arrived in 11.1, so it is available in
+any version this project would use.
+
+## Popups and overlays
+
+`Popup` either opens a real platform window or renders into the parent window's overlay
+layer. `ShouldUseOverlayLayer` requests the overlay, `IsUsingOverlayLayer` reports what
+actually happened, and `X11PlatformOptions.OverlayPopups` forces it for the backend.
+
+**Measured** on X11 with defaults: `ShouldUseOverlayLayer` false and
+`IsUsingOverlayLayer` false, so a popup is a separate OS window whose `TopLevel` is a
+`PopupRoot`. That is why popup corners, transparency and shadows have to be solved
+again inside the popup rather than inherited from the window.
+
+The same probe confirms **`TopLevel` is not the visual root**. Walking visual ancestors
+from the popup content ends at `TopLevelHost`, while `TopLevel.GetTopLevel` returns the
+`PopupRoot`. Use `TopLevel.GetTopLevel(visual)`. The `GetVisualRoot()` extension is
+gone, and `IPopupHostProvider` is internal now, so version 11 code that reached for the
+popup host does not compile.
+
+Placement is `Placement`, `PlacementTarget`, `PlacementAnchor`, `PlacementGravity`,
+`PlacementRect`, `HorizontalOffset`, `VerticalOffset` and
+`PlacementConstraintAdjustment` for what happens at a screen edge.
+`IsLightDismissEnabled`, `OverlayDismissEventPassThrough` and
+`OverlayInputPassThroughElement` control dismissal.
+
+Overlay layers on a `TopLevel`: `OverlayLayer` for adorner style content,
+`LightDismissOverlayLayer`, `PopupOverlayLayer` and `AdornerLayer`. A docking drop
+indicator belongs in one of these rather than in the page.
+
+## Animations and transitions
+
+An animation targets a property through an animator chosen by the property's value
+type. There is no animator for `ITransform`.
+
+**Measured**: a keyframe animation on `Visual.RenderTransformProperty` throws
+`InvalidOperationException`, "No animator registered for the property RenderTransform".
+This is a startup crash, not a warning. Animate a child property of a transform
+instead, such as `TranslateTransform.Y`, `ScaleTransform.ScaleX` or
+`RotateTransform.Angle`, and give the control a matching `RenderTransform` instance.
+
+Worse than the crash, the quiet case:
+
+**Measured**: when `RenderTransform` holds a `TransformOperations` value, which is what
+the CSS style string `translateY(10px)` produces, a keyframe animation on
+`TranslateTransform.Y` does nothing at all. The matrix stayed at identity and the task
+returned by `RunAsync` never completed. `TransformAnimator` returns an empty
+subscription for that case on purpose. Nothing is logged.
+
+**Measured**: a `TransformOperationsTransition` on the same property does work. Setting
+`translateY(0px)` then `translateY(40px)` moved through 13.59 and settled on 40.
+
+So the rule is: `TransformOperations` is for transitions, explicit `Transform` objects
+are for keyframe animations, and mixing them fails silently.
+
+Animators exist for bool, the integer types, float, double, decimal, `Color`, `IBrush`,
+`BoxShadow`, `BoxShadows`, `CornerRadius`, `Point`, `Rect`, `RelativePoint`,
+`RelativeScalar`, `Size`, `Thickness`, `Vector` and `IEffect`. Register another with
+`Animation.RegisterCustomAnimator<T, TAnimator>`.
+
+New in 12: a style applied animation stops ticking while its control is not effectively
+visible. `Animation.PlaybackBehavior` is `Auto` by default, and `Always` restores the
+old behavior. Animations started by hand through `RunAsync`, and animations targeting
+`IsVisible`, always play.
+
+## Input
+
+- Gesture attached events moved from `Gestures` to `InputElement`, and `Gestures` is no
+  longer public. In XAML write `Tapped`, `Pinch` and so on with no prefix.
+- `GotFocus` and `LostFocus` carry `FocusChangedEventArgs`. There is also
+  `FocusChangingEventArgs`, with `TryCancel` and `TrySetNewFocusedElement`, so focus
+  moves can be redirected rather than only observed.
+- `KeyboardNavigationHandler` is gone. `FocusManager` does it all, with `Focus`,
+  `TryMoveFocus`, `FindNextElement`, `FindFirstFocusableElement` and
+  `FindLastFocusableElement`. `FindNextElementOptions` adds `SearchRoot`,
+  `ExclusionRect` and `FocusHintRectangle` for directional navigation.
+- `NavigationDirection` covers `Next`, `Previous`, `First`, `Last`, the four arrows and
+  the two page keys.
+- Access keys are matched on the printed symbol rather than the virtual key, so accented
+  characters and digits work. `AccessText.AccessKey` changed from `char` to `string?`.
+- Clipboard and drag and drop were rewritten. `IDataObject` is gone. `DataObject`
+  became `DataTransfer`, `DataFormats` became `DataFormat`, `DragDrop.DoDragDrop` became
+  `DoDragDropAsync`, and `DragEventArgs.Data` became `DragEventArgs.DataTransfer`.
+  `BinaryFormatter` is no longer used on Windows, so custom payloads need their own
+  serialization. X11 gained XDND support in 12.1.
 
 ## Bindings
 
 - Compiled bindings are on by default in 12, so `x:DataType` is required on views and
   on every `DataTemplate`.
 - `IBinding` was removed. Everything derives from `BindingBase`. `Binding` now always
-  means `ReflectionBinding`. In code prefer `CompiledBinding.Create`.
+  means `ReflectionBinding`. In code prefer `CompiledBinding.Create`, which accepts a
+  LINQ expression.
 - `InstancedBinding` was removed. The equivalent is `BindingExpressionBase`.
-- Properties registered with `enableDataValidation` now report errors automatically.
-  Remove `UpdateDataValidation` overrides that only forwarded the error.
+- Binding plugins are no longer configurable, and the data annotations plugin is off by
+  default. Validation attributes do nothing unless validation is wired another way.
+- `FuncMultiValueConverter` takes `IReadOnlyList<TIn>` rather than `IEnumerable<TIn>`.
 
 ## Text
 
@@ -106,31 +371,99 @@ they become live if the option is ever enabled or on a platform that honors the 
   attached property. Writing it on a `TextBlock` in XAML still works.
 - `RenderOptions.TextRenderingMode` moved to `TextOptions.TextRenderingMode`, which
   also carries `TextHintingMode` and `BaselinePixelAlignment`.
+- `TextBox.Watermark` is now `PlaceholderText`, with `PlaceholderForeground` for its
+  colour. The old name is obsolete but still present.
+- Type 1 fonts are no longer supported. TrueType and OpenType only.
 
-## Resources and fonts
+### Trimming already knows about paths
 
-- Assets are addressed as `avares://AssemblyName/Path`.
-- Embedded fonts are `AvaloniaResource` items, referenced as
-  `avares://AssemblyName/Folder#Family Name`.
-- When embedding separate weight files, check that every file reports the same family
-  name, otherwise weight selection silently fails. `fc-scan` shows the family a file
-  reports.
+`TextTrimming` has `None`, `CharacterEllipsis`, `WordEllipsis`,
+`PrefixCharacterEllipsis`, `LeadingCharacterEllipsis` and `PathSegmentEllipsis`.
 
-## Testing
+**Measured**, one path at shrinking widths:
 
-- `Avalonia.Headless` 12.1.1, with `Avalonia.Headless.XUnit` or `Avalonia.Headless.NUnit`.
-  Version 12 moved to xUnit v3 and NUnit 4.
-- `Avalonia.Headless.Vnc` runs a headless app that can be viewed over VNC.
-- Headless runs with no display, so it is the right way to check UI behavior here.
-  Screenshots of a live desktop are not, because they capture whatever else is open.
+```
+400 -> /home/jason/Projects/godot/.../godot/scenes/machines/moldurr.tscn
+220 -> /home/jason/.../machines/moldurr.tscn
+140 -> /home/.../moldurr.tscn
+ 80 -> ...oldurr.tscn
+```
+
+It drops whole segments from the middle and keeps the last one, which is what our
+`PathShortener` does by hand. The difference is that `TextTrimming` works in rendered
+width rather than character count, and knows nothing about a home directory. The split
+worth keeping in mind: the shortener decides what the path means, such as writing the
+home directory as a tilde, and `TextTrimming` decides what fits.
+
+The default ellipsis is the single character form. `TextPathSegmentTrimming` takes a
+custom ellipsis string in its constructor, so plain dots can be used instead.
+
+## Threading
+
+Avalonia 12 supports one dispatcher per thread. Library and control code should use
+`AvaloniaObject.Dispatcher` or `Dispatcher.CurrentDispatcher` rather than
+`Dispatcher.UIThread`, which now means one particular thread rather than the only one.
+
+`Dispatcher.InvokeAsync` captures the execution context, so `AsyncLocal` and culture
+flow from the caller. There is also `Dispatcher.FromThread` and a `TaskScheduler`
+conversion.
+
+Priorities that matter in practice, weakest first: `SystemIdle`, `ApplicationIdle`,
+`ContextIdle`, `Background`, `Input`, `Default`, `Loaded`, `Render`, `Normal`, `Send`.
+`Loaded` runs after layout and render but before input, which is the right place for
+work that needs a measured tree. Posting at `Loaded` from the `Opened` handler is how
+the probes here read real sizes.
+
+## Storage provider
+
+`TopLevel.StorageProvider` gives `OpenFilePickerAsync`, `SaveFilePickerAsync`,
+`OpenFolderPickerAsync` and bookmarks. 12.1 added `OpenFileWithResultAsync`.
+
+On Linux the provider is a `FallbackStorageProvider` that tries three things in order,
+which fits our rule about probing rather than naming one thing:
+
+1. The xdg desktop portal `org.freedesktop.portal.FileChooser` over DBus, when
+   `X11PlatformOptions.UseDBusFilePicker` is true, which is the default. **Folder
+   picking needs portal version 3 or later**, since `CanPickFolder` is
+   `version >= 3`. This is the path that works under Flatpak and Snap.
+2. The GTK dialog, when GTK is present.
+3. `ManagedStorageProvider`, Avalonia's own dialog drawn in managed code, which always
+   works and looks like Avalonia rather than the desktop.
+
+So a folder picker is available on any distribution, but which one appears depends on
+what is installed. Do not assume the native dialog.
+
+## Diagnostics without DevTools
+
+`Avalonia.Diagnostics` is gone, but `TopLevel.RendererDiagnostics.DebugOverlays` is
+free and takes `RendererDebugOverlays.Fps`, `DirtyRects`, `LayoutTimeGraph` and
+`RenderTimeGraph`.
+
+**Measured**: settable at runtime, no extra package.
+
+Bind it to a debug only setting rather than a keyboard shortcut nobody remembers.
+
+## Accessibility
+
+`Avalonia.FreeDesktop.AtSpi` is a real AT-SPI2 backend and `AvaloniaX11Platform`
+constructs it during initialization, so it needs no opt in. `AutomationProperties.Name`
+on our caption buttons is read by a Linux screen reader, not just by test tooling.
+Windows automation was improved in 12.1 as well.
 
 ## Platform backends
 
-- `UsePlatformDetect` selects X11 on Linux. `Avalonia.Wayland` 12.1.1 is a separate
-  package enabled with `UseWayland`, or a fallback form called after `UsePlatformDetect`
-  that uses Wayland when a compositor is available.
+- `UsePlatformDetect` selects X11 on Linux, and loads HarfBuzz and Skia.
+  `Avalonia.Wayland` 12.1.1 is a separate package enabled with `UseWayland`.
 - This machine is a Wayland session, so the app runs through XWayland today.
-- Windows 12.1 added `Win32Properties.WindowCornerPreference` for Windows 11 corners.
+- `X11PlatformOptions.WmClass` sets the WM_CLASS the window reports. A Linux desktop
+  matches that string against the `.desktop` file name to attach the icon and group
+  windows in the task bar. Packaging work will need it to match whatever the desktop
+  entry is called.
+- Other X11 options worth knowing: `OverlayPopups`, `UseDBusFilePicker`, `UseDBusMenu`,
+  `EnableIme`, `EnableSessionManagement`, `RenderingMode` and `GlxRendererBlacklist`.
+- Screens: `Screen` is abstract in 12. Get instances from `Screens.All`,
+  `Screens.Primary` or `Screens.ScreenFromWindow`. **Measured** here: one screen,
+  7680 by 2160, work area 60 pixels shorter, scaling 1.5.
 
 ## Hit testing
 
@@ -143,6 +476,10 @@ This bit the launcher: the caption buttons only responded on the few pixels thei
 covered, and clicks elsewhere in the button fell through to the title bar and started a
 window drag. Verify with `this.InputHitTest(point)`, but run it after layout. At
 `Opened` the tree is not measured yet and every hit returns null.
+
+`ICustomHitTest` lets a control answer for itself, taking a point in global coordinates.
+That is the way to make a shaped control, such as a drag handle, claim only its own
+area.
 
 ## What a title bar has to do
 
@@ -186,6 +523,23 @@ Wayland   clientSize=940, 728
 X11 is exact. The backend was tried and removed from this project. Treat it as young
 if it is ever revisited.
 
+## Testing
+
+- `Avalonia.Headless` 12.1.1, with `Avalonia.Headless.XUnit` or `Avalonia.Headless.NUnit`.
+  Version 12 moved to xUnit v3 and NUnit 4.
+- `Avalonia.Headless.Vnc` runs a headless app that can be viewed over VNC.
+- Headless runs with no display, so it is the right way to check UI behavior here.
+  Screenshots of a live desktop are not, because they capture whatever else is open.
+
+## Resources and fonts
+
+- Assets are addressed as `avares://AssemblyName/Path`.
+- Embedded fonts are `AvaloniaResource` items, referenced as
+  `avares://AssemblyName/Folder#Family Name`.
+- When embedding separate weight files, check that every file reports the same family
+  name, otherwise weight selection silently fails. `fc-scan` shows the family a file
+  reports.
+
 ## Traps already hit in this project
 
 - `ExtendClientAreaChromeHints` does not exist. Build error, easy to spot.
@@ -193,12 +547,33 @@ if it is ever revisited.
 - A runtime identifier cannot be passed to a solution, only to a project.
 - An undecorated window was once sized to the whole screen by the compositor. Verify
   window geometry by logging `ClientSize` rather than trusting a screenshot.
+- Animating `RenderTransform` crashes at startup. See Animations above.
+- A `Border` with no background is invisible to the pointer. See Hit testing above.
+- `PathIcon`'s stock template stretches geometry to fill, which discards the viewBox and
+  scales an icon by whatever its ink happens to measure. Wrap the `Path` in a fixed size
+  `Canvas` inside a `Viewbox` in a `ControlTheme`.
+- `ClipToBounds` on the same `Border` that draws the stroke clips children to the outer
+  rounded rectangle, so the corner reads as two colours. Use two borders, one for the
+  stroke and one for the clip, the way the window frame does.
+
+## How these were checked
+
+The measured claims came from a throwaway Avalonia 12.1.1 app that opens a window,
+posts its checks at `DispatcherPriority.Loaded` so layout has run, writes one line per
+result to stdout and shuts itself down. Reading the source says what should happen.
+Running it says what does.
+
+Worth repeating that shape for anything uncertain. It costs a few minutes, it needs no
+test framework, and it never captures anything else on the desktop.
 
 ## Sources
 
 - Breaking changes: https://docs.avaloniaui.net/docs/avalonia12-breaking-changes
 - Release notes: https://github.com/AvaloniaUI/Avalonia/releases
-- Decorations source: `src/Avalonia.Controls/Chrome/` at tag 12.1.1
+- Source at tag 12.1.1, which is the authority when the docs are thin. The parts read
+  for this file were `Avalonia.Base/PropertyStore`, `Avalonia.Base/Styling`,
+  `Avalonia.Base/Animation`, `Avalonia.Controls/Primitives/Popup.cs`,
+  `Avalonia.X11` and `Avalonia.FreeDesktop`.
 - Fluent decorations theme: `src/Avalonia.Themes.Fluent/Controls/WindowDrawnDecorations.xaml`
 - SourceGit, a well built Avalonia app, though its chrome targets version 11:
   https://github.com/sourcegit-scm/sourcegit
