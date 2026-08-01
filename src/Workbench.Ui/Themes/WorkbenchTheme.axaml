@@ -16,6 +16,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Tokens.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Typography.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Icons.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Icon.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

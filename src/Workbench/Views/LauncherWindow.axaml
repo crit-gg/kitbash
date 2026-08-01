@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Workbench.ViewModels"
         xmlns:views="clr-namespace:Workbench.Views"
+        xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
@@ -168,14 +169,12 @@
                                                    Foreground="{StaticResource LegacyInkFaint}"
                                                    TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                    <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}"
-                                              Width="18" Height="18"
-                                              Foreground="{StaticResource LegacyInkDim}"
+                                    <ui:Icon Glyph="ChevronDown" Size="18" Grid.Column="2" Foreground="{StaticResource LegacyInkDim}"
                                               RenderTransformOrigin="50%,50%">
-                                        <PathIcon.RenderTransform>
+                                        <ui:Icon.RenderTransform>
                                             <RotateTransform Angle="{Binding WorkspaceChevronAngle}" />
-                                        </PathIcon.RenderTransform>
-                                    </PathIcon>
+                                        </ui:Icon.RenderTransform>
+                                    </ui:Icon>
                                 </Grid>
                             </Border>
 
@@ -183,8 +182,7 @@
                                     Background="{StaticResource LegacySurfaceControl}"
                                     BorderThickness="1"
                                     CornerRadius="5">
-                                <PathIcon Data="{StaticResource IconCog}" Width="16" Height="16"
-                                          Foreground="{StaticResource LegacyInkMuted}" />
+                                <ui:Icon Glyph="Cog" Size="16" Foreground="{StaticResource LegacyInkMuted}" />
                             </Border>
                         </Grid>
                     </Border>
@@ -243,9 +241,7 @@
                                     <Border Grid.Column="1" Width="22"
                                             BorderBrush="{Binding Engine.ButtonBorder}"
                                             BorderThickness="1,0,0,0">
-                                        <PathIcon Data="{StaticResource IconChevronDown}"
-                                                  Width="13" Height="13"
-                                                  Foreground="{Binding Engine.ButtonForeground}" />
+                                        <ui:Icon Glyph="ChevronDown" Size="13" Foreground="{Binding Engine.ButtonForeground}" />
                                     </Border>
                                 </Grid>
                             </Border>
@@ -346,8 +342,7 @@
                                     BorderThickness="1"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <PathIcon Data="{StaticResource IconGitBranch}" Width="14" Height="14"
-                                              Foreground="{StaticResource LegacyInkDim}" />
+                                    <ui:Icon Glyph="GitBranch" Size="14" Foreground="{StaticResource LegacyInkDim}" />
                                     <TextBlock Classes="mono" Text="{Binding GitBranch}" MinWidth="96"
                                                FontSize="11.5" FontWeight="Medium"
                                                Foreground="{StaticResource LegacyInkBright}"
@@ -361,8 +356,7 @@
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>
-                                    <PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12"
-                                              Foreground="{StaticResource LegacyInkDim}" />
+                                    <ui:Icon Glyph="ChevronDown" Size="12" Foreground="{StaticResource LegacyInkDim}" />
                                 </StackPanel>
                             </Border>
 
@@ -396,8 +390,7 @@
                                     BorderThickness="1"
                                     VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                                    <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13"
-                                              Foreground="{StaticResource LegacyInkMuted}" />
+                                    <ui:Icon Glyph="RefreshCw" Size="13" Foreground="{StaticResource LegacyInkMuted}" />
                                     <TextBlock Text="Fetch" FontSize="11.5" FontWeight="Medium"
                                                Foreground="{StaticResource LegacyInkBody}" VerticalAlignment="Center" />
                                     <TextBlock Classes="mono" Text="{Binding GitFetched}" FontSize="9.5"
@@ -417,8 +410,7 @@
                                 Background="{StaticResource LegacyAccentTint}"
                                 BorderBrush="{StaticResource LegacyAccentTintLine}" BorderThickness="1"
                                 HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconFolderOpen}" Width="22" Height="22"
-                                      Foreground="{StaticResource LegacyAccent}" />
+                            <ui:Icon Glyph="FolderOpen" Size="22" Foreground="{StaticResource LegacyAccent}" />
                         </Border>
 
                         <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
@@ -515,8 +507,7 @@
                                     Padding="13,10"
                                     PointerPressed="OnAddWorkspacePressed">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <PathIcon Data="{StaticResource IconFolderOpen}" Width="15" Height="15"
-                                              Foreground="{StaticResource LegacyInkDim}" />
+                                    <ui:Icon Glyph="FolderOpen" Size="15" Foreground="{StaticResource LegacyInkDim}" />
                                     <TextBlock Text="Add workspace from folder" FontSize="11.5"
                                                FontWeight="Medium" Foreground="{StaticResource LegacyInkDim}"
                                                VerticalAlignment="Center" />

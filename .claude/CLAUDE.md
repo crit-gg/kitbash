@@ -123,10 +123,35 @@ contract stays free of a UI framework. A consumer takes one line:
 <StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
 ```
 
-That brings the tokens and the type scale. Nothing outside `Themes/Tokens.axaml` writes
-a colour, a size or a radius. Names say what a value is for rather than what it looks
-like, and two names may share a value when they are genuinely different roles, which is
-noted in the file where it happens.
+That brings the tokens, the type scale and the icons. Nothing outside
+`Themes/Tokens.axaml` writes a colour, a size or a radius. Names say what a value is for
+rather than what it looks like, and two names may share a value when they are genuinely
+different roles, which is noted in the file where it happens.
+
+## Icons
+
+Box Icons Pro, Solid Rounded, one weight, no mixing in outline or duotone. Draw one with
+the `Icon` control and nothing else:
+
+```xml
+<ui:Icon Glyph="GitBranch" Size="16" />
+```
+
+Sizes are 16 in tables, trees, the status bar and inline chips, and 20 in the activity
+rail, tool cards and empty states. The colour is inherited, so an icon follows the row or
+button it sits in. Set a foreground only when the icon carries its own meaning, such as a
+semantic mark.
+
+`Glyph` is an enum, so a name that does not exist will not compile. Both the enum and the
+geometry come from `tools/icons/generate.py`, which reads `tools/icons/icons.txt` and the
+licensed set outside the repo. **To add an icon, add its name to that list and rerun the
+generator.** Never hand edit `Themes/Icons.axaml` or `Controls/IconGlyph.cs`. The outputs
+are committed so a clean checkout builds without the set present, and
+`generate.py --check` proves they have not drifted.
+
+The set mixes single paths, multiple paths and rects, so the generator merges shapes and
+rewrites rects. The merge has three traps that all fail silently, recorded in
+`.claude/plans/stage-02-icons.md`. Read that before changing it.
 
 Each tool is its own executable, started by Workbench as a separate OS process.
 Tools are not loaded in process and Workbench does not construct their windows.

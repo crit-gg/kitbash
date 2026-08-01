@@ -13,13 +13,33 @@ neighbour.
 
 **A generator, not a copy paste.** The set lives outside the repo at
 `/home/jason/Seafile/gamedev-assets/icons/box-icons-pro-solid-rounded`. Write a small
-tool that reads a list of wanted names, pulls `bx-<name>.svg`, extracts the single
-`<path d="...">` and emits a `StreamGeometry` resource dictionary.
+tool that reads a list of wanted names, pulls `bx-<name>.svg`, and emits a
+`StreamGeometry` resource dictionary plus the enum, so the two cannot drift apart.
 
-Each file is a 24 by 24 viewBox holding one path with no fill attribute, so the data
-transfers unchanged and takes its colour from the control. That is why this is
-mechanical and why it should stay mechanical: when a new icon is needed, add the name
-to the list and rerun.
+Each file is a 24 by 24 viewBox with no fill attribute, so the shapes take their colour
+from the control. When a new icon is needed, add the name to the list and rerun.
+
+**The set is not as uniform as it looks.** Checked across the 48: ten hold more than one
+element and five use `<rect>` rather than a path. So the shapes are merged in document
+order and rects are rewritten as path data. Three things have to be right about that
+merge, and each one fails silently rather than loudly.
+
+- **Fill rule.** SVG fills nonzero, Avalonia's path markup fills even odd. Merged data
+  must be prefixed `F1` or any glyph whose shapes overlap holes itself out.
+- **Where a later path starts.** A path standing alone begins at the origin, so a
+  leading relative `m` is measured from there. Concatenated behind another path it is
+  measured from wherever that one ended. Four glyphs landed right outside the 24 box
+  before this was handled.
+- **How that is fixed.** Reset the current point by prepending `M0,0`, do not rewrite
+  `m` to `M`. They look equivalent and are not: a moveto may be followed by bare
+  coordinate pairs, which are implicit linetos taking their case from it, so the rewrite
+  quietly turns those absolute. That broke `Cog`, a single path glyph that was never
+  part of the original problem.
+
+Be strict about what the generator accepts. An element it does not know, a fill
+attribute, a viewBox that is not 24 by 24, all stop it. A silently wrong glyph is worse
+than a missing one, and every one of the faults above produced a glyph that still
+rendered.
 
 ```
 tools/icons/                 the generator, not shipped
@@ -61,7 +81,27 @@ what the design shows, until a real mark is drawn.
 
 ## Done when
 
-- The generator runs from a clean checkout and reproduces `Icons.axaml` byte for byte.
+- The generator reproduces both outputs byte for byte. `generate.py --check` does that
+  without writing, so it can be run against a checkout to prove nothing drifted.
 - All 48 render at 16 and 20 with the same visual weight.
 - No view file contains path data.
 - Icon colour follows the parent's state without the view wiring it.
+
+Verify by building every glyph at both sizes in a tree and measuring, not by eye. Three
+checks catch what matters: no glyph resolves to a null geometry, every one measures
+exactly its `Size`, and no geometry's bounds fall outside the 24 box. That last one is
+what caught both merge faults, and neither was visible from the build.
+
+Check that no two glyphs carry identical data as well. Equal data means the generator
+mapped two names onto one file, which nothing else notices.
+
+## As built
+
+`tools/icons/` holds `icons.txt` and `generate.py`, neither shipped.
+`src/Workbench.Ui/Themes/Icons.axaml` and `src/Workbench.Ui/Controls/IconGlyph.cs` are
+generated and committed, so a clean checkout builds without the set present.
+
+48 glyphs, all resolving, all measuring their size, none outside the box, no two alike.
+The launcher's eight icons came off `PathIcon` and its own geometry sheet, which is
+deleted. The `Icon` control theme centres the glyph in whatever space it is given, since
+without that an icon in a fixed size container pins to a corner.
