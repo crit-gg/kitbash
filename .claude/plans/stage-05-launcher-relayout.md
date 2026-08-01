@@ -100,9 +100,9 @@ The Settings item is pushed to the bottom.
 `LineControl`, 5px radius, `ShadowPopup`, 11.5px Archivo `InkPrimary`, and it drops in
 over 80ms. This is the stage 8 tooltip with a placement, not a launcher control.
 
-**Title bar mark.** A 15px rounded square in `Accent` carrying a letter in `AccentInk` at
-10px weight 700, radius 5. This is not the window icon image the title bar takes today.
-See the stage 3 amendment below.
+**Title bar icon.** The design draws a 15px square holding a letter. That is a
+placeholder for an icon, not a lettermark to build. The launcher passes its own icon to
+`WindowTitleBar.Icon` and nothing else changes.
 
 **Workspace selector.** 40px tall, minimum 266px wide, `SurfaceNest2` on `LineSeam`, 5px
 radius, border becomes `Accent` while open. A 9px state square at 2px radius, the name at
@@ -125,8 +125,11 @@ accent when the engine matches, warn when it mismatches, destructive when it is 
 
 **Tool card.** A grid of 48px mark, flexible middle, action on the right, 15px between
 them, 14px by 15px padding, `SurfaceNest2` on `LineControl`, 8px radius. The mark is 48px
-at 8px radius on `AccentTint` with `AccentTintLine`, carrying a lettermark at 16px weight
-700 in `Accent`, until a real mark is drawn.
+at 8px radius on `AccentTint` with `AccentTintLine`, holding the tool's icon.
+
+The design draws a letter in that square. It is a placeholder for the tool's icon, the
+same way the title bar's square is, and it is not built. A tool supplies an icon or the
+square is empty. No lettermark anywhere.
 
 The middle is the name at 14.5px weight 600 with the version beside it in monospace at
 11.5px `InkSecondary`, then the description at 12px on 1.45 line height. Nothing else.
@@ -186,20 +189,13 @@ Note it there rather than solving it here.
 
 Fold these into their own stages rather than working around them here.
 
-**Stage 3, the title bar's leading slot.** `WindowTitleBar.Icon` is an `IImage`, and the
-design's mark is a drawn square with a letter. Give the bar a content slot for the mark
-instead of, or as well as, the image. Every tool will want its own mark there.
-
 **Stage 3, the close button pressed tone.** Stage 3 derived `ClosePressed` as `#bd3a41`
-because the design gave only the hover. The design now gives the pressed value directly:
-`#b53c42`. Correct the token and drop the note about deriving it.
+because the design gave only the hover. The design gives the pressed value directly:
+`#b53c42`. Done.
 
 **Stage 4, the split button takes a kind.** The engine action is accent, warn or
 destructive depending on the engine state, so the split button needs the same kinds the
-plain button has. Its hover and press on a coloured fill are a white wash at 14 percent
-and a black wash at 18 percent rather than `StateHover` and `StatePressed`, because a
-state tone on top of a semantic fill reads as mud. That wash is a rule the system does not
-have yet. Add it to stage 4 as the way any coloured fill takes its states.
+plain button has, each naming its own hover and pressed tone. Done.
 
 **Stage 8, tooltip placement and the scrim**, both noted above.
 

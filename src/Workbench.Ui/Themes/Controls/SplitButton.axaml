@@ -121,7 +121,7 @@
                                     Content="{TemplateBinding Content}"
                                     ContentTemplate="{TemplateBinding ContentTemplate}" />
 
-                            <Border Grid.Column="1" Width="1"
+                            <Border Grid.Column="1" Name="PART_Divider" Width="1"
                                     Background="{TemplateBinding BorderBrush}" />
 
                             <Button Name="PART_SecondaryButton" Grid.Column="2"
@@ -155,10 +155,77 @@
             <Setter Property="RenderTransform" Value="rotate(180deg)" />
         </Style>
 
+        <!-- The kinds. A kind colours the frame, and each half names the same tones the
+             plain button of that kind names, so a hover here and a hover on a Button are
+             the same colour rather than two ways of arriving near it.
+
+             A half covers its side of the frame completely when it fills, so no
+             translucency is involved anywhere. The seam between them is the kind's
+             pressed tone, which is the fill already darkened. -->
+        <Style Selector="^.primary">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}" />
+        </Style>
+
+        <Style Selector="^.primary /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+        </Style>
+
+        <Style Selector="^.primary /template/ Button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^.primary /template/ Button:pressed">
+            <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <Style Selector="^.warn">
+            <Setter Property="Background" Value="{DynamicResource Warn}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Warn}" />
+            <Setter Property="Foreground" Value="{DynamicResource WarnFillInk}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource WarnPressed}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ Button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource WarnHover}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ Button:pressed">
+            <Setter Property="Background" Value="{DynamicResource WarnPressed}" />
+        </Style>
+
+        <Style Selector="^.danger">
+            <Setter Property="Background" Value="{DynamicResource Destructive}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Destructive}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInk}" />
+        </Style>
+
+        <Style Selector="^.danger /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource DestructivePressed}" />
+        </Style>
+
+        <Style Selector="^.danger /template/ Button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DestructiveHover}" />
+        </Style>
+
+        <Style Selector="^.danger /template/ Button:pressed">
+            <Setter Property="Background" Value="{DynamicResource DestructivePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInkPressed}" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
         </Style>
     </ControlTheme>
 

@@ -136,6 +136,16 @@ control. `ClosePressed` is `#b53c42`, taken from the launcher design. Stage 3 ha
 derived `#bd3a41` from the hover before the design gave the value, so a checkout still
 carrying the derived one is out of date rather than wrong on purpose.
 
+Warn is the one semantic role that is ever flooded without being destructive, so it also
+carries the tones a flood needs: hover `#ecb85f`, pressed `#c8933b`, and `#241802` as its
+text on the flood. Data carries a tinted surface `#1b2c28` and border `#2f4a44` for the
+badge that names a runtime.
+
+**Nothing in this library paints with a translucent brush.** The design's markup lays a
+white sheet over a coloured fill for hover. Every such case is a named tone here instead,
+so a hover on a split button and a hover on a button are the same colour rather than two
+ways of arriving near it.
+
 Graph pin colours, from the spec rather than this page, for the tool that needs them
 later: Float `#5bc8a8`, Int `#6ea8e8`, Bool `#d97b7b`, Enum `#a78bfa`, Struct and Exec
 `#dde3ea`.

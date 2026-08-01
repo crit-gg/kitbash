@@ -23,6 +23,7 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/SplitButton.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/DropDownButton.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Chip.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Badge.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/StatusPill.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ProgressBar.axaml" />
             </ResourceDictionary.MergedDictionaries>

@@ -46,16 +46,20 @@ fill of 30 percent width travelling across it. One control, two modes.
 
 ## Amended by the launcher design
 
-**A coloured fill takes its states as a wash, not as a state tone.** The launcher's
+**A coloured fill names its hover and pressed tones. There is no wash.** The launcher's
 engine action is filled accent, warn or destructive depending on the engine state, and
-its hover and press are a white wash at 14 percent and a black wash at 18 percent over
-that fill. `StateHover` over a semantic fill reads as mud, which is why the design does
-not do it.
+each of those names its own hover and pressed tone the way the primary and danger buttons
+already do. `StateHover` over a semantic fill reads as mud, which is the trap, but the
+answer is a named tone rather than a translucent sheet.
 
-That is a rule the system did not have. It applies to every coloured fill, so the primary
-and danger kinds above should take it too rather than naming a second and third tone
-each. Whether to keep their existing per kind hover tones or move both onto the wash is
-the decision to make when implementing it, and the answer should be one rule, not two.
+The design's own markup lays a white sheet at 14 percent over the fill for hover, and its
+data gives named tones for all three states. Take the data. A hand picked tone beats a
+computed one, every tone then comes from the palette, and one rule covers a plain button
+and a split button alike. Nothing in this library paints with a translucent brush.
+
+Warn is the only semantic role that was missing the tones a flood needs, so it gains
+`WarnHover`, `WarnPressed` and `WarnFillInk`, the last being its text on the flood the way
+`AccentInk` sits against `Accent`.
 
 **A badge is not a status pill.** The launcher carries two badge kinds: a round dot with
 a monospace label, and a label on its own. Neither has an icon, because neither is a

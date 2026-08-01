@@ -112,14 +112,13 @@ from focus of a child.
 
 Two things the launcher design settled after this stage was built. Both belong here.
 
-**The leading slot takes a mark, not only an image.** `WindowTitleBar.Icon` is an
-`IImage`. The design's app mark is a 15px rounded square in `Accent` carrying a letter in
-`AccentInk`, which is drawn rather than a bitmap. Give the bar a content slot for the
-mark, so a tool can put its own there. The image stays for the case where a bitmap is
-what a window has.
+**The leading slot is an icon or nothing, and never a lettermark.** The design draws a
+15px square holding a letter, and that square is a placeholder for an icon rather than a
+thing to build. `WindowTitleBar.Icon` already covers it. Do not add a mark property, a
+lettermark or a content slot for one. A window that has no icon shows nothing there.
 
-That also removes the inactive icon rule's awkwardness. A drawn mark can take a tier
-like everything else, where the bitmap could only drop its opacity.
+Recorded because it was built once and taken out. The design's placeholder read as a
+specification, and it is not one.
 
 **The close button pressed tone is given, not derived.** This stage derived
 `ClosePressed` as `#bd3a41` because the design showed only the hover. The design now

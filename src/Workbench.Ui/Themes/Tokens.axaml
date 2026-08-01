@@ -101,6 +101,8 @@
     <SolidColorBrush x:Key="OkInk" Color="#7cd6ad" />
 
     <SolidColorBrush x:Key="Warn" Color="#e0a94a" />
+    <SolidColorBrush x:Key="WarnHover" Color="#ecb85f" />
+    <SolidColorBrush x:Key="WarnPressed" Color="#c8933b" />
     <SolidColorBrush x:Key="WarnSurface" Color="#2d2416" />
     <SolidColorBrush x:Key="WarnLine" Color="#4d3d1c" />
     <SolidColorBrush x:Key="WarnInk" Color="#e8bd72" />
@@ -112,6 +114,14 @@
 
     <SolidColorBrush x:Key="Graph" Color="#a78bfa" />
     <SolidColorBrush x:Key="Data" Color="#5bc8a8" />
+    <SolidColorBrush x:Key="DataSurface" Color="#1b2c28" />
+    <SolidColorBrush x:Key="DataLine" Color="#2f4a44" />
+
+    <!-- Text on a warn flood. The Ink of a semantic role is its text on the tinted
+         surface, so a flood needs its own, the way AccentInk sits against Accent. Only
+         warn has one, because only warn is ever flooded without being destructive, and
+         it is the reason Warn carries a hover and a pressed tone as well. -->
+    <SolidColorBrush x:Key="WarnFillInk" Color="#241802" />
 
     <!-- Destructive is a solid fill, the one exception to the no flood rule. -->
     <SolidColorBrush x:Key="Destructive" Color="#b0454a" />
@@ -121,11 +131,9 @@
     <SolidColorBrush x:Key="DestructiveInkPressed" Color="#ffe8e8" />
 
     <!-- The close button belongs to the window rather than to a control, and it is the
-         only red that is not a destructive action. The design gives the hover alone, so
-         the pressed tone is derived from it the way every other pressed tone here is,
-         by darkening the hover rather than by reaching for the destructive red. -->
+         only red that is not a destructive action. Both tones come from the design. -->
     <SolidColorBrush x:Key="CloseHover" Color="#d9494f" />
-    <SolidColorBrush x:Key="ClosePressed" Color="#bd3a41" />
+    <SolidColorBrush x:Key="ClosePressed" Color="#b53c42" />
 
     <!-- Graph pin colours by type, for the tool that draws graphs. PinFloat carries the
          same value as Data on purpose: a float pin is data, and if the data colour moves

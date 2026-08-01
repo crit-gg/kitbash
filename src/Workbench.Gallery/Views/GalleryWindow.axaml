@@ -147,6 +147,19 @@
                                 </SplitButton.Flyout>
                             </SplitButton>
 
+                            <SplitButton Classes="primary" Content="Open in Godot">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Open project folder" />
+                                        <MenuItem Header="Edit project.godot" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+
+                            <SplitButton Classes="warn" Content="Switch to 4.7.1" />
+
+                            <SplitButton Classes="danger" Content="Install 4.7.1" />
+
                             <SplitButton Content="Run" IsEnabled="False" />
 
                             <DropDownButton Content="Godot 4.7.1" Width="170">
@@ -181,6 +194,25 @@
 
                         <Button Classes="ghost" Content="Put them back" Click="OnRestoreChips"
                                 HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="BADGES" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="A badge names something. It carries a word, an optional dot and no icon, which is what separates it from a status pill. If the colour is saying something the word does not, it is a status and belongs in a pill." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:Badge Tier="Data" HasDot="True" Content=".NET" />
+                            <ui:Badge Tier="Ok" Content="OPEN" />
+                            <ui:Badge Tier="Modified" Content="READ ONLY" />
+                            <ui:Badge Tier="Error" Content="MISSING" />
+                            <ui:Badge Tier="Accent" HasDot="True" Content="PREVIEW" />
+                            <ui:Badge Tier="Neutral" Content="LOCAL" />
+                            <ui:Badge Tier="Ok" HasDot="True" Content="disabled" IsEnabled="False" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
