@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Workbench.Core.Git;
 using Workbench.Core.IO;
 using Workbench.Core.Platform;
 using Workbench.Core.Platform.Linux;
@@ -64,6 +65,28 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IExecutableFinder, ExecutableFinder>();
         services.TryAddSingleton<IDesktopLauncherResolver, DesktopLauncherResolver>();
         services.TryAddSingleton(CreatePlatform);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Reading a repository, following one so it stays current, and bringing one up to
+    /// date. Needs the platform services, since all of it comes from running git.
+    /// </summary>
+    /// <remarks>
+    /// The watcher is transient because a monitor owns one for as long as it follows a
+    /// folder. The monitor is not, since one of them per repository is one git process per
+    /// beat per repository.
+    /// </remarks>
+    public static IServiceCollection AddWorkbenchGit(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchPlatform();
+        services.TryAddTransient<IDirectoryWatcher, DirectoryWatcher>();
+        services.TryAddSingleton<IGitStatusReader, GitStatusReader>();
+        services.TryAddSingleton<IGitUpdater, GitUpdater>();
+        services.TryAddSingleton<IGitStatusMonitor, GitStatusMonitor>();
 
         return services;
     }

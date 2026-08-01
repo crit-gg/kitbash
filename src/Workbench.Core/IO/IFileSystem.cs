@@ -21,6 +21,13 @@ public interface IFileSystem
 
     void MoveFile(string sourcePath, string destinationPath, bool overwrite);
 
+    /// <summary>
+    /// When the path was last written, or null when it is not there. Used to read a
+    /// timestamp off a file whose contents do not matter, such as when a repository last
+    /// fetched.
+    /// </summary>
+    DateTimeOffset? GetLastWriteTime(string path);
+
     /// <summary>Immediate subdirectories, ordered by name so a search is repeatable.</summary>
     IReadOnlyList<string> EnumerateDirectories(string path);
 }

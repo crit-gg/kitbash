@@ -34,6 +34,18 @@ public sealed class FileSystem : IFileSystem
     public void MoveFile(string sourcePath, string destinationPath, bool overwrite) =>
         File.Move(sourcePath, destinationPath, overwrite);
 
+    public DateTimeOffset? GetLastWriteTime(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return null;
+        }
+    }
+
     public IReadOnlyList<string> EnumerateDirectories(string path)
     {
         if (!Directory.Exists(path))
