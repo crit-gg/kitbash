@@ -68,7 +68,7 @@ assignment still maximises.
 | seam under the title bar | `LineSeam` |
 | window outer edge | `LineWindow`, a step lighter because the desktop is behind it |
 | window radius | 8px |
-| window shadow | `ShadowWindow` |
+| window shadow | `ShadowWindow`, but see below |
 | title text | 12.5px weight 600, `InkTitle`, letter spacing `.02em` |
 | caption button | 32 by 32, square, `InkCaption` glyphs |
 | caption hover | `StateHover`, pressed `StatePressed` |
@@ -76,6 +76,27 @@ assignment still maximises.
 
 **Keep the current glyphs.** The minimise, maximise and close marks are already right
 and the user asked for them unchanged. Everything else about the buttons may move.
+
+**The shadow costs window size, and its shape is constrained.** Avalonia 12 has no
+usable shadow API for a window that draws its own frame, so the shadow is a drop shadow
+effect falling into a transparent gutter, and the window is larger than what a person
+sees. Today the gutter is 12px and the shadow is `drop-shadow(0 0 12 #60000000)`, copied
+from SourceGit.
+
+The constraint that matters: the shadow must have **no offset**, and its blur must equal
+the gutter. Anything past the gutter is clipped at the window edge, and a clipped
+gaussian is a hard line, not a soft edge. So a bigger shadow is only ever a bigger
+gutter.
+
+Slate's `ShadowWindow` is `0 26px 64px rgba(0,0,0,.7)` plus `0 2px 6px rgba(0,0,0,.5)`.
+Both have a vertical offset and the first has a 64px blur, so honouring it literally
+needs a gutter of about 90px and a shadow that is no longer symmetric, which this
+technique cannot draw without clipping. It also moves every `Width` and `Height` in the
+app.
+
+Decide explicitly rather than by accident. Either grow the gutter and accept a symmetric
+approximation of the token, or keep today's small shadow and record that the window
+shadow deviates from the design. Do not set the token literally and let it clip.
 
 **Inactive chrome.** The design shows an inactive window dropping the whole chrome to
 the muted tier. The spec does not map that per token, so derive it: title text falls

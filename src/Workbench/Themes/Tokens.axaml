@@ -20,6 +20,12 @@
     <SolidColorBrush x:Key="SurfaceMenu" Color="#1a1e23" />
     <SolidColorBrush x:Key="SurfaceMenuHover" Color="#1d2228" />
 
+    <!-- The caption buttons sit on the chrome, which is darker than anything else, so
+         they lift further than a control does to read at all. Pressed stays above hover
+         so the button keeps brightening as it is used. -->
+    <SolidColorBrush x:Key="CaptionHover" Color="#2b313a" />
+    <SolidColorBrush x:Key="CaptionPressed" Color="#353c47" />
+
     <!-- lines -->
     <SolidColorBrush x:Key="LineChrome" Color="#1c2126" />
     <SolidColorBrush x:Key="LineRule" Color="#1e242a" />

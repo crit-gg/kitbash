@@ -7,6 +7,13 @@
              buttons square. A window sets its own title bar to this height. -->
         <x:Double x:Key="CaptionBarHeight">36</x:Double>
 
+        <!-- The window is larger than its visible frame by this much on every side, and
+             the extra is transparent so the shadow has somewhere to fall. It matches the
+             shadow's blur, and the shadow has no offset, so the shadow is symmetric and
+             reaches the window edge exactly. Give the shadow an offset and the far side
+             is clipped, which reads as a hard line rather than a soft edge. -->
+        <Thickness x:Key="WindowShadowGutter">12</Thickness>
+
         <!-- Caption glyphs, drawn as strokes on a 10 by 10 box. -->
         <StreamGeometry x:Key="GlyphMinimize">M 0,5 H 10</StreamGeometry>
         <StreamGeometry x:Key="GlyphMaximize">M 0.5,0.5 H 9.5 V 9.5 H 0.5 Z</StreamGeometry>
@@ -39,12 +46,13 @@
         <Setter Property="StrokeThickness" Value="1" />
     </Style>
 
+    <!-- Minimize and maximize only. Close declares its own flood after these. -->
     <Style Selector="views|WindowTitleBar /template/ Button.caption:pointerover /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceMenu}" />
+        <Setter Property="Background" Value="{DynamicResource CaptionHover}" />
     </Style>
 
     <Style Selector="views|WindowTitleBar /template/ Button.caption:pressed /template/ Border#PART_Root">
-        <Setter Property="Background" Value="{DynamicResource SurfaceControl}" />
+        <Setter Property="Background" Value="{DynamicResource CaptionPressed}" />
     </Style>
 
     <!-- Close floods red the way every system close button does. It is declared
@@ -150,36 +158,41 @@
         <Setter Property="TransparencyLevelHint" Value="Transparent" />
         <Setter Property="WindowDecorations" Value="None" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0" />
+        <Setter Property="Padding" Value="{StaticResource WindowShadowGutter}" />
         <Setter Property="CornerRadius" Value="10" />
 
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
-                    <Border x:Name="PART_ContentRoot"
-                            Margin="{TemplateBinding Padding}"
-                            Background="{DynamicResource GroundWindow}"
-                            BorderBrush="{DynamicResource LineSoft}"
-                            BorderThickness="1"
-                            CornerRadius="{TemplateBinding CornerRadius}">
-                        <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
-                            <ContentPresenter Name="PART_ContentPresenter"
-                                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              Content="{TemplateBinding Content}"
-                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    <!-- The shadow is an effect on the wrapper rather than a BoxShadow on
+                         the frame, so it blurs what is actually drawn and has no shape
+                         edge of its own to show through. -->
+                    <Grid Margin="{TemplateBinding Padding}"
+                          Effect="drop-shadow(0 0 12 #60000000)">
+                        <Border x:Name="PART_ContentRoot"
+                                Background="{DynamicResource GroundWindow}"
+                                BorderBrush="{DynamicResource LineSoft}"
+                                BorderThickness="1"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  Content="{TemplateBinding Content}"
+                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Border>
                         </Border>
-                    </Border>
+                    </Grid>
 
-                    <!-- Grips sit over the outer edge of the frame. Corners are larger
-                         so they are reachable without hitting an edge first. -->
+                    <!-- Grips cover the shadow gutter exactly, so the whole soft edge
+                         around the frame is the resize target. -->
                     <Border x:Name="PART_ResizeTopLeft" Classes="resizeGrip"
                             Width="12" Height="12" Background="Transparent"
                             HorizontalAlignment="Left" VerticalAlignment="Top"
                             Cursor="TopLeftCorner" Tag="{x:Static WindowEdge.NorthWest}" />
 
                     <Border x:Name="PART_ResizeTop" Classes="resizeGrip"
-                            Height="5" Margin="12,0" Background="Transparent"
+                            Height="12" Margin="12,0" Background="Transparent"
                             HorizontalAlignment="Stretch" VerticalAlignment="Top"
                             Cursor="TopSide" Tag="{x:Static WindowEdge.North}" />
 
@@ -189,12 +202,12 @@
                             Cursor="TopRightCorner" Tag="{x:Static WindowEdge.NorthEast}" />
 
                     <Border x:Name="PART_ResizeLeft" Classes="resizeGrip"
-                            Width="5" Margin="0,12" Background="Transparent"
+                            Width="12" Margin="0,12" Background="Transparent"
                             HorizontalAlignment="Left" VerticalAlignment="Stretch"
                             Cursor="LeftSide" Tag="{x:Static WindowEdge.West}" />
 
                     <Border x:Name="PART_ResizeRight" Classes="resizeGrip"
-                            Width="5" Margin="0,12" Background="Transparent"
+                            Width="12" Margin="0,12" Background="Transparent"
                             HorizontalAlignment="Right" VerticalAlignment="Stretch"
                             Cursor="RightSide" Tag="{x:Static WindowEdge.East}" />
 
@@ -204,7 +217,7 @@
                             Cursor="BottomLeftCorner" Tag="{x:Static WindowEdge.SouthWest}" />
 
                     <Border x:Name="PART_ResizeBottom" Classes="resizeGrip"
-                            Height="5" Margin="12,0" Background="Transparent"
+                            Height="12" Margin="12,0" Background="Transparent"
                             HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                             Cursor="BottomSide" Tag="{x:Static WindowEdge.South}" />
 
@@ -217,9 +230,12 @@
         </Setter>
     </Style>
 
-    <!-- Maximized fills the work area, so the rounding, the border and the grips go. -->
+    <!-- Maximized fills the work area, so the rounding, the border, the grips, the
+         shadow and the gutter it falls into all go. A shadow here would only darken the
+         edge of the screen, and the gutter would leave a transparent strip. -->
     <Style Selector="Window.chromeless[WindowState=Maximized]">
         <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
     </Style>
 
     <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border#PART_ContentRoot">
@@ -228,10 +244,12 @@
 
     <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border.resizeGrip">
         <Setter Property="IsVisible" Value="False" />
+        <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
     <Style Selector="Window.chromeless[CanResize=False] /template/ Border.resizeGrip">
         <Setter Property="IsVisible" Value="False" />
+        <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
 </Styles>

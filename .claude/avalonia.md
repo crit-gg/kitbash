@@ -176,11 +176,53 @@ Other notes:
 
 - On Windows `ExtendClientAreaToDecorationsHint` was fixed in 12. The old margin
   workarounds people applied when maximized should be removed.
-- The framework passes shadow extents to the platform, so the frame shadow belongs to
-  the platform and the theme, not to app drawn effects.
 - `WindowState` is now a direct property, so it cannot be set from a style. Selectors
   such as `[WindowState=Maximized]` still read it.
 - Windows 12.1 added `Win32Properties.WindowCornerPreference` for Windows 11 corners.
+
+### There is no usable window shadow API
+
+Version 12 looks like it grew one. `WindowDrawnDecorations` carries
+`DefaultShadowThickness`, `ShadowThickness` and a `:has-shadow` pseudo class, and
+`Window` calls `IWindowImpl.SetShadowExtents` so the platform can tell content from
+shadow. None of it is reachable from a desktop app that draws its own frame, for three
+separate reasons, each of which is enough on its own.
+
+1. `IWindowImpl.SetShadowExtents` is a default interface method with an empty body.
+   **Only `Avalonia.Wayland` implements it.** Neither X11 nor Win32 overrides it, so on
+   either of them the platform is never told anything.
+2. Drawn decorations only exist when `IWindowImpl.NeedsManagedDecorations` is true. On
+   X11 that is `_extendingClientAreaToDecorations || ForceDrawnDecorations`, and the
+   first can only be set through the experimental gate described below.
+3. `Window.ComputeDecorationParts` returns no parts at all, shadow included, when
+   `WindowDecorations == None`. An app drawing its own frame sets exactly that.
+
+So a window shadow is an app drawn effect, the same as it was in version 11. This is
+what SourceGit does, and it is worth copying rather than deriving:
+
+- The window is larger than its visible frame by a transparent gutter, carried as the
+  window's `Padding`.
+- The frame sits in a wrapper with `Margin="{TemplateBinding Padding}"` and
+  `Effect="drop-shadow(0 0 12 #60000000)"`. An `Effect` blurs what is actually drawn,
+  where a `BoxShadow` draws a shadow of the border's own shape, which can show an edge
+  of its own.
+- **The shadow has no offset and its blur equals the gutter.** That is the whole trick.
+  A symmetric shadow reaches every window edge at exactly the point it fades out. Give
+  it an offset and the far side runs past the window edge, where the platform clips it,
+  and a clipped gaussian reads as a hard line rather than a soft edge.
+- Maximized sets `Padding` to 0 and `CornerRadius` to 0, and hides the resize grips with
+  `IsHitTestVisible="False"` as well as `IsVisible="False"`. The effect stays, since with
+  no gutter it falls outside the window and is clipped away entirely.
+- Resize grips are the same thickness as the gutter, so the whole soft edge is the
+  resize target.
+
+Measured on 12.1.1, a 940 by 700 frame with a 12px gutter:
+
+```
+normal     client=964,724   padding=12  frame=940x700
+maximized  client=5120,1400 padding=0   frame=5120x1400
+restored   client=964,724   padding=12  frame=940x700
+```
 
 ### Roles do not work on Linux yet
 

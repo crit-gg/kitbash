@@ -367,7 +367,20 @@ Behavior that is deliberate and should not be reported as missing: right click o
 title bar does nothing, and so does middle click. Both match the desktop defaults
 recorded in `.claude/avalonia.md`.
 
-No shadow is drawn by the app. The window is exactly its visible size.
+**The window is larger than its visible frame.** It carries a 12px transparent gutter on
+every side, `WindowShadowGutter`, and a `drop-shadow` effect falls into it. Avalonia 12
+has no usable shadow API for a window that draws its own frame, so this is an app drawn
+effect, copied from SourceGit. The reasons and the exact shape are in
+`.claude/avalonia.md`.
+
+The rule that keeps it looking right: **the shadow has no offset and its blur equals the
+gutter**. Anything else runs past the window edge, gets clipped, and reads as a hard line
+rather than a soft edge. Change one of the three and change all three.
+
+Two things follow. A window's `Width` and `Height` include the gutter, so the launcher
+asks for 964 by 724 to show the design's 940 by 700. Maximizing drops the gutter, which
+drops the shadow with it, so the screen edge carries no transparent strip and no dark
+band.
 
 Anything clickable needs a `Background`, even `Transparent`. A control with no
 background is not hit tested, so a look that only appears on `:pointerover` can never

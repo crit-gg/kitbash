@@ -5,11 +5,15 @@
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
-        Width="940" Height="700"
-        MinWidth="820" MinHeight="560"
+        Width="964" Height="724"
+        MinWidth="844" MinHeight="584"
         WindowStartupLocation="CenterScreen"
         FontFamily="{StaticResource FontUi}"
         FontSize="13">
+
+    <!-- The size above is 24 more than the design's 940 by 700 on each axis, because
+         the window carries a 12px transparent gutter on every side for its shadow to
+         fall into. The visible frame is the design size. -->
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Escape" Command="{Binding CloseWorkspacesCommand}" />
