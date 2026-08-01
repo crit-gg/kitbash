@@ -5,6 +5,11 @@ The icon set is licensed content and lives outside the repository, so the build
 must never reach for it. This runs by hand, its two outputs are committed, and a
 clean checkout builds without the set present.
 
+A few glyphs are not in the set at all. A brand mark belongs to whoever owns it, so
+those live in local/ inside the repository and are read from there first. They go
+through the same reader and the same checks as the set, which is why local/README.md
+says a mark is normalised by hand before it is committed rather than converted here.
+
     tools/icons/generate.py [--set <dir>] [--check]
 
 --check reproduces both outputs in memory and reports whether the committed files
@@ -31,6 +36,7 @@ DEFAULT_SET = "/home/jason/Seafile/gamedev-assets/icons/box-icons-pro-solid-roun
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 NAMES = pathlib.Path(__file__).resolve().parent / "icons.txt"
+LOCAL = pathlib.Path(__file__).resolve().parent / "local"
 GEOMETRY_OUT = ROOT / "src/Workbench.Ui/Themes/Icons.axaml"
 ENUM_OUT = ROOT / "src/Workbench.Ui/Controls/IconGlyph.cs"
 
@@ -110,11 +116,21 @@ def rect_to_path(attributes, where):
     )
 
 
-def extract(directory, name):
+def find(directory, name):
+    """A mark we supply wins over the set, so a glyph can be replaced without renaming it."""
+    local = LOCAL / f"{name}.svg"
+    if local.is_file():
+        return local
+
     svg = directory / f"bx-{name}.svg"
     if not svg.is_file():
         sys.exit(f"{svg} not found. Is --set pointing at the Solid Rounded set?")
 
+    return svg
+
+
+def extract(directory, name):
+    svg = find(directory, name)
     text = svg.read_text()
 
     box = VIEWBOX.search(text)

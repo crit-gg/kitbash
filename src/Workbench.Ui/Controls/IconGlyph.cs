@@ -28,6 +28,7 @@ public enum IconGlyph
     FolderOpen,
     GitBranch,
     GitCommit,
+    Godot,
     History,
     InfoCircle,
     Layout,
