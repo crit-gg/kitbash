@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Workbench.Core\Workbench.Core.csproj" />
   </ItemGroup>
 

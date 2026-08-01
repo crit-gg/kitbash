@@ -1,0 +1,160 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Styles.Resources>
+        <!-- Caption glyphs, drawn as strokes on a 10 by 10 box. -->
+        <StreamGeometry x:Key="GlyphMinimize">M 0,5 H 10</StreamGeometry>
+        <StreamGeometry x:Key="GlyphMaximize">M 0.5,0.5 H 9.5 V 9.5 H 0.5 Z</StreamGeometry>
+        <StreamGeometry x:Key="GlyphRestore">M 2.5,2.5 V 0.5 H 9.5 V 7.5 H 7.5 M 0.5,2.5 H 7.5 V 9.5 H 0.5 Z</StreamGeometry>
+        <StreamGeometry x:Key="GlyphClose">M 0,0 L 9,9 M 9,0 L 0,9</StreamGeometry>
+    </Styles.Resources>
+
+    <!-- Caption buttons are real buttons so they take focus, answer the keyboard and
+         report themselves to assistive technology, the way a system title bar does. -->
+    <Style Selector="Window.chromeless Button.caption">
+        <Setter Property="Width" Value="42" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Root" Background="{TemplateBinding Background}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="Window.chromeless Button.caption Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkDim}" />
+        <Setter Property="StrokeThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Window.chromeless Button.caption:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource SurfaceMenu}" />
+    </Style>
+
+    <Style Selector="Window.chromeless Button.caption:pressed /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource SurfaceControl}" />
+    </Style>
+
+    <Style Selector="Window.chromeless Button.captionClose:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource Close}" />
+    </Style>
+
+    <Style Selector="Window.chromeless Button.captionClose:pointerover Path">
+        <Setter Property="Stroke" Value="#0d1013" />
+    </Style>
+
+    <!-- Maximized swaps the glyph and the tooltip, the way a system button does. -->
+    <Style Selector="Window.chromeless[WindowState=Maximized] Button.captionMaximize Path">
+        <Setter Property="Data" Value="{StaticResource GlyphRestore}" />
+    </Style>
+
+    <Style Selector="Window.chromeless[WindowState=Maximized] Button.captionMaximize">
+        <Setter Property="ToolTip.Tip" Value="Restore" />
+    </Style>
+
+    <!-- A window that cannot resize has no maximize button at all. -->
+    <Style Selector="Window.chromeless[CanResize=False] Button.captionMaximize">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The frame for windows that draw their own title bar. No shadow is drawn here,
+         so the window is exactly its visible size and the resize grips sit just
+         inside its edges. -->
+
+    <Style Selector="Window.chromeless">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TransparencyLevelHint" Value="Transparent" />
+        <Setter Property="WindowDecorations" Value="None" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="10" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border x:Name="PART_ContentRoot"
+                            Margin="{TemplateBinding Padding}"
+                            Background="{DynamicResource GroundWindow}"
+                            BorderBrush="{DynamicResource LineSoft}"
+                            BorderThickness="1"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Content="{TemplateBinding Content}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                    </Border>
+
+                    <!-- Grips sit over the outer edge of the frame. Corners are larger
+                         so they are reachable without hitting an edge first. -->
+                    <Border x:Name="PART_ResizeTopLeft" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Cursor="TopLeftCorner" Tag="{x:Static WindowEdge.NorthWest}" />
+
+                    <Border x:Name="PART_ResizeTop" Classes="resizeGrip"
+                            Height="5" Margin="12,0" Background="Transparent"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                            Cursor="TopSide" Tag="{x:Static WindowEdge.North}" />
+
+                    <Border x:Name="PART_ResizeTopRight" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Cursor="TopRightCorner" Tag="{x:Static WindowEdge.NorthEast}" />
+
+                    <Border x:Name="PART_ResizeLeft" Classes="resizeGrip"
+                            Width="5" Margin="0,12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                            Cursor="LeftSide" Tag="{x:Static WindowEdge.West}" />
+
+                    <Border x:Name="PART_ResizeRight" Classes="resizeGrip"
+                            Width="5" Margin="0,12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                            Cursor="RightSide" Tag="{x:Static WindowEdge.East}" />
+
+                    <Border x:Name="PART_ResizeBottomLeft" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Cursor="BottomLeftCorner" Tag="{x:Static WindowEdge.SouthWest}" />
+
+                    <Border x:Name="PART_ResizeBottom" Classes="resizeGrip"
+                            Height="5" Margin="12,0" Background="Transparent"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                            Cursor="BottomSide" Tag="{x:Static WindowEdge.South}" />
+
+                    <Border x:Name="PART_ResizeBottomRight" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Cursor="BottomRightCorner" Tag="{x:Static WindowEdge.SouthEast}" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Maximized fills the work area, so the rounding, the border and the grips go. -->
+    <Style Selector="Window.chromeless[WindowState=Maximized]">
+        <Setter Property="CornerRadius" Value="0" />
+    </Style>
+
+    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border#PART_ContentRoot">
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border.resizeGrip">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="Window.chromeless[CanResize=False] /template/ Border.resizeGrip">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+</Styles>

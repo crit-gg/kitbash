@@ -38,7 +38,7 @@ public partial class App : Application
             .AddWorkbenchPlatform()
             .AddWorkbenchWorkspace()
             .AddSingleton(BuildRegistry())
-            .AddSingleton(provider => new LauncherViewModel(provider.GetRequiredService<IToolRegistry>()))
+            .AddSingleton<LauncherViewModel>()
             .BuildServiceProvider();
 
     // Placeholders until real tools exist.

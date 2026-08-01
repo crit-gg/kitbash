@@ -1,0 +1,67 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Taken from the Workbench Launcher design. Every color in the launcher
+         comes from here. -->
+
+    <FontFamily x:Key="FontUi">avares://Workbench/Assets/Fonts#Archivo</FontFamily>
+    <FontFamily x:Key="FontMono">avares://Workbench/Assets/Fonts#JetBrains Mono</FontFamily>
+
+    <!-- grounds, darkest first -->
+    <SolidColorBrush x:Key="GroundDeep" Color="#07080a" />
+    <SolidColorBrush x:Key="GroundChrome" Color="#090b0d" />
+    <SolidColorBrush x:Key="GroundStrip" Color="#0f1216" />
+    <SolidColorBrush x:Key="GroundBar" Color="#101317" />
+    <SolidColorBrush x:Key="GroundWindow" Color="#14171b" />
+    <SolidColorBrush x:Key="GroundRaised" Color="#131619" />
+    <SolidColorBrush x:Key="Surface" Color="#171b20" />
+    <SolidColorBrush x:Key="SurfaceHover" Color="#1a1f26" />
+    <SolidColorBrush x:Key="SurfaceControl" Color="#1d2228" />
+    <SolidColorBrush x:Key="SurfaceMenu" Color="#1a1e23" />
+    <SolidColorBrush x:Key="SurfaceMenuHover" Color="#1d2228" />
+
+    <!-- lines -->
+    <SolidColorBrush x:Key="LineChrome" Color="#1c2126" />
+    <SolidColorBrush x:Key="LineRule" Color="#1e242a" />
+    <SolidColorBrush x:Key="LineSoft" Color="#272d34" />
+    <SolidColorBrush x:Key="LineControl" Color="#313943" />
+    <SolidColorBrush x:Key="LineMenu" Color="#3b444f" />
+    <SolidColorBrush x:Key="LineDashed" Color="#2a3138" />
+
+    <!-- ink -->
+    <SolidColorBrush x:Key="InkBright" Color="#e5eaef" />
+    <SolidColorBrush x:Key="InkBody" Color="#c6cfd8" />
+    <SolidColorBrush x:Key="InkMuted" Color="#9ba6b0" />
+    <SolidColorBrush x:Key="InkDim" Color="#8b959e" />
+    <SolidColorBrush x:Key="InkFaint" Color="#6e7982" />
+    <SolidColorBrush x:Key="InkGhost" Color="#49535b" />
+    <SolidColorBrush x:Key="InkGhostest" Color="#3f484f" />
+
+    <!-- accent, a blue used as a line and never as a flood -->
+    <SolidColorBrush x:Key="Accent" Color="#58a6f0" />
+    <SolidColorBrush x:Key="AccentBright" Color="#92c5f7" />
+    <SolidColorBrush x:Key="AccentInk" Color="#6fabe8" />
+    <SolidColorBrush x:Key="AccentTint" Color="#12202e" />
+    <SolidColorBrush x:Key="AccentTintLine" Color="#2d5478" />
+    <SolidColorBrush x:Key="AccentSelected" Color="#16212c" />
+
+    <!-- states -->
+    <SolidColorBrush x:Key="Ok" Color="#52cfa5" />
+    <SolidColorBrush x:Key="OkInk" Color="#7cd6b2" />
+    <SolidColorBrush x:Key="OkTint" Color="#112019" />
+    <SolidColorBrush x:Key="OkTintLine" Color="#23452f" />
+
+    <SolidColorBrush x:Key="Warn" Color="#e0a943" />
+    <SolidColorBrush x:Key="WarnTint" Color="#1f1a10" />
+    <SolidColorBrush x:Key="WarnTintLine" Color="#3b2f16" />
+
+    <SolidColorBrush x:Key="Bad" Color="#ea5257" />
+    <SolidColorBrush x:Key="BadInk" Color="#ea8a8a" />
+    <SolidColorBrush x:Key="BadTint" Color="#1e1416" />
+    <SolidColorBrush x:Key="BadTintLine" Color="#3a1e21" />
+    <SolidColorBrush x:Key="Close" Color="#c95f52" />
+
+    <SolidColorBrush x:Key="Neutral" Color="#5c6772" />
+    <SolidColorBrush x:Key="Scrim" Color="#05070a" Opacity="0.5" />
+
+</ResourceDictionary>

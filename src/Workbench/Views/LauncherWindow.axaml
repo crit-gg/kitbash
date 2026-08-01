@@ -1,60 +1,455 @@
-<Window xmlns="https://github.com/avaloniaui"
+<views:ChromelessWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Workbench.ViewModels"
-        xmlns:core="clr-namespace:Workbench.Core;assembly=Workbench.Core"
+        xmlns:views="clr-namespace:Workbench.Views"
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
-        Width="900" Height="560"
-        MinWidth="640" MinHeight="400"
-        WindowStartupLocation="CenterScreen">
+        Width="940" Height="700"
+        MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{StaticResource FontUi}"
+        FontSize="13">
 
     <Design.DataContext>
         <vm:LauncherViewModel />
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="280,*">
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CloseWorkspacesCommand}" />
+    </Window.KeyBindings>
 
-        <!-- Tool list -->
-        <Border Grid.Column="0" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-            <DockPanel Margin="16">
-                <TextBlock DockPanel.Dock="Top"
-                           Text="{Binding Title}"
-                           FontSize="20" FontWeight="SemiBold"
-                           Margin="0,0,0,16" />
+    <Window.Styles>
+        <!-- A Border with no Background is not hit tested, so anything clickable
+             needs one even when it paints nothing. -->
+        <Style Selector="Border.accentAction, Border.card, Border.wsRow">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
 
-                <ListBox ItemsSource="{Binding Tools}"
-                         SelectedItem="{Binding SelectedTool}">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:ITool">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding Category}" Opacity="0.6" FontSize="11" />
+        <!-- rows that answer the pointer -->
+        <Style Selector="Border.card:pointerover">
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+            <Setter Property="Background" Value="{StaticResource SurfaceHover}" />
+        </Style>
+        <Style Selector="Border.outlined:pointerover">
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+        </Style>
+        <Style Selector="Border.accentAction:pointerover">
+            <Setter Property="Background" Value="{StaticResource AccentTint}" />
+        </Style>
+        <Style Selector="Border.wsRow:pointerover">
+            <Setter Property="Background" Value="{StaticResource SurfaceMenuHover}" />
+        </Style>
+
+        <!-- section heading -->
+        <Style Selector="TextBlock.sectionLabel">
+            <Setter Property="FontSize" Value="9.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="LetterSpacing" Value="1.14" />
+        </Style>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{StaticResource FontMono}" />
+        </Style>
+    </Window.Styles>
+
+    <!-- the frame, the shadow and the resize grips come from Themes/WindowChrome.axaml -->
+    <Panel>
+            <Grid RowDefinitions="40,Auto,Auto,*,32">
+
+                <!-- title bar -->
+                <Border Grid.Row="0"
+                        Background="{StaticResource GroundChrome}"
+                        BorderBrush="{StaticResource LineChrome}"
+                        BorderThickness="0,0,0,1"
+                        WindowDecorationProperties.ElementRole="TitleBar"
+                        PointerPressed="OnTitleBarPressed"
+                        DoubleTapped="OnTitleBarDoubleTapped">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="15,0,0,0">
+                        <Border Grid.Column="0" Width="18" Height="18" CornerRadius="4"
+                                BorderBrush="{StaticResource Accent}" BorderThickness="1.5"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="W" FontSize="9.5" FontWeight="Bold"
+                                       Foreground="{StaticResource Accent}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="Workbench" Margin="11,0,0,0"
+                                   FontSize="12.5" FontWeight="SemiBold" LetterSpacing="0.25"
+                                   Foreground="{StaticResource InkBright}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Classes="mono" Text="{Binding AppVersion}"
+                                   Margin="11,0,0,0" FontSize="11"
+                                   Foreground="{StaticResource InkGhost}" VerticalAlignment="Center" />
+
+                        <StackPanel Grid.Column="4" Orientation="Horizontal">
+                            <Button Classes="caption" Click="OnMinimizeClick"
+                                    ToolTip.Tip="Minimize"
+                                    AutomationProperties.Name="Minimize"
+                                    WindowDecorationProperties.ElementRole="MinimizeButton">
+                                <Path Data="{StaticResource GlyphMinimize}" />
+                            </Button>
+                            <Button Classes="caption captionMaximize" Click="OnMaximizeClick"
+                                    ToolTip.Tip="Maximize"
+                                    AutomationProperties.Name="Maximize"
+                                    WindowDecorationProperties.ElementRole="MaximizeButton">
+                                <Path Data="{StaticResource GlyphMaximize}" />
+                            </Button>
+                            <Button Classes="caption captionClose" Click="OnCloseClick"
+                                    ToolTip.Tip="Close"
+                                    AutomationProperties.Name="Close"
+                                    WindowDecorationProperties.ElementRole="CloseButton">
+                                <Path Data="{StaticResource GlyphClose}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- workspace bar -->
+                <Border Grid.Row="1"
+                        Background="{StaticResource GroundBar}"
+                        BorderBrush="{StaticResource LineChrome}"
+                        BorderThickness="0,0,0,1"
+                        Padding="20,14,20,13">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Border Grid.Column="0" Classes="outlined"
+                                Height="40" MinWidth="266" Padding="12,0"
+                                Background="{StaticResource Surface}"
+                                BorderBrush="{Binding WorkspaceBorder}" BorderThickness="1"
+                                CornerRadius="6"
+                                PointerPressed="OnToggleWorkspacesPressed">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Border Grid.Column="0" Width="9" Height="9" CornerRadius="2"
+                                        Background="{StaticResource Ok}" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WorkspaceName}" FontSize="13"
+                                               FontWeight="SemiBold" LineHeight="15"
+                                               Foreground="{StaticResource InkBright}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                               Margin="0,3,0,0" FontSize="10" LineHeight="12"
+                                               Foreground="{StaticResource InkFaint}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <PathIcon Grid.Column="2" Data="{StaticResource IconChevronDown}"
+                                          Width="14" Height="14"
+                                          Foreground="{StaticResource InkDim}"
+                                          RenderTransformOrigin="50%,50%">
+                                    <PathIcon.RenderTransform>
+                                        <RotateTransform Angle="{Binding WorkspaceChevronAngle}" />
+                                    </PathIcon.RenderTransform>
+                                </PathIcon>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2" Classes="outlined" Width="30" Height="30"
+                                Background="{StaticResource SurfaceControl}"
+                                BorderBrush="{StaticResource LineControl}" BorderThickness="1"
+                                CornerRadius="5">
+                            <PathIcon Data="{StaticResource IconCog}" Width="16" Height="16"
+                                      Foreground="{StaticResource InkMuted}" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- engine strip -->
+                <Border Grid.Row="2"
+                        Background="{StaticResource GroundStrip}"
+                        BorderBrush="{StaticResource LineChrome}"
+                        BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Height="56" Margin="20,0">
+                        <Border Grid.Column="0" Width="28" Height="28" CornerRadius="5"
+                                Background="#131c23" BorderBrush="#2a3a47" BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <TextBlock Classes="mono" Text="GD" FontSize="8.5" FontWeight="Bold"
+                                       Foreground="{StaticResource AccentInk}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="11,0" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Engine.Version}" FontSize="12.5"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource InkBright}"
+                                           VerticalAlignment="Center" />
+                                <Border Height="17" Padding="7,0" CornerRadius="9"
+                                        Background="{Binding Engine.PillBackground}"
+                                        BorderBrush="{Binding Engine.PillBorder}" BorderThickness="1"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="6"
+                                                VerticalAlignment="Center">
+                                        <Border Width="5" Height="5" CornerRadius="2.5"
+                                                Background="{Binding Engine.Dot}"
+                                                VerticalAlignment="Center" />
+                                        <TextBlock Classes="mono" Text="{Binding Engine.State}"
+                                                   FontSize="8.5" FontWeight="SemiBold"
+                                                   LetterSpacing="0.43"
+                                                   Foreground="{Binding Engine.StateForeground}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </DockPanel>
-        </Border>
+                            <TextBlock Classes="mono" Text="{Binding Engine.Note}" Margin="0,4,0,0"
+                                       FontSize="10" LineHeight="12"
+                                       Foreground="{StaticResource InkFaint}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
 
-        <!-- Detail pane -->
-        <DockPanel Grid.Column="1" Margin="32">
+                        <Border Grid.Column="2" Classes="accentAction" Height="29" CornerRadius="5"
+                                BorderBrush="{Binding Engine.ButtonBorder}" BorderThickness="1"
+                                VerticalAlignment="Center" ClipToBounds="True">
+                            <Grid ColumnDefinitions="Auto,Auto">
+                                <TextBlock Grid.Column="0" Text="{Binding Engine.Action}"
+                                           Margin="12,0" FontSize="11.5" FontWeight="SemiBold"
+                                           Foreground="{Binding Engine.ButtonForeground}"
+                                           VerticalAlignment="Center" />
+                                <Border Grid.Column="1" Width="22"
+                                        BorderBrush="{Binding Engine.ButtonBorder}"
+                                        BorderThickness="1,0,0,0">
+                                    <PathIcon Data="{StaticResource IconChevronDown}"
+                                              Width="13" Height="13"
+                                              Foreground="{Binding Engine.ButtonForeground}" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <StackPanel DockPanel.Dock="Bottom" Spacing="12">
-                <TextBlock Text="{Binding Status}" Opacity="0.6" TextWrapping="Wrap" />
-                <Button Content="Open"
-                        Command="{Binding OpenSelectedCommand}"
-                        HorizontalAlignment="Left"
-                        Padding="24,8" />
-            </StackPanel>
+                <!-- tools -->
+                <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20,16,20,18">
 
-            <StackPanel Spacing="8" VerticalAlignment="Top">
-                <TextBlock Text="{Binding SelectedTool.Name, FallbackValue='No tool selected'}"
-                           FontSize="24" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding SelectedTool.Description}"
-                           TextWrapping="Wrap" Opacity="0.8" />
-            </StackPanel>
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,11">
+                            <TextBlock Grid.Column="0" Classes="sectionLabel" Text="TOOLS"
+                                       Foreground="{StaticResource InkDim}" VerticalAlignment="Center" />
+                            <Rectangle Grid.Column="1" Height="1" Margin="10,0"
+                                       Fill="{StaticResource LineRule}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Classes="mono" Text="{Binding ToolsSummary}"
+                                       FontSize="10" Foreground="{StaticResource InkGhost}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
 
-        </DockPanel>
-    </Grid>
-</Window>
+                        <ItemsControl ItemsSource="{Binding Tools}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="7" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ToolCardViewModel">
+                                    <Border Classes="card" Padding="15,14" CornerRadius="7"
+                                            Background="{StaticResource Surface}"
+                                            BorderBrush="{StaticResource LineSoft}" BorderThickness="1">
+                                        <Grid ColumnDefinitions="48,*,Auto">
+                                            <Border Grid.Column="0" Width="48" Height="48" CornerRadius="7"
+                                                    Background="{StaticResource AccentTint}"
+                                                    BorderBrush="{StaticResource AccentTintLine}"
+                                                    BorderThickness="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Mark}" FontSize="16"
+                                                           FontWeight="Bold"
+                                                           Foreground="{StaticResource Accent}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" Margin="15,0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                                    <TextBlock Text="{Binding Name}" FontSize="14.5"
+                                                               FontWeight="SemiBold" LineHeight="17"
+                                                               Foreground="{StaticResource InkBright}"
+                                                               VerticalAlignment="Center" />
+                                                    <Border Height="18" Padding="7,0" CornerRadius="9"
+                                                            Background="{StaticResource OkTint}"
+                                                            BorderBrush="{StaticResource OkTintLine}"
+                                                            BorderThickness="1" VerticalAlignment="Center">
+                                                        <TextBlock Classes="mono" Text="{Binding State}"
+                                                                   FontSize="9" FontWeight="SemiBold"
+                                                                   LetterSpacing="0.45"
+                                                                   Foreground="{StaticResource OkInk}"
+                                                                   VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <TextBlock Classes="mono" Text="{Binding Version}"
+                                                               FontSize="10.5"
+                                                               Foreground="{StaticResource InkFaint}"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+
+                                                <TextBlock Text="{Binding Description}" Margin="0,6,0,0"
+                                                           FontSize="12" LineHeight="17.4"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{StaticResource InkMuted}" />
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2" Classes="accentAction" Height="31"
+                                                    Padding="16,0" CornerRadius="5"
+                                                    BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="Launch" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource AccentBright}"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- git status bar -->
+                <Border Grid.Row="4"
+                        Background="{StaticResource GroundChrome}"
+                        BorderBrush="{StaticResource LineChrome}"
+                        BorderThickness="0,1,0,0"
+                        Padding="16,0">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                        <Border Grid.Column="0" Classes="outlined" Height="22" Padding="9,0"
+                                CornerRadius="11"
+                                Background="{StaticResource GroundRaised}"
+                                BorderBrush="{StaticResource LineSoft}" BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconGitBranch}" Width="14" Height="14"
+                                          Foreground="{StaticResource InkDim}" />
+                                <TextBlock Classes="mono" Text="{Binding GitBranch}" MinWidth="96"
+                                           FontSize="11.5" FontWeight="Medium"
+                                           Foreground="{StaticResource InkBright}"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <TextBlock Classes="mono" FontSize="10.5" FontWeight="Medium"
+                                           Foreground="{StaticResource InkDim}" VerticalAlignment="Center">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="↑{0} ↓{1}">
+                                            <Binding Path="GitAhead" />
+                                            <Binding Path="GitBehind" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <PathIcon Data="{StaticResource IconChevronDown}" Width="12" Height="12"
+                                          Foreground="{StaticResource InkDim}" />
+                            </StackPanel>
+                        </Border>
+
+                        <ItemsControl Grid.Column="2" ItemsSource="{Binding GitStats}"
+                                      Margin="0,0,13,0" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="13" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GitStatViewModel">
+                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <Border Width="6" Height="6" CornerRadius="2"
+                                                Background="{Binding Color}" VerticalAlignment="Center" />
+                                        <TextBlock Classes="mono" Text="{Binding Value}" FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource InkBody}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Label}" FontSize="10.5"
+                                                   Foreground="{StaticResource InkFaint}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Grid.Column="3" Classes="outlined" Height="22" Padding="9,0"
+                                CornerRadius="5"
+                                Background="{StaticResource GroundRaised}"
+                                BorderBrush="{StaticResource LineSoft}" BorderThickness="1"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                <PathIcon Data="{StaticResource IconRefresh}" Width="13" Height="13"
+                                          Foreground="{StaticResource InkMuted}" />
+                                <TextBlock Text="Fetch" FontSize="11.5" FontWeight="Medium"
+                                           Foreground="{StaticResource InkBody}" VerticalAlignment="Center" />
+                                <TextBlock Classes="mono" Text="{Binding GitFetched}" FontSize="9.5"
+                                           Foreground="{StaticResource InkFaint}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- workspace switcher, over everything -->
+            <Panel IsVisible="{Binding WorkspacesOpen}"
+                   Background="{StaticResource Scrim}"
+                   PointerPressed="OnScrimPressed">
+                <Border Width="436" HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Margin="20,94,0,0" CornerRadius="8"
+                        Background="{StaticResource Surface}"
+                        BorderBrush="{StaticResource LineMenu}" BorderThickness="1"
+                        ClipToBounds="True"
+                        BoxShadow="0 22 54 0 #b3000000">
+                    <StackPanel>
+                        <Border Background="{StaticResource SurfaceMenu}"
+                                BorderBrush="{StaticResource LineRule}" BorderThickness="0,0,0,1"
+                                Padding="13,10">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Column="0" Classes="sectionLabel" Text="WORKSPACES"
+                                           Foreground="{StaticResource InkDim}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="2" Classes="mono" Text="{Binding WorkspacesNote}"
+                                           FontSize="10" Foreground="{StaticResource InkGhost}"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+
+                        <ScrollViewer MaxHeight="296" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding Workspaces}" Margin="0,5">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:WorkspaceViewModel">
+                                        <Border Classes="wsRow" Background="{Binding RowBackground}"
+                                                Padding="13,10">
+                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                                <Rectangle Grid.Column="0" Width="2" Fill="{Binding EdgeMark}"
+                                                           Margin="-13,-10,0,-10" />
+                                                <Border Grid.Column="1" Width="9" Height="9" CornerRadius="2"
+                                                        Margin="11,0,0,0"
+                                                        Background="{Binding Dot}" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="2" Margin="11,0" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding Name}" FontSize="12.5"
+                                                                   FontWeight="SemiBold" LineHeight="15"
+                                                                   Foreground="{StaticResource InkBright}"
+                                                                   VerticalAlignment="Center" />
+                                                        <Border Height="17" Padding="6,0" CornerRadius="9"
+                                                                Background="{Binding BadgeBackground}"
+                                                                BorderBrush="{Binding BadgeBorder}"
+                                                                BorderThickness="1" VerticalAlignment="Center">
+                                                            <TextBlock Classes="mono" Text="{Binding Badge}"
+                                                                       FontSize="8.5" FontWeight="SemiBold"
+                                                                       LetterSpacing="0.43"
+                                                                       Foreground="{Binding BadgeForeground}"
+                                                                       VerticalAlignment="Center" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Classes="mono" Text="{Binding Path}"
+                                                               Margin="0,4,0,0" FontSize="10.5" LineHeight="13.6"
+                                                               Foreground="{StaticResource InkFaint}"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="3" Text="{Binding Action}" FontSize="11"
+                                                           FontWeight="Medium"
+                                                           Foreground="{Binding ActionForeground}"
+                                                           VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Border Background="{StaticResource GroundRaised}"
+                                BorderBrush="{StaticResource LineRule}" BorderThickness="0,1,0,0"
+                                Padding="13,10">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconFolderOpen}" Width="15" Height="15"
+                                          Foreground="{StaticResource InkDim}" />
+                                <TextBlock Text="Add workspace from folder…" FontSize="11.5"
+                                           FontWeight="Medium" Foreground="{StaticResource InkDim}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Panel>
+    </Panel>
+</views:ChromelessWindow>
