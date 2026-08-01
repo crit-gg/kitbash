@@ -1,0 +1,177 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Five button kinds, one control theme. The resting look is the setters, the
+         kinds and the states are the nested styles, and nothing here is a plain type
+         selector.
+
+         That split is the whole reason this reads the way it does. A selector that
+         varies at runtime, which means any class or pseudo class, binds at StyleTrigger
+         and beats a plain type selector whatever the order. Mixing the two would leave
+         a state that can never be overridden. Inside one control theme every selector
+         is activated, so the later one wins and order alone decides.
+
+         The order below is therefore load bearing: base, base states, then each kind
+         with its own states, then disabled last so it beats all of them. -->
+
+    <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+
+        <!-- ContentControl clips to its bounds by default in Avalonia 12, which would
+             cut the focus halo off flush with the border and leave a hard ring instead
+             of one hugging the control. The clip moves to the frame below, so content
+             still cannot escape the button while the halo can. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <!-- Secondary is what a button is when it is not told otherwise. -->
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- The halo is a sibling with a negative margin rather than a border
+                     around the frame, so focus costs no layout and the button stays the
+                     height it was asked for. A Panel does not clip, so it draws. -->
+                <Panel>
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            ClipToBounds="True">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- Secondary states. -->
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+        </Style>
+
+        <!-- Primary, the one accent flood in the system. -->
+        <Style Selector="^.primary">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}" />
+        </Style>
+
+        <Style Selector="^.primary:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^.primary:pressed">
+            <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <!-- Ghost carries no fill and no border. The background is still set, because a
+             control with none is not hit tested and the hover could never be reached. -->
+        <Style Selector="^.ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^.ghost:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^.ghost:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- Danger is solid on purpose, the one exception to the no flood rule. -->
+        <Style Selector="^.danger">
+            <Setter Property="Background" Value="{DynamicResource Destructive}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Destructive}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInk}" />
+        </Style>
+
+        <Style Selector="^.danger:pointerover">
+            <Setter Property="Background" Value="{DynamicResource DestructiveHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DestructiveHover}" />
+        </Style>
+
+        <Style Selector="^.danger:pressed">
+            <Setter Property="Background" Value="{DynamicResource DestructivePressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DestructivePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInkPressed}" />
+        </Style>
+
+        <!-- Icon only. The size is the hit area, not the glyph, and the glyph takes its
+             colour from here by inheritance. A tooltip and an accessible name are
+             required on the view, since nothing here can supply the word. -->
+        <Style Selector="^.icon">
+            <Setter Property="Width" Value="{DynamicResource SizeIconButton}" />
+            <Setter Property="Height" Value="{DynamicResource SizeIconButton}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^.icon:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^.icon:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- Focus is a halo outside the border, never in place of one. It answers the
+             keyboard only, so clicking a button does not ring it. -->
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <!-- Disabled keeps the shape and flattens the fill. Never opacity. Declared
+             last, so it beats every kind above it. -->
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <!-- A kind with no fill has none to flatten, so it dims its text and stays flat
+             rather than growing a box it never had. -->
+        <Style Selector="^.ghost:disabled, ^.icon:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

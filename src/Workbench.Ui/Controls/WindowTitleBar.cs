@@ -128,8 +128,39 @@ public class WindowTitleBar : ContentControl
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
+        // A double tap bubbles, so one aimed at a control in the bar would otherwise
+        // reach here as well and maximise the window behind it. Two quick clicks on a
+        // button are two clicks, not a gesture on the bar.
+        if (TakesItsOwnClicks(e.Source as Visual))
+        {
+            return;
+        }
+
         _window?.ToggleMaximizedFromTitleBar();
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Whether the tap landed on something that answers the pointer itself, anywhere
+    /// between the source and this bar.
+    /// </summary>
+    /// <remarks>
+    /// Focusable is the test. A button, a text box or anything else a person can reach
+    /// with the keyboard is a control and keeps its own clicks, including the caption
+    /// buttons. A label, an icon, a border or a panel is decoration, so the bar keeps
+    /// the gesture and dragging or double clicking the title still works.
+    /// </remarks>
+    private bool TakesItsOwnClicks(Visual? source)
+    {
+        for (var visual = source; visual is not null && !ReferenceEquals(visual, this); visual = visual.GetVisualParent())
+        {
+            if (visual is InputElement { Focusable: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void Minimize()

@@ -107,6 +107,7 @@ agent as an author.
 Workbench.slnx
 src/Workbench.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
 src/Workbench.Ui/      the look: tokens, type, control themes, fonts, the window shell
+src/Workbench.Gallery/ every control, live, for building and checking the library
 src/Workbench/         the launcher app, Avalonia 12
 src/tools/             one project per tool, empty until the first tool is named
 ```
@@ -159,6 +160,111 @@ are committed so a clean checkout builds without the set present, and
 The set mixes single paths, multiple paths and rects, so the generator merges shapes and
 rewrites rects. The merge has three traps that all fail silently, recorded in
 `.claude/plans/stage-02-icons.md`. Read that before changing it.
+
+## Controls
+
+**Theme what Avalonia already ships. Build only what it does not have.** Every basic
+control is a built in type with a `ControlTheme` over it. Before writing a control, name
+the built in type it should have been. `https://docs.avaloniaui.net/controls` is the
+list, and anything not marked Pro is ours to use. Paid, and therefore out:
+`TreeDataGrid`, Charts, Markdown, MediaPlayer, On Screen Keyboard and RichTextEditor.
+
+Only two controls here are hand built, and only because Avalonia has no type for either:
+`Chip` and `StatusPill`. `Icon`, `ChromelessWindow`, `WindowTitleBar`, `DialogWindow` and
+`DialogFooter` are ours for the same reason.
+
+Theme the whole type rather than reaching past it. Where a control publishes settings for
+a theme to drive, such as `ProgressBar.TemplateSettings`, use them and take the values it
+computes. Holding a built in control to a number it does not compute means owning it.
+
+One `ControlTheme` per type in `Workbench.Ui/Themes/Controls`, all merged by
+`WorkbenchTheme.axaml`. A view names a kind and never a value.
+
+```xml
+<Button Classes="primary" Content="Add workspace" />
+<Button Classes="icon" ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+    <ui:Icon Glyph="Cog" />
+</Button>
+<ui:Chip Content="machine" Mark="{DynamicResource Data}" IsRemovable="True" />
+<ui:StatusPill Status="Ok" Text="synced" />
+```
+
+Buttons are 26px and come in five kinds. Secondary is what a button is when it is told
+nothing. `primary` is the one accent flood, `danger` the one other, `ghost` carries no
+fill and `icon` is a 24 by 24 hit area. An icon button needs a tooltip and an accessible
+name, since nothing in the theme can supply the word.
+
+`SplitButton` and `DropDownButton` are stock Avalonia types with a theme each. `Chip` and
+`StatusPill` are ours.
+
+**A status reads as colour plus icon plus label, never colour alone.** `StatusPill` draws
+all three and none can be turned off, and each tier carries a default glyph, so a pill
+that says its meaning in colour alone cannot be built. The tiers are `Ok`, `Modified`,
+`Error`, `Accent` and `Neutral`.
+
+### Two rules that decide how a control theme is written
+
+**Order inside a control theme is the only precedence there is.** A selector that varies
+at runtime, which means any class or pseudo class, binds at `StyleTrigger` and beats a
+plain type selector whatever the order. So the resting look goes in the setters and every
+kind and state goes in a nested style, never a mix of the two. Then all of them are
+activated, the later one wins, and order alone decides. Write base, base states, each
+kind with its states, then disabled last.
+
+**A control theme is found by the exact type and never falls back to a base type.** A
+type derived from one that has a theme still needs its own, which is why
+`DropDownButton` has one despite being a `Button`.
+
+A corollary worth the words: a class on a shared control theme inherits everything that
+theme ever gains. The caption buttons were a class on `Button` until the `Button` theme
+gained a height, which shrank them inside the title bar. Where a control only resembles
+the shared one, give it a keyed theme instead. `CaptionButton`, `SplitButtonPart` and
+`ChipRemoveButton` are all keyed for that reason.
+
+### The gallery
+
+```
+dotnet run --project src/Workbench.Gallery
+```
+
+Every control in the library, live, in one window. It is where a control theme is built
+and where it is checked by hand, and it is a consumer of `Workbench.Ui` and nothing else,
+so it never references the launcher. Anything it needs from there belongs in the library.
+
+It holds no palette and no control look of its own. Only page furniture, headings and
+panels. So anything that looks wrong in the gallery is wrong in the library.
+
+**Add every new control to it in the stage that builds the control.** A kind that is not
+in the gallery is a kind nobody has looked at.
+
+Each control shows a live sample and a row of held states, so all five can be read side
+by side. A held sample carries `forceHover`, `forcePressed` or `forceFocus`, and
+`GalleryWindow` turns those into pseudo classes on load. Those samples opt out of hit
+testing, since a real pointer would otherwise clear the state that was pinned on them.
+
+The gallery is also the window shell, so dragging, double clicking, resizing and the
+inactive tier are all testable in it, and its title bar carries content, which is the
+case that keeps the row alive when the desktop draws the frame.
+
+### Focus and disabled
+
+Focus is a 2px halo of the accent at 30 percent, outside the border and never in place
+of one. It is a sibling with a negative margin inside a `Panel`, so focus costs no layout
+and a control never changes height when it takes focus. It answers `:focus-visible`, so
+tabbing rings a control and clicking one does not.
+
+**A control that draws a halo has to turn its own clip off.** `ContentControl` clips to
+its bounds by default in Avalonia 12, which cuts the halo off flush with the border and
+leaves a hard ring. So the theme sets `ClipToBounds="False"` on the control and
+`ClipToBounds="True"` on the frame inside the template, which keeps content in while
+letting the halo out.
+
+**Ring the thing that actually takes focus.** A `SplitButton` is not focusable and its
+two halves are, so each half carries its own halo and rounds only its outer end. That is
+why the frame does not clip: a clip would take both halos with it.
+
+Disabled flattens the fill to `SurfaceControlOff` with a `LineControlOff` border and
+`InkDisabled` text. Never opacity. A kind with no fill keeps none.
 
 Each tool is its own executable, started by Workbench as a separate OS process.
 Tools are not loaded in process and Workbench does not construct their windows.
@@ -371,6 +477,13 @@ menu or a toolbar, and it is empty by default. Do not hand write a title bar row
 do not wire the gestures at the window, because both are already done here and doing
 them twice fights the built in behaviour.
 
+**A control in the bar keeps its own clicks.** A double tap bubbles, so one aimed at a
+button in the chrome would otherwise reach the bar as well and maximise the window
+behind it. Two quick clicks on a button are two clicks, not a gesture. The bar tests
+whether anything between the source and itself is focusable: a button, a text box or a
+caption button is a control and keeps the gesture, while a label, an icon, a border or a
+panel is decoration, so dragging and double clicking the title still work.
+
 The window's own icon, the one the desktop shows in the task bar, is set on the window
 rather than in the base class, since it belongs to the app that is running:
 
@@ -492,10 +605,15 @@ the launcher. No tool is implemented, and no file format or Godot integration wo
 has started.
 
 The app is being moved to the Slate design, in the eleven stages under
-`.claude/plans/`. Stages 1 to 3 are done: `Workbench.Ui` carries the Slate tokens, the
-type scale, the 48 icons and the window shell. The chrome is Slate now, so the launcher
-wears a 32px title bar on a Slate frame while its body is still the old palette. That
-mismatch is expected and stage 5 ends it.
+`.claude/plans/`. Stages 1 to 4 are done: `Workbench.Ui` carries the Slate tokens, the
+type scale, the 48 icons, the window shell and the first control themes, which are the
+five button kinds, the split button, the dropdown, the chip, the status pill and the
+progress bar.
+
+The launcher wears a Slate title bar on a Slate frame, and its body is still the old
+palette. Nothing in it consumes a control theme yet, since its own `Button.action` style
+sits in `Window.Styles` and a style beats a control theme. Both are expected and stage 5
+ends both.
 
 The body keeps its old look through `Themes/LegacyTokens.axaml`, which holds the old palette at
 its old values under `Legacy` prefixed names. The prefix is deliberate. Nine of the old

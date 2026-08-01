@@ -9,6 +9,10 @@ stack.
 
 ## Build
 
+**Built in types.** `ListBox` and `ListBoxItem` for lists, `TreeView` and `TreeViewItem`
+for trees, `TabControl` and `TabItem` for tabs. `ListBox` already virtualises, which is
+why the flat row list is built on it.
+
 **List row.** 26px, 2px between rows in a list surface, 5px radius on the row itself.
 Text at 12px `InkPrimary`.
 
@@ -79,12 +83,14 @@ Hierarchy in the first column, aggregates on the branch rows. The branch row sho
 rolled up values in the same columns its children use, in monospace, at `InkSecondary`
 so it reads as a summary rather than as data.
 
-Hand built, like everything else here. TreeDataGrid is licensed and is not an option.
+`TreeDataGrid` is a Pro control and is not an option, and `TableView` is flat, so this
+one surface has no built in type behind it. It is the exception, and it is built on
+`TreeView`, which is where the hierarchy already lives.
 
 Build the tree first and the columns second. A tree data grid is a tree that also lays
 out columns, so if the stage 9 tree is right, this is column layout on top of it rather
-than a separate control. Share that column layout with stage 10 rather than writing it
-twice.
+than a separate control. Take that column layout from `TableViewColumn` in stage 10
+rather than inventing a second one.
 
 ## Done when
 

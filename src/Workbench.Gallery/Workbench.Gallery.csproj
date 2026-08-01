@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+  </ItemGroup>
+
+  <!-- The gallery is a consumer of the library and nothing else. It must not reference
+       the launcher, since anything it needs from there belongs in Workbench.Ui. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Workbench.Ui\Workbench.Ui.csproj" />
+  </ItemGroup>
+
+</Project>

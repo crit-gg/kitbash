@@ -19,6 +19,12 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Icons.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Icon.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/DialogFooter.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Button.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/SplitButton.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/DropDownButton.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Chip.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/StatusPill.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ProgressBar.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

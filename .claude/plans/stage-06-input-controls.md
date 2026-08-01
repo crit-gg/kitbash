@@ -9,6 +9,23 @@ A tool author can build a form and a filter bar without styling anything.
 
 ## Build
 
+**Every control here is a built in Avalonia type with a control theme over it.** None of
+them is written from scratch.
+
+| Thing | Type |
+|---|---|
+| text field | `TextBox` |
+| search field | `TextBox` with a leading icon, or `AutoCompleteBox` if it suggests |
+| checkbox | `CheckBox`, whose `IsThreeState` gives the mixed state |
+| radio | `RadioButton` |
+| toggle | `ToggleSwitch` |
+| segmented | `RadioButton` in a group, themed as a row |
+| stepper | `NumericUpDown` |
+| slider | `Slider` |
+| dropdown that picks a value | `ComboBox` |
+
+`MaskedTextBox` is there too if a field ever needs a pattern.
+
 All 26px tall unless noted, 5px radius, and all on `SurfaceWell` `#161719` rather than
 a nested surface, because an input well is its own tone in this system and does not ride
 the depth ramp.

@@ -16,6 +16,10 @@ menus and dropdowns, 8px for larger cards. Shadow is `ShadowPopup` for menus and
 
 ## Build
 
+**All built in types.** `ContextMenu`, `Menu`, `MenuItem`, `Separator`, `MenuFlyout`,
+`Flyout`, `Popup` and `ToolTip`. The overlay surface is one set of setters shared by
+their themes, which is what stops a menu and a dropdown drifting apart.
+
 **Context menu and menu items.** 26px rows, 5px radius, 11.5px Archivo `InkPrimary`,
 with the shortcut hint right aligned in 11px JetBrains Mono `InkMuted`. Hover
 `StateHover`, pressed `StatePressed`. A separator is a hairline with 5px by 7px margin.

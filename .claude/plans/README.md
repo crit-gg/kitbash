@@ -60,9 +60,41 @@ every brush, every icon, the window shell and the overlay surfaces.
   default in Avalonia 12. `ItemsControl` and `TreeView` both fall back to a plain
   `StackPanel` and realise everything, so a virtualising panel is a deliberate choice
   every time. Stage 9 builds the flat row list the rest of them reuse.
-- Controls are built in house. No paid Avalonia tier, and no third party control
-  package for something this library should own. Dock in stage 11 is the one exception
-  and it is MIT.
+- **Theme what Avalonia already ships. Build only what it does not have.** Every basic
+  control is a built in Avalonia type with a `ControlTheme` over it: buttons, split
+  buttons, dropdowns, text fields, checkboxes, radios, toggles, sliders, steppers,
+  progress bars, labels, list boxes, trees, tabs, menus. A hand built control is for
+  something Avalonia has no type for, such as the chip and the status pill in stage 4.
+  Before writing a control, name the built in type it should have been.
+  - Theme the whole type rather than reaching past it. If a control publishes settings
+    for a theme to drive, such as `ProgressBar.TemplateSettings`, use them, and take the
+    values it computes rather than forcing the design's numbers by owning the control.
+  - A control theme is found by the exact type and never falls back to a base type, so a
+    derived type such as `DropDownButton` needs its own even though it is a `Button`.
+  - Where a control only resembles a shared one, give it a keyed theme rather than a
+    class on the shared theme, so it does not inherit whatever that theme later gains.
+- No paid Avalonia tier. `https://docs.avaloniaui.net/controls` is the list, and anything
+  not marked Pro is ours to use. Verified against the Pro tier: `TreeDataGrid`, Charts,
+  Markdown, MediaPlayer, On Screen Keyboard and RichTextEditor are paid. Everything else
+  on that page ships in `Avalonia.Controls`, which this project already references.
+- No third party control package for something this library should own. Dock in stage 11
+  is the one exception and it is MIT.
+
+**What the built in set gives each stage.** Checked by reflecting over
+`Avalonia.Controls` 12.1.1 rather than read from a page.
+
+| Stage | Theme these |
+|---|---|
+| 4 | `Button`, `SplitButton`, `DropDownButton`, `ProgressBar` |
+| 6 | `TextBox`, `AutoCompleteBox`, `MaskedTextBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `Slider`, `NumericUpDown`, `ComboBox` |
+| 7 | `GridSplitter`, `Expander`, `SplitView` |
+| 8 | `ContextMenu`, `Menu`, `MenuItem`, `MenuFlyout`, `Flyout`, `Popup`, `ToolTip`, `Separator` |
+| 9 | `ListBox`, `ListBoxItem`, `TreeView`, `TreeViewItem`, `TabControl`, `TabItem` |
+| 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
+
+Only two things in this plan have no built in type and stay hand built: the chip and the
+status pill in stage 4. Everything else in stages 4 to 10 is a theme over the list above.
+Stage 11's docking surface comes from Dock.
 - Keep the current caption button glyphs. Everything else about the title bar may
   change to match Slate.
 - A window has two frames, not one. `window.nativeChrome` is a global user only setting

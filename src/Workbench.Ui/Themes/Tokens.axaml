@@ -66,9 +66,21 @@
     <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
 
     <!-- Focus is a soft halo hugging the control, outside its border, never replacing
-         one. It is a colour and a thickness together, so both live here. -->
+         one. It is a colour and a thickness together, so both live here. The halo sits
+         outside the control, so its radius is the control's plus its thickness, which
+         is what keeps the two curves concentric. -->
     <SolidColorBrush x:Key="FocusHalo" Color="#569eff" Opacity="0.3" />
-    <x:Double x:Key="FocusHaloThickness">2</x:Double>
+    <Thickness x:Key="FocusHaloThickness">2</Thickness>
+    <Thickness x:Key="FocusHaloReach">-2</Thickness>
+    <CornerRadius x:Key="RadiusControlHalo">7</CornerRadius>
+
+    <!-- One end of a control that is built from segments, such as a split button or a
+         segmented control. The parts cannot be clipped to the frame, because a clip
+         would take the focus halo with them, so each end carries its own radius. -->
+    <CornerRadius x:Key="RadiusControlLeft">5,0,0,5</CornerRadius>
+    <CornerRadius x:Key="RadiusControlRight">0,5,5,0</CornerRadius>
+    <CornerRadius x:Key="RadiusControlHaloLeft">7,0,0,7</CornerRadius>
+    <CornerRadius x:Key="RadiusControlHaloRight">0,7,7,0</CornerRadius>
 
     <!-- Text. Disabled keeps its shape and flattens its fill, never its opacity. -->
     <SolidColorBrush x:Key="InkTitle" Color="#e6ebf2" />
@@ -153,9 +165,18 @@
     <x:Double x:Key="IndentTree">14</x:Double>
     <x:Double x:Key="SpacingRow">2</x:Double>
 
+    <!-- The square mark a chip and a status pill carry. It takes RadiusMark. -->
+    <x:Double x:Key="SizeMark">5</x:Double>
+
+    <!-- The design does not record a bar height, so this is chosen. It is the shortest
+         bar that still reads as a bar at the mark radius. -->
+    <x:Double x:Key="HeightProgress">6</x:Double>
+
     <!-- Icons are 16 in tables, trees, the status bar and inline chips, and 20 in the
-         activity rail, tool cards and empty states. -->
+         activity rail, tool cards and empty states. The compact size is for the chip and
+         the status pill, which are shorter than a row, so 16 does not fit in one. -->
     <x:Double x:Key="IconSizeSmall">16</x:Double>
     <x:Double x:Key="IconSizeLarge">20</x:Double>
+    <x:Double x:Key="IconSizeCompact">12</x:Double>
 
 </ResourceDictionary>

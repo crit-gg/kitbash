@@ -1,0 +1,246 @@
+<ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+        x:Class="Workbench.Gallery.Views.GalleryWindow"
+        Title="Workbench Gallery"
+        Width="1024" Height="784"
+        MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{StaticResource FontFamilyUi}"
+        FontSize="{StaticResource FontSizeBody}">
+
+    <Window.Styles>
+        <!-- The gallery's own furniture. Nothing here is a control look. Every one of
+             those comes from Workbench.Ui, so anything wrong on this page is wrong in
+             the library. -->
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingLabel}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.note">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style Selector="Border.panel">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- The title bar carries content, which is the case that keeps the row alive
+             under the desktop's own frame. Turn window.nativeChrome on and this row
+             stays while the launcher's disappears. -->
+        <ui:WindowTitleBar Grid.Row="0" Title="Workbench Gallery">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Margin="0,0,8,0">
+                <Button Classes="ghost" Name="ToggleEnabledButton"
+                        Content="Disable everything"
+                        Click="OnToggleEnabled" />
+            </StackPanel>
+        </ui:WindowTitleBar>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Name="Body" Spacing="16" Margin="20">
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="BUTTONS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Every kind in every state. The first column is live, so hover it, hold it and tab to it. The rest are held in one state so the five can be compared at once, and they ignore the pointer for that reason." />
+
+                        <Grid ColumnDefinitions="90,Auto,Auto,Auto,Auto,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                              ColumnSpacing="10" RowSpacing="9">
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="live" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Classes="caption" Text="hover" />
+                            <TextBlock Grid.Row="0" Grid.Column="3" Classes="caption" Text="pressed" />
+                            <TextBlock Grid.Row="0" Grid.Column="4" Classes="caption" Text="focus" />
+                            <TextBlock Grid.Row="0" Grid.Column="5" Classes="caption" Text="disabled" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="secondary" VerticalAlignment="Center" />
+                            <Button Grid.Row="1" Grid.Column="1" Content="Reload" />
+                            <Button Grid.Row="1" Grid.Column="2" Classes="forceHover" Content="Reload" />
+                            <Button Grid.Row="1" Grid.Column="3" Classes="forcePressed" Content="Reload" />
+                            <Button Grid.Row="1" Grid.Column="4" Classes="forceFocus" Content="Reload" />
+                            <Button Grid.Row="1" Grid.Column="5" Content="Reload" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="primary" VerticalAlignment="Center" />
+                            <Button Grid.Row="2" Grid.Column="1" Classes="primary" Content="Add workspace" />
+                            <Button Grid.Row="2" Grid.Column="2" Classes="primary forceHover" Content="Add workspace" />
+                            <Button Grid.Row="2" Grid.Column="3" Classes="primary forcePressed" Content="Add workspace" />
+                            <Button Grid.Row="2" Grid.Column="4" Classes="primary forceFocus" Content="Add workspace" />
+                            <Button Grid.Row="2" Grid.Column="5" Classes="primary" Content="Add workspace" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="ghost" VerticalAlignment="Center" />
+                            <Button Grid.Row="3" Grid.Column="1" Classes="ghost" Content="Cancel" />
+                            <Button Grid.Row="3" Grid.Column="2" Classes="ghost forceHover" Content="Cancel" />
+                            <Button Grid.Row="3" Grid.Column="3" Classes="ghost forcePressed" Content="Cancel" />
+                            <Button Grid.Row="3" Grid.Column="4" Classes="ghost forceFocus" Content="Cancel" />
+                            <Button Grid.Row="3" Grid.Column="5" Classes="ghost" Content="Cancel" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="danger" VerticalAlignment="Center" />
+                            <Button Grid.Row="4" Grid.Column="1" Classes="danger" Content="Remove" />
+                            <Button Grid.Row="4" Grid.Column="2" Classes="danger forceHover" Content="Remove" />
+                            <Button Grid.Row="4" Grid.Column="3" Classes="danger forcePressed" Content="Remove" />
+                            <Button Grid.Row="4" Grid.Column="4" Classes="danger forceFocus" Content="Remove" />
+                            <Button Grid.Row="4" Grid.Column="5" Classes="danger" Content="Remove" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Classes="caption" Text="icon" VerticalAlignment="Center" />
+                            <Button Grid.Row="5" Grid.Column="1" Classes="icon"
+                                    ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                                <ui:Icon Glyph="Cog" />
+                            </Button>
+                            <Button Grid.Row="5" Grid.Column="2" Classes="icon forceHover"
+                                    ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                                <ui:Icon Glyph="Cog" />
+                            </Button>
+                            <Button Grid.Row="5" Grid.Column="3" Classes="icon forcePressed"
+                                    ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                                <ui:Icon Glyph="Cog" />
+                            </Button>
+                            <Button Grid.Row="5" Grid.Column="4" Classes="icon forceFocus"
+                                    ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                                <ui:Icon Glyph="Cog" />
+                            </Button>
+                            <Button Grid.Row="5" Grid.Column="5" Classes="icon" IsEnabled="False"
+                                    ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                                <ui:Icon Glyph="Cog" />
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="SPLIT BUTTON AND DROPDOWN" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Both open a real menu. Hover the caret and then the label to see each half take its own state without moving the other. The menu itself is not themed until stage 8." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <SplitButton Content="Run">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Run and attach" />
+                                        <MenuItem Header="Run without building" />
+                                        <Separator />
+                                        <MenuItem Header="Edit configuration" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+
+                            <SplitButton Content="Run" IsEnabled="False" />
+
+                            <DropDownButton Content="Godot 4.7.1" Width="170">
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Godot 4.7.1" />
+                                        <MenuItem Header="Godot 4.6.2" />
+                                        <MenuItem Header="Godot 4.5.0" />
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+
+                            <DropDownButton Content="Godot 4.7.1" Width="170" IsEnabled="False" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="CHIPS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="A chip says what is true. Removing it is the only thing that can be done to one, so the removable chips below really do go." />
+
+                        <StackPanel Name="Chips" Orientation="Horizontal" Spacing="8">
+                            <ui:Chip Content="machine" Mark="{DynamicResource Data}" IsRemovable="True" />
+                            <ui:Chip Content="recipe" Mark="{DynamicResource Graph}" IsRemovable="True" />
+                            <ui:Chip Content="attribute" Mark="{DynamicResource Warn}" IsRemovable="True" />
+                            <ui:Chip Content="no mark" />
+                            <ui:Chip Content="disabled" Mark="{DynamicResource Ok}" IsRemovable="True" IsEnabled="False" />
+                        </StackPanel>
+
+                        <Button Classes="ghost" Content="Put them back" Click="OnRestoreChips"
+                                HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="STATUS PILLS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Colour plus icon plus label, always. The tier chooses the colours and a default glyph, and naming a glyph overrides it. The last one shows that." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:StatusPill Status="Ok" Text="synced" />
+                            <ui:StatusPill Status="Modified" Text="modified" />
+                            <ui:StatusPill Status="Error" Text="conflict" />
+                            <ui:StatusPill Status="Accent" Text="checked out" />
+                            <ui:StatusPill Status="Neutral" Text="archived" />
+                            <ui:StatusPill Status="Ok" Text="main" Glyph="GitBranch" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="PROGRESS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="One bar, two modes. The travelling fill is 30 percent of the track and sweeps edge to edge." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ProgressBar Name="Determinate" Width="260" Value="40" VerticalAlignment="Center" />
+                            <TextBlock Name="DeterminateValue" Classes="caption" VerticalAlignment="Center" />
+                            <Button Classes="icon" Click="OnLess"
+                                    ToolTip.Tip="Less" AutomationProperties.Name="Less">
+                                <ui:Icon Glyph="Minimize" />
+                            </Button>
+                            <Button Classes="icon" Click="OnMore"
+                                    ToolTip.Tip="More" AutomationProperties.Name="More">
+                                <ui:Icon Glyph="Plus" />
+                            </Button>
+                        </StackPanel>
+
+                        <ProgressBar Width="260" IsIndeterminate="True" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="WINDOW AND DIALOG" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="This window is the shell itself. Drag the bar to move it, double click it to maximise, drag any edge to resize, and click another window to watch the whole chrome drop to the muted tier." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Open a dialog" Click="OnOpenDialog" />
+                            <Button Classes="ghost" Content="Maximise this window" Click="OnMaximize" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</ui:ChromelessWindow>

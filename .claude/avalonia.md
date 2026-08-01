@@ -369,6 +369,34 @@ Animators exist for bool, the integer types, float, double, decimal, `Color`, `I
 `RelativeScalar`, `Size`, `Thickness`, `Vector` and `IEffect`. Register another with
 `Animation.RegisterCustomAnimator<T, TAnimator>`.
 
+**`ContentControl` clips to its bounds by default, so anything a control theme draws
+outside its frame is cut off.**
+
+**Measured**, with no theme loaded at all, so these are the types' own defaults:
+`ContentControl`, `Button`, `SplitButton`, `DropDownButton`, `ToggleButton`,
+`ProgressBar` and `TextBox` all report `ClipToBounds` true. `Border` reports false.
+
+This is the trap for a focus ring, a glow or any halo that hugs a control from outside.
+The element arranges correctly at a negative margin and is then clipped flush with the
+border, which reads as a hard ring rather than a soft one, and nothing is logged. Turn
+the clip off on the control and put it on the frame inside the template instead, so
+content still cannot escape while the halo can. `Themes/Controls/Button.axaml` is the
+use.
+
+**`RelativePoint` is the way to move something in proportion to its parent.** A
+translation is measured in pixels, so anything that has to travel a share of a width
+normally needs the width, which means code. `RenderTransformOrigin` is a `RelativePoint`
+and it does interpolate.
+
+**Measured**: an animation from `0%,50%` to `100%,50%` over four seconds read 0.123,
+0.248, 0.373, 0.497, 0.623 and 0.748 at half second samples, so it moves smoothly
+rather than stepping between keyframes.
+
+That gives a band of fixed proportion sweeping a container with no measurement anywhere.
+Stretch the element, scale it by `s`, and move the origin `o` from 0 to 1. The element
+then covers `[(1-s)*o, (1-s)*o + s]` of the container, so at `s` of 0.3 a band 30 percent
+wide walks from one edge to the other. `Themes/Controls/ProgressBar.axaml` is the use.
+
 New in 12: a style applied animation stops ticking while its control is not effectively
 visible. `Animation.PlaybackBehavior` is `Auto` by default, and `Always` restores the
 old behavior. Animations started by hand through `RunAsync`, and animations targeting

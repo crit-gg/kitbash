@@ -1,0 +1,165 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- The two halves of a split button. They carry no fill and no border of their own,
+         so the frame around them supplies both and the pair reads as one control. Each
+         half still takes its own hover, which is the point: the caret can darken without
+         the label moving with it.
+
+         Each half also carries its own focus halo, because each half is what actually
+         takes focus. Measured: a SplitButton is not focusable and its two parts are, so a
+         halo on the control itself would never appear.
+
+         The halo is why a half carries a radius rather than being clipped to the frame. A
+         clip on the frame would take the halo with it, so instead each half rounds its own
+         outer end and nothing clips. -->
+    <ControlTheme x:Key="SplitButtonPart" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+
+        <!-- See Button.axaml. The default clip would cut the halo off. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <!-- The halo's radius is set by a style rather than here, because a
+                         value written in a template is a local value and a local value
+                         beats every style, so the two ends below could never override
+                         it. -->
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            ClipToBounds="True">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^ /template/ Border#PART_Focus">
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHalo}" />
+        </Style>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Each end rounds only its own outer corners, so the pair still reads as one
+         control, and its halo rounds to match. -->
+    <ControlTheme x:Key="SplitButtonLabelPart" TargetType="Button" BasedOn="{StaticResource SplitButtonPart}">
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlLeft}" />
+
+        <Style Selector="^ /template/ Border#PART_Focus">
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHaloLeft}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="SplitButtonCaretPart" TargetType="Button" BasedOn="{StaticResource SplitButtonPart}">
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlRight}" />
+
+        <Style Selector="^ /template/ Border#PART_Focus">
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHaloRight}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type SplitButton}" TargetType="SplitButton">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+
+        <!-- See Button.axaml. The frame below already clips, so nothing escapes. -->
+        <Setter Property="ClipToBounds" Value="False" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <Button Name="PART_PrimaryButton" Grid.Column="0"
+                                    Theme="{StaticResource SplitButtonLabelPart}"
+                                    Padding="12,0"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}" />
+
+                            <Border Grid.Column="1" Width="1"
+                                    Background="{TemplateBinding BorderBrush}" />
+
+                            <Button Name="PART_SecondaryButton" Grid.Column="2"
+                                    Theme="{StaticResource SplitButtonCaretPart}"
+                                    Width="{DynamicResource SizeIconButton}">
+                                <ui:Icon Name="PART_Caret"
+                                         Glyph="ChevronDown"
+                                         Size="{DynamicResource IconSizeCompact}"
+                                         RenderTransformOrigin="50%,50%"
+                                         RenderTransform="rotate(0deg)">
+                                    <ui:Icon.Transitions>
+                                        <Transitions>
+                                            <TransformOperationsTransition Property="RenderTransform"
+                                                                           Duration="0:0:0.11"
+                                                                           Easing="CubicEaseOut" />
+                                        </Transitions>
+                                    </ui:Icon.Transitions>
+                                </ui:Icon>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- The caret answers the flyout it opens. RenderTransform is written as a
+             transform operation and moved by a transition, which is the pairing that
+             works. A keyframe animation against a TransformOperations value does nothing
+             at all and logs nothing, recorded in .claude/avalonia.md. -->
+        <Style Selector="^:flyout-open /template/ ui|Icon#PART_Caret">
+            <Setter Property="RenderTransform" Value="rotate(180deg)" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

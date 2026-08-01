@@ -1,0 +1,109 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- A button that carries a value and a chevron. It is a Button underneath, but a
+         control theme is found by the exact type and never falls back to a base type, so
+         this cannot be left to the Button theme. -->
+    <ControlTheme x:Key="{x:Type DropDownButton}" TargetType="DropDownButton">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="10,0,7,0" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+
+        <!-- See Button.axaml. The default clip would cut the focus halo off. -->
+        <Setter Property="ClipToBounds" Value="False" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            ClipToBounds="True">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <ContentPresenter Grid.Column="0"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+
+                            <!-- The chevron is the affordance, so it stays the secondary
+                                 ink even when the value beside it is primary. -->
+                            <ui:Icon Grid.Column="1" Name="PART_Chevron"
+                                     Margin="8,0,0,0"
+                                     Glyph="ChevronDown"
+                                     Size="{DynamicResource IconSizeCompact}"
+                                     Foreground="{DynamicResource InkSecondary}"
+                                     RenderTransformOrigin="50%,50%"
+                                     RenderTransform="rotate(0deg)">
+                                <ui:Icon.Transitions>
+                                    <Transitions>
+                                        <TransformOperationsTransition Property="RenderTransform"
+                                                                       Duration="0:0:0.11"
+                                                                       Easing="CubicEaseOut" />
+                                    </Transitions>
+                                </ui:Icon.Transitions>
+                            </ui:Icon>
+                        </Grid>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+        </Style>
+
+        <!-- Open reads as an accent edge, so the button and its popup are one thing. -->
+        <Style Selector="^:flyout-open">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <!-- The chevron turns over while the list is open. See SplitButton.axaml for why
+             this is a transition on RenderTransform rather than a keyframe animation on
+             RotateTransform.Angle. -->
+        <Style Selector="^:flyout-open /template/ ui|Icon#PART_Chevron">
+            <Setter Property="RenderTransform" Value="rotate(180deg)" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ ui|Icon#PART_Chevron">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

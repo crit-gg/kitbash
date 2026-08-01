@@ -7,6 +7,30 @@ The densest surface in the system, and the one a data tool lives in.
 A grid that reads cleanly at 31px rows with thousands of rows, sorts, edits in place
 and groups.
 
+## Build it on TableView, not from scratch
+
+`TableView` ships in `Avalonia.Controls`, the package this project already references,
+and it is not a Pro control. Verified by reflecting over 12.1.1 rather than read from a
+page. `TreeDataGrid` is the paid one and is still out.
+
+That changes this stage from writing a grid to theming one. What comes with it:
+
+| | |
+|---|---|
+| `TableView : ListBox` | so virtualisation is already there, and the row states from stage 9 apply because a row is a `ListBoxItem` |
+| `TableViewColumn` | `Header`, `Width` as a `GridLength`, `Binding`, `CellTemplate`, and `CellTheme` and `HeaderTheme` for styling a column on its own |
+| `TableViewRow` | a `ListBoxItem` holding `PART_CellsPresenter` |
+| `TableViewCell` | a `ContentControl` that knows its `Column` |
+| `TableViewColumnHeader` | holds `PART_Resizer`, a `Thumb`, so column resizing is built |
+| `CanUserResizeColumns` | on the view, and `CanUserResize` per column |
+
+What it does not give, and so is still this stage's work: sorting and the sort
+indicator, grouping and group header rows, and inline editing. Build those over the
+control rather than replacing it.
+
+Read the type before designing against this table. It was reflected, not used, so its
+behaviour under a real column set is unproven.
+
 ## Build
 
 **Rows.** 31px, separated by a `LineRow` `#2a2c30` hairline, with the alternating row on
@@ -42,34 +66,38 @@ switches them on.
 The two must not fight. Sorting, selection and the counts all read the full set, not the
 current page, so turning pagination on changes what is rendered and nothing else.
 
-## The control is hand built
+## What is ours and what is not
 
-Decided, not open. The grid is built in house on `ItemsControl` with a virtualising
-panel, the same way every other control in this library is built. The tree data grid in
-stage 9 is ours too.
+Decided, not open. The grid is `TableView` with a control theme over it. Do not plan
+around `TreeDataGrid`, which is a Pro control.
 
-Do not plan around TreeDataGrid. It is licensed, not free.
+That takes the expensive parts off this stage. Column layout, keeping the header in step
+with a horizontally scrolled body, virtualisation that survives a column resize, and the
+resize thumb itself all come with the control. What is left is the look, plus sorting,
+grouping and inline edit built over it.
 
-Budget accordingly. The visuals are the cheap part. The expensive parts are column
-layout, keeping the header in step with a horizontally scrolled body, virtualisation
-that survives column resize, and inline edit inside a recycled container. Expect this
-stage to be the largest in the plan.
+Read the control before budgeting. It was found by reflection, so its behaviour under a
+real column set, and how far its own themes reach, are both unproven. If it turns out
+not to carry this surface, say so and reopen the question rather than quietly writing a
+grid.
 
 Build it in this order, so each piece is verifiable before the next depends on it.
 
-1. Column definitions and measurement, with a fixed header and no scrolling.
-2. Virtualised rows against the column layout, reusing the stage 9 flat row list.
-3. Horizontal scroll with the header tracking the body.
+1. A `TableView` with real columns, unthemed, to find out what it does on its own.
+2. The row, header and cell themes, which is the look.
+3. Selection, which should be `ListBox` behaviour reused rather than written.
 4. Sorting and the sort indicator.
-5. Selection, reusing the stage 9 row states.
-6. Inline edit.
-7. Grouping and group headers.
-8. Pagination, last, because it is optional and nothing else may depend on it.
+5. Inline edit.
+6. Grouping and group headers.
+7. Pagination, last, because it is optional and nothing else may depend on it.
 
-Vertical virtualisation comes from stage 9 and is not rebuilt here. Column
-virtualisation is a separate question and is not in scope. A grid with two hundred
-columns is a real case for a data tool, but it is not one the design shows, so leave the
-column layout able to accept it later rather than building it now.
+Step one is not optional. Everything after it assumes the control behaves, and that is
+the assumption to break early rather than late.
+
+Virtualisation and column layout come from the control. Column virtualisation is a
+separate question and is not in scope. A grid with two hundred columns is a real case
+for a data tool, but it is not one the design shows, so leave it for later rather than
+building it now.
 
 ## Done when
 
