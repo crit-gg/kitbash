@@ -31,6 +31,17 @@
             <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
+        <!-- Stands in for a window's foot, so the readouts sit on the ground they really
+             sit on. -->
+        <Style Selector="Border.statusBarRow">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="Height" Value="{DynamicResource HeightTitleBar}" />
+            <Setter Property="Padding" Value="16,0,12,0" />
+        </Style>
+
         <Style Selector="Border.panel">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
@@ -255,6 +266,195 @@
                         </StackPanel>
 
                         <ProgressBar Width="260" IsIndeterminate="True" HorizontalAlignment="Left" />
+
+                        <TextBlock Classes="note"
+                                   Text="When the length is not known and there is no room for a bar, an icon turns instead. One turn every 1.1 seconds. Put it on the icon that names the work, so the row keeps its width." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ui:Icon Glyph="RefreshCw" Classes="spin" Size="16"
+                                     Foreground="{DynamicResource InkSecondary}" />
+                            <ui:Icon Glyph="RefreshCw" Classes="spin" Size="20"
+                                     Foreground="{DynamicResource Accent}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="ACTIVITY RAIL" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="The rail down the left of a window. A ListBox, so selection and keyboard navigation are Avalonia's. The first rail is live, so click it, hover it and tab into it. The rest are held so every state can be read at once, including the ones a pointer cannot reach: an open page under the cursor, and an item that is open but disabled." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="20">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="live" HorizontalAlignment="Center" />
+                                <ListBox Theme="{StaticResource ActivityRail}" SelectedIndex="0" Height="140">
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                                 ToolTip.Tip="Workspace" ToolTip.Placement="Right"
+                                                 AutomationProperties.Name="Workspace">
+                                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                                 ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
+                                                 AutomationProperties.Name="Godot engines">
+                                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                                 ToolTip.Tip="Settings" ToolTip.Placement="Right"
+                                                 AutomationProperties.Name="Settings">
+                                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                </ListBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="unselected" HorizontalAlignment="Center" />
+                                <ListBox Theme="{StaticResource ActivityRail}" SelectedIndex="-1" Height="140">
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forceHover">
+                                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forcePressed">
+                                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forceFocus">
+                                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                </ListBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="selected" HorizontalAlignment="Center" />
+                                <ListBox Theme="{StaticResource ActivityRail}" SelectionMode="Multiple" Height="140">
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True">
+                                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True" Classes="forceHover">
+                                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True" Classes="forceFocus">
+                                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                </ListBox>
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="disabled" HorizontalAlignment="Center" />
+                                <ListBox Theme="{StaticResource ActivityRail}" SelectionMode="Multiple" Height="140">
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False">
+                                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False" Classes="forceHover">
+                                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                    <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False" IsSelected="True">
+                                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                    </ListBoxItem>
+                                </ListBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="STATUS BAR" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="A readout that does something, sized for the 32px row rather than for a form. Quiet at rest so the row reads as one strip. Its own theme rather than a class on the button, because the row has no space for a button's height." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Theme="{StaticResource StatusBarButton}" ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <TextBlock Text="Update" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource InkPrimary}" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Theme="{StaticResource StatusBarButton}" ToolTip.Tip="An update that is running">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <ui:Icon Glyph="RefreshCw" Classes="spin" Size="{DynamicResource IconSizeStatus}"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <TextBlock Text="Update" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource InkPrimary}" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Theme="{StaticResource StatusBarButton}" Content="Held hover" Classes="forceHover" />
+                            <Button Theme="{StaticResource StatusBarButton}" Content="Held pressed" Classes="forcePressed" />
+                            <Button Theme="{StaticResource StatusBarButton}" Content="Held focus" Classes="forceFocus" />
+                            <Button Theme="{StaticResource StatusBarButton}" Content="Disabled" IsEnabled="False" />
+                        </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="The readouts beside it. Each one carries a glyph as well as a colour, so none of them says its meaning in hue alone, and a count that is zero is not drawn at all. A conflict leaves the row and takes a chip, because it blocks work where the others only report it." />
+
+                        <Border Classes="statusBarRow">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="14">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <ui:Icon Glyph="GitBranch" Size="{DynamicResource IconSizeStatus}"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <TextBlock Classes="branch" Text="feature/heat-rebalance" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout">
+                                        <ui:Icon Classes="countMark" Glyph="Save"
+                                                 Foreground="{DynamicResource Warn}" />
+                                        <TextBlock Classes="count" Text="12" />
+                                        <TextBlock Classes="countLabel" Text="modified" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout">
+                                        <ui:Icon Classes="countMark" Glyph="Check"
+                                                 Foreground="{DynamicResource Ok}" />
+                                        <TextBlock Classes="count" Text="3" />
+                                        <TextBlock Classes="countLabel" Text="staged" />
+                                    </StackPanel>
+
+                                    <Border Classes="conflictChip">
+                                        <StackPanel Classes="countReadout">
+                                            <ui:Icon Classes="countMark" Glyph="AlertTriangle"
+                                                     Foreground="{DynamicResource Error}" />
+                                            <TextBlock Classes="count" Text="1" />
+                                            <TextBlock Classes="countLabel" Text="conflict" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronUp"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="2" />
+                                        <TextBlock Classes="countLabel" Text="ahead" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronDown"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="3" />
+                                        <TextBlock Classes="countLabel" Text="behind" />
+                                    </StackPanel>
+
+                                    <TextBlock Classes="updateAge" Text="Updated 4m ago" />
+
+                                    <Button Theme="{StaticResource StatusBarButton}">
+                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                                     Foreground="{DynamicResource InkSecondary}" />
+                                            <TextBlock Text="Update" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource InkPrimary}" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </Border>
 

@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Workbench.Core;
+using Workbench.Core.Git;
 using Workbench.Core.IO;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
@@ -45,11 +46,16 @@ public partial class App : Application
         new ServiceCollection()
             .AddWorkbenchPlatform()
             .AddWorkbenchWorkspaces()
+            .AddWorkbenchGit()
+            .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
             .AddSingleton(BuildRegistry())
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IPathShortener>(),
-                provider.GetRequiredService<IToolRegistry>()))
+                provider.GetRequiredService<IToolRegistry>(),
+                provider.GetRequiredService<IGitStatusMonitor>(),
+                provider.GetRequiredService<IGitUpdater>(),
+                provider.GetRequiredService<IUiDispatcher>()))
             .BuildServiceProvider();
 
     // Placeholders until real tools exist.

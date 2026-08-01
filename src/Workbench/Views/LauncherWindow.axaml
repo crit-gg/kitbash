@@ -52,6 +52,13 @@
             <Setter Property="Padding" Value="15,14" />
         </Style>
 
+        <Style Selector="Border.engineMark">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        </Style>
+
         <Style Selector="Border.toolMark">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
@@ -72,6 +79,13 @@
 
         <Style Selector="Border.workspaceRow.current">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        </Style>
+
+        <!-- The open row hovers too. Both selectors bind at the same precedence, so the
+             later one wins and without this the current row would be the one row in the
+             list that does not answer the pointer. -->
+        <Style Selector="Border.workspaceRow.current:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
         </Style>
 
         <!-- The state square beside a workspace, and the one in the selector. -->
@@ -101,6 +115,15 @@
         <Style Selector="TextBlock.rowAction.inert">
             <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
         </Style>
+
+        <!-- The list being built at launch so the first real open is not the slow one. See
+             LauncherWindow.OnOpened. Nothing is drawn while that happens. -->
+        <Style Selector="FlyoutPresenter.warming">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <!-- The status bar readouts, the count classes and the conflict chip all come from
+             Workbench.Ui, so a tool's status bar reads the same as this one. -->
     </Window.Styles>
 
     <!-- the frame, the shadow and the resize grips come from Workbench.Ui -->
@@ -150,7 +173,7 @@
                                  IsEnabled="False"
                                  ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
                                  AutomationProperties.Name="Godot engines">
-                        <ui:Icon Glyph="Cube" Size="{DynamicResource IconSizeLarge}" />
+                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
                     </ListBoxItem>
                 </ListBox>
             </DockPanel>
@@ -158,7 +181,7 @@
             <!-- The workspace page. The engines page and the settings page are separate
                  designs and are not built here, so the rail leads nowhere yet. -->
             <Panel Grid.Column="1">
-                <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,*,Auto">
+                <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,Auto,*,Auto">
 
                     <!-- workspace bar -->
                     <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1"
@@ -181,7 +204,7 @@
                                                     <DataTemplate x:DataType="vm:WorkspaceViewModel">
                                                         <Border Classes="workspaceRow"
                                                                 Classes.current="{Binding IsCurrent}"
-                                                                PointerPressed="OnWorkspacePressed">
+                                                                Tapped="OnWorkspaceTapped">
                                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="11">
                                                                 <Border Grid.Column="0" Classes="stateMark"
                                                                         Classes.local="{Binding IsLocal}"
@@ -221,14 +244,20 @@
                                         </ScrollViewer>
 
                                         <ui:Popover.Footer>
-                                            <StackPanel>
-                                                <MenuItem Header="Add workspace from folder"
-                                                          Click="OnAddWorkspaceClick">
-                                                    <MenuItem.Icon>
-                                                        <ui:Icon Glyph="FolderOpen" />
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                            </StackPanel>
+                                            <!-- A library button rather than a menu item.
+                                                 The row is one action, not a menu, and the
+                                                 ghost kind is what a button with no fill
+                                                 already looks like here. -->
+                                            <Button Classes="ghost"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Left"
+                                                    Click="OnAddWorkspaceClick">
+                                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                                    <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                                                    <TextBlock Text="Add workspace from folder"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
                                         </ui:Popover.Footer>
                                     </ui:Popover>
                                 </Flyout>
@@ -252,8 +281,68 @@
                         </DropDownButton>
                     </Border>
 
+                    <!-- The engine strip. Every value in it is invented for now, which
+                         is deliberate and temporary. EngineViewModel says which fields
+                         are already readable from project.godot and which need engine
+                         discovery. -->
+                    <Border Grid.Row="1" Classes="page" BorderThickness="0,0,0,1"
+                            Height="56" Padding="20,0">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
+                            <Border Grid.Column="0" Classes="engineMark"
+                                    Width="28" Height="28" VerticalAlignment="Center">
+                                <TextBlock Classes="mono" Text="GD"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           FontWeight="{DynamicResource FontWeightStrong}"
+                                           Foreground="{DynamicResource AccentTintInk}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding Engine.Version}"
+                                               FontSize="{DynamicResource FontSizeTitle}"
+                                               FontWeight="{DynamicResource FontWeightStrong}"
+                                               Foreground="{DynamicResource InkPrimary}"
+                                               VerticalAlignment="Center" />
+
+                                    <!-- A runtime is a fact rather than a status, which is
+                                         why it is the data tier and carries a dot. -->
+                                    <ui:Badge Tier="Data" HasDot="True"
+                                              Content="{Binding Engine.Runtime}"
+                                              IsVisible="{Binding Engine.HasRuntime}" />
+
+                                    <ui:Badge Tier="{Binding Engine.BadgeTier}"
+                                              Content="{Binding Engine.StateLabel}"
+                                              IsVisible="{Binding Engine.HasState}" />
+                                </StackPanel>
+
+                                <TextBlock Classes="mono" Text="{Binding Engine.Note}"
+                                           Margin="0,4,0,0"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           Foreground="{DynamicResource InkSecondary}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <SplitButton Grid.Column="2"
+                                         Classes.primary="{Binding Engine.IsMatched}"
+                                         Classes.warn="{Binding Engine.IsMismatch}"
+                                         Classes.danger="{Binding Engine.IsMissing}"
+                                         Content="{Binding Engine.Action}"
+                                         VerticalAlignment="Center">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <MenuItem Header="Open project folder" />
+                                        <MenuItem Header="Edit project.godot" />
+                                        <MenuItem Header="Manage engine installs" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+                        </Grid>
+                    </Border>
+
                     <!-- tools -->
-                    <Border Grid.Row="1" Classes="page" BorderThickness="0">
+                    <Border Grid.Row="2" Classes="page" BorderThickness="0">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Margin="20,16,20,18">
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,11">
@@ -308,17 +397,111 @@
                         </ScrollViewer>
                     </Border>
 
-                    <!-- The status bar reports the workspace and nothing invented. The
-                         design also shows a branch, counts and a fetch action. Those need
-                         git, which this app cannot read yet, so they are absent rather
-                         than filled with numbers that are not true. -->
-                    <Border Grid.Row="2" Classes="band" BorderThickness="0,1,0,0"
-                            Height="{DynamicResource HeightTitleBar}" Padding="16,0">
-                        <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
-                                   FontSize="{DynamicResource FontSizeSmall}"
-                                   Foreground="{DynamicResource InkMuted}"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
+                    <!-- The status bar. Two of them, one row, and which one shows is
+                         whether the workspace is a repository. Everything in the git one is
+                         read from the repository and kept current by the monitor. -->
+                    <!-- Less room on the right, because the button there brings its own. -->
+                    <Border Grid.Row="3" Classes="band" BorderThickness="0,1,0,0"
+                            Height="{DynamicResource HeightTitleBar}" Padding="16,0,12,0">
+                        <Panel>
+                            <!-- Not a repository, so there is no branch and no history to
+                                 report. The path is all there is to say. -->
+                            <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding !Git.IsRepository}" />
+
+                            <!-- Two groups, because they answer two questions. Left is
+                                 identity: which branch this is and what has changed in it.
+                                 Right is this branch against its remote, and the one action
+                                 the launcher offers. -->
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="14"
+                                  IsVisible="{Binding Git.IsRepository}">
+
+                                <!-- A readout and nothing more. No border, no chevron and no
+                                     hover, because switching branches belongs to a git tool
+                                     and this only says where you are. -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <ui:Icon Glyph="GitBranch" Size="{DynamicResource IconSizeStatus}"
+                                             Foreground="{DynamicResource InkSecondary}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Classes="branch" Text="{Binding Git.Branch}"
+                                               MaxWidth="260" />
+                                </StackPanel>
+
+                                <!-- What has changed here. Each count carries its own glyph,
+                                     so none of them says its meaning in colour alone. -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasModified}">
+                                        <ui:Icon Classes="countMark" Glyph="Save"
+                                                 Foreground="{DynamicResource Warn}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Modified}" />
+                                        <TextBlock Classes="countLabel" Text="modified" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasStaged}">
+                                        <ui:Icon Classes="countMark" Glyph="Check"
+                                                 Foreground="{DynamicResource Ok}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Staged}" />
+                                        <TextBlock Classes="countLabel" Text="staged" />
+                                    </StackPanel>
+
+                                    <!-- A conflict blocks work where everything else here is
+                                         only worth knowing, so it leaves the row of counts
+                                         and takes a tinted chip. Still a readout. -->
+                                    <Border Classes="conflictChip" IsVisible="{Binding Git.HasConflicted}">
+                                        <StackPanel Classes="countReadout">
+                                            <ui:Icon Classes="countMark" Glyph="AlertTriangle"
+                                                     Foreground="{DynamicResource Error}" />
+                                            <TextBlock Classes="count" Text="{Binding Git.Conflicted}" />
+                                            <TextBlock Classes="countLabel" Text="{Binding Git.ConflictWord}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasAhead}">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronUp"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Ahead}" />
+                                        <TextBlock Classes="countLabel" Text="ahead" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasBehind}">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronDown"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Behind}" />
+                                        <TextBlock Classes="countLabel" Text="behind" />
+                                    </StackPanel>
+
+                                    <TextBlock Classes="updateAge" Text="{Binding Git.UpdateLabel}" />
+
+                                    <!-- The only action in the bar, and one word for both
+                                         of the things it does. It always fetches, and it
+                                         takes the new commits only when there is nothing
+                                         local that taking them could cost. Pushing and
+                                         resolving a conflict belong to a git client. -->
+                                    <Button Theme="{StaticResource StatusBarButton}"
+                                            Command="{Binding UpdateCommand}"
+                                            ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                                     Classes.spin="{Binding Git.IsUpdating}"
+                                                     Foreground="{DynamicResource InkSecondary}"
+                                                     VerticalAlignment="Center" />
+                                            <TextBlock Text="Update"
+                                                       Foreground="{DynamicResource InkPrimary}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Panel>
                     </Border>
                 </Grid>
 

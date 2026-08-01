@@ -305,17 +305,27 @@ check stage 1 asked for. So is the `Button.action` style, which was a `Style` an
 the stage 4 control theme. The launcher markup holds no hex, no font size and no radius,
 and the launcher project holds no brush anywhere.
 
-**Two bands are not built, and this is the one scope call in this stage.** The design
-shows an engine strip and a git status bar. Both need data this app cannot read: the
-engine strip wants installed Godot versions and the git strip wants a repository. Filling
-either with plausible numbers is exactly what the no mock data rule forbids, and a band
-of blanks is worse than no band, so both are absent. The status bar reports the workspace
-root, which is true.
+**The engine strip is built and invented, by decision.** It was left out first, because
+its data needs engine discovery and filling it with plausible numbers is what the no mock
+data rule forbids. That was overruled: the strip is wanted on screen now, so it is there
+with placeholder values.
 
-That means this stage does not meet its own first line: the launcher does not yet match
-the design at 940 by 700. It matches the parts of the design that have something real
-behind them. Wiring the engine strip needs engine discovery and wiring the git strip needs
-git, and each is its own piece of work.
+The invention is confined to `EngineViewModel.Placeholder`, which is one property in one
+file and says so in its own remarks. The note the strip shows reads that it is a
+placeholder, so the app does not claim otherwise on screen either. Delete that property
+when the strip is wired and the class keeps its shape.
+
+Two of its fields need no subsystem at all and should be taken first.
+`project.godot` carries `config/features=PackedStringArray("4.7", "C#")`, which gives the
+version and whether the runtime badge applies, and `WorkspaceNameResolver` already reads
+that file by line. Only the state, the install path and what the action can offer need
+engine discovery.
+
+**The git status bar is still not built.** It needs to read a repository and this app
+cannot, so the status bar reports the workspace root, which is true.
+
+So this stage does not meet its own first line: the launcher matches the design except
+for the git strip, and the engine strip matches it with values that are not real.
 
 The tool card has no version and no mark for the same reason. `ITool` carries neither, and
 adding them changes the contract, which the plan already says belongs in its own commit.

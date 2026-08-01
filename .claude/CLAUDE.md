@@ -151,11 +151,22 @@ button it sits in. Set a foreground only when the icon carries its own meaning, 
 semantic mark.
 
 `Glyph` is an enum, so a name that does not exist will not compile. Both the enum and the
-geometry come from `tools/icons/generate.py`, which reads `tools/icons/icons.txt` and the
-licensed set outside the repo. **To add an icon, add its name to that list and rerun the
-generator.** Never hand edit `Themes/Icons.axaml` or `Controls/IconGlyph.cs`. The outputs
-are committed so a clean checkout builds without the set present, and
-`generate.py --check` proves they have not drifted.
+geometry come from `tools/icons/generate.py`, which reads `tools/icons/icons.txt`, then
+`tools/icons/local/`, then the licensed set outside the repo. **To add an icon, add its
+name to that list and rerun the generator.** Never hand edit `Themes/Icons.axaml` or
+`Controls/IconGlyph.cs`. The outputs are committed so a clean checkout builds without the
+set present, and `generate.py --check` proves they have not drifted.
+
+**A mark that is not in the set lives in `tools/icons/local/`**, which is read first, so a
+brand mark is in the repo where it belongs and a glyph can be replaced without renaming it.
+A file there goes through the same reader and the same checks as the set, which means it
+has to arrive already normalised: a 24 by 24 box, paths and rects, no fill. The generator
+is a reader and not a converter, so a glyph cannot quietly change shape because a
+conversion improved. `local/README.md` says how a mark is fitted, and records what the
+Godot one cost.
+
+The set fills 18 to 20 units of its 24 box. A mark that fills more reads as bigger and
+heavier than everything beside it, so fit the longer side to 19 and centre on 12,12.
 
 The set mixes single paths, multiple paths and rects, so the generator merges shapes and
 rewrites rects. The merge has three traps that all fail silently, recorded in
@@ -220,6 +231,77 @@ theme ever gains. The caption buttons were a class on `Button` until the `Button
 gained a height, which shrank them inside the title bar. Where a control only resembles
 the shared one, give it a keyed theme instead. `CaptionButton`, `SplitButtonPart` and
 `ChipRemoveButton` are all keyed for that reason.
+
+### The status bar
+
+The row along the foot of a window. `Themes/Controls/StatusBar.axaml` holds all of it, so a
+tool's status bar reads the same as the launcher's. Eight rules, from the design notes under
+the launcher page, and they are the reason the row looks the way it does.
+
+1. **A readout is not a control.** The branch has no border, no chevron and no hover.
+   Switching branches belongs to a git tool. `TextBlock.branch`.
+2. **A zero is never drawn.** "behind 0" is a line of text that says nothing happened.
+   Every count is hidden below one, so anything present is worth reading and a quiet bar
+   means a quiet repository.
+3. **Colour plus icon plus label, never colour alone.** Each count carries its own glyph.
+   The coloured dots this replaced said their meaning in hue and nothing else.
+   `StackPanel.countReadout` with `ui:Icon.countMark`, `TextBlock.count`, `TextBlock.countLabel`.
+4. **What blocks work escalates out of the row.** Everything else in the bar is worth
+   knowing, a conflict stops you, so it leaves the row of counts and takes a tinted chip
+   with an alert glyph. `Border.conflictChip`, which restyles the count classes inside it.
+5. **Two groups, because they answer two questions.** Left is identity, which branch and
+   what has changed in it. Right is the branch against its remote, how far ahead or behind
+   and when it last looked.
+6. **One action, and one word for it.** The button says Update and the label says Updated,
+   whichever of the two things happened. **This is a deliberate change from the design,
+   which says fetch only and never writes.** It always fetches, and it takes the new
+   commits when there is nothing local that taking them could cost. Pushing and resolving
+   a conflict still belong to a git client. See Git below for the guards.
+7. **Counts are pluralised properly.** "1 conflict", "2 conflicts", never "1 conflict(s)".
+   `WordCount` in `Workbench.Core/Text` is where that happens and every count goes through
+   it. Only nouns inflect: a count of something described rather than named, such as twelve
+   modified files, keeps its word.
+8. **A slow action reports on itself in place.** The glyph turns for as long as the update
+   runs and the label beside it says Updating. No toast, no dialog. `ui:Icon` with the
+   `spin` class from `Themes/Motion.axaml`.
+
+`StatusBarButton` is a keyed theme rather than a class on `Button`, for the reason the
+caption buttons are keyed: the row is 32px including its seam and a class would inherit
+every height and padding the shared theme ever gains.
+
+Icons here are `IconSizeStatus`, which is 13. The design draws the branch glyph at 14 and
+the rest at 13, and one size across the row was preferred to a 1px difference nobody can
+see. The spinner is the toasts page's 1.1 seconds rather than this page's 0.9, since one
+spin speed in the app beats two.
+
+### Keeping the UI thread free
+
+Nothing that touches a disk, a process or a network belongs on the UI thread. A view model
+gathers what it needs on the thread pool, returns one value, and only that value touches
+bound properties. `LauncherViewModel.Read` and `Apply` are the shape to copy: `Read` is the
+disk half and runs anywhere, `Apply` is the screen half and runs after the await. One load
+at a time behind a semaphore, since two overlapping race on what a registry holds.
+
+The one read that stays synchronous is the first, in the constructor, because it runs before
+the window exists. There is no frame to drop, and it means a window opens filled in rather
+than opening empty and filling in a moment later.
+
+The cost of this is easy to underestimate. Opening a workspace writes application state,
+refreshes the registry, and resolves a name per workspace, which reads a config file and can
+search four levels of a project folder. Measured warm that is 2 to 4ms, and there is no
+upper bound at all on a cold cache, a busy disk or a share.
+
+**The first popup a process opens is the expensive one.** A flyout is a window of its own.
+Measured on the launcher with a 4ms heartbeat on the UI thread: the first open held it for
+75.7ms and later opens for 5 to 18. About 60 of that is machinery any popup pays for and the
+rest is that popup's own content. `LauncherWindow.OnOpened` pays it at launch by showing the
+workspace flyout and hiding it, with the presenter held at zero opacity so nothing reaches
+the screen. First open then costs 14.8ms. A window with a heavy popup should do the same.
+
+**Starting a process is not the problem it looks like.** Running git forks the whole app,
+which is over 300MB, so it looks like it should stall everything. Measured across five
+spawns, the worst gap on the UI thread was 4.3ms, which is the heartbeat's own period. It
+costs nothing worth avoiding.
 
 ### Overlays
 
@@ -482,6 +564,119 @@ Roots are compared through `IPathRules`, not with string equality, because Windo
 ignores case and Linux does not. A prefix test on its own would also read `game-tools`
 as a child of `game`, so the separator is part of the test.
 
+## Git
+
+`Workbench.Core/Git` reads a repository by running git, and there is no library. Running
+git works with whatever git the person has, honors their config, their credential helper
+and their hooks, and cannot disagree with what they see in a terminal.
+
+`IGitStatusReader` runs one command and parses it. `IGitFetcher` fetches.
+`IGitStatusMonitor` follows one repository so the launcher's status bar stays true when
+git is used from outside the app, which is where it is mostly used. All three come from
+`AddWorkbenchGit`.
+
+Porcelain v2, `git status --porcelain=v2 --branch --untracked-files=no`, is the format git
+promises not to change between versions, which is the only reason parsing output is
+defensible. Untracked files are excluded so an unignored build directory does not swamp
+the count.
+
+**`--no-optional-locks` is not optional.** Plain `git status` writes the index back to
+refresh its stat cache. Measured: every run produces `Created index.lock`,
+`Changed index.lock` and `Renamed index`. Anything watching the git directory then sees
+its own read as a change and reads again, forever. VS Code passes `GIT_OPTIONAL_LOCKS=0`
+for the same reason.
+
+**Where git keeps a repository is asked, never guessed.** `rev-parse --absolute-git-dir
+--git-common-dir` gives both, and `GitPlaces` holds them. `.git` under the workspace is
+right only in the simplest case: a workspace can sit below the repository root, a worktree
+and a submodule leave a file there instead of a folder, and `GIT_DIR` can point elsewhere
+again.
+
+**Updating runs unattended.** `GitUpdater` sets the variables that stop git waiting for a
+person, since there is no terminal behind this to type into and it would wait until the
+app closed. A credential helper already set up still works, because it answers without
+asking. There is a 30 second limit as well, and cancelling kills the process tree, since
+a network can accept a connection and then say nothing.
+
+**Updating fetches, then takes the new commits only when they are free.** This is the one
+thing in the app that writes to a person's repository, so the bar for doing it is high.
+Every one of these has to hold, read **after** the fetch and never before it, since before
+it the behind count is whatever it was last time anyone looked:
+
+- the working tree and the index are clean
+- the head is a branch and not a commit
+- the branch tracks something
+- the branch is behind, so there is a reason to
+- the branch is not also ahead, so this is a straight line and not two histories
+
+Then `--ff-only` on top, which is the guarantee rather than the check. Even with every count
+stale, git will only move the branch pointer forward. It cannot merge, rebase, commit or
+rewrite. It is a `merge --ff-only @{u}` rather than a second `git pull`, because the fetch
+just above already brought everything down and a pull would go back to the network to learn
+what it already knows.
+
+Untracked files are the one thing the clean check does not cover, because the status read
+excludes them. Git covers it instead: measured, an untracked file that an incoming commit
+would overwrite makes the merge refuse, and the branch stays behind with the local file
+untouched.
+
+Measured across every case: clean and behind pulls, a modified file does not, a staged file
+does not, diverged does not, a detached head does not, no upstream does not, already level
+does not, and an untracked file in the way does not.
+
+### Watching a repository
+
+Modeled on what editors do and checked against two, the VS Code git extension and
+SourceGit. Both watch the git directory rather than poll, both refuse to recurse into it,
+both throw away lock files, and both debounce before running git.
+
+**Watch a few named folders, never a tree.** `IDirectoryWatcher` has no recursive option
+at all. A recursive watch costs one kernel handle per directory underneath, drawn on Linux
+from a pool shared with every other application: measured on this repository, 242 against
+1. A fetch or a repack then writes thousands of files under `objects` and says nothing
+that `FETCH_HEAD` did not. VS Code recurses over the working tree instead, which it can
+afford because the editor already runs one shared native watcher there. This app has no
+such watcher, and the beat below does that job.
+
+`GitPlaces.Watchable` is the list: the git directory, the common directory when this is a
+worktree, and the reftable directory when there is one.
+
+**A reftable repository writes nothing at the top level.** Git 2.45 added a second way to
+store refs. A repository created with it leaves `.git/HEAD` a stub reading
+`ref: refs/heads/.invalid` that never changes, and keeps every ref under `.git/reftable`.
+Measured on git 2.55: a branch rename there changes nothing a watch on the git directory
+alone would see. That folder is watched for exactly this.
+
+**Lock files are ignored by name.** A `.lock` file is git reserving the right to write,
+not git having written, and the write arrives under its own name a moment later.
+
+**The beat is what the app relies on.** Every five seconds, and it catches the four things
+no watch reports: a file edited in another editor, a push that moves only a remote ref, a
+filesystem that reports nothing, and a watch that died because its folder was replaced. It
+also puts dead watches back, which is why `IDirectoryWatcher.Watching` clears itself when
+a watch dies. VS Code closes the push case with an extra watch on the upstream ref file,
+which is more machinery than a status bar earns.
+
+**Nothing runs while the app is not in front.** `IGitStatusMonitor.IsActive` parks the beat
+and every watch driven read, and coming back reads at once. The launcher drives it from
+`Activated` and `Deactivated`. VS Code parks its refresh the same way.
+
+Reads are debounced 400ms, and a watch driven read cannot run more than once a second
+whatever the debounce lets through.
+
+**Switching workspaces replaces everything.** `Follow` stops the beat, drops the debounce,
+disposes every watch, clears the status so it never describes a folder it is not
+following, and reads the new folder at once. That read waits its turn rather than giving
+up, since a read still running belongs to the folder nobody is looking at any more.
+Following the folder already followed does nothing, which is why the launcher takes what
+the monitor holds rather than blanking the strip itself.
+
+Measured on this machine, both ref backends: a branch switch, a branch rename and a
+staging all show up in about 400ms, a working tree edit within the beat, and an idle
+repository produces no git processes at all. Counted from the kernel: a files repository
+is 1 watch, a reftable one 2, a worktree 2, a folder that is not a repository 0, and
+thirty switches back and forth leave the same 2 they started with.
+
 ## Window style
 
 Every Workbench window draws its own title bar. This is the house style, so a new
@@ -648,13 +843,15 @@ status pill and the progress bar.
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, with only the workspace page built.
 
-**Two bands the design shows are absent on purpose.** The engine strip needs to know which
-Godot versions are installed and the git strip needs to read a repository, and this app
-can do neither yet. Filling them with plausible numbers is what the no mock data rule
-forbids, so they are not there. Wiring each is its own piece of work.
+The git strip is real and reads the open workspace's repository. The engine strip is drawn
+from `EngineViewModel.Placeholder` and every value in it is invented, which is the only
+invented data in the app. It needs engine discovery, which is its own piece of work, and
+`EngineViewModel` records what is already readable without it.
 
 The rail's other two pages, Godot engines and Settings, are drawn and disabled. Both have
-designs in the Claude Design project and neither has a stage yet.
+designs in the Claude Design project and neither has a stage yet. The rail itself carries
+every state, including the two a pointer cannot reach on its own, an open page under the
+cursor and an item that is open but disabled. All four are in the gallery.
 
 ## Open decisions
 
