@@ -1,0 +1,57 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The draggable seam between two panes. At rest it is the hairline itself, so the
+         panes stay flush and nothing announces that the seam can be moved until a pointer
+         is over it. Hover turns that same line accent, and dragging widens it to a band
+         centred on the line, so nothing shifts under the pointer.
+
+         The hit area is the part that gets forgotten. A one pixel line cannot be grabbed,
+         so the control reaches seven and pulls itself back in:
+
+             MinWidth and MinHeight are the reach, and the margin is half of what that
+             adds. An auto sized row or column then measures one, because a negative
+             margin comes off the desired size, while the bounds stay seven.
+
+         Both axes carry it, because which one is the resize axis is decided by the grid
+         rather than by anything this theme can read. GridSplitter resolves Auto privately
+         and never writes the answer back. The cost is that the reach also runs three
+         pixels past each end of the seam, which is a corner nothing else claims.
+
+         Measured both ways: panes one pixel apart, bounds seven, and the line exactly as
+         long as the panes. -->
+
+    <ControlTheme x:Key="{x:Type GridSplitter}" TargetType="GridSplitter">
+        <Setter Property="MinWidth" Value="{DynamicResource SizeSplitterReach}" />
+        <Setter Property="MinHeight" Value="{DynamicResource SizeSplitterReach}" />
+        <Setter Property="Margin" Value="-3" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Transparent rather than unset. A border with no background is not hit
+                     tested at all, so the reach would be nothing but empty space. -->
+                <Border Background="Transparent">
+                    <Border Name="PART_Line"
+                            Margin="3"
+                            Background="{DynamicResource LineSeam}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Line">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <!-- Two pixels of inset rather than three widens the line to the band without
+             moving its centre. -->
+        <Style Selector="^:pressed /template/ Border#PART_Line">
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Line">
+            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

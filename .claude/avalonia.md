@@ -31,6 +31,19 @@ Registration lives on `AvaloniaProperty`.
   `Window.WindowState` became direct in 12, which is why it can no longer be styled.
 - `RegisterAttached<THost, TTarget, TValue>` for attached properties.
 
+**An inherited attached property is carried down the logical tree and recarried when the
+tree moves**, so it is the right way to say something about a place rather than about a
+control. **Measured**: a grandchild reads a value set two ancestors up, reads 0 again the
+moment it is reparented under something that never set it, and follows the new parent
+when that parent's own value changes later.
+
+**What inherits from what is not what the visual tree suggests.** A template child's
+inheritance parent is the control being templated, so a value set on the control reaches
+into its template. But a `ContentControl`'s content is a logical child of the control
+itself and not of the presenter that draws it, so a value set on `PART_ContentPresenter`
+never reaches the content. **Measured** both ways. That is why `Surface` writes the level
+on the panel rather than inside its template.
+
 Declare what a property invalidates in the static constructor, or nothing repaints:
 `AffectsRender<T>` on `Visual`, `AffectsMeasure<T>` and `AffectsArrange<T>` on
 `Layoutable`.
@@ -87,6 +100,27 @@ the same shape, and order them base first, states after. Mixing a plain type sel
 for the base with a class selector for the state means the state wins whatever the
 order, which reads as a style that cannot be overridden.
 
+**4. A value written on a template child is not all one priority. A constant lands at
+`Template` and a binding lands at `LocalValue`.**
+
+**Measured**, the same template child against the same `:pointerover /template/` style:
+
+```
+Width="10"                                   style wins,    50
+Width="{Binding $parent[X].Tag}"             template wins, 10
+nothing written, style with no activator     style wins,    50
+Width="10", style with no activator          template wins, 10
+```
+
+So a constant sits between `Style` and `StyleTrigger`: an activated style beats it, a
+plain one does not. A binding sits at the top and **nothing a style can write will ever
+beat it**, which fails silently and looks like a pseudo class that is not being set.
+
+The rule that follows: **a template child a state has to move cannot be bound in the
+template.** Put its resting value in a `/template/` style with no activator and let the
+states carry one. `Themes/Controls/SplitView.axaml` is the use, and the reason its pane
+opened to the wrong width until this was measured.
+
 ### Style versus ControlTheme
 
 A `Style` matches by selector and layers on top. A `ControlTheme` replaces a control's
@@ -98,6 +132,19 @@ adjust one. `BasedOn` inherits another theme.
 The grammar supports type, `Is(Type)`, name, class, pseudo class, attached property,
 `[Property=Value]`, child `>`, descendant, `/template/`, `:not()`, `:nth-child()`,
 `:nth-last-child()`, comma for a list, and `^` for nesting inside a `ControlTheme`.
+
+**An attached property in a selector is written with a pipe, and only one fits per
+selector.** `[(ui|Surface.Level)=1]`, never `ui:` and never without the parentheses. Both
+of the other forms are rejected at build.
+
+**Measured**: two of them chained, `[(a)=1][(b)=True]`, fails with "Expected an
+identifier, got '['". The runtime loader parses a single one fine, so this is a limit of
+the compiled grammar rather than of selectors. Nest the second inside the first with `^`
+instead, which a plain `Style` supports as well as a `ControlTheme` does.
+`Themes/Surfaces.axaml` is the use.
+
+A selector matches a value that arrived by inheritance, and lets go when it changes.
+**Measured** on an inherited attached property set two ancestors up.
 
 ### Container queries
 
@@ -600,6 +647,21 @@ if it is ever revisited.
 - `Avalonia.Headless.Vnc` runs a headless app that can be viewed over VNC.
 - Headless runs with no display, so it is the right way to check UI behavior here.
   Screenshots of a live desktop are not, because they capture whatever else is open.
+
+**Headless can draw, and that is how a page is looked at.** `UseSkia()` with
+`UseHeadlessDrawing = false` renders for real, and `window.CaptureRenderedFrame()` hands
+back a bitmap to save. Nothing appears on a display and nothing is captured that was not
+asked for.
+
+Input goes with it. `MouseMove`, `MouseDown`, `MouseUp` and `KeyPress` on the window
+drive the app with a pointer of its own, so hover, press and a full drag can be checked
+without touching the machine's real pointer. **Never drive a live window with xdotool.**
+It moves the person's cursor, it clicks whatever is actually under it, and it reads
+positions in device pixels while the app works in the scaled ones.
+
+A scroll offset is set rather than scrolled to: find the `ScrollViewer`, assign
+`Offset`, call `UpdateLayout`, capture. That is how the gallery pages in this project are
+read.
 
 ## Resources and fonts
 

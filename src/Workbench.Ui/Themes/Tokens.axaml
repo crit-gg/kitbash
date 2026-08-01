@@ -30,8 +30,15 @@
     <SolidColorBrush x:Key="SurfaceRowAlt" Color="#212328" />
     <SolidColorBrush x:Key="SurfaceControlOff" Color="#232427" />
 
-    <!-- Lines. Which one a control draws depends on the tone it sits on: LineSeam on the
-         root or level 1, LineControl on level 2, LineControlDeep on level 3. -->
+    <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill
+         and its border together: LineSeam with the root and level 1, LineControl with
+         level 2, LineControlDeep with level 3. Themes/Surfaces.axaml holds the pairs.
+
+         A control is off the ramp and always draws LineSeam, whatever it stands on.
+         Measured across the design's control inventory: every control on SurfaceNest2
+         draws #33353a, so these two names describe surfaces and not controls despite
+         what they are called. LineControl keeps its name because a popup edge is the
+         same value and that is a control's edge. -->
     <SolidColorBrush x:Key="LineSeam" Color="#33353a" />
     <SolidColorBrush x:Key="LineRow" Color="#2a2c30" />
     <SolidColorBrush x:Key="LineControl" Color="#3d4045" />
@@ -200,6 +207,18 @@
     <x:Double x:Key="SizeRailItem">32</x:Double>
     <x:Double x:Key="IndentTree">14</x:Double>
     <x:Double x:Key="SpacingRow">2</x:Double>
+
+    <!-- A panel's header and footer. Both are 26 including the hairline that separates
+         them from the body, since the body is the only part that grows. -->
+    <x:Double x:Key="HeightPanelHeader">26</x:Double>
+    <x:Double x:Key="HeightPanelFooter">26</x:Double>
+
+    <!-- The splitter. The line is what a person sees and the reach is what they can
+         grab, so the second is much the larger. Dragging widens the line to the band
+         without moving it, which is why the band is odd and centred on the line. -->
+    <x:Double x:Key="SizeSplitterLine">1</x:Double>
+    <x:Double x:Key="SizeSplitterBand">3</x:Double>
+    <x:Double x:Key="SizeSplitterReach">7</x:Double>
 
     <!-- The square mark a chip and a status pill carry. It takes RadiusMark. -->
     <x:Double x:Key="SizeMark">5</x:Double>

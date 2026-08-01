@@ -181,8 +181,10 @@ list, and anything not marked Pro is ours to use. Paid, and therefore out:
 `TreeDataGrid`, Charts, Markdown, MediaPlayer, On Screen Keyboard and RichTextEditor.
 
 Only two controls here are hand built, and only because Avalonia has no type for either:
-`Chip` and `StatusPill`. `Icon`, `ChromelessWindow`, `WindowTitleBar`, `DialogWindow` and
-`DialogFooter` are ours for the same reason.
+`Chip` and `StatusPill`. `Icon`, `ChromelessWindow`, `WindowTitleBar`, `DialogWindow`,
+`DialogFooter` and `SurfacePanel` are ours for the same reason. `SurfacePanel` is the
+smallest of those: a `HeaderedContentControl` plus a footer, since no built in type carries
+a header, a body and a footer at once.
 
 Theme the whole type rather than reaching past it. Where a control publishes settings for
 a theme to drive, such as `ProgressBar.TemplateSettings`, use them and take the values it
@@ -310,6 +312,77 @@ the screen. First open then costs 14.8ms. A window with a heavy popup should do 
 which is over 300MB, so it looks like it should stall everything. Measured across five
 spawns, the worst gap on the UI thread was 4.3ms, which is the heartbeat's own period. It
 costs nothing worth avoiding.
+
+### Panels and the depth ramp
+
+The surfaces a tool is assembled from, and the rule that keeps them readable at any depth.
+
+**The root tone is unique.** `SurfaceRoot` belongs to the window and its chrome, which is
+the title bar, the rail, a status bar, a dialog footer and a `SplitView` pane. It never
+appears again inside a window, so the outermost frame is always identifiable.
+
+**Everything below it cycles three tones and starts over.** Level 1, 2, 3, then 1 again.
+Three is the shortest cycle where a grandchild never matches its grandparent, and nothing
+lightens as it descends. **Each tone carries its own seam**, so a surface takes a fill and
+a border together, and `Themes/Surfaces.axaml` is the only place the pairs are written.
+
+| Level | Fill | Seam |
+|---|---|---|
+| root | `SurfaceRoot` | `LineSeam` |
+| 1 | `SurfaceNest1` | `LineSeam` |
+| 2 | `SurfaceNest2` | `LineControl` |
+| 3 | `SurfaceNest3` | `LineControlDeep` |
+
+`LineControl` and `LineControlDeep` are named for controls and are not about controls at
+all. Measured across the design's control inventory: every control on `SurfaceNest2` draws
+`LineSeam`. The names stay because a popup edge is the same value.
+
+**Controls are off the ramp.** A button stays on `SurfaceNest2` and an input well on
+`SurfaceWell` with a `LineSeam` border at every level, so a field reads as a field wherever
+it lands and only the container moves. No control theme reads any of this.
+
+**Nothing counts.** `ui:Surface.Level` is an inherited attached property saying which tone a
+place in the tree is on, and `ui:Surface.Nests` marks an element that starts a new one. A
+nesting element reads its parent's level and holds one below it, so a panel moved to another
+depth is right without being told. That is not a nicety: docking reparents panels in stage
+11, and a depth worked out once and kept would be wrong the moment it moved.
+
+Set `Nests` from a control theme, which is how `SurfacePanel` and `Expander` share one
+behaviour without sharing a base type, or on a plain `Border` to make a region. Set `Level`
+by hand only on a container that is not itself a surface. Never walk the tree to work a
+depth out.
+
+**`ui:SurfacePanel`** is a header over a body with a footer under it. It is a
+`HeaderedContentControl`, which is already the first two, and the footer is the only member
+added. `DialogFooter` is not reused: it sits on the root tone and aligns right, because a
+dialog's action row is chrome and a panel footer is part of the panel.
+
+**A panel is one tone throughout.** The header and the footer sit on the body's fill and are
+told apart from it by a hairline alone, which is the seam belonging to the panel's own tone.
+A fill change therefore means one thing, that a different panel has been entered. The design
+draws one panel whose header and footer are `SurfaceRoot`, and that one is a window frame
+rather than a panel.
+
+The header takes whatever it is given. A string is drawn as the panel title at
+`FontSizeBody` weight medium, and a layout is drawn as written, which is how a title keeps
+actions or a note to its right without a second slot for them.
+
+**`SectionLabel`** is the small capitalised label over a group, with a rule filling the rest
+of the row and an optional note at the end. It is a keyed theme over
+`HeaderedContentControl`, so the label is the header and the note is the content. Its rule
+takes the seam of the tone it stands on, through `Border.seam`, which is worth reusing for
+any hairline a view draws.
+
+**The splitter** is the hairline itself at rest, so the panes stay flush. Hover turns that
+one pixel accent and dragging widens it to three, centred, so nothing shifts. A one pixel
+line cannot be grabbed, so `GridSplitter` reaches seven and pulls itself back in with a
+negative margin: an auto row or column then measures one while the bounds stay seven. Both
+axes carry it, because `GridSplitter` resolves `Auto` privately and never writes the answer
+back, so no theme can read which way it runs. Measured both ways.
+
+**The empty panel** is a class rather than a control, `StackPanel.emptyState`, the way the
+status bar readouts are. The design draws a neutral square where the glyph belongs, so the
+view names the glyph.
 
 ### Overlays
 
@@ -843,10 +916,11 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 6 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 48
-icons, the window shell, the activity rail, every overlay surface, and the control themes
-built so far: five button kinds, the split button, the dropdown, the chip, the badge, the
-status pill and the progress bar.
+Stages 1 to 7 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
+icons, the window shell, the activity rail, every overlay surface, the depth ramp, and the
+control themes built so far: five button kinds, the split button, the dropdown, the chip,
+the badge, the status pill, the progress bar, the panel, the expander, the splitter and the
+collapsing sidebar.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, with only the workspace page built.

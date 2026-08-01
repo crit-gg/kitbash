@@ -1,0 +1,159 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- A sidebar that slides away. The pane is chrome rather than a panel, so it takes
+         the root tone and stays there whatever it is nested in, the way a title bar and a
+         status bar do. It is off the depth ramp entirely.
+
+         The design draws no specimen for this, so the shape below comes from the control
+         rather than from a page: every length is one SplitView already computes and
+         publishes through TemplateSettings, and none is worked out here.
+
+             ClosedPaneWidth   0 while closed, or the compact strip in a compact mode
+             OpenPaneLength    what the pane opens to, in every mode
+
+         The pane is drawn over the content and a spacer beside it reserves the room, so
+         one template covers both families. An inline mode gives the spacer the pane's
+         width and the content starts after it. An overlay mode holds the spacer at the
+         closed width, so the pane floats and the content keeps the whole width.
+
+         Placement moves two things and nothing else: which edge the spacer docks to, and
+         which edge the pane hugs. Top and bottom swap the sized axis, so they set a
+         height and give up the width.
+
+         Every length below is a style rather than a value in the template, and that is
+         forced. Measured on 12.1.1: a binding written on a template child binds at
+         LocalValue and beats every style that could ever target it, while a constant
+         binds lower and loses to any style carrying a class or a pseudo class. So a
+         template child that a state has to move cannot be bound in the template at all.
+         The closed lengths are the resting styles here, with no pseudo class, so the
+         open ones beat them by carrying one. -->
+
+    <ControlTheme x:Key="{x:Type SplitView}" TargetType="SplitView">
+        <Setter Property="PaneBackground" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="OpenPaneLength" Value="220" />
+        <Setter Property="CompactPaneLength" Value="{DynamicResource WidthActivityRail}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Background="{TemplateBinding Background}">
+                    <DockPanel LastChildFill="True">
+                        <Border Name="PART_Spacer" DockPanel.Dock="Left" />
+
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </DockPanel>
+
+                    <Panel Name="PART_PaneRoot" HorizontalAlignment="Left">
+                        <Border Name="PART_PaneEdge"
+                                Background="{TemplateBinding PaneBackground}"
+                                BorderBrush="{DynamicResource LineSeam}"
+                                BorderThickness="0,0,1,0"
+                                ClipToBounds="True">
+                            <ContentPresenter Content="{TemplateBinding Pane}"
+                                              ContentTemplate="{TemplateBinding PaneTemplate}" />
+                        </Border>
+                    </Panel>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^ /template/ Panel#PART_PaneRoot">
+            <Setter Property="Width" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneWidth}" />
+        </Style>
+
+        <Style Selector="^ /template/ Border#PART_Spacer">
+            <Setter Property="Width" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneWidth}" />
+        </Style>
+
+        <Style Selector="^:open /template/ Panel#PART_PaneRoot">
+            <Setter Property="Width" Value="{Binding $parent[SplitView].OpenPaneLength}" />
+        </Style>
+
+        <Style Selector="^:open /template/ Border#PART_Spacer">
+            <Setter Property="Width" Value="{Binding $parent[SplitView].OpenPaneLength}" />
+        </Style>
+
+        <!-- After the open styles, so an overlaid pane takes the room back from the
+             content whether it is open or not. -->
+        <Style Selector="^:overlay /template/ Border#PART_Spacer,
+                         ^:compactoverlay /template/ Border#PART_Spacer">
+            <Setter Property="Width" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneWidth}" />
+        </Style>
+
+        <Style Selector="^:overlay /template/ Border#PART_PaneEdge,
+                         ^:compactoverlay /template/ Border#PART_PaneEdge">
+            <Setter Property="BoxShadow" Value="{DynamicResource ShadowOverlay}" />
+        </Style>
+
+        <Style Selector="^:right /template/ Border#PART_Spacer">
+            <Setter Property="DockPanel.Dock" Value="Right" />
+        </Style>
+
+        <Style Selector="^:right /template/ Panel#PART_PaneRoot">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+
+        <Style Selector="^:right /template/ Border#PART_PaneEdge">
+            <Setter Property="BorderThickness" Value="1,0,0,0" />
+        </Style>
+
+        <!-- Top and bottom size the other axis, so the width is given up rather than left
+             at whatever the horizontal placements set. -->
+        <Style Selector="^:top /template/ Border#PART_Spacer,
+                         ^:bottom /template/ Border#PART_Spacer">
+            <Setter Property="Width" Value="NaN" />
+            <Setter Property="Height" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneHeight}" />
+        </Style>
+
+        <Style Selector="^:top /template/ Panel#PART_PaneRoot,
+                         ^:bottom /template/ Panel#PART_PaneRoot">
+            <Setter Property="Width" Value="NaN" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Height" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneHeight}" />
+        </Style>
+
+        <Style Selector="^:top /template/ Border#PART_Spacer">
+            <Setter Property="DockPanel.Dock" Value="Top" />
+        </Style>
+
+        <Style Selector="^:top /template/ Panel#PART_PaneRoot">
+            <Setter Property="VerticalAlignment" Value="Top" />
+        </Style>
+
+        <Style Selector="^:top /template/ Border#PART_PaneEdge">
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+
+        <Style Selector="^:bottom /template/ Border#PART_Spacer">
+            <Setter Property="DockPanel.Dock" Value="Bottom" />
+        </Style>
+
+        <Style Selector="^:bottom /template/ Panel#PART_PaneRoot">
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+        </Style>
+
+        <Style Selector="^:bottom /template/ Border#PART_PaneEdge">
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+        </Style>
+
+        <Style Selector="^:open:top /template/ Panel#PART_PaneRoot,
+                         ^:open:bottom /template/ Panel#PART_PaneRoot">
+            <Setter Property="Height" Value="{Binding $parent[SplitView].OpenPaneLength}" />
+        </Style>
+
+        <Style Selector="^:open:top /template/ Border#PART_Spacer,
+                         ^:open:bottom /template/ Border#PART_Spacer">
+            <Setter Property="Height" Value="{Binding $parent[SplitView].OpenPaneLength}" />
+        </Style>
+
+        <Style Selector="^:top:overlay /template/ Border#PART_Spacer,
+                         ^:top:compactoverlay /template/ Border#PART_Spacer,
+                         ^:bottom:overlay /template/ Border#PART_Spacer,
+                         ^:bottom:compactoverlay /template/ Border#PART_Spacer">
+            <Setter Property="Height" Value="{Binding $parent[SplitView].TemplateSettings.ClosedPaneHeight}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

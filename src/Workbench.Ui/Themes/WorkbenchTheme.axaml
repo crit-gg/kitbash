@@ -29,6 +29,8 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Overlays.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ActivityRail.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ItemsControl.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/GridSplitter.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/SplitView.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
@@ -37,6 +39,8 @@
          styles rather than one theme, such as the window frame, is included here. -->
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/WindowChrome.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/StatusBar.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Panel.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Surfaces.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Motion.axaml" />
 
 </Styles>

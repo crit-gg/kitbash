@@ -2,6 +2,9 @@
 
 The surfaces a tool is assembled from, and the depth rule that keeps them readable.
 
+**Built.** What follows is the plan as written, with the departures recorded at the end.
+`.claude/CLAUDE.md` under Panels and the depth ramp is what the code actually does.
+
 ## Goal
 
 A panel that can be nested to any depth and never becomes ambiguous about where one
@@ -90,3 +93,52 @@ the remaining width. Used in the launcher already and in every panel here.
   controls are off the ramp.
 - The splitter can be grabbed reliably at its visual width plus a margin.
 - Reparenting a panel updates its depth without a relayout hack.
+
+All four hold, measured headless against the library rather than looked at. Five deep
+reads 1, 2, 3, 1, 2 with each tone's own seam. A button four steps down is `#2b2d31` with
+a `#33353a` border, the same as at the top. The splitter measures one pixel of layout with
+seven of bounds in a row and in a column alike. A panel moved between two grounds repaints
+itself and its children, and so does a panel whose ground moves underneath it while it is
+told nothing.
+
+## Where this departed from the plan
+
+Each of these came from reading the design again rather than from preference.
+
+**A panel's footer is part of the panel, not chrome.** The plan says the footer sits on
+`SurfaceRoot` and to reuse `DialogFooter`. The design's prose is explicit the other way:
+"Within a panel there is no second fill: header, body and footer all sit on the panel
+tone, separated from each other only by the hairline." The one drawn panel with a
+`#1e1f22` header and footer is the outermost frame, whose header is a toolbar and whose
+footer is a status bar, and the inventory lists both of those under `SurfaceRoot` already.
+So the footer is a member of `SurfacePanel`, and `DialogFooter` is left alone: it aligns
+right and sits on the root tone, which a panel footer does neither of.
+
+**A tone's seam comes from the tone itself, not from what it sits on.** The plan says the
+border depends on the tone the element sits on. The depth ladder and all six panels in the
+deep nesting example say otherwise: a `#2b2d31` panel draws `#3d4045` wherever it is. The
+design's own words for it are "each with its own seam". Controls are the case the plan's
+phrasing came from, and they are off the ramp entirely.
+
+**The panel title is 11.5px medium `InkSecondary`.** The inventory's type table says 12.5px
+600 `InkTitle` for a panel title. Nothing on the theme page draws one: both 12.5px uses in
+that document are the window title, active and inactive. Every drawn panel header is 11.5px
+weight 500 `InkSecondary`.
+
+**The empty panel's mark is an icon.** The design draws a 22px dashed square, which is what
+it draws everywhere a glyph belongs, and the inventory already records that the page shows
+position and size rather than the glyph. So the view names one from the set instead, at the
+large size empty states take.
+
+**One thing in the design is contradicted by the design.** The section intro says "A panel
+is one tone throughout, and it gets a fill or a border, never both", and the written spec
+says hierarchy is never carried "by stacking fills and borders on the same element". Every
+panel drawn on the page has both. Built as drawn, the way the chip's pressed border was.
+
+**`SplitView` is themed for all four placements and all four display modes**, though the
+design draws no specimen. Every length is one the control computes and publishes through
+`TemplateSettings`, so nothing is invented here. Verified across all sixteen combinations.
+
+**The section label is a keyed theme over `HeaderedContentControl`.** The plan lists it as
+a style. A label with a note at the end is a header over content, which is a type Avalonia
+already ships, so it is themed rather than built.
