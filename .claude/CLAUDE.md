@@ -191,6 +191,14 @@ computes. Holding a built in control to a number it does not compute means ownin
 One `ControlTheme` per type in `Workbench.Ui/Themes/Controls`, all merged by
 `WorkbenchTheme.axaml`. A view names a kind and never a value.
 
+**A built in control with no theme here has no template at all.** Avalonia ships its
+default templates in its own themes, which this app does not load, so `Template` is null
+and the control measures to nothing and draws nothing with no warning. Measured on
+`ItemsControl`, which the launcher's tool list uses: the list was empty for that reason
+until `Themes/Controls/ItemsControl.axaml` was added, and that theme is deliberately bare
+because the rows belong to the consumer. Expect the same of every list surface until
+stage 9 themes it.
+
 ```xml
 <Button Classes="primary" Content="Add workspace" />
 <Button Classes="icon" ToolTip.Tip="Settings" AutomationProperties.Name="Settings">

@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- A list of items with no look of its own. It exists because an ItemsControl has no
+         template until a theme gives it one: measured, the default value of Template on
+         ItemsControl is null, and Avalonia's own themes are where every other app gets
+         one. Without this an ItemsControl measures to nothing and draws nothing, with
+         no warning anywhere.
+
+         Deliberately bare. It carries a frame so a consumer can put a border or a padding
+         on it, and nothing else, because the rows are the consumer's. Stage 9 builds the
+         list surfaces that have a look, and none of them is this.
+
+         The panel comes through ItemsPresenter.ItemsPanel rather than being written here,
+         so a consumer that names one gets it. Note that a panel named by a *style setter*
+         is accepted and ignored, which is recorded under Overlays in CLAUDE.md. A local
+         value in a view takes. -->
+
+    <ControlTheme x:Key="{x:Type ItemsControl}" TargetType="ItemsControl">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <ItemsPresenter Name="PART_ItemsPresenter"
+                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>
