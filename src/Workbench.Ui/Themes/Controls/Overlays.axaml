@@ -139,11 +139,18 @@
         </Setter>
     </ControlTheme>
 
+    <!-- A context menu owns the offsets of the popup it opens in, so it can take the room
+         a shadow needs and pull itself back by the same amount. A flyout's presenter
+         cannot: the offsets live on the flyout, which is not a control and cannot be
+         themed, so a menu opened from a button still clips its shadow. -->
     <ControlTheme x:Key="{x:Type ContextMenu}" TargetType="ContextMenu">
+        <Setter Property="HorizontalOffset" Value="{DynamicResource OverlayRoomX}" />
+        <Setter Property="VerticalOffset" Value="{DynamicResource OverlayRoomY}" />
+
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayGap}">
+                        Margin="{DynamicResource OverlayRoom}">
                     <ItemsPresenter Name="PART_ItemsPresenter" />
                 </Border>
             </ControlTemplate>

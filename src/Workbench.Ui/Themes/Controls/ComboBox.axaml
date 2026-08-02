@@ -119,13 +119,15 @@
                            MaxHeight="{TemplateBinding MaxDropDownHeight}"
                            PlacementTarget="{TemplateBinding}"
                            Placement="BottomEdgeAlignedLeft"
+                           HorizontalOffset="{DynamicResource OverlayRoomX}"
+                           VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
                         <Border Background="{DynamicResource SurfaceNest2}"
                                 BorderBrush="{DynamicResource LineControl}"
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayGap}">
+                                Margin="{DynamicResource OverlayRoom}">
                             <Border CornerRadius="{DynamicResource RadiusControl}"
                                     ClipToBounds="True"
                                     Padding="4">

@@ -213,6 +213,20 @@
          a menu placed above a control is spaced the same as one placed below. -->
     <Thickness x:Key="OverlayGap">0,4</Thickness>
 
+    <!-- A popup window is sized to what it holds, and a box shadow draws outside that, so
+         a shadow with no room is clipped square by the window it is in. Measured: a
+         dropdown's popup came back exactly as wide as its content, leaving nothing at all
+         for a 28px blur.
+
+         So the content carries transparent room for the shadow to fall into, and the popup
+         is pulled back by the same amount so it still lands where it did. ShadowPopup is
+         0 10 28, which reaches 28 to each side, 18 above and 38 below.
+
+         Change the shadow and change all three of these. -->
+    <Thickness x:Key="OverlayRoom">28,22,28,38</Thickness>
+    <x:Double x:Key="OverlayRoomX">-28</x:Double>
+    <x:Double x:Key="OverlayRoomY">-18</x:Double>
+
     <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these
          stay soft and are never stacked. Overlays are the one place the theme uses
          elevation rather than a seam, because a popup has no panel to belong to. -->

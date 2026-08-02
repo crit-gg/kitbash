@@ -342,6 +342,8 @@
                            WindowManagerAddShadowHint="False"
                            PlacementTarget="{TemplateBinding}"
                            Placement="BottomEdgeAlignedLeft"
+                           HorizontalOffset="{DynamicResource OverlayRoomX}"
+                           VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
                         <!-- Two borders. A clip on the border that draws the stroke cuts
                              the children to the outer rounded rectangle, so the corner
@@ -351,7 +353,7 @@
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayGap}">
+                                Margin="{DynamicResource OverlayRoom}">
                           <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
                             <DockPanel LastChildFill="True">
                                 <Border DockPanel.Dock="Top"
@@ -586,6 +588,10 @@
 
     <ControlTheme x:Key="{x:Type TimePicker}" TargetType="TimePicker">
         <Setter Property="(ui:PickerNow.Wires)" Value="True" />
+
+        <!-- The control places its own popup in code and puts it at the top of the screen.
+             See Popups for what was measured. -->
+        <Setter Property="(ui:Popups.Under)" Value="True" />
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="MinWidth" Value="106" />
@@ -669,20 +675,19 @@
                         </DockPanel>
                     </Button>
 
-                    <!-- Named rather than left to the control. TimePicker opens this
-                         popup itself and never sets a target, so without one it places
-                         against whatever it finds instead of against the field. -->
+                    <!-- Placement is set by ui:Popups.Under above rather than here. The
+                         control overwrites whatever this element says. -->
                     <Popup Name="PART_Popup"
                            WindowManagerAddShadowHint="False"
-                           PlacementTarget="{Binding #PART_FlyoutButton}"
-                           Placement="BottomEdgeAlignedLeft"
+                           HorizontalOffset="{DynamicResource OverlayRoomX}"
+                           VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
                         <Border Background="{DynamicResource SurfaceNest2}"
                                 BorderBrush="{DynamicResource LineControl}"
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayGap}">
+                                Margin="{DynamicResource OverlayRoom}">
                           <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
                             <TimePickerPresenter Name="PART_PickerPresenter" />
                           </Border>
