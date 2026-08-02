@@ -357,11 +357,18 @@ carry it. Its button lives in inner content, which no control theme can reach, s
 styles it from a plain style and the control hears the click bubble. See
 `.claude/avalonia.md` under control themes for why.
 
-**The pickers read the culture and nothing here writes a date format.** Measured across
-three: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and
+**The pickers read the culture and nothing here writes a date or a time format.** Measured
+across four: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and
 starts on Monday, ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a
-specification. The clock is pinned to 24 hour, so the one thing a culture would still move,
-where the period sits, never arises.
+specification.
+
+The clock goes with it. Avalonia defaults `ClockIdentifier` to twelve hours whatever the
+culture says, so `ui:Clock` asks the culture instead and the field reads through the
+culture's own short time pattern rather than a format written here. Measured: en-US gives a
+twelve hour clock, hours 1 to 12, a period column and a field reading 2:05 PM, while de-DE,
+ja-JP and fr-FR give twenty four hours, hours 0 to 23, no period column and 14:05. Reading
+the hour and the minute out of the control's own parts and joining them with a colon, which
+is what this did first, drops the period and fixes an order that is not ours to fix.
 
 **A picker template has to carry every part the control names, even the ones it will never
 draw.** The build refuses a template that leaves one out, and `TimePicker` throws a null

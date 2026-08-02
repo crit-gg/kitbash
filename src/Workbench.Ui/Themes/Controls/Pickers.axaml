@@ -568,7 +568,7 @@
                         </StackPanel>
 
                         <StackPanel Name="PART_PeriodHost" Grid.Column="5">
-                            <TextBlock Text="AM" Classes="clockHead" />
+                            <TextBlock Text="{x:Static ui:Clock.Period}" Classes="clockHead" />
                             <ScrollViewer Height="120" VerticalScrollBarVisibility="Hidden">
                                 <!-- Two values, so looping would put the chosen one on
                                      every other row and the column would read as all
@@ -601,10 +601,10 @@
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
 
-        <!-- Twenty four hour, which is what the design draws and what a data tool wants.
-             A locale that writes twelve hour still writes its own field order, because the
-             control reads that from the culture rather than from here. -->
-        <Setter Property="ClockIdentifier" Value="24HourClock" />
+        <!-- The culture decides whether this is twelve hours or twenty four. Avalonia
+             defaults to twelve whatever the culture says, so it is asked rather than left
+             alone. The design draws twenty four because the design is one locale. -->
+        <Setter Property="ClockIdentifier" Value="{x:Static ui:Clock.Identifier}" />
         <Setter Property="ClipToBounds" Value="False" />
 
         <Setter Property="Template">
@@ -633,14 +633,14 @@
                                      VerticalAlignment="Center" />
 
                             <Panel>
-                                <!-- Read off the control's own parts rather than
-                                     formatted here, so the hours and minutes are the ones
-                                     it filled in under the running culture. -->
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Classes="clockRead" Text="{Binding #PART_HourTextBlock.Text}" />
-                                    <TextBlock Classes="clockRead" Text=":" />
-                                    <TextBlock Classes="clockRead" Text="{Binding #PART_MinuteTextBlock.Text}" />
-                                </StackPanel>
+                                <!-- One string, through the culture's own short time
+                                     pattern. Reading the hour and the minute out of the
+                                     control's parts and joining them with a colon would
+                                     drop the period on a twelve hour culture and would
+                                     fix an order that is not ours to fix. -->
+                                <TextBlock Classes="clockRead"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding $parent[TimePicker].SelectedTime, Converter={x:Static ui:Clock.Reads}}" />
 
                                 <!-- The control's own readout, which it fills in and lays
                                      out itself. It is here because the build refuses a

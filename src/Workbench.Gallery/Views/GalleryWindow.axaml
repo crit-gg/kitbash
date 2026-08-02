@@ -683,7 +683,7 @@
                                                 Header="DATE AND TIME" Content="both read the culture" />
 
                         <TextBlock Classes="note"
-                                   Text="Nothing here writes a day name, a month name or a field order. Measured across three cultures: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and starts on Monday, and ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a specification." />
+                                   Text="Nothing here writes a day name, a month name, a field order or a time format. Measured across four cultures: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and starts on Monday, and ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a specification." />
 
                         <StackPanel Orientation="Horizontal" Spacing="14">
                             <CalendarDatePicker Width="150" SelectedDate="2026-07-28" />
@@ -693,7 +693,7 @@
                         </StackPanel>
 
                         <TextBlock Classes="note"
-                                   Text="The clock is pinned to 24 hour, which is what the design draws and what a data tool wants. Its popover carries Set and Cancel as well as Now, because a working presenter only writes the time when it is accepted, where the design's popover is a picture." />
+                                   Text="The clock follows the culture too. Avalonia defaults to twelve hours whatever the culture says, so it is asked instead: en-US reads 2:05 PM with a period column and hours 1 to 12, and de-DE reads 14:05 with hours 0 to 23. Its popover carries Set and Cancel as well as Now, because a working presenter only writes the time when it is accepted, where the design's popover is a picture." />
                     </StackPanel>
                 </Border>
 

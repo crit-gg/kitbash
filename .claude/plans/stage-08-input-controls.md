@@ -189,15 +189,21 @@ anything in them. Seven across by six weeks down plus a row of day names, and fo
 for the months and years the header opens. Leave the definitions out and the month draws as
 one cell of overlapping days.
 
-**The time readout is the control's, read back.** Its own grid is a segmented row of
-numbers between rules, where the design is one string, so the grid stays and is hidden and
-two element name bindings read the hours and the minutes out of it. Formatting the value
-here instead would have hardcoded a field order.
+**The time readout is one string through the culture's short time pattern.** The control's
+own grid is a segmented row of numbers between rules where the design is one string, so the
+grid stays and is hidden, and the readout is formatted beside it. Reading the hour and the
+minute out of that grid and joining them with a colon, which is what this did first, drops
+the period on a twelve hour culture and fixes an order that is not ours to fix.
 
-The locale question the list above asks is measured: en-US reads 7/28/2026 and starts its
-week on Sunday, de-DE reads 28.07.2026 and starts on Monday, ja-JP reads 2026/07/28. The
-clock is pinned to 24 hour, so the one thing a culture would still move, where the period
-sits, never arises.
+The locale question the list above asks is measured, for the date and for the clock.
+en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and starts on
+Monday, ja-JP reads 2026/07/28. en-US tells the time in twelve hours with a period column
+and hours 1 to 12, and de-DE, ja-JP and fr-FR in twenty four with no period column and
+hours 0 to 23.
+
+Avalonia does not do the clock half on its own: `ClockIdentifier` defaults to twelve hours
+whatever the culture says, so `ui:Clock` reads the culture's short time pattern and answers
+with the one it asks for.
 
 The clock popover carries Set and Cancel as well as the design's Now, because a working
 `TimePickerPresenter` only writes the time when it is accepted. The design's popover is a
