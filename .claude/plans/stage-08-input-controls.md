@@ -3,6 +3,10 @@
 The controls that take a value. None of these appear in the launcher, so this stage is
 invisible in the app and is verified in a harness.
 
+**Partly built.** Fields, choices, sliders, the spinbox, the dropdown and the hyperlink are
+done and in the gallery. Four things in this stage are not: see "What is left" at the end.
+`.claude/CLAUDE.md` under Inputs is what the code actually does.
+
 ## Goal
 
 A tool author can build a form and a filter bar without styling anything.
@@ -143,3 +147,54 @@ question rather than assuming attributes work.
 - A stepped slider snaps, and its ticks sit behind the track rather than over it.
 - A date shown under a second locale changes its day names and its field order, measured
   rather than assumed.
+
+## What is built
+
+`TextBox`, `MaskedTextBox`, `ui:SearchBox`, `CheckBox` with a real mixed state,
+`RadioButton`, `ToggleSwitch`, the segmented row, `Slider` with ticks and snapping,
+`NumericUpDown` over `ButtonSpinner`, `ComboBox` with `ComboBoxItem`, and
+`HyperlinkButton`. All of them are in the gallery in every state.
+
+Every colour the design needed was already a token except seven, which are now in
+`Tokens.axaml`: the three well states, the two well borders, the flattened flood and the
+one pure white a dragged knob takes. The value editors section introduced no chrome colour
+of its own, which is what the inventory predicted.
+
+Three readings of the design worth keeping:
+
+**The pressed column of a field is focus.** A text field cannot be pressed and focused
+apart, so the two are one state: the well lightens, the border comes up and the halo
+appears. `SurfaceWellFocus` was already named for exactly this.
+
+**A well answers on its own ramp.** The design gives a checkbox and a toggle their own
+hover and pressed fills rather than the control ones, because a well is darker than
+everything around it and `StateHover` would lighten it past its own surface.
+
+**The stepper's focused fill is drawn as the root tone.** Every other well in the design
+lightens to `#1a1b1e` and this one alone shows `#1e1f22`, which would put a window tone
+inside a control. Built as the other wells are.
+
+## What is left
+
+Four things, none of them started, and each named here so nobody has to rediscover it.
+
+**The date and time pickers.** `CalendarDatePicker` and `TimePicker` are the two largest
+templates in the stage: the first needs `Calendar`, `CalendarItem`, `CalendarButton` and
+`CalendarDayButton` as well, and the second needs `TimePickerPresenter` with four
+`DateTimePickerPanel` columns and its own accept and dismiss buttons. The design's calendar
+and clock popovers are in `Theme Slate.dc.html` at the DATE and TIME headings inside the
+value editors section. The locale check in the list above belongs with them.
+
+**The range slider.** Ours, because `Slider` derives from `RangeBase` and has one `Value`
+and one `PART_Track`. Build it on the knob and track the slider theme already draws, so the
+two cannot drift, and give the dragged knob the halo.
+
+**Scrubbing a spinbox.** Dragging the value to change it. Input behaviour on top of
+`NumericUpDown` rather than a look, and the one piece of the value editors that is neither
+theming nor configuration.
+
+**The colour field.** Deferred to stage 12 rather than skipped: the field is a well with a
+14px swatch adorner, and the swatch has nothing to open until the picker exists.
+
+`AutoCompleteBox` is also unthemed. It is listed in this stage only as the alternative to a
+plain search field, and nothing needs it yet.

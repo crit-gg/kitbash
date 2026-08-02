@@ -526,6 +526,152 @@
                 </Border>
 
                 <!-- section -->
+                <TextBlock Classes="section" Text="INPUTS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Everything that takes a value sits in a well, which is darker than anything around it and stays that tone at any depth. A well answers the pointer on its own ramp, since the control hover would lighten it past the surface it sits on." />
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="FIELDS" Content="the design's pressed column is focus" />
+
+                        <Grid ColumnDefinitions="86,Auto,Auto,Auto,Auto,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto"
+                              ColumnSpacing="10" RowSpacing="9">
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="live" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Classes="caption" Text="hover" />
+                            <TextBlock Grid.Row="0" Grid.Column="3" Classes="caption" Text="focus" />
+                            <TextBlock Grid.Row="0" Grid.Column="4" Classes="caption" Text="error" />
+                            <TextBlock Grid.Row="0" Grid.Column="5" Classes="caption" Text="disabled" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="text" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Width="128" PlaceholderText="Placeholder" />
+                            <TextBox Grid.Row="1" Grid.Column="2" Width="128" PlaceholderText="Placeholder" Classes="forceHover" />
+                            <TextBox Grid.Row="1" Grid.Column="3" Width="128" Text="Iron Plate" Classes="forceFocus" />
+                            <TextBox Grid.Row="1" Grid.Column="4" Width="128" Text="Iron Plate" Classes="error" />
+                            <TextBox Grid.Row="1" Grid.Column="5" Width="128" PlaceholderText="Placeholder" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="search" VerticalAlignment="Center" />
+                            <ui:SearchBox Grid.Row="2" Grid.Column="1" Width="128" PlaceholderText="Filter" />
+                            <ui:SearchBox Grid.Row="2" Grid.Column="2" Width="128" PlaceholderText="Filter" Classes="forceHover" />
+                            <ui:SearchBox Grid.Row="2" Grid.Column="3" Width="128" Text="heat" Classes="forceFocus" />
+                            <ui:SearchBox Grid.Row="2" Grid.Column="4" Width="128" Text="heat" />
+                            <ui:SearchBox Grid.Row="2" Grid.Column="5" Width="128" PlaceholderText="Filter" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="masked" VerticalAlignment="Center" />
+                            <MaskedTextBox Grid.Row="3" Grid.Column="1" Width="128" Mask="0000-00-00" />
+                            <TextBlock Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="4" Classes="note"
+                                       Text="The clear button appears only once there is something to clear."
+                                       VerticalAlignment="Center" />
+                        </Grid>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="CHOICES" Content="mixed is real, not styled" />
+
+                        <Grid ColumnDefinitions="86,60,60,60,60,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                              ColumnSpacing="10" RowSpacing="9">
+
+                            <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="off" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Classes="caption" Text="on" />
+                            <TextBlock Grid.Row="0" Grid.Column="3" Classes="caption" Text="hover" />
+                            <TextBlock Grid.Row="0" Grid.Column="4" Classes="caption" Text="focus" />
+                            <TextBlock Grid.Row="0" Grid.Column="5" Classes="caption" Text="disabled" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="checkbox" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="1" Grid.Column="1" />
+                            <CheckBox Grid.Row="1" Grid.Column="2" IsChecked="True" />
+                            <CheckBox Grid.Row="1" Grid.Column="3" IsChecked="True" Classes="forceHover" />
+                            <CheckBox Grid.Row="1" Grid.Column="4" Classes="forceFocus" />
+                            <CheckBox Grid.Row="1" Grid.Column="5" IsChecked="True" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="mixed" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="2" Grid.Column="1" IsThreeState="True" IsChecked="{x:Null}" />
+                            <CheckBox Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3" IsThreeState="True"
+                                      IsChecked="{x:Null}" Content="Click through off, on and mixed" />
+                            <CheckBox Grid.Row="2" Grid.Column="5" IsThreeState="True" IsChecked="{x:Null}" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="radio" VerticalAlignment="Center" />
+                            <RadioButton Grid.Row="3" Grid.Column="1" GroupName="galleryA" />
+                            <RadioButton Grid.Row="3" Grid.Column="2" GroupName="galleryB" IsChecked="True" />
+                            <RadioButton Grid.Row="3" Grid.Column="3" GroupName="galleryC" IsChecked="True" Classes="forceHover" />
+                            <RadioButton Grid.Row="3" Grid.Column="4" GroupName="galleryD" Classes="forceFocus" />
+                            <RadioButton Grid.Row="3" Grid.Column="5" GroupName="galleryE" IsChecked="True" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="toggle" VerticalAlignment="Center" />
+                            <ToggleSwitch Grid.Row="4" Grid.Column="1" />
+                            <ToggleSwitch Grid.Row="4" Grid.Column="2" IsChecked="True" />
+                            <ToggleSwitch Grid.Row="4" Grid.Column="3" Classes="forceHover" />
+                            <ToggleSwitch Grid.Row="4" Grid.Column="4" IsChecked="True" Classes="forceFocus" />
+                            <ToggleSwitch Grid.Row="4" Grid.Column="5" IsChecked="True" IsEnabled="False" />
+                        </Grid>
+
+                        <TextBlock Classes="note"
+                                   Text="The toggle knob travels in 140ms on the design's own curve. It is a transition on the part the control moves, because an animation would have to target a transform, and a key frame on RenderTransform throws while one on TransformOperations does nothing at all." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <Border Classes="segmented">
+                                <StackPanel>
+                                    <RadioButton GroupName="gallerySeg" Content="Table" IsChecked="True" />
+                                    <RadioButton GroupName="gallerySeg" Content="Grid" />
+                                    <RadioButton GroupName="gallerySeg" Content="Cards" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="segmented" IsEnabled="False">
+                                <StackPanel>
+                                    <RadioButton GroupName="gallerySegOff" Content="Table" IsChecked="True" />
+                                    <RadioButton GroupName="gallerySegOff" Content="Grid" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="VALUES" Content="every value in mono" />
+
+                        <Grid ColumnDefinitions="86,190,190,Auto" RowDefinitions="Auto,Auto,Auto"
+                              ColumnSpacing="12" RowSpacing="10">
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="caption" Text="slider" VerticalAlignment="Center" />
+                            <Slider Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1" Value="0.58" />
+                            <Slider Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" Value="0.58" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="stepped" VerticalAlignment="Center" />
+                            <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1" Value="0.5"
+                                    TickFrequency="0.25" IsSnapToTickEnabled="True" TickPlacement="Outside" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Classes="note"
+                                       Text="Ticks and snapping are settings rather than code."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="spinbox" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="12.5" Increment="0.5"
+                                           FormatString="0.0" HorizontalAlignment="Left" />
+                            <NumericUpDown Grid.Row="2" Grid.Column="2" Value="12.5" Increment="0.5"
+                                           FormatString="0.0" HorizontalAlignment="Left" IsEnabled="False" />
+                        </Grid>
+
+                        <TextBlock Classes="note"
+                                   Text="The stepper sits inside the well behind a hairline rather than floating outside it, which is the rule every value editor follows. Nothing is built for it: a spinbox is a NumericUpDown over a ButtonSpinner over a text field, and only the frame is themed." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <ComboBox Width="150" PlaceholderText="Pick one">
+                                <ComboBoxItem Content="Table" />
+                                <ComboBoxItem Content="Grid" />
+                                <ComboBoxItem Content="Cards" />
+                            </ComboBox>
+                            <ComboBox Width="150" SelectedIndex="0">
+                                <ComboBoxItem Content="Machines" />
+                                <ComboBoxItem Content="Recipes" />
+                            </ComboBox>
+                            <ComboBox Width="120" PlaceholderText="Off" IsEnabled="False" />
+                            <HyperlinkButton Content="project.godot" />
+                            <HyperlinkButton Content="project.godot" IsEnabled="False" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
                 <TextBlock Classes="section" Text="PANELS" />
                 <Border Classes="panel">
                     <StackPanel Spacing="14">

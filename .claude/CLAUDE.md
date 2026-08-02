@@ -315,6 +315,45 @@ which is over 300MB, so it looks like it should stall everything. Measured acros
 spawns, the worst gap on the UI thread was 4.3ms, which is the heartbeat's own period. It
 costs nothing worth avoiding.
 
+### Inputs
+
+Everything that takes a value sits in a **well**, `SurfaceWell`, which is darker than
+anything around it and stays that tone at any depth. A well is off the ramp, like every
+other control.
+
+**A well answers the pointer on its own ramp**, `SurfaceWellHover` then
+`SurfaceWellPressed`, with its edge coming up to `LineWellHover`. `StateHover` is a control
+fill and would lighten a well past the surface it sits on.
+
+**Focus lightens the well.** The design's five columns show a pressed state for a text
+field, which is the field being typed in, and that is the same thing as focus in a real
+control. So the two are one state here: the well goes to `SurfaceWellFocus`, the border to
+`LineControl`, and the halo appears.
+
+**A value is mono and a label is Archivo.** A plain `TextBox` holds language, so it takes
+the UI family. A number, a date or a path says what it is by taking `FontFamilyMono`, which
+is what the numeric and picker themes do. That split is the most visible thing about this
+theme and the easiest to get wrong in a form.
+
+**The adorner rule is the whole look of a value editor.** A stepper, a calendar mark or a
+colour swatch sits *inside* the well behind a hairline, never floating outside it. Nothing
+is built for it: `TextBox` and `NumericUpDown` both carry `InnerLeftContent` and
+`InnerRightContent`, and a spinbox is a `NumericUpDown` over a `ButtonSpinner` over a text
+field with only the frame themed.
+
+**Two of the sliders are settings rather than code.** Stepped is `TickFrequency`,
+`IsSnapToTickEnabled` and `TickPlacement`, with a `TickBar` behind the track.
+
+**`ui:SearchBox`** is the one input control that is ours, and only for its clear button. A
+mark and a radius would be a class, but emptying a field is behaviour and a theme cannot
+carry it. Its button lives in inner content, which no control theme can reach, so the theme
+styles it from a plain style and the control hears the click bubble. See
+`.claude/avalonia.md` under control themes for why.
+
+**Validation has a look and no mechanism.** A field with the `error` class draws an `Error`
+border. Avalonia 12 turns the data annotations plugin off, so nothing sets that
+automatically and a view says so itself. Deciding the mechanism is open work.
+
 ### Panels and the depth ramp
 
 The surfaces a tool is assembled from, and the rule that keeps them readable at any depth.
@@ -918,11 +957,17 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 7 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
-icons, the window shell, the activity rail, every overlay surface, the depth ramp, and the
-control themes built so far: five button kinds, the split button, the dropdown, the chip,
-the badge, the status pill, the progress bar, the panel, the expander, the splitter and the
-collapsing sidebar.
+Stages 1 to 7 are done and stage 8 is most of the way. `Workbench.Ui` carries the Slate
+tokens, the type scale, the 49 icons, the window shell, the activity rail, every overlay
+surface, the depth ramp, and the control themes built so far: five button kinds, the split
+button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
+panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
+field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
+combo box and the hyperlink.
+
+Four things in stage 8 are not built: the date and time pickers, the range slider,
+scrubbing a spinbox, and the colour field, which waits on stage 12. The stage file lists
+what each one needs.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, with only the workspace page built.

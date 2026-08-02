@@ -121,6 +121,27 @@ template.** Put its resting value in a `/template/` style with no activator and 
 states carry one. `Themes/Controls/SplitView.axaml` is the use, and the reason its pane
 opened to the wrong width until this was measured.
 
+### A ControlTheme may not hold a descendant selector
+
+A nested style inside a `ControlTheme` can only reach the control itself and, through
+`/template/`, its template children. A child `>` or descendant selector throws
+`InvalidOperationException`, "ControlTheme style may not directly contain a child or
+descendent selector".
+
+**It throws the first time the theme is resolved, not at build**, so a theme that is never
+shown looks fine until something opens it.
+
+This matters more than it sounds, because **content is not a template child**. Anything
+materialised into a presenter, such as `InnerLeftContent` on a `TextBox` or the content of
+a `ContentControl`, is outside the template name scope: `/template/` does not match it,
+`e.NameScope.Find` does not find it, and the descendant selector that would reach it is
+the one thing a control theme cannot have.
+
+So a control theme that puts furniture in inner content has to style it from a plain
+`Style` outside the theme, and wire it by listening rather than by looking it up. A click
+bubbles, which is how `SearchBox` hears its clear button.
+`Themes/Controls/TextBox.axaml` is the use.
+
 ### Style versus ControlTheme
 
 A `Style` matches by selector and layers on top. A `ControlTheme` replaces a control's
@@ -340,6 +361,28 @@ Selection in 12 changed: touch and pen select on release rather than press.
 `UpdateSelection` and `UpdateSelectionFromEventSource` are obsolete. Override
 `ShouldTriggerSelection` and `UpdateSelectionFromEvent`, and use the helpers in
 `ItemSelectionEventTriggers`.
+
+## ToggleSwitch names its knob parts backwards
+
+`PART_SwitchKnob` is **the area the knob travels in** and `PART_MovingKnobs` is **the thing
+that moves**. Read the other way round, which is the natural reading, the knob never moves
+and nothing is logged.
+
+Both must be a `Panel`. Give either one a `Border` and the control cannot find it, so the
+switch renders and silently stays put.
+
+**Measured** on 12.1.1, against Fluent and then against our own theme: the control writes
+`Canvas.Left` on `PART_MovingKnobs`, and **the travel it writes is the width of
+`PART_SwitchKnob`**. So the travel is set by sizing that element, not by the track:
+
+```
+track 30 wide, PART_SwitchKnob 13 wide, knob 11
+off  moving left=0   knob at 3..14
+on   moving left=13  knob at 16..27
+```
+
+`KnobTransitions` is where the movement is timed, and it transitions `Canvas.Left`. That
+is the supported way and it avoids the transform animation trap above entirely.
 
 ## Controls added in 12
 
