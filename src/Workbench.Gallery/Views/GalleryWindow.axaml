@@ -859,9 +859,13 @@
                         <TextBlock Classes="note"
                                    Text="This window is the shell itself. Drag the bar to move it, double click it to maximise, drag any edge to resize, and click another window to watch the whole chrome drop to the muted tier." />
 
+                        <TextBlock Classes="note"
+                                   Text="A dialog's buttons carry a role rather than a handler, so the dialog closes itself and says which was pressed. Enter presses the accepting one and Escape the cancelling one, both of them Avalonia's own. This dialog marks Cancel as the one that is ready, because accepting it is the destructive answer, and that takes Enter off Remove." />
+
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Button Content="Open a dialog" Click="OnOpenDialog" />
                             <Button Classes="ghost" Content="Maximise this window" Click="OnMaximize" />
+                            <TextBlock Name="DialogAnswer" Classes="caption" VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

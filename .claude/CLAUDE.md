@@ -922,6 +922,23 @@ window that opened it and stays out of the task bar. There is no scrim behind it
 `ui:DialogFooter` is the row its actions sit in, on `SurfaceRoot` with a seam above.
 The dialog lays out its own content between the two.
 
+**A dialog's buttons carry a role, not a handler.** `ui:Dialog.Role` is `Accept` or
+`Cancel`, and a roled button closes the dialog and answers for it, so
+`await dialog.ShowDialog<bool>(owner)` says which was pressed and the caller wires nothing.
+Closing any other way, the frame included, is a no. A button with no role is an ordinary
+button, which is how a third answer such as Don't save is written.
+
+**Enter and Escape are Avalonia's, not ours.** A role sets `IsDefault` or `IsCancel` and
+the framework does the rest. Measured: Enter presses the accepting button while focus sits
+in a text field, and Escape presses the cancelling one.
+
+**`ui:Dialog.TakesFocus` says which control is ready**, and the accepting button is ready
+when nothing says otherwise. Focus arrives as though tabbed to, so it wears the halo, since
+a button that will answer the first Enter has to look like it. Marking the cancelling button
+also takes Enter off the accepting one, because marking it is a statement that accepting is
+the dangerous answer. Measured before that rule: a dialog opening with Cancel ready still
+accepted on Enter, which is the opposite of what marking it asked for.
+
 ### The desktop can draw the frame instead
 
 `window.nativeChrome` in `IWindowSettings` hands the frame to the desktop. It is global

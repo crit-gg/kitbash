@@ -119,7 +119,7 @@ public partial class GalleryWindow : ChromelessWindow
 
     // Built here rather than in a view, so the shape a real dialog takes is visible:
     // a title bar, content, and a footer holding the actions.
-    private void OnOpenDialog(object? sender, RoutedEventArgs e)
+    private async void OnOpenDialog(object? sender, RoutedEventArgs e)
     {
         var body = new TextBlock
         {
@@ -144,8 +144,14 @@ public partial class GalleryWindow : ChromelessWindow
         var cancel = new Button { Content = "Cancel", Classes = { "ghost" } };
         var remove = new Button { Content = "Remove", Classes = { "danger" } };
 
-        cancel.Click += (_, _) => dialog.Close();
-        remove.Click += (_, _) => dialog.Close();
+        // A role rather than a handler. The dialog closes itself and answers for the
+        // button that was pressed, so nothing here is wired to either one.
+        Dialog.SetRole(cancel, DialogRole.Cancel);
+        Dialog.SetRole(remove, DialogRole.Accept);
+
+        // Accepting is the destructive answer here, so cancelling is the one that is
+        // ready and Enter no longer reaches Remove.
+        Dialog.SetTakesFocus(cancel, true);
 
         actions.Children.Add(cancel);
         actions.Children.Add(remove);
@@ -166,7 +172,9 @@ public partial class GalleryWindow : ChromelessWindow
         Grid.SetRow(footer, 2);
 
         dialog.Content = layout;
-        dialog.ShowDialog(this);
+
+        var removed = await dialog.ShowDialog<bool>(this);
+        DialogAnswer.Text = removed ? "The dialog said remove." : "The dialog said no.";
     }
 
     /// <summary>A command that runs one action. The gallery has no view models.</summary>
