@@ -1,85 +1,117 @@
-using System.Globalization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Workbench.Core.Godot;
 using Workbench.Core.IO;
+using Workbench.Ui.Controls;
 
 namespace Workbench.ViewModels;
 
 /// <summary>
-/// One row on the engines page. The same shape serves both tabs, since a release and an
-/// install read the same way: a title, the pills for what the title does not say, and a
-/// mono line under it.
+/// One engine on the Installed tab.
 /// </summary>
-public sealed class EngineRowViewModel
+/// <remarks>
+/// The subtitle is parts rather than a joined string, since the design spaces them and a
+/// string cannot be spaced. The processor earns its place among them: other architectures
+/// are installable, so this row is the only thing that says which one was taken.
+/// </remarks>
+public sealed partial class EngineRowViewModel : ViewModelBase
 {
-    private EngineRowViewModel(string title, string channel, bool isMono, bool isDefault, string subtitle, string mark)
-    {
-        Title = title;
-        Channel = channel;
-        IsMono = isMono;
-        IsDefault = isDefault;
-        Subtitle = subtitle;
-        Mark = mark;
-    }
+    private readonly EnginesViewModel _page;
 
-    public string Title { get; }
+    [ObservableProperty]
+    private bool _isMenuOpen;
 
-    /// <summary>The channel, upper case, or empty for stable, which needs no pill.</summary>
-    public string Channel { get; }
-
-    public bool IsMono { get; }
-
-    public bool IsDefault { get; }
-
-    public string Subtitle { get; }
-
-    /// <summary>What the right of the row reports. Empty draws nothing.</summary>
-    public string Mark { get; }
-
-    public bool HasChannel => Channel.Length > 0;
-
-    public bool HasMark => Mark.Length > 0;
-
-    /// <summary>A release, with a note saying how much of it is already here.</summary>
-    public static EngineRowViewModel For(EngineRelease release, IReadOnlyList<InstalledEngine> installed)
-    {
-        ArgumentNullException.ThrowIfNull(release);
-        ArgumentNullException.ThrowIfNull(installed);
-
-        var here = installed.Count(engine => engine.Tag == release.Tag);
-
-        return new EngineRowViewModel(
-            NameOf(release.Tag),
-            ChannelOf(release.Tag),
-            isMono: false,
-            isDefault: false,
-            $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}",
-            here switch
-            {
-                0 => string.Empty,
-                1 => "1 build installed",
-                _ => $"{here} builds installed",
-            });
-    }
-
-    /// <summary>An install, with what the disk says about it.</summary>
-    public static EngineRowViewModel For(InstalledEngine engine, EngineId? theDefault, IPathShortener paths)
+    public EngineRowViewModel(
+        InstalledEngine engine,
+        EngineId? theDefault,
+        IPathShortener paths,
+        EnginesViewModel page)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(page);
 
-        // The processor earns its place here, since other architectures are installable and
-        // this row is the only thing that says which one was taken.
-        var subtitle = engine.IsMissing
-            ? $"{paths.Shorten(engine.Directory, 52)}   missing"
-            : $"{paths.Shorten(engine.Directory, 52)}   {engine.ArchitectureText}";
+        Engine = engine;
+        _page = page;
 
-        return new EngineRowViewModel(
-            NameOf(engine.Tag),
-            ChannelOf(engine.Tag),
-            engine.IsMono,
-            theDefault == engine.Id,
-            subtitle,
-            engine.IsImported ? "imported" : string.Empty);
+        Title = NameOf(engine.Tag);
+        Channel = ChannelOf(engine.Tag);
+        IsDefault = theDefault == engine.Id;
+        Path = paths.Shorten(engine.Directory, 52);
+
+        Parts =
+        [
+            Path,
+            engine.IsMissing ? "missing" : Size(engine.SizeOnDisk),
+            $"{page.HostPlatformText} {engine.ArchitectureText}",
+        ];
+    }
+
+    public InstalledEngine Engine { get; }
+
+    public string Title { get; }
+
+    public string Channel { get; }
+
+    public bool HasChannel => Channel.Length > 0;
+
+    public BadgeTier ChannelTier => Engine.Tag.Channel switch
+    {
+        EngineChannel.Rc => BadgeTier.Modified,
+        EngineChannel.Beta => BadgeTier.Graph,
+        EngineChannel.Alpha => BadgeTier.Error,
+        _ => BadgeTier.Neutral,
+    };
+
+    public bool IsDefault { get; }
+
+    public bool IsMono => Engine.IsMono;
+
+    /// <summary>Only what Workbench installed is deleted. An imported engine is forgotten.</summary>
+    public bool IsImported => Engine.IsImported;
+
+    public string Path { get; }
+
+    public IReadOnlyList<string> Parts { get; }
+
+    /// <summary>Hidden on the row that already is the default, which is the design's rule.</summary>
+    public bool CanSetDefault => !IsDefault && !Engine.IsMissing;
+
+    public bool HasNotes => _page.NotesFor(Engine.Tag) is not null;
+
+    [RelayCommand]
+    private void SetDefault() => _page.SetDefault(Engine);
+
+    [RelayCommand]
+    private Task Remove() => _page.RemoveAsync(Engine);
+
+    [RelayCommand]
+    private void ToggleMenu() => IsMenuOpen = !IsMenuOpen;
+
+    [RelayCommand]
+    private void OpenFolder()
+    {
+        IsMenuOpen = false;
+        _page.OpenFolder(Engine.Directory);
+    }
+
+    [RelayCommand]
+    private Task CopyPath()
+    {
+        IsMenuOpen = false;
+
+        return _page.CopyAsync(Engine.Directory);
+    }
+
+    [RelayCommand]
+    private void ReleaseNotes()
+    {
+        IsMenuOpen = false;
+
+        if (_page.NotesFor(Engine.Tag) is { } notes)
+        {
+            _page.OpenNotes(notes);
+        }
     }
 
     /// <summary>The version alone, such as <c>4.7.1</c>.</summary>
@@ -99,4 +131,12 @@ public sealed class EngineRowViewModel
     /// <summary>The channel for a pill, or empty for stable, which needs none.</summary>
     public static string ChannelOf(EngineTag tag) =>
         tag.Channel == EngineChannel.Stable ? string.Empty : tag.ChannelText.ToUpperInvariant();
+
+    /// <summary>Bytes as a person reads them.</summary>
+    public static string Size(long bytes) => bytes switch
+    {
+        >= 1024L * 1024 * 1024 => $"{bytes / 1024d / 1024 / 1024:0.0} GB",
+        >= 1024 * 1024 => $"{bytes / 1024 / 1024} MB",
+        _ => $"{bytes / 1024} KB",
+    };
 }

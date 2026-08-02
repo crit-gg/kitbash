@@ -436,9 +436,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             foreach (var engine in _installed)
             {
-                var row = EngineRowViewModel.For(engine, _settings.DefaultEngine, _paths);
+                var row = new EngineRowViewModel(engine, _settings.DefaultEngine, _paths, this);
 
-                if (Matches(row, query))
+                if (query.Length == 0
+                    || row.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
                 {
                     built.Add(row);
                 }
@@ -451,6 +452,124 @@ public sealed partial class EnginesViewModel : ViewModelBase
         Rows.AddRange(built);
 
         OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    /// <summary>
+    /// The notes for a release, or null when the feed carried none. An imported engine of
+    /// a version nobody published has none either, which is why this is a lookup.
+    /// </summary>
+    public WebAddress? NotesFor(EngineTag tag) =>
+        _releases.FirstOrDefault(release => release.Tag == tag)?.Notes;
+
+    /// <summary>Shows a folder in the file browser. Off the UI thread, like the root does.</summary>
+    public void OpenFolder(string directory) => Task.Run(() =>
+    {
+        try
+        {
+            _platform.OpenInFileBrowser(DirectoryLocation.Parse(directory));
+        }
+        catch (Exception error) when (error is DirectoryNotFoundException
+                                          or ArgumentException
+                                          or ProcessStartException)
+        {
+            Post(ToastTier.Error, "Could not open the folder", error.Message);
+        }
+    });
+
+    /// <summary>
+    /// Puts a path on the clipboard. The clipboard belongs to a window, so the view hands
+    /// this in and the page never reaches for one.
+    /// </summary>
+    public Func<string, Task>? Copier { get; set; }
+
+    public async Task CopyAsync(string text)
+    {
+        if (Copier is null)
+        {
+            return;
+        }
+
+        await Copier(text).ConfigureAwait(true);
+
+        Post(ToastTier.Ok, "Path copied", text);
+    }
+
+    /// <summary>
+    /// Names the machine default. **Nothing is chosen automatically**, here or when the
+    /// default is removed, which is what the spec asks for.
+    /// </summary>
+    public void SetDefault(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        _settings.SetDefaultEngine(engine.Id);
+
+        _ = LoadAsync();
+    }
+
+    /// <summary>
+    /// Asks first, then removes. **Deletes only what Workbench installed**, and the dialog
+    /// says which of the two it is about to do before it is pressed.
+    /// </summary>
+    public async Task RemoveAsync(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        if (Confirm is null || !await Confirm(engine).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() => _store.RemoveAsync(engine, CancellationToken.None)).ConfigureAwait(true);
+
+            // Uninstalling the default leaves the machine without one. Choosing the next is
+            // a person's act and never this method's.
+            if (_settings.DefaultEngine == engine.Id)
+            {
+                _settings.SetDefaultEngine(null);
+            }
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            Post(ToastTier.Error, $"Could not remove Godot {EngineRowViewModel.NameOf(engine.Tag)}", error.Message);
+        }
+
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Asks the person before an engine is removed. The view supplies the dialog.</summary>
+    public Func<InstalledEngine, Task<bool>>? Confirm { get; set; }
+
+    /// <summary>Adds an engine already on this machine. The view supplies the folder picker.</summary>
+    public Func<Task<string?>>? Picker { get; set; }
+
+    [RelayCommand]
+    private async Task AddExistingAsync()
+    {
+        if (Picker is null || await Picker().ConfigureAwait(true) is not { Length: > 0 } directory)
+        {
+            return;
+        }
+
+        var added = await Task.Run(() => _store.ImportAsync(directory, CancellationToken.None)).ConfigureAwait(true);
+
+        if (added is null)
+        {
+            Post(
+                ToastTier.Error,
+                "That folder holds no Godot editor",
+                "Pick the folder the editor itself is in, not one above it.");
+
+            return;
+        }
+
+        Post(ToastTier.Ok, $"Godot {EngineRowViewModel.NameOf(added.Tag)} added", added.Directory);
+
+        OnAvailable = false;
+
+        await LoadAsync().ConfigureAwait(true);
     }
 
     /// <summary>Opens a release notes page in the browser.</summary>
@@ -545,9 +664,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
             Body = body,
             Actions = action is null ? [] : [action],
         });
-
-    private static bool Matches(EngineRowViewModel row, string query) =>
-        query.Length == 0 || row.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// The newest stable release that is newer than the newest stable installed. Empty when

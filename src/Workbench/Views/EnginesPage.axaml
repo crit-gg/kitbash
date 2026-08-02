@@ -85,6 +85,30 @@
             </Style>
         </ControlTheme>
 
+        <!-- A row action. The shared button is the right height already, so this is the
+             design's own fill and seam over it rather than a new shape. -->
+        <ControlTheme x:Key="RowButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        </ControlTheme>
+
+        <!-- Removing is the one destructive thing on the page, so it reads as ordinary
+             until the pointer is on it and then it goes red. -->
+        <ControlTheme x:Key="RemoveButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+
+            <Style Selector="^:pointerover /template/ Border#PART_Root">
+                <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ErrorLine}" />
+            </Style>
+        </ControlTheme>
+
         <!-- The footer disclosure. Outlined rather than filled, since it changes what is
              listed rather than doing anything. -->
         <ControlTheme x:Key="DisclosureButton" TargetType="Button">
@@ -249,7 +273,7 @@
             <Setter Property="Margin" Value="0,5,0,0" />
         </Style>
 
-        <Style Selector="StackPanel.cardSub > TextBlock">
+        <Style Selector="TextBlock.subPart">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
             <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
@@ -416,8 +440,8 @@
                     </StackPanel>
                 </Button>
 
-                <!-- Importing is step 7, so this says what it will do and cannot yet. -->
-                <Button Grid.Column="5" IsEnabled="False">
+                <Button Grid.Column="5" Command="{Binding AddExistingCommand}"
+                        ToolTip.Tip="Add a Godot editor already on this machine">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
                         <TextBlock Text="Add existing" VerticalAlignment="Center" />
@@ -511,31 +535,69 @@
                                 <Border Classes="engineRow">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                                         <StackPanel Grid.Column="0">
-
-                                            <!-- The floor is the pill's own height, so a
-                                                 row is the same whether it carries one or
-                                                 not. Measured without it: a card with a
-                                                 pill is 61 and one without is 58, because
-                                                 a pill is 17 and the title's line box at
-                                                 12.5 is 14. Three pixels is enough to read
-                                                 as an uneven list. A floor rather than a
-                                                 height, so a title that ever grows past
-                                                 the pill still fits and still grows every
-                                                 row alike. -->
                                             <StackPanel Orientation="Horizontal" Spacing="8"
                                                         MinHeight="{DynamicResource HeightPill}">
-                                                <TextBlock Classes="rowTitle" Text="{Binding Title}" />
-                                                <ui:Badge Content="DEFAULT" IsVisible="{Binding IsDefault}" />
-                                                <ui:Badge Content="{Binding Channel}" IsVisible="{Binding HasChannel}" />
-                                                <ui:Badge Content=".NET" IsVisible="{Binding IsMono}" />
+                                                <TextBlock Classes="cardTitle" Text="{Binding Title}" />
+                                                <ui:Badge Content="DEFAULT" Tier="Accent" HasDot="True"
+                                                          IsVisible="{Binding IsDefault}" />
+                                                <ui:Badge Content="{Binding Channel}"
+                                                          Tier="{Binding ChannelTier}" HasDot="True"
+                                                          IsVisible="{Binding HasChannel}" />
+                                                <ui:Badge Content=".NET" Tier="Data" HasDot="True"
+                                                          IsVisible="{Binding IsMono}" />
                                             </StackPanel>
 
-                                            <TextBlock Classes="rowSub" Text="{Binding Subtitle}" />
+                                            <ItemsControl Classes="cardSub" ItemsSource="{Binding Parts}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" Spacing="18" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:String">
+                                                        <TextBlock Classes="subPart" Text="{Binding}" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
 
-                                        <TextBlock Grid.Column="1" Classes="rowMark"
-                                                   Text="{Binding Mark}"
-                                                   IsVisible="{Binding HasMark}" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="Set default"
+                                                    Theme="{StaticResource RowButton}"
+                                                    Command="{Binding SetDefaultCommand}"
+                                                    IsVisible="{Binding CanSetDefault}" />
+
+                                            <!-- Danger, and it says which of the two things
+                                                 it will do before it is pressed. -->
+                                            <Button Theme="{StaticResource RemoveButton}"
+                                                    Command="{Binding RemoveCommand}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <ui:Icon Glyph="Trash" Size="14" VerticalAlignment="Center" />
+                                                    <TextBlock Text="Remove" VerticalAlignment="Center"
+                                                               IsVisible="{Binding IsImported}" />
+                                                    <TextBlock Text="Uninstall" VerticalAlignment="Center"
+                                                               IsVisible="{Binding !IsImported}" />
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Classes="icon" Width="26" Height="26"
+                                                    ToolTip.Tip="More"
+                                                    AutomationProperties.Name="More">
+                                                <ui:Icon Glyph="DotsVerticalRounded" Size="15" />
+                                                <Button.Flyout>
+                                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                        <MenuItem Header="Open install folder"
+                                                                  Command="{Binding OpenFolderCommand}" />
+                                                        <MenuItem Header="Copy path"
+                                                                  Command="{Binding CopyPathCommand}" />
+                                                        <MenuItem Header="Release notes"
+                                                                  Command="{Binding ReleaseNotesCommand}"
+                                                                  IsVisible="{Binding HasNotes}" />
+                                                    </MenuFlyout>
+                                                </Button.Flyout>
+                                            </Button>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>

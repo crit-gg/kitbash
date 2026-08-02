@@ -623,14 +623,18 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
      install with a queued state, a bar, a percentage and a cancel, the architecture
      disclosure, the absent release card, and the two toasts. The launcher gained its
      first toast host.
-   - **Installed.** Set default, the uninstall dialog, the three dot menu and Add
-     existing.
+   - ~~**Installed.**~~ **Done, 2 August 2026.** Set default, the uninstall dialog, the
+     three dot menu and Add existing. The menu drops Verify checksum, for the reason under
+     The three dot menu. The dialog has two consequence lines and picks between them, since
+     an imported engine is forgotten rather than deleted.
+
+8. **Wire the workspace page's engine strip** and delete `EngineViewModel.Placeholder`.
 
 Then the payoff, which is why the strip is worth wiring in the same piece of work:
 
-8. **Wire the workspace page's engine strip** to `IEngineStore` and the version
-   `project.godot` asks for, and delete `EngineViewModel.Placeholder`. That is the last
-   invented data in the app.
+The last of it, and why it is worth doing in the same piece of work: wiring the workspace
+page's engine strip to `IEngineStore` and the version `project.godot` asks for deletes
+`EngineViewModel.Placeholder`, which is the last invented data in the app.
 
 ## What proves it works
 
