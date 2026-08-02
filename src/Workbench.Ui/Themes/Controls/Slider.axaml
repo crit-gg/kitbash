@@ -157,4 +157,67 @@
         </Style>
     </ControlTheme>
 
+    <!-- The range slider's knobs. The dragged one brightens and takes the halo, which the
+         Thumb already says through :pressed, so nothing has to be tracked to know which of
+         the two is under the finger. -->
+    <ControlTheme x:Key="RangeKnob" TargetType="Thumb" BasedOn="{StaticResource SliderKnob}">
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource InkPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Two knobs and the fill between them. Everything it draws is the slider's, so the
+         two cannot drift: the same rail, the same knob, the same track height. -->
+    <ControlTheme x:Key="{x:Type ui:RangeSlider}" TargetType="ui:RangeSlider">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent">
+                    <Panel VerticalAlignment="Center">
+                        <Border Name="PART_Rail"
+                                Height="{DynamicResource HeightTrack}"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{DynamicResource RadiusMark}"
+                                VerticalAlignment="Center" />
+
+                        <Canvas Name="PART_Track" ClipToBounds="False" Height="{DynamicResource SizeKnobActive}">
+                            <Border Name="PART_Fill"
+                                    Height="{DynamicResource HeightTrack}"
+                                    Background="{TemplateBinding Foreground}"
+                                    CornerRadius="{DynamicResource RadiusMark}"
+                                    Canvas.Top="5" />
+
+                            <Thumb Name="PART_LowerThumb" Theme="{StaticResource RangeKnob}" Canvas.Top="1" />
+                            <Thumb Name="PART_UpperThumb" Theme="{StaticResource RangeKnob}" Canvas.Top="1" />
+                        </Canvas>
+                    </Panel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource LineControl}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource FillOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Thumb">
+            <Setter Property="Background" Value="{DynamicResource MarkOff}" />
+        </Style>
+    </ControlTheme>
+
 </ResourceDictionary>

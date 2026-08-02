@@ -3,8 +3,9 @@
 The controls that take a value. None of these appear in the launcher, so this stage is
 invisible in the app and is verified in a harness.
 
-**Partly built.** Fields, choices, sliders, the spinbox, the dropdown and the hyperlink are
-done and in the gallery. Four things in this stage are not: see "What is left" at the end.
+**Partly built.** Fields, choices, sliders, the range slider, the spinbox with scrubbing,
+the dropdown, the hyperlink and validation are done and in the gallery. Two things in this
+stage are not: see "What is left" at the end.
 `.claude/CLAUDE.md` under Inputs is what the code actually does.
 
 ## Goal
@@ -176,7 +177,7 @@ inside a control. Built as the other wells are.
 
 ## What is left
 
-Four things, none of them started, and each named here so nobody has to rediscover it.
+Two things, and each named here so nobody has to rediscover it.
 
 **The date and time pickers.** `CalendarDatePicker` and `TimePicker` are the two largest
 templates in the stage: the first needs `Calendar`, `CalendarItem`, `CalendarButton` and
@@ -184,14 +185,6 @@ templates in the stage: the first needs `Calendar`, `CalendarItem`, `CalendarBut
 `DateTimePickerPanel` columns and its own accept and dismiss buttons. The design's calendar
 and clock popovers are in `Theme Slate.dc.html` at the DATE and TIME headings inside the
 value editors section. The locale check in the list above belongs with them.
-
-**The range slider.** Ours, because `Slider` derives from `RangeBase` and has one `Value`
-and one `PART_Track`. Build it on the knob and track the slider theme already draws, so the
-two cannot drift, and give the dragged knob the halo.
-
-**Scrubbing a spinbox.** Dragging the value to change it. Input behaviour on top of
-`NumericUpDown` rather than a look, and the one piece of the value editors that is neither
-theming nor configuration.
 
 **The colour field.** Deferred to stage 12 rather than skipped: the field is a well with a
 14px swatch adorner, and the swatch has nothing to open until the picker exists.

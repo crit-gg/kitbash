@@ -562,7 +562,7 @@
                             <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="masked" VerticalAlignment="Center" />
                             <MaskedTextBox Grid.Row="3" Grid.Column="1" Width="128" Mask="0000-00-00" />
                             <TextBlock Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="4" Classes="note"
-                                       Text="The clear button appears only once there is something to clear."
+                                       Text="The clear button appears only once there is something to clear. The error column is what a field draws when its binding reports one, which a view model gets by implementing INotifyDataErrorInfo."
                                        VerticalAlignment="Center" />
                         </Grid>
 
@@ -630,7 +630,7 @@
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                 Header="VALUES" Content="every value in mono" />
 
-                        <Grid ColumnDefinitions="86,190,190,Auto" RowDefinitions="Auto,Auto,Auto"
+                        <Grid ColumnDefinitions="86,190,190,Auto" RowDefinitions="Auto,Auto,Auto,Auto"
                               ColumnSpacing="12" RowSpacing="10">
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Classes="caption" Text="slider" VerticalAlignment="Center" />
@@ -644,15 +644,25 @@
                                        Text="Ticks and snapping are settings rather than code."
                                        VerticalAlignment="Center" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="spinbox" VerticalAlignment="Center" />
-                            <NumericUpDown Grid.Row="2" Grid.Column="1" Value="12.5" Increment="0.5"
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="range" VerticalAlignment="Center" />
+                            <ui:RangeSlider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="1"
+                                            LowerValue="0.28" UpperValue="0.72" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="2" Classes="note"
+                                       Text="Drag either knob. Neither can pass the other."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="spinbox" VerticalAlignment="Center" />
+                            <NumericUpDown Grid.Row="3" Grid.Column="1" Value="12.5" Increment="0.5"
                                            FormatString="0.0" HorizontalAlignment="Left" />
-                            <NumericUpDown Grid.Row="2" Grid.Column="2" Value="12.5" Increment="0.5"
+                            <NumericUpDown Grid.Row="3" Grid.Column="2" Value="12.5" Increment="0.5"
                                            FormatString="0.0" HorizontalAlignment="Left" IsEnabled="False" />
                         </Grid>
 
                         <TextBlock Classes="note"
                                    Text="The stepper sits inside the well behind a hairline rather than floating outside it, which is the rule every value editor follows. Nothing is built for it: a spinbox is a NumericUpDown over a ButtonSpinner over a text field, and only the frame is themed." />
+
+                        <TextBlock Classes="note"
+                                   Text="Drag the spinbox value sideways to scrub it. A click still puts the caret in, since nothing happens until the pointer has moved past a threshold." />
 
                         <StackPanel Orientation="Horizontal" Spacing="14">
                             <ComboBox Width="150" PlaceholderText="Pick one">

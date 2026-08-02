@@ -155,6 +155,15 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
+        <!-- The same error state every field answers. See TextBox.axaml. -->
+        <Style Selector="^[(DataValidationErrors.HasErrors)=True]">
+            <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="^.error">
+            <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />

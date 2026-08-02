@@ -171,6 +171,15 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
+        <!-- The same error state every field answers. See TextBox.axaml. -->
+        <Style Selector="^[(DataValidationErrors.HasErrors)=True]">
+            <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="^.error">
+            <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
@@ -180,6 +189,8 @@
 
     <!-- The spinner is the whole look, so this is the wiring and nothing else. -->
     <ControlTheme x:Key="{x:Type NumericUpDown}" TargetType="NumericUpDown">
+        <!-- The value can be dragged as well as typed and stepped. -->
+        <Setter Property="(ui:Scrub.Drags)" Value="True" />
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="MinWidth" Value="72" />

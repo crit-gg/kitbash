@@ -125,9 +125,19 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
-        <!-- What a field looks like when what is in it will not do. The mechanism behind
-             this is open: Avalonia 12 turns the data annotations plugin off, so nothing
-             sets it automatically and a view says so itself for now. -->
+        <!-- What a field looks like when what is in it will not do.
+
+             Measured: Avalonia 12 turns the data annotations binding plugin off, so a
+             validation attribute alone does nothing, but a binding to a source
+             implementing INotifyDataErrorInfo still reports, and HasErrors lands here.
+             CommunityToolkit's ObservableValidator implements it, so a view model gets
+             this by deriving from it.
+
+             The class is the same look for a view with no validating model behind it. -->
+        <Style Selector="^[(DataValidationErrors.HasErrors)=True]">
+            <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+        </Style>
+
         <Style Selector="^.error">
             <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
         </Style>

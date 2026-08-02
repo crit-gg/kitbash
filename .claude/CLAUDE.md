@@ -344,15 +344,33 @@ field with only the frame themed.
 **Two of the sliders are settings rather than code.** Stepped is `TickFrequency`,
 `IsSnapToTickEnabled` and `TickPlacement`, with a `TickBar` behind the track.
 
+**A halo's radius is grown from the control's**, through `ui:HaloRadius.Grown`, rather than
+named per shape. The halo sits outside the border and a corner radius describes an outer
+edge, so the halo is the control's radius plus its own thickness. Naming a token per radius
+worked until the search field took 8 where every other field takes 5 and wore the 5px
+control's ring. A square corner stays square, which is what keeps one end of a split
+control right.
+
 **`ui:SearchBox`** is the one input control that is ours, and only for its clear button. A
 mark and a radius would be a class, but emptying a field is behaviour and a theme cannot
 carry it. Its button lives in inner content, which no control theme can reach, so the theme
 styles it from a plain style and the control hears the click bubble. See
 `.claude/avalonia.md` under control themes for why.
 
-**Validation has a look and no mechanism.** A field with the `error` class draws an `Error`
-border. Avalonia 12 turns the data annotations plugin off, so nothing sets that
-automatically and a view says so itself. Deciding the mechanism is open work.
+**Validation runs on `INotifyDataErrorInfo`.** A field draws an `Error` border when its
+binding reports one. Measured on 12.1.1: Avalonia turns the data annotations plugin off, so
+a `[Required]` attribute alone does nothing, but a source implementing
+`INotifyDataErrorInfo` still reports and `DataValidationErrors.HasErrors` lands on the
+control. CommunityToolkit's `ObservableValidator` implements it, so a view model gets this
+by deriving from it. The `error` class is the same look for a view with no validating model
+behind it.
+
+**Fluent draws a focus ring of its own and it is switched off.** `Themes/Focus.axaml`
+clears `FocusAdorner` on every control. Measured: a keyboard focus otherwise puts a black
+2px border with a translucent white one inside it into the adorner layer, which is above
+everything a template draws, so it lands on top of our halo. Fluent is loaded on purpose,
+since it is what gives an unthemed type a template at all, and this takes back the one
+thing it does that the design forbids.
 
 ### Panels and the depth ramp
 
@@ -965,9 +983,8 @@ panel, the expander, the splitter, the collapsing sidebar, the text fields, the 
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box and the hyperlink.
 
-Four things in stage 8 are not built: the date and time pickers, the range slider,
-scrubbing a spinbox, and the colour field, which waits on stage 12. The stage file lists
-what each one needs.
+Two things in stage 8 are not built: the date and time pickers, and the colour field, which
+waits on stage 12. The stage file lists what each one needs.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, with only the workspace page built.
