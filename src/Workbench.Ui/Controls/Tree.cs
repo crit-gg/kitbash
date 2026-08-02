@@ -147,10 +147,20 @@ public class Tree : ListBox
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (e.Source is Visual source && source.FindAncestorOfType<TreeItem>(includeSelf: true) is { } container)
+        if (e.Source is not Visual source
+            || source.FindAncestorOfType<TreeItem>(includeSelf: true) is not { } container)
+        {
+            return;
+        }
+
+        // The strip in front of the name answers a single click and nothing else. A double
+        // click there is two toggles and then this one, which lands the row back where it
+        // started after flickering through the other state twice.
+        if (!TreeItem.InCaret(source, container))
         {
             Toggle(container);
-            e.Handled = true;
         }
+
+        e.Handled = true;
     }
 }

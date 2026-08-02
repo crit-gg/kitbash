@@ -46,6 +46,8 @@ public class TreeItem : ListBoxItem
     public static readonly DirectProperty<TreeItem, Thickness> IndentProperty =
         AvaloniaProperty.RegisterDirect<TreeItem, Thickness>(nameof(Indent), item => item.indent);
 
+    private const string CaretPart = "PART_Caret";
+
     private Thickness indent;
     private Control? caret;
     private TreeRow? row;
@@ -141,7 +143,7 @@ public class TreeItem : ListBoxItem
             caret.PointerPressed -= OnCaretPressed;
         }
 
-        caret = e.NameScope.Find<Control>("PART_Caret");
+        caret = e.NameScope.Find<Control>(CaretPart);
 
         if (caret is not null)
         {
@@ -202,9 +204,25 @@ public class TreeItem : ListBoxItem
         }
     }
 
+    /// <summary>Whether this element is inside the strip in front of the name.</summary>
+    internal static bool InCaret(Visual from, TreeItem row)
+    {
+        for (Visual? at = from; at is not null && at != row; at = at.GetVisualParent())
+        {
+            if (at is Control { Name: CaretPart })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void OnCaretPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (!HasChildren)
+        // Left only. A right click belongs to whatever context menu the row carries, and
+        // a middle click is not an open anywhere else either, so both are left to bubble.
+        if (!HasChildren || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             return;
         }

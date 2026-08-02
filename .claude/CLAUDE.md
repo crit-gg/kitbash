@@ -547,6 +547,12 @@ Nothing moves as a result: measured before and after, labels sit at 30, 44 and 5
 way. The indent band to the left of the row is not part of it, so clicking there picks the
 row the way it does in every other tree.
 
+**The strip answers a single left click and nothing else.** A right click and a middle click
+are left to bubble, so a context menu on the row still opens over the caret. A double click
+landing in the strip is swallowed rather than acted on, because two presses have already
+toggled it twice and a third would leave the row where it started after flickering through
+the other state on the way. Double click to open still works everywhere else on the row.
+
 **Tabs** are `TabControl` and `TabItem` in `Themes/Controls/Tabs.axaml`, drawn from the
 design's docking page with the dock's own tier left out. The open tab takes the page's
 surface and the accent marker together, since either alone would be saying it in colour. A
