@@ -54,21 +54,29 @@
                                 CornerRadius="{TemplateBinding CornerRadius}"
                                 Padding="{TemplateBinding Padding}">
                             <DockPanel LastChildFill="True">
-                                <!-- The caret's own hit area. Transparent rather than
-                                     nothing, since a control with no background is not hit
-                                     tested and the click could never be reached. -->
-                                <Panel Name="PART_Caret"
-                                       DockPanel.Dock="Left"
-                                       Width="{DynamicResource IconSizeCaret}"
-                                       Margin="{DynamicResource MarginRowLead}"
-                                       Background="Transparent">
-                                    <ui:Icon Name="PART_CaretGlyph"
-                                             Glyph="ChevronRight"
-                                             Size="{DynamicResource IconSizeCaret}"
-                                             Foreground="{DynamicResource InkSecondary}"
-                                             VerticalAlignment="Center"
-                                             IsVisible="False" />
-                                </Panel>
+                                <!-- The caret's hit area, which is the whole strip in front
+                                     of the name rather than the glyph alone. It pads itself
+                                     on both sides, which is why the row pads only its right:
+                                     a 14px target is a small thing to hit twice in a row.
+
+                                     Transparent rather than nothing, since a control with no
+                                     background is not hit tested and the click could never
+                                     be reached. -->
+                                <Border Name="PART_Caret"
+                                        DockPanel.Dock="Left"
+                                        Padding="{DynamicResource PaddingCaret}"
+                                        Background="Transparent">
+                                    <!-- The glyph goes, the room it takes does not, so a
+                                         branch and a leaf that are siblings line up. -->
+                                    <Panel Width="{DynamicResource IconSizeCaret}">
+                                        <ui:Icon Name="PART_CaretGlyph"
+                                                 Glyph="ChevronRight"
+                                                 Size="{DynamicResource IconSizeCaret}"
+                                                 Foreground="{DynamicResource InkSecondary}"
+                                                 VerticalAlignment="Center"
+                                                 IsVisible="False" />
+                                    </Panel>
+                                </Border>
 
                                 <Border Name="PART_Modified"
                                         DockPanel.Dock="Right"

@@ -280,8 +280,14 @@
          its height is fixed and centring does the rest. -->
     <Thickness x:Key="PaddingList">5</Thickness>
     <Thickness x:Key="PaddingListRow">9,0</Thickness>
-    <Thickness x:Key="PaddingTreeRow">8,0</Thickness>
     <Thickness x:Key="PaddingTab">11,0</Thickness>
+
+    <!-- A tree row pads its right side alone. The left belongs to the caret, which pads
+         itself instead, so everything in front of the name is one hit area rather than a
+         14px glyph with dead space either side of it. The two together are the 8 in front
+         and the 7 after that every other row has. -->
+    <Thickness x:Key="PaddingTreeRow">0,0,8,0</Thickness>
+    <Thickness x:Key="PaddingCaret">8,0,7,0</Thickness>
 
     <!-- The gap after a tree's caret, which is the same gap after a row's leading mark. -->
     <Thickness x:Key="MarginRowLead">0,0,7,0</Thickness>

@@ -540,6 +540,13 @@ elsewhere picks the row, a double click opens it, and left and right arrow do th
 the keyboard: right opens a closed branch and steps into an open one, left closes an open
 branch and goes out to the parent from a closed one.
 
+**That hit area is the whole strip in front of the name**, not the glyph, so it is 29 wide
+rather than 14 and runs from the row's edge to where the label starts. The caret pads itself
+on both sides and the row pads only its right, which is why `PaddingTreeRow` looks lopsided.
+Nothing moves as a result: measured before and after, labels sit at 30, 44 and 58 either
+way. The indent band to the left of the row is not part of it, so clicking there picks the
+row the way it does in every other tree.
+
 **Tabs** are `TabControl` and `TabItem` in `Themes/Controls/Tabs.axaml`, drawn from the
 design's docking page with the dock's own tier left out. The open tab takes the page's
 surface and the accent marker together, since either alone would be saying it in colour. A
