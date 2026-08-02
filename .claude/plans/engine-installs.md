@@ -611,9 +611,14 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
    Rows arrived a step early. The plan had the list in step 7, but an empty body under a
    tab reading 183 says two different things at once, so the shell got the row and step 7
    keeps the card.
-7. **The cards and the actions.** The release card and its build rows, install with
-   progress and cancel, the architecture disclosure, the uninstall dialog, the menu, Set
-   default, Add existing, and the two toasts.
+7. **The cards and the actions.** Split in two, since the tabs are independent.
+   - ~~**Available.**~~ **Done, 2 August 2026.** The release card opening onto its builds,
+     grouped by processor with the host first, sizes fetched together when a card opens,
+     install with a queued state, a bar, a percentage and a cancel, the architecture
+     disclosure, the absent release card, and the two toasts. The launcher gained its
+     first toast host.
+   - **Installed.** Set default, the uninstall dialog, the three dot menu and Add
+     existing.
 
 Then the payoff, which is why the strip is worth wiring in the same piece of work:
 

@@ -10,6 +10,8 @@ using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 using Workbench.ViewModels;
+using Workbench.Ui;
+using Workbench.Ui.Toasts;
 using Workbench.Views;
 
 namespace Workbench;
@@ -50,6 +52,7 @@ public partial class App : Application
             .AddWorkbenchWorkspaces()
             .AddWorkbenchGit()
             .AddWorkbenchEngines()
+            .AddWorkbenchToasts()
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
             .AddSingleton(BuildRegistry())
             .AddSingleton(provider => new EnginesViewModel(
@@ -58,7 +61,10 @@ public partial class App : Application
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IPlatformServices>(),
-                provider.GetRequiredService<IFileSystem>()))
+                provider.GetRequiredService<IFileSystem>(),
+                provider.GetRequiredService<IEngineInstaller>(),
+                provider.GetRequiredService<IEngineFiles>(),
+                provider.GetRequiredService<IToastService>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IPathShortener>(),

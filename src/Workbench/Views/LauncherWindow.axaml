@@ -534,6 +534,13 @@
               <Panel IsVisible="{Binding OnEnginesPage}">
                 <views:EnginesPage DataContext="{Binding Engines}" />
               </Panel>
+
+              <!-- The launcher's first toast host. It held none until now, because it had
+                   nothing transient to report: the one slow thing it did, updating from
+                   git, reports on itself in the status bar in place. Installing an engine
+                   finishes while a person is usually looking at another tab, which is what
+                   a toast is for. -->
+              <ui:ToastHost Name="Toasts" />
             </Panel>
         </Grid>
     </Grid>

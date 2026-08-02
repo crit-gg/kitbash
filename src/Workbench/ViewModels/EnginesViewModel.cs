@@ -6,6 +6,7 @@ using Workbench.Core.Godot;
 using Workbench.Core.IO;
 using Workbench.Core.Platform;
 using Workbench.Core.Settings;
+using Workbench.Ui.Toasts;
 
 namespace Workbench.ViewModels;
 
@@ -37,7 +38,15 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IPathShortener _paths;
     private readonly IPlatformServices _platform;
     private readonly IFileSystem _files;
+    private readonly IEngineInstaller _installer;
+    private readonly IEngineFiles _engineFiles;
+    private readonly IToastService _toasts;
+
+    /// <summary>One token per build being installed, so each cancels on its own.</summary>
+    private readonly Dictionary<EngineId, CancellationTokenSource> _running = [];
     private readonly SemaphoreSlim _loading = new(1, 1);
+
+    private readonly Dictionary<EngineTag, ReleaseCardViewModel> _cards = [];
 
     private IReadOnlyList<EngineRelease> _releases = [];
     private IReadOnlyList<InstalledEngine> _installed = [];
@@ -97,8 +106,15 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IGodotSettings settings,
         IPathShortener paths,
         IPlatformServices platform,
-        IFileSystem files)
+        IFileSystem files,
+        IEngineInstaller installer,
+        IEngineFiles engineFiles,
+        IToastService toasts)
     {
+        ArgumentNullException.ThrowIfNull(installer);
+        ArgumentNullException.ThrowIfNull(engineFiles);
+        ArgumentNullException.ThrowIfNull(toasts);
+
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(settings);
@@ -112,11 +128,23 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _paths = paths;
         _platform = platform;
         _files = files;
+        _installer = installer;
+        _engineFiles = engineFiles;
+        _toasts = toasts;
 
         // Not read in the constructor, unlike the workspace page. That one reads a config
         // file and this one fetches over a network, so the window would wait on it.
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
     }
+
+    /// <summary>
+    /// Whether every processor is shown or only this machine's. **Global rather than per
+    /// card, and it resets on relaunch.** A machine either cross compiles or it does not,
+    /// so the answer holds while a person moves between releases. It is view state and
+    /// never a setting, which is why nothing writes it down.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showAllArchitectures;
 
     /// <summary>
     /// The rows on screen. **One collection, refilled in two notifications.** An
@@ -129,6 +157,24 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     public bool OnInstalled => !OnAvailable;
 
+    /// <summary>The release cards, which are what the Available tab lists.</summary>
+    public AvaloniaList<ReleaseCardViewModel> Cards { get; } = [];
+
+    /// <summary>The service the window's host draws.</summary>
+    public IToastService Toasts => _toasts;
+
+    public EnginePlatform HostPlatform => _engineFiles.Platform;
+
+    public EngineArchitecture HostArchitecture => _engineFiles.Architecture;
+
+    /// <summary>The host platform as a person reads it, for the absent release card.</summary>
+    public string HostPlatformText => _engineFiles.Platform switch
+    {
+        EnginePlatform.Windows => "Windows",
+        EnginePlatform.Linux => "Linux",
+        _ => "macOS",
+    };
+
     public bool HasUpdate => UpdateVersion.Length > 0;
 
     /// <summary>A zero is never drawn, which is the status bar's own rule.</summary>
@@ -136,7 +182,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     public bool HasFailed => Failure.Length > 0;
 
-    public bool IsEmpty => Rows.Count == 0 && !HasFailed;
+    public bool IsEmpty => (OnAvailable ? Cards.Count : Rows.Count) == 0 && !HasFailed;
 
     /// <summary>Reads everything again. The Refresh button goes past the cache, a first open does not.</summary>
     [RelayCommand]
@@ -231,6 +277,16 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     partial void OnQueryChanged(string value) => Rebuild();
 
+    partial void OnShowAllArchitecturesChanged(bool value)
+    {
+        // Every open card regroups. Nothing is fetched again, since what a release holds
+        // was read when it opened.
+        foreach (var card in Cards)
+        {
+            card.Arrange();
+        }
+    }
+
     partial void OnUpdateVersionChanged(string value) => OnPropertyChanged(nameof(HasUpdate));
 
     partial void OnInstalledCountChanged(int value) => OnPropertyChanged(nameof(HasInstalled));
@@ -300,6 +356,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         if (OnAvailable)
         {
+            // The cards are their own list. A card holds what it read when it opened, so
+            // it is kept across a filter rather than built again.
+            var cards = new List<ReleaseCardViewModel>();
+
             foreach (var release in _releases)
             {
                 if (_channel is { } channel && release.Channel != channel)
@@ -307,15 +367,33 @@ public sealed partial class EnginesViewModel : ViewModelBase
                     continue;
                 }
 
-                var row = EngineRowViewModel.For(release, _installed);
-
-                if (Matches(row, query))
+                if (query.Length > 0
+                    && !EngineRowViewModel.NameOf(release.Tag).Contains(query, StringComparison.OrdinalIgnoreCase))
                 {
-                    built.Add(row);
+                    continue;
                 }
+
+                if (!_cards.TryGetValue(release.Tag, out var card))
+                {
+                    card = new ReleaseCardViewModel(release, this);
+                    _cards[release.Tag] = card;
+                }
+
+                card.CountInstalled(_installed);
+                cards.Add(card);
             }
+
+            Cards.Clear();
+            Cards.AddRange(cards);
+
+            EmptyNote = query.Length > 0 ? $"No versions match {query}" : "Nothing here yet";
+            Rows.Clear();
+
+            OnPropertyChanged(nameof(IsEmpty));
+
+            return;
         }
-        else
+
         {
             foreach (var engine in _installed)
             {
@@ -335,6 +413,132 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(IsEmpty));
     }
+
+    /// <summary>What a card asks for when it opens. Cached by the catalogue.</summary>
+    public Task<EngineManifest> ReadManifestAsync(EngineTag tag) =>
+        Task.Run(() => _catalogue.ReadManifestAsync(tag, CancellationToken.None));
+
+    /// <summary>Opens a release notes page in the browser.</summary>
+    public void OpenNotes(WebAddress notes) => Task.Run(() =>
+    {
+        try
+        {
+            _platform.OpenInBrowser(notes);
+        }
+        catch (Exception error) when (error is ProcessStartException or ArgumentException)
+        {
+            Post(ToastTier.Error, "Could not open the release notes", error.Message);
+        }
+    });
+
+    /// <summary>One build row, wired to the install and the cancel.</summary>
+    public EngineBuildViewModel BuildFor(EngineBuild build) =>
+        new(build, _installed.Any(engine => engine.Id == build.Id), InstallAsync, Cancel);
+
+    /// <summary>
+    /// Sizes for the rows a card just opened, all at once. Neither the feed nor a manifest
+    /// carries one, so each is a request of its own. Measured: eight together take about a
+    /// fifth of a second where one after another takes over a second.
+    /// </summary>
+    public async Task MeasureAsync(IReadOnlyList<EngineBuildViewModel> builds)
+    {
+        ArgumentNullException.ThrowIfNull(builds);
+
+        var sizes = await Task.WhenAll(builds.Select(row =>
+            Task.Run(async () =>
+            {
+                try
+                {
+                    return await _catalogue.MeasureAsync(row.Build, CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception error) when (error is TimeoutException or HttpRequestException)
+                {
+                    // A size is worth having and never worth failing a card over.
+                    return null;
+                }
+            }))).ConfigureAwait(true);
+
+        for (var i = 0; i < builds.Count; i++)
+        {
+            builds[i].Size = sizes[i] is { } bytes ? Size(bytes) : string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Installs one build. Several run at once behind the installer's own cap, and each
+    /// carries its own token, so cancelling one leaves the others alone.
+    /// </summary>
+    private async Task InstallAsync(EngineBuildViewModel row)
+    {
+        if (_running.ContainsKey(row.Build.Id))
+        {
+            return;
+        }
+
+        using var stopping = new CancellationTokenSource();
+
+        _running[row.Build.Id] = stopping;
+        row.Started();
+
+        try
+        {
+            await _installer.InstallAsync(
+                row.Build,
+                new Progress<EngineInstallProgress>(row.Report),
+                stopping.Token).ConfigureAwait(true);
+
+            row.Stopped(installed: true);
+
+            Post(
+                ToastTier.Ok,
+                $"Godot {EngineRowViewModel.NameOf(row.Build.Tag)} installed",
+                $"Unpacked to {_paths.Shorten(Path.Combine(_settings.EngineDirectory, row.Build.Id.DirectoryName), 44)}.",
+                new ToastAction("Show in Installed", () => OnAvailable = false) { IsPrimary = true });
+
+            await LoadAsync().ConfigureAwait(true);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelling is a person's own doing and is already visible in place, so it
+            // says nothing.
+            row.Stopped(installed: false);
+        }
+        catch (Exception error) when (error is EngineInstallException or EngineCatalogueException)
+        {
+            row.Stopped(installed: false);
+
+            Post(
+                ToastTier.Error,
+                $"Could not install Godot {EngineRowViewModel.NameOf(row.Build.Tag)}",
+                error.Message,
+                new ToastAction("Retry", () => _ = InstallAsync(row)));
+        }
+        finally
+        {
+            _running.Remove(row.Build.Id);
+        }
+    }
+
+    private void Cancel(EngineBuildViewModel row)
+    {
+        if (_running.TryGetValue(row.Build.Id, out var stopping))
+        {
+            stopping.Cancel();
+        }
+    }
+
+    /// <summary>
+    /// Toasts are posted rather than shown, since an install reports from wherever it ran.
+    /// An error stays until it is dismissed, which is the library's own dwell.
+    /// </summary>
+    private void Post(ToastTier tier, string title, string? body, ToastAction? action = null) =>
+        _toasts.Post(new ToastRequest
+        {
+            Tier = tier,
+            Title = title,
+            Body = body,
+            Actions = action is null ? [] : [action],
+        });
 
     private static bool Matches(EngineRowViewModel row, string query) =>
         query.Length == 0 || row.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
