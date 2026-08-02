@@ -1127,7 +1127,7 @@ OS. Most of it sits behind `IPlatformServices`.
 ```
 Platform/
   IPlatformServices.cs, PlatformKind.cs
-  DesktopPlatform.cs                  shared behavior, subclasses supply Open
+  DesktopPlatform.cs                  shared behavior, subclasses supply Open and Detach
   WebAddress.cs, DirectoryLocation.cs
   IProcessRunner.cs, ProcessRunner.cs, ProcessRequest.cs, ProcessStartException.cs
   IExecutableFinder.cs, ExecutableFinder.cs
@@ -1136,9 +1136,31 @@ Platform/
   Windows/                            WindowsPlatform, user directories, path display
 ```
 
-`DesktopPlatform` holds everything shared and leaves one abstract member, `Open`,
-which is the only thing that varies. Resolve `IPlatformServices` from the container
-and never test the running OS at the call site.
+`DesktopPlatform` holds everything shared and leaves two abstract members, `Open` and
+`Detach`. Resolve `IPlatformServices` from the container and never test the running OS
+at the call site.
+
+**A program that should outlive Workbench goes through `StartDetached`, not through
+`IProcessRunner.Run`.** Not waiting for a process is not the same as detaching from it.
+Measured on this machine: a child started by `Run` gets Workbench's own process group
+and its session, so a signal aimed at Workbench is delivered to it as well. Its own
+window closing is not that, and a child does survive it, but a terminal closing, ctrl C
+and a logout all are. Under `setsid` the same signal leaves the child running.
+
+**A cgroup is not escaped by any of this.** Neither `setsid` nor a new process group
+leaves the cgroup a process was started in, so a desktop that tears down the app's scope
+with `KillMode=control-group` takes the engine with it whatever this does. Detaching
+covers signals, not containment.
+
+Linux wraps the request in `setsid`, which is util-linux, looked up through
+`IExecutableFinder` rather than assumed present. Without it the request goes as it is,
+which still outlives a launcher that simply exits. Windows hands it to the shell, which
+is how everything else there is opened, and the case that closes is a job object rather
+than a process group. That half is reasoned rather than measured, since this machine is
+Linux.
+
+Godot's project manager is the one caller. An engine is a person's next few hours of
+work and the launcher is a window they may well close, so the two do not share a fate.
 
 Three IO services also vary, each with its own interface because each is asked for by
 itself. They are registered together by `AddPlatformIO`, so a new one costs no extra
@@ -1150,8 +1172,8 @@ OS test.
 - `IPathRules` says whether two paths mean the same place, and whether one sits inside
   another. Only case sensitivity differs, so the subclasses are one line each
 
-`AddPlatformIO` and `CreatePlatform`, both in `WorkbenchCoreServices`, are the only
-places that test the running OS.
+`AddPlatformIO`, `AddEngineFiles` and `CreatePlatform`, all in `WorkbenchCoreServices`,
+are the only places that test the running OS.
 
 Targets are value objects. `WebAddress` accepts absolute http and https only, and
 `DirectoryLocation` requires a rooted path. Parsing is the only way to make either,

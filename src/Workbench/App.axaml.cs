@@ -64,7 +64,6 @@ public partial class App : Application
                 provider.GetRequiredService<IFileSystem>(),
                 provider.GetRequiredService<IEngineInstaller>(),
                 provider.GetRequiredService<IEngineFiles>(),
-                provider.GetRequiredService<IProcessRunner>(),
                 provider.GetRequiredService<IToastService>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),

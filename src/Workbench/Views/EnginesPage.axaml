@@ -575,13 +575,17 @@
                                                                   Command="{Binding ReleaseNotesCommand}"
                                                                   IsVisible="{Binding HasNotes}" />
 
-                                                        <!-- The one destructive thing here,
-                                                             so it is last and set apart. It
-                                                             still says which of the two it
-                                                             will do before it is pressed. -->
+                                                        <!-- Last and set apart, and it says
+                                                             which of the two it will do
+                                                             before it is pressed. Only one
+                                                             of them is red, because only
+                                                             one of them deletes anything.
+                                                             Forgetting an imported engine
+                                                             leaves it where it is. -->
                                                         <Separator />
 
                                                         <MenuItem Header="Uninstall"
+                                                                  Classes="danger"
                                                                   Command="{Binding RemoveCommand}"
                                                                   IsVisible="{Binding !IsImported}" />
                                                         <MenuItem Header="Remove from the list"

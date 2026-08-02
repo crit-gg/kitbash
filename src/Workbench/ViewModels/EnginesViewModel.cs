@@ -44,7 +44,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IFileSystem _files;
     private readonly IEngineInstaller _installer;
     private readonly IEngineFiles _engineFiles;
-    private readonly IProcessRunner _processes;
     private readonly IToastService _toasts;
 
     /// <summary>One token per build being installed, so each cancels on its own.</summary>
@@ -104,8 +103,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     [ObservableProperty]
     private string _emptyNote = string.Empty;
 
-
-
     public EnginesViewModel(
         IEngineCatalogue catalogue,
         IEngineStore store,
@@ -115,21 +112,17 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IFileSystem files,
         IEngineInstaller installer,
         IEngineFiles engineFiles,
-        IProcessRunner processes,
         IToastService toasts)
     {
-        ArgumentNullException.ThrowIfNull(processes);
-
-        ArgumentNullException.ThrowIfNull(installer);
-        ArgumentNullException.ThrowIfNull(engineFiles);
-        ArgumentNullException.ThrowIfNull(toasts);
-
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(installer);
+        ArgumentNullException.ThrowIfNull(engineFiles);
+        ArgumentNullException.ThrowIfNull(toasts);
 
         _catalogue = catalogue;
         _store = store;
@@ -139,7 +132,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _files = files;
         _installer = installer;
         _engineFiles = engineFiles;
-        _processes = processes;
         _toasts = toasts;
 
         // Not read in the constructor, unlike the workspace page. That one reads a config
@@ -476,8 +468,11 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// </summary>
     /// <remarks>
     /// The flag is <c>--project-manager</c>, read off <c>--help</c> on 4.7.1 rather than
-    /// remembered: "Start the project manager, even if a project is auto-detected." It is
-    /// started and not waited on, since the editor outlives this app's interest in it.
+    /// remembered: "Start the project manager, even if a project is auto-detected."
+    ///
+    /// Detached rather than merely unwaited on. An engine is a person's next few hours of
+    /// work and Workbench is a launcher they may well close, so the two do not share a
+    /// fate. What that costs per platform is <see cref="IPlatformServices.StartDetached"/>.
     /// </remarks>
     public void OpenProjectManager(InstalledEngine engine)
     {
@@ -487,7 +482,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             try
             {
-                _processes.Run(ProcessRequest.Command(engine.Executable, "--project-manager"));
+                _platform.StartDetached(
+                    ProcessRequest.Command(engine.Executable, "--project-manager"));
             }
             catch (ProcessStartException)
             {

@@ -256,7 +256,8 @@ public static class WorkbenchCoreServices
             return new LinuxPlatform(
                 fileSystem,
                 processes,
-                provider.GetRequiredService<IDesktopLauncherResolver>());
+                provider.GetRequiredService<IDesktopLauncherResolver>(),
+                provider.GetRequiredService<IExecutableFinder>());
         }
 
         throw new PlatformNotSupportedException("Workbench supports Windows and Linux on x64.");
