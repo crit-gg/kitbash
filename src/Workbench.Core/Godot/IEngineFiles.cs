@@ -44,11 +44,15 @@ public interface IEngineFiles
     string? FindEditor(string directory);
 
     /// <summary>
-    /// Makes a file runnable, where that means anything. A guard rather than the usual
-    /// path: measured on .NET 10, extraction keeps the mode the archive carries and every
-    /// official Linux editor carries 0755. An archive built on Windows carries no mode at
-    /// all, which is the case this covers.
+    /// Makes a file runnable, where that means anything.
     /// </summary>
+    /// <remarks>
+    /// Not a rare guard. <c>ZipFile.ExtractToDirectory</c> carries an archive's Unix mode
+    /// across, but unpacking entry by entry does not, and the prefix strip and the two
+    /// extraction guards mean this app unpacks by hand. So the installer calls this for
+    /// every entry the archive recorded as executable. Measured: without it, an install
+    /// completes and holds an editor at 0644 that nothing can find or run.
+    /// </remarks>
     void MakeExecutable(string path);
 
     /// <summary>

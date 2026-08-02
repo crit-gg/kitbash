@@ -127,6 +127,7 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IWebContent, WebContent>();
         services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
         services.TryAddSingleton<IEngineStore, EngineStore>();
+        services.TryAddSingleton<IEngineInstaller, EngineInstaller>();
         services.AddEngineFiles();
 
         return services;

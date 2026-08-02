@@ -400,6 +400,27 @@ archive in the sweep: the editor binary is 0755. A .NET archive also carries 074
 files under `GodotSharp/Tools`, which is harmless. Windows entries are 0644 or 0664, which
 means nothing on Windows and would matter only if a Windows archive were unpacked on Unix.
 
+**Unpacking by hand does not carry the Unix mode across.** `ZipFile.ExtractToDirectory`
+does, which is what the measurement above says, but the prefix strip and the guards mean
+entries are copied one at a time, and a manual copy creates a plain 0644 file. Measured:
+the first install built this way completed, reported success, and left an editor nothing
+could find or run. Read the mode back from the entry's external attributes and set the
+executable bit where the archive recorded one. A zip made on Windows records DOS
+attributes there instead, which read as no mode at all, so the guard costs nothing.
+
+**`ZipArchive` already stops an entry at its declared length.** Measured: an entry
+declaring 16 bytes over a megabyte of real content hands back 16 bytes and stops. So
+gdvm's guard, refusing an entry that decompresses past its declared size, cannot fire on
+.NET and is belt and braces rather than the protection. What the runtime does not bound is
+an honest header declaring something enormous, so the guard that bites is a ceiling on the
+total an archive says it will unpack to. The largest real tree is about 220 MB.
+
+**A relative segment is not a wrapper folder.** The prefix strip takes off a single top
+level directory, and an archive whose entries all sit under `../` looked exactly like one.
+Measured: an entry named `../escaped.txt` was stripped to `escaped.txt` and unpacked
+happily, so the path check never saw it and the archive was quietly made well behaved
+instead of being refused. Refuse `./` and `../` as prefixes and let the path check answer.
+
 **Do not work the executable out from a file name.** After extracting, the candidates are
 few and obvious: on Unix a file carrying the executable bit that is not under
 `GodotSharp/`, and on Windows an `.exe` that is not the console one. Confirm the choice

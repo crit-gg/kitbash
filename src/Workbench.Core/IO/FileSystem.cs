@@ -106,4 +106,16 @@ public sealed class FileSystem : IFileSystem
 
         Directory.Delete(path, recursive: true);
     }
+
+    public void DeleteFile(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+    }
+
+    public Stream OpenRead(string path) => File.OpenRead(path);
+
+    public Stream Create(string path) => File.Create(path);
 }

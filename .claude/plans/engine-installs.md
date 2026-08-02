@@ -226,8 +226,10 @@ bit on Unix as a guard. Measured on .NET 10: extraction preserves the mode the a
 carries and every Linux editor binary in the sweep carries `0755`, so shelling out to
 `unzip` is a dependency we would be inventing.
 
-**The prefix strip carries a guard.** Strip a single top level entry only when it is a
-directory whose name does not end in `.app`. The rule this plan first had, that the .NET
+**The prefix strip carries two guards.** Strip a single top level entry only when it is a
+directory whose name is not `.` or `..` and does not end in `.app`. The relative one was
+found by a probe: an archive whose entries all sit under `../` looked like a wrapper, so
+stripping it turned an escape into an ordinary file and the path check never ran. The rule this plan first had, that the .NET
 archive wraps its contents and the standard one does not, holds for Linux and fails
 everywhere else: Windows ships the editor and a console executable as two loose files, and
 both macOS archives are an application bundle that stripping would flatten and destroy.
@@ -580,9 +582,12 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
    trees copied out of gdvm: two installs read and recorded, a record written again after
    being emptied and after being corrupted, an import that writes nothing into a folder it
    does not own, an uninstall that deletes and a forget that does not.
-5. **`IEngineInstaller`.** Download with progress and cancellation, the concurrency cap
-   and its queue, the `.done` marker, SHA 512 verification, the guarded extraction with
-   the prefix strip and its `.app` exception, and the executable bit.
+5. ~~**`IEngineInstaller`.**~~ **Done, 2 August 2026.** Download with progress and
+   cancellation, three at once behind a cap, the `.done` marker, SHA 512 verification, the
+   guarded extraction with the prefix strip and its `.app` exception, and the executable
+   bit. Checked by installing a real 4.7.1 editor end to end, reinstalling it from cache in
+   303 ms, refusing a wrong checksum and a missing one, and refusing an archive that
+   escapes its directory and one that claims to unpack to 2861 MB.
 6. **The page shell.** Rail switching, the two pages, the head band, the toolbar, the
    filters, the status bar, the empty state and the stale alert. No install actions yet.
 7. **The lists and the actions.** Both tabs, the uninstall dialog, the menu, Set default,

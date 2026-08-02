@@ -45,4 +45,16 @@ public interface IFileSystem
     /// since the caller wanted it absent rather than wanted to be the one to remove it.
     /// </summary>
     void DeleteDirectory(string path);
+
+    /// <summary>Removes a file, doing nothing when it is already gone.</summary>
+    void DeleteFile(string path);
+
+    /// <summary>
+    /// Opens a file to read. For content too large to hold as text, such as hashing an
+    /// archive or reading one entry at a time out of it.
+    /// </summary>
+    Stream OpenRead(string path);
+
+    /// <summary>Creates or replaces a file and opens it to write.</summary>
+    Stream Create(string path);
 }
