@@ -394,6 +394,10 @@
          already is, so the only thing here is the look: options share one well and one
          border and each rounds on its own.
 
+         An option carries no fill in any state. The thumb behind the row is the fill, and
+         it slides, so an option only ever changes its ink. That is the whole reason the
+         row is a control rather than a border.
+
          The design haloes the whole group, which is what a browser does because the group
          is the focusable thing. Here each option is focusable, so the halo goes on the
          option that actually has focus. -->
@@ -410,6 +414,18 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Arrow" />
         <Setter Property="ClipToBounds" Value="False" />
+
+        <!-- The ink follows the thumb rather than switching under it, which is the
+             design's 140ms on its own ease. -->
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0.14">
+                    <BrushTransition.Easing>
+                        <SplineEasing X1="0.25" Y1="0.1" X2="0.25" Y2="1" />
+                    </BrushTransition.Easing>
+                </BrushTransition>
+            </Transitions>
+        </Setter>
 
         <Setter Property="Template">
             <ControlTemplate>
@@ -433,20 +449,21 @@
             </ControlTemplate>
         </Setter>
 
+        <!-- Ink and nothing else, which is the one place in this library where a control
+             answers the pointer without a fill. A fill here is a second raised surface
+             beside the thumb, saying the same thing in the same way, so the one that
+             moves stops being the thing being watched. -->
         <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="{DynamicResource StateHover}" />
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
         </Style>
 
         <Style Selector="^:pressed">
-            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
         </Style>
 
-        <!-- The chosen option is a raised surface rather than an accent flood, so a row of
-             options reads as one control with one of them forward. -->
+        <!-- The chosen option reads forward by ink alone here. The raised surface under it
+             is the thumb, which the row owns because it slides between the options. -->
         <Style Selector="^:checked">
-            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
         </Style>
 
@@ -460,16 +477,20 @@
         </Style>
 
         <Style Selector="^:disabled:checked">
-            <Setter Property="Background" Value="{DynamicResource LineRow}" />
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
         </Style>
     </ControlTheme>
 
-    </Styles.Resources>
+    <!-- The row the options sit in, and the thumb that says which one is chosen.
 
-    <!-- The row the options sit in. A class rather than a control, because a row of radios
-         in a border is what it is, and naming a type for it would hide that. -->
-    <Style Selector="Border.segmented">
+         A border cannot hold the thumb, since it has one child and the thumb has to sit
+         behind the row rather than inside it. So this is a control, and the one thing it
+         does is put the thumb where the chosen option is.
+
+         Nothing about the arithmetic is written here. The control reads the option it is
+         standing on, so the padding, the gap and the row height below are the only places
+         those numbers exist. -->
+    <ControlTheme x:Key="{x:Type ui:Segmented}" TargetType="ui:Segmented">
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
         <Setter Property="Padding" Value="2" />
         <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
@@ -477,20 +498,82 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
         <Setter Property="HorizontalAlignment" Value="Left" />
-    </Style>
 
-    <Style Selector="Border.segmented > StackPanel">
-        <Setter Property="Orientation" Value="Horizontal" />
-        <Setter Property="Spacing" Value="2" />
-    </Style>
+        <!-- An ItemsControl clips to its bounds, and every option draws its focus halo
+             outside its own. -->
+        <Setter Property="ClipToBounds" Value="False" />
 
-    <Style Selector="Border.segmented RadioButton">
+        <!-- The design's 200ms on the toggle knob's curve. The knob crosses 13px and a
+             thumb crosses most of a row, so the two share a curve and not a duration.
+
+             A transition rather than an animation, for the reason the knob gives: a key
+             frame on RenderTransform throws and one on TransformOperations does nothing.
+             Both the position and the width move, because the options are different
+             widths. -->
+        <Setter Property="ThumbTransitions">
+            <Transitions>
+                <DoubleTransition Property="Canvas.Left" Duration="0:0:0.2">
+                    <DoubleTransition.Easing>
+                        <SplineEasing X1="0.32" Y1="0.72" X2="0" Y2="1" />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+                <DoubleTransition Property="Width" Duration="0:0:0.2">
+                    <DoubleTransition.Easing>
+                        <SplineEasing X1="0.32" Y1="0.72" X2="0" Y2="1" />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+            </Transitions>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <Panel>
+                        <!-- The thumb is under the options and takes no clicks, so a press
+                             still lands on the option it is standing behind. -->
+                        <Canvas Name="PART_Travel" IsHitTestVisible="False" ClipToBounds="False">
+                            <Border Name="PART_Thumb"
+                                    Background="{DynamicResource SurfaceNest2}"
+                                    CornerRadius="{DynamicResource RadiusControl}"
+                                    IsVisible="False" />
+                        </Canvas>
+
+                        <!-- The panel is written on the presenter rather than bound to
+                             ItemsPanel, since a presenter builds its panel once and a
+                             segmented row is a row either way. -->
+                        <ItemsPresenter Name="PART_ItemsPresenter" ClipToBounds="False">
+                            <ItemsPresenter.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsPresenter.ItemsPanel>
+                        </ItemsPresenter>
+                    </Panel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource LineRow}" />
+        </Style>
+    </ControlTheme>
+
+    </Styles.Resources>
+
+    <!-- An option is a radio the row did not have to be told about. A plain style rather
+         than a container theme, since the options are written into the row by hand and a
+         control that is already a container keeps whatever theme it was given. -->
+    <Style Selector="ui|Segmented RadioButton">
         <Setter Property="Theme" Value="{StaticResource SegmentedOption}" />
-    </Style>
-
-    <Style Selector="Border.segmented:disabled">
-        <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
     </Style>
 
     <!-- The clock's column headings and the time a field reads back. Classes rather than

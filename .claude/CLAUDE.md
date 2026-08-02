@@ -190,9 +190,9 @@ list, and anything not marked Pro is ours to use. Paid, and therefore out:
 
 Only two controls here are hand built, and only because Avalonia has no type for either:
 `Chip` and `StatusPill`. `Icon`, `ChromelessWindow`, `WindowTitleBar`, `DialogWindow`,
-`DialogFooter`, `SurfacePanel`, `Alert` and the three toast controls are ours for the same
-reason. `SurfacePanel` is the smallest of those: a `HeaderedContentControl` plus a footer,
-since no built in type carries a header, a body and a footer at once.
+`DialogFooter`, `SurfacePanel`, `Segmented`, `Alert` and the three toast controls are ours
+for the same reason. `SurfacePanel` is the smallest of those: a `HeaderedContentControl`
+plus a footer, since no built in type carries a header, a body and a footer at once.
 
 `Tree` is the one that is a subclass rather than a new control. It derives from `ListBox`,
 because a tree that virtualises is a flat list of the rows that can be seen and Avalonia has
@@ -369,6 +369,34 @@ mark and a radius would be a class, but emptying a field is behaviour and a them
 carry it. Its button lives in inner content, which no control theme can reach, so the theme
 styles it from a plain style and the control hears the click bubble. See
 `.claude/avalonia.md` under control themes for why.
+
+**`ui:Segmented`** is a row of radios with a thumb behind them, and the thumb is the reason
+it is a control. A border holds one child, and a fill on the chosen option would appear and
+disappear where a thing that slides has to be one thing that moves. The options stay radios,
+so grouping, clicking and the keyboard are all the framework's.
+
+**No option carries a fill, in any state.** An option changes ink and nothing else, over the
+design's 140ms, and the raised surface is the thumb. That covers hover and pressed as well
+as the chosen one, which makes this the one control in the library that answers the pointer
+without a fill. A hover fill here is a second raised surface beside the thumb, saying the
+same thing in the same way, and the one that moves stops being the thing being watched.
+Both the thumb's position and its width move, since Table, Grid and Cards are three
+different widths.
+
+**The thumb reads the option it is standing on** rather than working a place out from
+tokens, so the padding, the 2px gap and the row height are written in the theme and nowhere
+else. The motion is the theme's too, through `ThumbTransitions`, which is the shape
+`ToggleSwitch.KnobTransitions` already has. It is 200ms on the knob's own curve. The two
+share a curve and not a duration, because the knob crosses 13px and a thumb crosses a row.
+
+**Only a change of answer slides.** A first placement, a layout change and coming back into
+a tree are all written with the transitions off, so a row opens with the thumb already on
+the chosen option instead of sliding in from the left edge, and a thumb never trails the row
+while a window is being dragged. Measured over three options at 47.33, 41.33 and 50 wide: at
+load the thumb is at 0 and 47.33 wide, the frame an option is picked it has not moved,
+90ms later it is at 87.01 and 49.84, and it settles on 92.67 and 50. An option grown to 110
+takes 110 in the frame it grew, and a row taken out of the tree and put back is exact in the
+frame it returns.
 
 **The pickers read the culture and nothing here writes a date or a time format.** Measured
 across four: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and

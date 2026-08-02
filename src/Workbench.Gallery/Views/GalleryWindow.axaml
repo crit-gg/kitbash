@@ -616,21 +616,26 @@
                                    Text="The toggle knob travels in 140ms on the design's own curve. It is a transition on the part the control moves, because an animation would have to target a transform, and a key frame on RenderTransform throws while one on TransformOperations does nothing at all." />
 
                         <StackPanel Orientation="Horizontal" Spacing="14">
-                            <Border Classes="segmented">
-                                <StackPanel>
-                                    <RadioButton GroupName="gallerySeg" Content="Table" IsChecked="True" />
-                                    <RadioButton GroupName="gallerySeg" Content="Grid" />
-                                    <RadioButton GroupName="gallerySeg" Content="Cards" />
-                                </StackPanel>
-                            </Border>
+                            <ui:Segmented>
+                                <RadioButton GroupName="gallerySeg" Content="Table" IsChecked="True" />
+                                <RadioButton GroupName="gallerySeg" Content="Grid" />
+                                <RadioButton GroupName="gallerySeg" Content="Cards" />
+                            </ui:Segmented>
 
-                            <Border Classes="segmented" IsEnabled="False">
-                                <StackPanel>
-                                    <RadioButton GroupName="gallerySegOff" Content="Table" IsChecked="True" />
-                                    <RadioButton GroupName="gallerySegOff" Content="Grid" />
-                                </StackPanel>
-                            </Border>
+                            <ui:Segmented>
+                                <RadioButton GroupName="gallerySegHeld" Content="Table" IsChecked="True" />
+                                <RadioButton GroupName="gallerySegHeld" Content="Grid" Classes="forceHover" />
+                                <RadioButton GroupName="gallerySegHeld" Content="Cards" Classes="forceFocus" />
+                            </ui:Segmented>
+
+                            <ui:Segmented IsEnabled="False">
+                                <RadioButton GroupName="gallerySegOff" Content="Table" IsChecked="True" />
+                                <RadioButton GroupName="gallerySegOff" Content="Grid" />
+                            </ui:Segmented>
                         </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="No option here has a fill, in any state. The thumb behind the row is the fill, and it takes both a position and a width, since the options are different widths. It moves in 200ms on the knob's curve, and it snaps rather than slides on a first load and on a resize. Hover and pressed are ink alone, so nothing else on the row is a raised surface while the thumb is moving." />
 
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                 Header="VALUES" Content="every value in mono" />
