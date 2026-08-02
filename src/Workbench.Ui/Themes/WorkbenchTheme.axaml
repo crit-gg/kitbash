@@ -17,6 +17,7 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Tokens.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Typography.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Icons.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Marks.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Icon.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/DialogFooter.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Button.axaml" />

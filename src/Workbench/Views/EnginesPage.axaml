@@ -35,17 +35,6 @@
 
     <UserControl.Styles>
 
-        <!-- The mark beside the page title. The same square the workspace rows use, with
-             the Godot glyph in it rather than a state colour. -->
-        <Style Selector="Border.pageMark">
-            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
-        </Style>
-
         <Style Selector="TextBlock.pageTitle">
             <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
             <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
@@ -131,11 +120,14 @@
              the window already has a title bar and there is only one per window. -->
         <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1" Padding="20,12">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
-                <Border Grid.Column="0" Classes="pageMark" VerticalAlignment="Center">
-                    <ui:Icon Glyph="Godot" Size="13"
-                             Foreground="{DynamicResource AccentTintInk}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                </Border>
+                <!-- The Godot mark in its own colours, so no tile behind it and no
+                     foreground over it. It is a DrawingImage rather than an ui:Icon,
+                     because a glyph in this library carries no fill and takes its colour
+                     from the control. The rail keeps the mono glyph, which is right for a
+                     row of icons that all answer the same selection state. -->
+                <Image Grid.Column="0" Source="{StaticResource GodotMark}"
+                       Width="20" Height="20" Stretch="Uniform"
+                       VerticalAlignment="Center" />
 
                 <TextBlock Grid.Column="1" Classes="pageTitle" Text="Godot engine installs" />
 

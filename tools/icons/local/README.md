@@ -36,3 +36,28 @@ pixels, which is the size the activity rail draws it, they are identical.
 It is still about three times the largest glyph in the set. A traced outline carries wobble
 that a drawn one does not, and simplifying harder starts to show at 240 pixels. Worth it
 for one mark, not a habit to get into.
+
+## godot_colored.svg
+
+**Not a glyph, and it does not go through the generator.** The Godot mark in the project's
+own colours, white and #478cbf and #414042. Everything above this line is about the icon
+set, where a shape carries no fill and takes its colour from the control it sits in, so a
+mark that owns its colours cannot go through that reader at all. `icons.txt` does not name
+it and `generate.py` never sees it.
+
+It is committed here because this is where a mark we supply belongs, beside the mono
+`godot.svg` that the activity rail draws. The two are different things for different jobs:
+a row of rail icons all answer the same selection state and have to tint together, and a
+page header names one product and should look like it.
+
+What consumes it is `Workbench.Ui/Themes/Marks.axaml`, a `DrawingImage` drawn with an
+`Image` rather than an `ui:Icon`. **Nothing was normalised in the crossing.** Each of the
+eight paths keeps its own data and its own matrix, because Avalonia reads an SVG matrix in
+the order it is written and a `DrawingGroup` takes a transform. So there was no flatten, no
+scale and no simplify, and the mark cannot have drifted. Rendered at 96 pixels against the
+source it is the same drawing.
+
+Regenerating is copying the paths across again. There is no lossy step to repeat.
+
+The drawing is 1024 wide by about 966 tall, so it is not square. Draw it with
+`Stretch="Uniform"` and let it centre in whatever box it is given.
