@@ -278,10 +278,9 @@
                         </DropDownButton>
                     </Border>
 
-                    <!-- The engine strip. Every value in it is invented for now, which
-                         is deliberate and temporary. EngineViewModel says which fields
-                         are already readable from project.godot and which need engine
-                         discovery. -->
+                    <!-- The engine strip. What this workspace asks for and what would
+                         open it. The rules are IEngineResolver's and the words are
+                         EngineViewModel's, so nothing here decides anything. -->
                     <Border Grid.Row="1" Classes="page" BorderThickness="0,0,0,1"
                             Height="56" Padding="20,0">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
@@ -326,12 +325,16 @@
                                          Classes.warn="{Binding Engine.IsMismatch}"
                                          Classes.danger="{Binding Engine.IsMissing}"
                                          Content="{Binding Engine.Action}"
+                                         Command="{Binding Engine.RunCommand}"
+                                         IsVisible="{Binding Engine.HasAction}"
                                          VerticalAlignment="Center">
                                 <SplitButton.Flyout>
                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                        <MenuItem Header="Open project folder" />
-                                        <MenuItem Header="Edit project.godot" />
-                                        <MenuItem Header="Manage engine installs" />
+                                        <MenuItem Header="Open project folder"
+                                                  Command="{Binding Engine.OpenProjectFolderCommand}"
+                                                  IsEnabled="{Binding Engine.CanOpenProject}" />
+                                        <MenuItem Header="Manage engine installs"
+                                                  Command="{Binding Engine.ShowEnginesCommand}" />
                                     </MenuFlyout>
                                 </SplitButton.Flyout>
                             </SplitButton>

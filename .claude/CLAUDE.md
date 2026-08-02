@@ -1203,9 +1203,8 @@ anyone maintaining a list.
 **Name**, in order, from `IWorkspaceNameResolver`:
 
 1. `workspace.name` in the workspace's team config
-2. `config/name` from the first `project.godot` found under the folder, searched four
-   levels deep, skipping `.git`, `.godot`, `node_modules` and similar. Note that
-   `project.godot` is not TOML, since its keys contain slashes, so it is read by line.
+2. `config/name` from the first `project.godot` found under the folder, through
+   `IGodotProjectReader`
 3. the folder name
 
 **States.** `IsLocal` means no repository, so there is no branch or history to show.
@@ -1231,6 +1230,91 @@ for and blocking it would refuse a legitimate move to a parent repository.
 Roots are compared through `IPathRules`, not with string equality, because Windows
 ignores case and Linux does not. A prefix test on its own would also read `game-tools`
 as a child of `game`, so the separator is part of the test.
+
+## The engine a workspace needs
+
+Which Godot opens a project, and how the answer is worked out. All of it is
+`Workbench.Core/Godot`, composed by `AddWorkbenchGodotProjects`.
+
+**A version a project asks for is not a release, so it has its own type.**
+`EngineVersionPattern` is a major with an optional minor, patch and channel, and a part
+left out matches anything. `4.7` answers to `4.7-stable` and `4.7.1-stable` alike, where
+an `EngineTag` always knows its patch and its channel and cannot hold the question.
+
+The two cannot spell the same thing. A tag writes a zero patch as nothing, so
+`4.7-stable` means patch zero, while here a missing patch means any patch and only
+`4.7.0-stable` pins it. **Anything meaning one exact release holds an `EngineTag`**, and
+the pattern is for the loose case, which is the only case a project file produces.
+
+**A pattern that names no channel prefers a stable release over any prerelease.** With
+4.7.1-stable and 4.7.2-rc1 installed, `4.7` opens the stable one. Taking the highest
+outright is the obvious rule and it is wrong: a candidate is not an upgrade from a
+release, and somebody who wants one names it. A pattern that does name a channel has
+already said so, so there the highest wins.
+
+**The .NET flag is never part of the version.** An engine's identity is a tag plus that
+flag, and the two answer different questions: the version comes from what a workspace
+pins and the flag from whether the project has C# in it. Nobody chooses the flag.
+
+### Where the requirement comes from
+
+`IEngineRequirementReader`, in this order, and the first that answers wins:
+
+1. `godot.engine` in the workspace's own `.workbench` config, personal layer over team
+   shared. Described by `WorkspaceGodotSettingsSchema`, which is the one Godot page a
+   team shares, since which engine a project needs travels with the project.
+2. `config/features` in the project's `project.godot`.
+
+**The deliberate answer beats the incidental one.** Godot writes `config/features`
+itself and it records the version that last opened the project, so it drifts every time
+somebody opens it in something newer. The `.workbench` key is written by a person.
+A blank key is not an answer and falls through rather than masking the layer below.
+
+**The flag never comes from the config**, only ever off the project, even when the
+version came from the workspace.
+
+`IGodotProjectReader` reads that file. It is not TOML and not quite INI: keys carry
+slashes and values are written in Godot's own syntax, so it is read by line with the
+section tracked and only the few keys that are wanted are understood. C# is said two
+ways and either counts, a `[dotnet]` section (`[mono]` in Godot 3) or `"C#"` among the
+features. `WorkspaceNameResolver` takes the name from the same reader, so the four level
+search for `project.godot` exists once.
+
+### Matching it against what is installed
+
+`IEngineResolver` is pure. It is handed the requirement and the list rather than reading
+either, so the rules are checkable with no disk. The order is the right version with the
+right runtime, then the right version with the wrong runtime, then this machine's
+default, then nothing.
+
+**The runtime is filtered on first, not checked afterwards.** A .NET project will not
+build in a plain engine, so a match on version alone would send somebody into an editor
+that cannot compile their code. An engine whose folder has gone answers nothing and
+cannot be the fallback either.
+
+Four answers, and `EngineViewModel` turns one into the strip's words:
+
+| `EngineMatch` | The strip |
+|---|---|
+| `None` | no Godot project here, and no button |
+| `Matched` | the engine's name and where it is, Open in Godot |
+| `Mismatch` | the engine that would open it, why it is wrong, Open anyway |
+| `Missing` | what was asked for, not installed, Install |
+
+**The strip names the engine that would open the project, not what was asked for**,
+except when there is no engine to name. Reading 4.7 while 4.6 is what opens would be
+worse than saying nothing. The `.NET` badge follows the same rule and describes the
+engine whenever one is named, since beside a plain engine's version it would otherwise
+say the opposite of what is wrong.
+
+The strip is read outside `LauncherViewModel.Read`, which runs before the window exists
+and has to stay quick. This one asks the disk about every install and can run a process,
+so it has its own async refresh and the strip says it is reading until that lands. It
+runs one at a time and **waits its turn rather than giving up**, since dropping the
+second would leave the strip describing the workspace that was open a moment ago.
+
+Opening a project is `--path <folder> --editor`, through
+`IPlatformServices.StartDetached`.
 
 ## Git
 
@@ -1544,10 +1628,8 @@ to report yet. The one slow thing it does, updating from git, reports on itself 
 status bar in place, which is rule 8 of that row and not something a toast should take
 over. The gallery is where the toast service is wired to a composition root and exercised.
 
-The git strip is real and reads the open workspace's repository. The engine strip is drawn
-from `EngineViewModel.Placeholder` and every value in it is invented, which is the only
-invented data in the app. It needs engine discovery, which is its own piece of work, and
-`EngineViewModel` records what is already readable without it.
+The git strip and the engine strip are both real and both read the open workspace. Nothing
+in the app is invented any more.
 
 The settings schema is at step 3 of the six in `.claude/plans/settings-schema.md`. Core
 has the schema types, the rules, the per layer read, the batched write, the remove, the

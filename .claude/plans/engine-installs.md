@@ -565,7 +565,7 @@ later without changing anything above the installer.
 
 ## Build
 
-Seven steps. Each one is checkable on its own and the numbers are the order.
+Eight steps, all done. Each one is checkable on its own and the numbers are the order.
 
 1. ~~**Measure the unknowns.**~~ **Done, 2 August 2026.** The answers are in
    `godot-engines.md` under Measured for the engines page. `HEAD` gives the size on the
@@ -628,13 +628,35 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
      The three dot menu. The dialog has two consequence lines and picks between them, since
      an imported engine is forgotten rather than deleted.
 
-8. **Wire the workspace page's engine strip** and delete `EngineViewModel.Placeholder`.
+8. ~~**Wire the workspace page's engine strip.**~~ **Done, 2 August 2026.**
+   `EngineViewModel.Placeholder` is gone and nothing in the app is invented any more.
 
-Then the payoff, which is why the strip is worth wiring in the same piece of work:
+   It took four new pieces in Core, all under `AddWorkbenchGodotProjects`, and the root
+   `CLAUDE.md` has the rules under The engine a workspace needs.
 
-The last of it, and why it is worth doing in the same piece of work: wiring the workspace
-page's engine strip to `IEngineStore` and the version `project.godot` asks for deletes
-`EngineViewModel.Placeholder`, which is the last invented data in the app.
+   - `EngineVersionPattern`, because what a project asks for is looser than a tag.
+     `4.7` answers to `4.7-stable` and `4.7.1-stable` alike.
+   - `IGodotProjectReader`, which reads `project.godot` by line. The four level search
+     moved here out of `WorkspaceNameResolver`, so it exists once and both callers use it.
+   - `IEngineRequirementReader`, which reads the `.workbench` pin first and the project
+     file second.
+   - `IEngineResolver`, which is pure and matches a requirement against the installs.
+
+   **The pin is `godot.engine` in the workspace config**, which was asked for after the
+   plan was written. It beats `config/features` because Godot writes that key itself and
+   it drifts to whatever last opened the project, while the config key is written by a
+   person. It layers, so a team pins the version and a person can hold another locally.
+
+   **The stable preference is a deliberate departure from every launcher read.** Godello
+   and gdvm both take the highest matching version, so `4.7` opens `4.7.2-rc1` over
+   `4.7.1-stable`. Here a pattern naming no channel prefers a stable release.
+
+   Checked by a probe over the real types: 95 assertions covering the grammar and its
+   refusals, matching, the stable preference, the real Slopworks `project.godot`, a
+   commented out feature line, a features key in the wrong section, a `[mono]` project,
+   a project inside `.godot` being skipped, all four requirement sources with blank and
+   broken configs, and every resolver answer including a default that is not installed
+   and an engine whose folder has gone. Then all four strip states rendered headless.
 
 ## What proves it works
 

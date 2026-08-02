@@ -128,7 +128,27 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
         services.TryAddSingleton<IEngineStore, EngineStore>();
         services.TryAddSingleton<IEngineInstaller, EngineInstaller>();
+        services.AddWorkbenchGodotProjects();
         services.AddEngineFiles();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Reading a Godot project and working out which installed engine answers it. Needed
+    /// by the engines page and by workspace naming, which both read the same file.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchGodotProjects(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchIO();
+        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
+        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<WorkspaceGodotSettingsSchema>();
+        services.TryAddSingleton<IGodotProjectReader, GodotProjectReader>();
+        services.TryAddSingleton<IEngineRequirementReader, EngineRequirementReader>();
+        services.TryAddSingleton<IEngineResolver, EngineResolver>();
 
         return services;
     }
@@ -161,6 +181,7 @@ public static class WorkbenchCoreServices
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddWorkbenchApplicationStorage();
+        services.AddWorkbenchGodotProjects();
         services.TryAddSingleton<IWorkspaceNameResolver, WorkspaceNameResolver>();
         services.TryAddSingleton<IWorkspaceRegistry, WorkspaceRegistry>();
 

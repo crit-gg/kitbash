@@ -72,6 +72,11 @@ public partial class App : Application
                 provider.GetRequiredService<IGitStatusMonitor>(),
                 provider.GetRequiredService<IGitUpdater>(),
                 provider.GetRequiredService<IUiDispatcher>(),
+                provider.GetRequiredService<IEngineRequirementReader>(),
+                provider.GetRequiredService<IEngineStore>(),
+                provider.GetRequiredService<IEngineResolver>(),
+                provider.GetRequiredService<IGodotSettings>(),
+                provider.GetRequiredService<IPlatformServices>(),
                 provider.GetRequiredService<EnginesViewModel>()))
             .BuildServiceProvider();
 

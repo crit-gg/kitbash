@@ -3,7 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Workbench.Core;
 using Workbench.Core.Git;
+using Workbench.Core.Godot;
 using Workbench.Core.IO;
+using Workbench.Core.Platform;
+using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 
 namespace Workbench.ViewModels;
@@ -19,7 +22,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGitStatusMonitor _git;
     private readonly IGitUpdater _updater;
     private readonly IUiDispatcher _dispatcher;
+    private readonly IEngineRequirementReader _requirements;
+    private readonly IEngineStore _engines;
+    private readonly IEngineResolver _resolver;
+    private readonly IGodotSettings _godot;
+    private readonly IPlatformServices _platform;
     private readonly SemaphoreSlim _loading = new(1, 1);
+    private readonly SemaphoreSlim _reading = new(1, 1);
 
     [ObservableProperty]
     private bool _workspacesOpen;
@@ -41,7 +50,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private int _page;
 
-
+    /// <summary>
+    /// The engine strip. Replaced whole by <see cref="RefreshEngineAsync"/> rather than
+    /// written into, so it is never half a state.
+    /// </summary>
+    [ObservableProperty]
+    private EngineViewModel _engine = EngineViewModel.Reading;
 
     public LauncherViewModel(
         IWorkspaceRegistry workspaces,
@@ -50,22 +64,36 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGitStatusMonitor git,
         IGitUpdater updater,
         IUiDispatcher dispatcher,
+        IEngineRequirementReader requirements,
+        IEngineStore engineStore,
+        IEngineResolver resolver,
+        IGodotSettings godot,
+        IPlatformServices platform,
         EnginesViewModel engines)
     {
-        ArgumentNullException.ThrowIfNull(engines);
-
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(updater);
         ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(requirements);
+        ArgumentNullException.ThrowIfNull(engineStore);
+        ArgumentNullException.ThrowIfNull(resolver);
+        ArgumentNullException.ThrowIfNull(godot);
+        ArgumentNullException.ThrowIfNull(platform);
+        ArgumentNullException.ThrowIfNull(engines);
 
         _workspaces = workspaces;
         _paths = paths;
         _git = git;
         _updater = updater;
         _dispatcher = dispatcher;
+        _requirements = requirements;
+        _engines = engineStore;
+        _resolver = resolver;
+        _godot = godot;
+        _platform = platform;
 
         Engines = engines;
 
@@ -79,6 +107,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // frame to drop and nothing to feel, and doing it now means the launcher opens
         // filled in rather than opening empty and filling in a moment later.
         Apply(Read());
+
+        // Deliberately not part of that read. The read above runs before the window exists
+        // and has to stay quick, and this one asks the disk about every install and can
+        // run a process. The strip says it is reading until this comes back.
+        _ = RefreshEngineAsync();
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
@@ -95,13 +128,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// status when the workspace is not a repository, and the plain footer shows instead.
     /// </summary>
     public GitViewModel Git { get; } = new();
-
-    /// <summary>
-    /// The engine strip. Invented for now, and the only invented data in the app. See
-    /// <see cref="EngineViewModel"/> for what is already readable and what needs engine
-    /// discovery.
-    /// </summary>
-    public EngineViewModel Engine { get; } = EngineViewModel.Placeholder;
 
     /// <summary>
     /// The registered tools. This is the registry's list rather than a written one, so
@@ -235,6 +261,9 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         {
             _loading.Release();
         }
+
+        // After the release, so a refresh can never be the thing holding the load open.
+        await RefreshEngineAsync().ConfigureAwait(true);
     }
 
     // The disk half. Everything here either reads a disk or hands a folder to something that
@@ -284,6 +313,99 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // nothing coming to fill it.
         Git.Status = _git.Status;
     }
+
+    /// <summary>
+    /// Rebuilds the engine strip from what is on disk.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every part of it is a disk read and one of them can run a process, so all of it is
+    /// gathered on the thread pool and only the finished view model touches a bound
+    /// property. That is the same split <see cref="Read"/> and <see cref="Apply"/> make.
+    /// </para>
+    /// <para>
+    /// **Runs one at a time and waits its turn rather than giving up.** Dropping the
+    /// second would leave the strip describing the workspace that was open a moment ago,
+    /// and switching twice quickly is exactly when that happens. Each turn reads which
+    /// workspace is open again, so the last one to run is the one that is right.
+    /// </para>
+    /// </remarks>
+    private async Task RefreshEngineAsync()
+    {
+        await _reading.WaitAsync().ConfigureAwait(true);
+
+        try
+        {
+            if (_workspaces.Current is not { IsMissing: false } current)
+            {
+                Engine = EngineViewModel.NoWorkspace;
+
+                return;
+            }
+
+            var root = current.Root;
+            var requirement = await Task.Run(() => _requirements.Read(root)).ConfigureAwait(true);
+            var installed = await _engines.ReadAsync(CancellationToken.None).ConfigureAwait(true);
+            var theDefault = await Task.Run(() => _godot.DefaultEngine).ConfigureAwait(true);
+
+            Engine = new EngineViewModel(
+                _resolver.Resolve(requirement, installed, theDefault),
+                _paths,
+                this);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or EngineStoreException or SettingsFileUnreadableException)
+        {
+            // A disk that will not answer leaves the strip saying nothing rather than
+            // taking the window down. Everything else on the page still works.
+            Engine = EngineViewModel.NoWorkspace;
+        }
+        finally
+        {
+            _reading.Release();
+        }
+    }
+
+    /// <summary>Opens a project in an engine, as a process that outlives Workbench.</summary>
+    /// <remarks>
+    /// The flags are <c>--path</c> and <c>--editor</c>, which is how Godot is told to open
+    /// a project for editing rather than to run it.
+    /// </remarks>
+    public void OpenInGodot(InstalledEngine engine, GodotProject project)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(project);
+
+        Task.Run(() =>
+        {
+            try
+            {
+                _platform.StartDetached(ProcessRequest.Command(
+                    engine.Executable, "--path", project.Directory, "--editor"));
+            }
+            catch (ProcessStartException)
+            {
+                // Nothing to report it in yet. The launcher raises no toasts, which is
+                // recorded in the project notes as deliberate.
+            }
+        });
+    }
+
+    /// <summary>Shows a folder in the file browser. Off the UI thread, like every open is.</summary>
+    public void OpenFolder(string directory) => Task.Run(() =>
+    {
+        try
+        {
+            _platform.OpenInFileBrowser(DirectoryLocation.Parse(directory));
+        }
+        catch (Exception exception) when (exception is ArgumentException
+            or DirectoryNotFoundException or InvalidOperationException)
+        {
+        }
+    });
+
+    /// <summary>Opens the engines page, which is the rail's second item.</summary>
+    public void ShowEngines() => Page = 1;
 
     /// <summary>Everything one load read off disk, ready to be put on screen.</summary>
     private sealed record Loaded(
