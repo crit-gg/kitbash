@@ -36,6 +36,8 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/List.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Tree.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Tabs.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Toast.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Alert.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

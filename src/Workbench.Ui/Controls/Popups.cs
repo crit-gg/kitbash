@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Reactive;
 using Avalonia.Controls.Primitives.PopupPositioning;
 
@@ -57,6 +58,74 @@ public class Popups
         InPopupProperty.Changed.AddClassHandler<Control, bool>(OnInPopupChanged);
         KeepsWheelProperty.Changed.AddClassHandler<Control, bool>(OnKeepsWheelChanged);
         MatchesTargetProperty.Changed.AddClassHandler<Control, bool>(OnMatchesTargetChanged);
+        RoomProperty.Changed.AddClassHandler<Control, bool>(OnRoomChanged);
+    }
+
+    /// <summary>
+    /// This element is the transparent room a popup's shadow falls into, and a press on it
+    /// closes the popup.
+    /// </summary>
+    /// <remarks>
+    /// A popup is a window of its own, and a window is only ever the size of what it
+    /// holds, so the room a shadow needs is part of that window. The window is transparent
+    /// there but it is still a window, and the platform hands it every click that lands
+    /// inside its rectangle.
+    /// <para>
+    /// That rectangle reaches 18px above the visible overlay, which is more than half the
+    /// height of the 26px control it opened from. So a click on the control that opened
+    /// the popup lands on the popup instead, light dismiss never sees it, and the popup
+    /// will not close.
+    /// </para>
+    /// <para>
+    /// Verified against the backend rather than assumed: Avalonia's X11 popup is an
+    /// override redirect window with no input shape and no pointer grab, so nothing makes
+    /// the transparent part of it click through.
+    /// </para>
+    /// <para>
+    /// So the room answers for itself. It takes a transparent fill, which is what makes it
+    /// hit tested at all, and a press that lands on it rather than on the overlay inside
+    /// it closes the popup and stops there. That is what a press outside a popup already
+    /// does, and this is outside it in every way except the one the window manager can
+    /// see.
+    /// </para>
+    /// </remarks>
+    public static readonly AttachedProperty<bool> RoomProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Control, bool>("Room");
+
+    public static bool GetRoom(Control control) => control.GetValue(RoomProperty);
+
+    public static void SetRoom(Control control, bool value) => control.SetValue(RoomProperty, value);
+
+    private static void OnRoomChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        control.RemoveHandler(InputElement.PointerPressedEvent, OnRoomPressed);
+
+        if (!change.GetNewValue<bool>())
+        {
+            return;
+        }
+
+        // Nothing with no fill is hit tested, and the room has none by definition, so it
+        // takes the one fill that draws nothing.
+        if (control is Border { Background: null } border)
+        {
+            border.SetCurrentValue(Border.BackgroundProperty, Brushes.Transparent);
+        }
+
+        control.AddHandler(InputElement.PointerPressedEvent, OnRoomPressed);
+    }
+
+    // Only a press that landed on the room itself. Anything inside the overlay is the
+    // overlay's, and a handled press never reaches this at all.
+    private static void OnRoomPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control control || !ReferenceEquals(e.Source, control))
+        {
+            return;
+        }
+
+        Containing(control)?.Close();
+        e.Handled = true;
     }
 
     private static void OnMatchesTargetChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)

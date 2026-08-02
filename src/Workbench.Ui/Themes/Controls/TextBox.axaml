@@ -125,6 +125,15 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
+        <!-- A plain field holds language, so it takes the UI family. One holding a number,
+             a date or a path says so by taking mono, which is what the numeric and picker
+             themes already do for the fields they own. This is the kind a view names when
+             it puts a value in an ordinary field. -->
+        <Style Selector="^.mono">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        </Style>
+
         <!-- What a field looks like when what is in it will not do.
 
              Measured: Avalonia 12 turns the data annotations binding plugin off, so a
@@ -133,13 +142,20 @@
              CommunityToolkit's ObservableValidator implements it, so a view model gets
              this by deriving from it.
 
-             The class is the same look for a view with no validating model behind it. -->
+             The class is the same look for a view with no validating model behind it.
+
+             It recolours the border and the value and nothing else. An error is the only
+             thing that recolours the control it is attached to, and the label above the
+             field is never part of it. A warning and a hint leave the field alone
+             entirely and say what they have to say in an inline ui:Alert under it. -->
         <Style Selector="^[(DataValidationErrors.HasErrors)=True]">
             <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
         </Style>
 
         <Style Selector="^.error">
             <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
         </Style>
 
         <Style Selector="^:disabled">

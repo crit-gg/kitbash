@@ -1,5 +1,9 @@
 # Stage 10: toasts and alerts
 
+**Built.** See Toasts and alerts in `.claude/CLAUDE.md` for what the library holds and
+"Where this departed from the plan" at the foot of this file for what was decided against
+the plan or the design.
+
 How the app says something happened, and how it says something is wrong.
 
 Last, because a toast is a popover nobody opened and an alert is a panel nobody asked
@@ -157,3 +161,101 @@ whoever builds it.
 - A toast with a required action shows no timer bar.
 - Every alert form takes the semantic tint and none of them draws a left bar.
 - Only an error recolours its control, and never the label.
+
+All of them hold.
+
+Dwell, pausing and grouping were checked against a manual clock with no Avalonia beyond
+the assembly reference: 47 assertions covering the dwell per tier, a paused region holding
+while the other seven count down, seven repeats collapsing onto one card, three visible
+with the rest counted, the drawn order for a stack that grows up and one that grows down,
+progress taking the bar over from the timer, an action closing the card it is on, a third
+action being refused, and two services seeing nothing of each other.
+
+The rest was checked headless with real drawing: all eight regions occupied at once, every
+kind and every form, a pointer moved onto a card pausing its region and only its region,
+and a 352 card in a 300 panel cut at the panel's edge with the window's service seeing
+none of it.
+
+## Where this departed from the plan
+
+**The undo bar keeps its timer bar, which the design draws without one.** It is the one
+short form carrying something worth pressing, and a hidden clock on a button a person
+means to press is exactly what the bar exists to prevent. The compact form has nothing to
+press and keeps the design's plain pill.
+
+**A repeat collapses on the second, not on the third.** The plan says "fires more than
+twice in a row", which would leave two identical cards standing before anything collapsed.
+Collapsing on the second is what the design's own count draws and it is what stops a stack
+filling with the same sentence.
+
+**`Show` runs on the toast thread and `Post` runs anywhere.** The plan asked for an
+injected service and said nothing about threads. `Show` hands back the live toast, and it
+cannot do that from another thread, because whether the request collapses onto a card
+already showing is only knowable there. So there are two entry points rather than one that
+sometimes answers.
+
+**The host is a `Panel` of eight overlaid stacks rather than a three by three grid.** The
+grid was built first and was wrong twice: a 352 card in a third of a 1000px window was cut
+off at both side edges, and three tall cards came to 280 in a 233 row, which arranged from
+the top and put the newest card off the bottom of the window. The cost is that two
+adjacent regions can overlap when both are full, which the design's own diagram calls
+legal but rare.
+
+**Entry is 160ms and exit is 120ms.** The plan says 120 for both and the design says 160
+in and 120 out. The design won.
+
+**A card behind is arranged as the strip of it that shows, and that strip is cut off
+rather than closed off.** The design draws a deck and says only that the older cards scale
+back and fade. It does not say what to do when the newest card is shorter than the ones
+behind it, which the design's own illustration never is. Stepping the tops floats a short
+newest card clear of the anchored edge and stepping the bottoms hides a short card behind
+a tall one outright, so each card behind is given exactly its own strip and the strips
+tile. It also stops a faded card reading through to the text under it, which it did.
+
+A strip then runs on under the card in front of it by the surface radius, which the design
+does not say either. One that stops level with the front card's edge leaves that card's
+corner curves showing the page through them. The tuck is fill and nothing else, since a
+faded card with its own content still under the card in front reads through as a second
+line of text across the deck.
+
+Squaring off the tucked end was tried in between and is wrong. It only shows at a corner:
+the notch at each corner of the front card is filled by the card behind, and a square
+corner with a straight edge running up through a curve reads as a card in front rather
+than one behind.
+
+**Every region stacks the same way, with the newest at the foot of the deck.** The design
+says the newest card is the one nearest the anchored edge, which would mirror the deck for
+the top and the centre regions. Mirrored, they read as layered the wrong way round. One
+layout for all eight is also what the design's own stack illustration draws, and the
+anchor still decides where the deck sits and which way it grows, so a top region grows
+downward exactly as the design's direction table says.
+
+**The strip is 31 rather than the design's 20 and 26**, which is the card's own padding
+plus its status mark. Both of the design's values cut the mark through the middle.
+
+**Exit fades and does not collapse its height.** The plan asks for a fade with the height
+collapsing and the stack sliding to follow. A height collapse needs a measured height to
+animate from, and the fade plus the stack's own move already reads as the card leaving.
+
+**In place is not a fourth alert form.** The design's own panel draws it as the empty
+state, on the surface it stands on rather than on a semantic tint, and that is
+`StackPanel.emptyState` from stage 7. Building it again inside `ui:Alert` would have been
+a second answer to a question already answered.
+
+**An alert's two lines are strings rather than content slots.** Every other header and
+content in this library is a slot. These are prose and they wrap, and a `ContentPresenter`
+has no way to say so. `Actions` is still a slot, which is where anything richer goes.
+
+**The info tint is the brightened `AccentTint`.** This design page still draws `#14293f`,
+which is the value every accent tinted fill moved off when the design was brightened. The
+newer value wins, the way it does everywhere else.
+
+Two things outside the stage that it forced.
+
+**A `TextBox` in error recolours its value as well as its border.** It only recoloured the
+border before, and the rule this stage is built on says an error recolours the border and
+the text and never the label.
+
+**`TextBox` gained a `mono` class.** A number, a date or a path takes the mono family, and
+the numeric and picker themes already did it for the fields they own. A plain field
+holding a value had no way to say so.

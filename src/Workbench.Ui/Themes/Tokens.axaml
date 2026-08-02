@@ -261,6 +261,13 @@
     <x:Double x:Key="HeightCaptionButton">32</x:Double>
     <x:Double x:Key="HeightControl">26</x:Double>
     <x:Double x:Key="HeightControlTall">27</x:Double>
+
+    <!-- The short button, for a control that sits inside another piece of chrome rather
+         than in a form. A toast and an alert both use it, since both are read in passing
+         and a 26px row of buttons inside a 20px tall card reads as a dialog. -->
+    <x:Double x:Key="HeightControlSmall">24</x:Double>
+    <Thickness x:Key="PaddingControlSmall">11,0</Thickness>
+
     <x:Double x:Key="HeightTreeRow">25</x:Double>
     <x:Double x:Key="HeightGridRow">31</x:Double>
     <x:Double x:Key="HeightChip">21</x:Double>
@@ -307,6 +314,87 @@
          that says which of several things is current, since selection everywhere else is
          a tint. -->
     <x:Double x:Key="SizeTabMarker">2</x:Double>
+
+    <!-- A toast. One width for every region, so a card reads the same wherever it lands
+         and a stack never changes shape as its cards come and go. The compact form is the
+         one exception and is only as wide as its words.
+
+         The padding is a pixel wider on the left than the design's other cards, which is
+         the design's own value: the status mark is a filled square and needs the extra
+         pixel to sit level with the text under it. -->
+    <x:Double x:Key="WidthToast">352</x:Double>
+    <Thickness x:Key="PaddingToast">11,10,10,10</Thickness>
+    <x:Double x:Key="HeightToastCompact">30</x:Double>
+    <x:Double x:Key="HeightToastUndo">36</x:Double>
+
+    <!-- The status mark on a toast. Larger than the chip mark and larger than an icon,
+         because it is a tinted square with a glyph inside it rather than either one. -->
+    <x:Double x:Key="SizeToastMark">20</x:Double>
+
+    <!-- The bar along the foot of a toast. Two pixels, and it says one of two things:
+         time left when a toast is counting down, work done when it is reporting
+         progress. A toast with no bar is a toast that will not go away by itself. -->
+    <x:Double x:Key="HeightToastMeter">2</x:Double>
+
+    <!-- What a region stands clear of the edge it is anchored to. -->
+    <Thickness x:Key="PaddingToastRegion">8</Thickness>
+
+    <!-- The gap around the count of what is held back. It is the one thing in a region
+         that is not part of the deck, so it is the only thing with a gap. -->
+    <Thickness x:Key="MarginToast">0,2</Thickness>
+
+    <!-- How much of the card behind shows. Toasts stack as a deck rather than as a column,
+         so only the newest is whole and the rest show a strip of their top edge. The
+         design draws 26 behind the newest and 20 behind that, and one value is taken for
+         both, since a peek that changes with depth is a difference nobody reads.
+
+         31 rather than either, because it is the card's own 10 of padding and its 21 of
+         status mark, so a card behind shows a whole row: the mark, the title and the count
+         beside it. At the design's 26 the mark is cut through the middle, which reads as a
+         card that has been trimmed rather than one that carries on underneath. -->
+    <x:Double x:Key="PeekToast">31</x:Double>
+
+    <!-- A card behind the front one is cut off rather than closed off, so it runs into
+         whatever is in front of it instead of ending against it. A rounded foot sitting on
+         the next card's head reads as a card that has been squashed, which is the one
+         thing a deck must not do.
+
+         Which end is cut depends on which way the deck grows, because the cut is always
+         the end facing the front card. A region that grows up stacks its older cards above
+         the newest and cuts their feet. One that grows down stacks them below and cuts
+         their heads, so each one reads as sliding out from under the card above it. -->
+    <CornerRadius x:Key="RadiusSurfaceCutFoot">8,8,0,0</CornerRadius>
+    <CornerRadius x:Key="RadiusSurfaceCutHead">0,0,8,8</CornerRadius>
+
+    <!-- How far a card behind runs on under the one in front of it. It is the surface
+         radius, because the thing it has to reach past is that card's corner: a strip that
+         stops level with the front card's edge leaves its two corner curves showing the
+         page through them, and a deck with daylight in its corners is not a deck.
+
+         The tuck is frame and not content. A card behind is faded, so anything of its own
+         left under the card in front reads through as a second line of text across the
+         deck. Measured, and it did. So the body is held back by the same amount and the
+         tuck is fill alone.
+
+         Two names for one number, because a deck takes a double and a body takes a
+         thickness. Change one and change the other. -->
+    <x:Double x:Key="TuckToast">8</x:Double>
+    <Thickness x:Key="MarginToastTuck">0,0,0,8</Thickness>
+
+    <!-- How far back a card falls once another lands on top of it. Three tiers, because
+         a region shows three, and the newest is always the one at full strength. -->
+    <x:Double x:Key="OpacityToastDepth1">0.78</x:Double>
+    <x:Double x:Key="OpacityToastDepth2">0.5</x:Double>
+
+    <!-- An alert. The block wraps and pads like a card, the strip is one line on the row
+         height, and the inline form has no surface at all so it needs neither.
+
+         HeightAlertStrip carries HeightGridRow's value on purpose rather than by
+         coincidence: the design puts a strip on the row height so it lines up with the
+         rows under it. -->
+    <Thickness x:Key="PaddingAlert">11,9,10,9</Thickness>
+    <Thickness x:Key="PaddingAlertStrip">10,0</Thickness>
+    <x:Double x:Key="HeightAlertStrip">31</x:Double>
 
     <!-- A panel's header and footer. Both are 26 including the hairline that separates
          them from the body, since the body is the only part that grows. -->
@@ -373,6 +461,16 @@
     <x:Double x:Key="IconSizeLarge">20</x:Double>
     <x:Double x:Key="IconSizeCompact">12</x:Double>
     <x:Double x:Key="IconSizeStatus">13</x:Double>
+
+    <!-- An alert's mark, and the cross that closes a toast or an alert. Two names, one
+         value, because one is a semantic mark on a tinted surface and the other is a
+         control's glyph inside a 24px hit area.
+
+         The design draws an alert's mark at 15 in a block and 14 in a strip. One size
+         across both was preferred to a 1px difference nobody can see, which is the same
+         call the status bar made. -->
+    <x:Double x:Key="IconSizeAlert">15</x:Double>
+    <x:Double x:Key="IconSizeDismiss">15</x:Double>
 
     <!-- An adorner inside a 26px well. The design states 14 for the calendar and the clock
          marks, and the search field's mark is a placeholder circle rather than a glyph, so

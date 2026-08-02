@@ -138,10 +138,14 @@
         <Setter Property="(ui:Popups.InPopup)" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayRoom}"
-                        ui:Popups.MatchesTarget="True">
-                    <ItemsPresenter Name="PART_ItemsPresenter" />
+                <!-- The room a shadow falls into is padding on a wrapper rather than a
+                     margin on the menu. It is part of the popup window, it reaches back
+                     over whatever opened it, and as a control it can answer the click. -->
+                <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
+                    <Border Theme="{StaticResource OverlayRoot}" Padding="5"
+                            ui:Popups.MatchesTarget="True">
+                        <ItemsPresenter Name="PART_ItemsPresenter" />
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>
@@ -157,10 +161,14 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayRoom}"
-                        ui:Popups.MatchesTarget="True">
-                    <ItemsPresenter Name="PART_ItemsPresenter" />
+                <!-- The room a shadow falls into is padding on a wrapper rather than a
+                     margin on the menu. It is part of the popup window, it reaches back
+                     over whatever opened it, and as a control it can answer the click. -->
+                <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
+                    <Border Theme="{StaticResource OverlayRoot}" Padding="5"
+                            ui:Popups.MatchesTarget="True">
+                        <ItemsPresenter Name="PART_ItemsPresenter" />
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>
@@ -172,11 +180,17 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Theme="{StaticResource OverlayRoot}" Padding="{TemplateBinding Padding}"
-                        Margin="{DynamicResource OverlayGap}"
-                        ui:Popups.MatchesTarget="True">
-                    <ContentPresenter Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                <!-- The gap under the trigger is padding on a wrapper rather than a margin
+                     on the card, for the reason a menu's shadow room is: it is part of the
+                     popup window, so it reaches back over the trigger and swallows the
+                     click that should have closed this. -->
+                <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayGap}">
+                    <Border Name="PART_Root"
+                            Theme="{StaticResource OverlayRoot}" Padding="{TemplateBinding Padding}"
+                            ui:Popups.MatchesTarget="True">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>
@@ -187,7 +201,9 @@
             <Setter Property="Padding" Value="0" />
         </Style>
 
-        <Style Selector="^.popover /template/ Border">
+        <!-- Named rather than by type, since the template now has two borders and the
+             room around the card is not the card. -->
+        <Style Selector="^.popover /template/ Border#PART_Root">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="BoxShadow" Value="{DynamicResource ShadowNone}" />

@@ -338,6 +338,14 @@ scroll parents. That is the hook for loading content only when it scrolls into v
 `UseLayoutRounding` is on by default and snaps layout to whole device pixels. Turn it
 off on a control only when a fractional position is deliberate.
 
+**A horizontal `StackPanel` measures its children against infinite width, so nothing
+inside one ever wraps.** `TextWrapping="Wrap"` on a `TextBlock` in one is accepted and has
+no effect, and the line runs past whatever the panel is in and is cut off there.
+
+**Measured** on an inline alert built as an icon and a line in a horizontal `StackPanel`:
+the line ran past the field it was attached to. A `DockPanel` with the icon docked left
+and `LastChildFill` gives the text the width that is left, and it wraps.
+
 ## Items controls and virtualization
 
 `ItemsSource` is the collection, `Items` is the direct collection, and setting both
@@ -457,6 +465,22 @@ Overlay layers on a `TopLevel`: `OverlayLayer` for adorner style content,
 `LightDismissOverlayLayer`, `PopupOverlayLayer` and `AdornerLayer`. A docking drop
 indicator belongs in one of these rather than in the page.
 
+**Light dismiss only ever sees a click the parent window received.** `Popup` closes on a
+press through `LightDismissOverlayLayer`, which lives in the parent window and needs the
+`VisualLayerManager` to exist. A press that lands on the popup's own window is not one of
+those, so it dismisses nothing.
+
+**A popup window is transparent where its shadow falls, and transparent is not click
+through.** Read from the backend rather than assumed: `X11Window` creates an override
+redirect window and sets no input shape and takes no pointer grab, so the platform hands
+that window every click inside its rectangle whatever the alpha there is.
+
+Those two together are the trap. A popup carrying room for its own shadow is a window
+larger than what can be seen, that room reaches back over the control that opened it, and
+a click on that control lands on the popup instead. Nothing closes, nothing is logged, and
+the dropdown reads as one that cannot be shut. Make the room a real element with a
+transparent fill and close the popup from it. `Controls/Popups.cs` under `Room` is the use.
+
 ## Animations and transitions
 
 An animation targets a property through an animator chosen by the property's value
@@ -491,8 +515,12 @@ Animators exist for bool, the integer types, float, double, decimal, `Color`, `I
 outside its frame is cut off.**
 
 **Measured**, with no theme loaded at all, so these are the types' own defaults:
-`ContentControl`, `Button`, `SplitButton`, `DropDownButton`, `ToggleButton`,
-`ProgressBar` and `TextBox` all report `ClipToBounds` true. `Border` reports false.
+`TemplatedControl` itself, `ContentControl`, `ItemsControl`, `Button`, `SplitButton`,
+`DropDownButton`, `ToggleButton`, `ProgressBar` and `TextBox` all report `ClipToBounds`
+true. `Border` and `Panel` report false.
+
+`TemplatedControl` is the one worth reading twice: **every templated control in the
+library starts out clipping**, so this is the default and not a `ContentControl` quirk.
 
 This is the trap for a focus ring, a glow or any halo that hugs a control from outside.
 The element arranges correctly at a negative margin and is then clipped flush with the
@@ -500,6 +528,17 @@ border, which reads as a hard ring rather than a soft one, and nothing is logged
 the clip off on the control and put it on the frame inside the template instead, so
 content still cannot escape while the halo can. `Themes/Controls/Button.axaml` is the
 use.
+
+**A `BoxShadow` is caught by the same clip, and its symptom is different enough to miss.**
+A shadow is drawn outside the frame, so a clipping control cuts it off at its own
+rectangle. A rounded control's bounds sit outside its curve at each corner, so what
+survives is a dark wedge in all four corners and no shadow anywhere else, which reads as a
+corner artefact rather than as a missing shadow.
+
+**Measured** on a toast card: with the clip on, the shadow reached two pixels below the
+card and nothing at all to either side. Turning it off on the card, on the stack around it
+and on the `ItemsControl` between them gave the full shadow. Every ancestor has to let it
+out, not just the control drawing it. `Themes/Controls/Toast.axaml` is the use.
 
 **`RelativePoint` is the way to move something in proportion to its parent.** A
 translation is measured in pixels, so anything that has to travel a share of a width

@@ -347,66 +347,70 @@
                            HorizontalOffset="{DynamicResource OverlayRoomX}"
                            VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
-                        <!-- Two borders. A clip on the border that draws the stroke cuts
-                             the children to the outer rounded rectangle, so the corner
-                             reads as two colours and fades at the apex. -->
-                        <Border Background="{DynamicResource SurfaceNest2}"
-                                BorderBrush="{DynamicResource LineControl}"
-                                BorderThickness="1"
-                                CornerRadius="{DynamicResource RadiusControl}"
-                                BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayRoom}"
-                                ui:Popups.KeepsWheel="True">
-                          <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
-                            <DockPanel LastChildFill="True">
-                                <Border DockPanel.Dock="Top"
-                                        Padding="11,9"
-                                        BorderBrush="{DynamicResource LineControl}"
-                                        BorderThickness="0,0,0,1">
-                                    <TextBlock Text="DATE"
-                                               FontFamily="{DynamicResource FontFamilyUi}"
-                                               FontSize="{DynamicResource FontSizeSmall}"
-                                               FontWeight="{DynamicResource FontWeightStrong}"
-                                               LetterSpacing="{DynamicResource LetterSpacingLabel}"
-                                               Foreground="{DynamicResource InkMuted}" />
-                                </Border>
-
-                                <Border DockPanel.Dock="Bottom"
-                                        Padding="11,9"
-                                        Background="{DynamicResource SurfaceRoot}"
-                                        BorderBrush="{DynamicResource LineControl}"
-                                        BorderThickness="0,1,0,0">
-                                    <DockPanel LastChildFill="True">
-                                        <Button Name="PART_Today"
-                                                DockPanel.Dock="Right"
-                                                Theme="{StaticResource PickerFooterButton}"
-                                                Content="Today" />
-
-                                        <!-- Emptying the field is a thing a person does,
-                                             not a thing that happens to them on the way
-                                             in. -->
-                                        <Button Name="PART_Clear"
-                                                DockPanel.Dock="Right"
-                                                Theme="{StaticResource PickerFooterButton}"
-                                                Margin="0,0,6,0"
-                                                Content="Clear" />
-
-                                        <TextBlock Text="{Binding $parent[CalendarDatePicker].SelectedDate, StringFormat='{}{0:yyyy-MM-dd}'}"
-                                                   FontFamily="{DynamicResource FontFamilyMono}"
+                        <!-- The room a shadow falls into is padding on a wrapper rather than a
+                             margin on the card. It is part of the popup window, it reaches back
+                             over the field, and as a control it can answer the click. -->
+                        <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
+                            <!-- Two borders. A clip on the border that draws the stroke cuts
+                                 the children to the outer rounded rectangle, so the corner
+                                 reads as two colours and fades at the apex. -->
+                            <Border Background="{DynamicResource SurfaceNest2}"
+                                    BorderBrush="{DynamicResource LineControl}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource RadiusControl}"
+                                    BoxShadow="{DynamicResource ShadowPopup}"
+                                    ui:Popups.KeepsWheel="True">
+                              <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
+                                <DockPanel LastChildFill="True">
+                                    <Border DockPanel.Dock="Top"
+                                            Padding="11,9"
+                                            BorderBrush="{DynamicResource LineControl}"
+                                            BorderThickness="0,0,0,1">
+                                        <TextBlock Text="DATE"
+                                                   FontFamily="{DynamicResource FontFamilyUi}"
                                                    FontSize="{DynamicResource FontSizeSmall}"
-                                                   Foreground="{DynamicResource InkMuted}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                    </DockPanel>
-                                </Border>
+                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                   LetterSpacing="{DynamicResource LetterSpacingLabel}"
+                                                   Foreground="{DynamicResource InkMuted}" />
+                                    </Border>
 
-                                <!-- Nothing bound to it. The control owns this part and
-                                     fills it when the popup opens, and a two way binding
-                                     here pushed the fresh calendar's empty selection back
-                                     into the field, wiping the date on the way in. -->
-                                <Calendar Name="PART_Calendar" Margin="11" />
-                            </DockPanel>
-                          </Border>
+                                    <Border DockPanel.Dock="Bottom"
+                                            Padding="11,9"
+                                            Background="{DynamicResource SurfaceRoot}"
+                                            BorderBrush="{DynamicResource LineControl}"
+                                            BorderThickness="0,1,0,0">
+                                        <DockPanel LastChildFill="True">
+                                            <Button Name="PART_Today"
+                                                    DockPanel.Dock="Right"
+                                                    Theme="{StaticResource PickerFooterButton}"
+                                                    Content="Today" />
+
+                                            <!-- Emptying the field is a thing a person does,
+                                                 not a thing that happens to them on the way
+                                                 in. -->
+                                            <Button Name="PART_Clear"
+                                                    DockPanel.Dock="Right"
+                                                    Theme="{StaticResource PickerFooterButton}"
+                                                    Margin="0,0,6,0"
+                                                    Content="Clear" />
+
+                                            <TextBlock Text="{Binding $parent[CalendarDatePicker].SelectedDate, StringFormat='{}{0:yyyy-MM-dd}'}"
+                                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       Foreground="{DynamicResource InkMuted}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                        </DockPanel>
+                                    </Border>
+
+                                    <!-- Nothing bound to it. The control owns this part and
+                                         fills it when the popup opens, and a two way binding
+                                         here pushed the fresh calendar's empty selection back
+                                         into the field, wiping the date on the way in. -->
+                                    <Calendar Name="PART_Calendar" Margin="11" />
+                                </DockPanel>
+                              </Border>
+                            </Border>
                         </Border>
                     </Popup>
                 </Panel>
@@ -695,16 +699,20 @@
                            HorizontalOffset="{DynamicResource OverlayRoomX}"
                            VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
-                        <Border Background="{DynamicResource SurfaceNest2}"
-                                BorderBrush="{DynamicResource LineControl}"
-                                BorderThickness="1"
-                                CornerRadius="{DynamicResource RadiusControl}"
-                                BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayRoom}"
-                                ui:Popups.KeepsWheel="True">
-                          <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
-                            <TimePickerPresenter Name="PART_PickerPresenter" />
-                          </Border>
+                        <!-- The room a shadow falls into is padding on a wrapper rather than a
+                             margin on the card. It is part of the popup window, it reaches back
+                             over the field, and as a control it can answer the click. -->
+                        <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
+                            <Border Background="{DynamicResource SurfaceNest2}"
+                                    BorderBrush="{DynamicResource LineControl}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource RadiusControl}"
+                                    BoxShadow="{DynamicResource ShadowPopup}"
+                                    ui:Popups.KeepsWheel="True">
+                              <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
+                                <TimePickerPresenter Name="PART_PickerPresenter" />
+                              </Border>
+                            </Border>
                         </Border>
                     </Popup>
                 </Panel>

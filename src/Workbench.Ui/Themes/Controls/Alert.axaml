@@ -1,0 +1,217 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- An alert is content, so there is no shadow anywhere in this file and nothing here
+         floats. The surface is the tier's own tint with the tier's own edge, which is the
+         same pair the chips and the status marks take, and it is the whole reason an
+         alert never needs a coloured bar down its left side.
+
+         Three templates, one per form, chosen by the class the alert puts on itself. The
+         tier styles below reach into whichever is up. -->
+    <ControlTheme x:Key="{x:Type ui:Alert}" TargetType="ui:Alert">
+        <Setter Property="Padding" Value="{DynamicResource PaddingAlert}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+
+        <!-- Block, the default. Between the things it concerns, wrapping freely. -->
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <DockPanel LastChildFill="True">
+                        <ui:Icon Name="PART_Mark"
+                                 DockPanel.Dock="Left"
+                                 Size="{DynamicResource IconSizeAlert}"
+                                 Glyph="{TemplateBinding Glyph}"
+                                 Margin="0,1,10,0"
+                                 VerticalAlignment="Top" />
+
+                        <Button Name="PART_Close"
+                                DockPanel.Dock="Right"
+                                Classes="icon"
+                                VerticalAlignment="Top"
+                                Command="{Binding Close, RelativeSource={RelativeSource TemplatedParent}}"
+                                IsVisible="{TemplateBinding IsDismissable}"
+                                ToolTip.Tip="Dismiss"
+                                AutomationProperties.Name="Dismiss">
+                            <ui:Icon Glyph="X" Size="{DynamicResource IconSizeDismiss}" />
+                        </Button>
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Name="PART_Title"
+                                       Text="{TemplateBinding Title}"
+                                       FontWeight="{DynamicResource FontWeightStrong}"
+                                       Foreground="{DynamicResource InkTitle}"
+                                       TextWrapping="Wrap" />
+
+                            <TextBlock Name="PART_Description"
+                                       Text="{TemplateBinding Description}"
+                                       Foreground="{DynamicResource InkSecondary}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding Description, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                            <ContentPresenter Name="PART_Actions"
+                                              Margin="0,6,0,0"
+                                              Content="{TemplateBinding Actions}"
+                                              IsVisible="{Binding Actions, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- Strip. Full bleed under the header of a panel, a document or a dialog, on the
+             row height, one line, cut off rather than wrapped. It draws its tier's seam
+             along the bottom and nothing anywhere else, so whatever holds it supplies the
+             frame and the radius.
+
+             It replaces neither the title bar nor the status bar. It sits under the header
+             of the thing it applies to and scrolls away with it. -->
+        <Style Selector="^.strip">
+            <Setter Property="Height" Value="{DynamicResource HeightAlertStrip}" />
+            <Setter Property="Padding" Value="{DynamicResource PaddingAlertStrip}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="CornerRadius" Value="0" />
+
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <DockPanel LastChildFill="True">
+                            <ui:Icon Name="PART_Mark"
+                                     DockPanel.Dock="Left"
+                                     Size="{DynamicResource IconSizeAlert}"
+                                     Glyph="{TemplateBinding Glyph}"
+                                     Margin="0,0,9,0"
+                                     VerticalAlignment="Center" />
+
+                            <Button Name="PART_Close"
+                                    DockPanel.Dock="Right"
+                                    Classes="icon"
+                                    VerticalAlignment="Center"
+                                    Command="{Binding Close, RelativeSource={RelativeSource TemplatedParent}}"
+                                    IsVisible="{TemplateBinding IsDismissable}"
+                                    ToolTip.Tip="Dismiss"
+                                    AutomationProperties.Name="Dismiss">
+                                <ui:Icon Glyph="X" Size="{DynamicResource IconSizeDismiss}" />
+                            </Button>
+
+                            <ContentPresenter Name="PART_Actions"
+                                              DockPanel.Dock="Right"
+                                              Margin="9,0,0,0"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding Actions}"
+                                              IsVisible="{Binding Actions, RelativeSource={RelativeSource TemplatedParent}, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                            <TextBlock Name="PART_Title"
+                                       Text="{TemplateBinding Title}"
+                                       Foreground="{DynamicResource InkPrimary}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Inline. Attached to one control, under the field. No surface and no border,
+             an icon and one line in the tier's own text colour.
+
+             Only an error recolours the control it is attached to, and it recolours the
+             border and the text and never the label. That is the field's own error state,
+             which Themes/Controls/TextBox.axaml draws, so nothing here reaches for it. -->
+        <Style Selector="^.inline">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+
+            <!-- A DockPanel rather than a horizontal StackPanel, which measures its
+                 children against infinite width. Measured: the line ran past the field it
+                 was attached to and was cut off rather than wrapping under it. -->
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <DockPanel LastChildFill="True">
+                        <ui:Icon Name="PART_Mark"
+                                 DockPanel.Dock="Left"
+                                 Size="{DynamicResource IconSizeStatus}"
+                                 Glyph="{TemplateBinding Glyph}"
+                                 Margin="0,1,7,0"
+                                 VerticalAlignment="Top" />
+
+                        <TextBlock Name="PART_Title"
+                                   Text="{TemplateBinding Title}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   TextWrapping="Wrap" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- The tiers. Info takes AccentTint, which the design brightened after this page
+             was drawn, and every accent tinted fill moved with it. -->
+        <Style Selector="^.info">
+            <Setter Property="Glyph" Value="InfoCircle" />
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
+        </Style>
+
+        <Style Selector="^.info /template/ ui|Icon#PART_Mark">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^.ok">
+            <Setter Property="Glyph" Value="Check" />
+            <Setter Property="Background" Value="{DynamicResource OkSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OkLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource Ok}" />
+        </Style>
+
+        <Style Selector="^.ok /template/ ui|Icon#PART_Mark">
+            <Setter Property="Foreground" Value="{DynamicResource Ok}" />
+        </Style>
+
+        <Style Selector="^.warn">
+            <Setter Property="Glyph" Value="AlertTriangle" />
+            <Setter Property="Background" Value="{DynamicResource WarnSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WarnLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ ui|Icon#PART_Mark">
+            <Setter Property="Foreground" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <Style Selector="^.error">
+            <Setter Property="Glyph" Value="AlertCircle" />
+            <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ErrorLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="^.error /template/ ui|Icon#PART_Mark">
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
+        </Style>
+
+        <!-- The block and the strip both stand on a tint, so their words take the neutral
+             ink rather than the tier's. Only the inline form, which has no surface at all,
+             says its tier in the text itself. Declared after the tiers so it wins. -->
+        <Style Selector="^.block /template/ TextBlock#PART_Title">
+            <Setter Property="Foreground" Value="{DynamicResource InkTitle}" />
+        </Style>
+
+        <Style Selector="^.strip /template/ TextBlock#PART_Title">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

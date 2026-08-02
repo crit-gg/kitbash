@@ -4,12 +4,23 @@
     <OutputType>WinExe</OutputType>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <!-- The window is built by the container and takes its services through its
+         constructor, so it has no parameterless one and the runtime XAML loader cannot
+         reach it by URI. Nothing loads it that way: the XAML is compiled and the window
+         is resolved in App. -->
+    <NoWarn>$(NoWarn);AVLN3001</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+
+    <!-- The gallery is a composition root of its own, the way every executable here is,
+         because the toast service is taken through a constructor and there is nowhere
+         else for it to come from. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
   </ItemGroup>
 
   <!-- The gallery is a consumer of the library and nothing else. It must not reference

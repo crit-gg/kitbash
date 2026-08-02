@@ -2,6 +2,11 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />
+
+    <!-- The registration methods, and nothing more. The library asks for the contract
+         and the application picks the container, which is the same package Core takes
+         for its own registrations. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>
