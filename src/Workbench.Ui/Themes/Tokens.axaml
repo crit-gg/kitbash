@@ -71,12 +71,23 @@
 
     <!-- Selection is the tint alone. No left marker, and a row never carries a fill and
          an outline at once. AccentTint is both the selection tint and any accent tinted
-         surface, because they are one idea. -->
-    <SolidColorBrush x:Key="AccentTint" Color="#14293f" />
+         surface, because they are one idea.
+
+         The design brightened this from #14293f, and it moved every accent tinted fill
+         with it: rows, grid rows, the highlighted menu item, the badge, the status pill,
+         the chip, the day the calendar is on and the tool card that is open. Two places
+         keep the old value and both belong to docking in stage 11, where a drop target
+         that is available is quieter than the one under the cursor. -->
+    <SolidColorBrush x:Key="AccentTint" Color="#1b3a58" />
     <SolidColorBrush x:Key="AccentTintLine" Color="#2b4a6b" />
     <SolidColorBrush x:Key="AccentTintInk" Color="#8fbef5" />
-    <SolidColorBrush x:Key="AccentTintStrong" Color="#1d3a58" />
     <SolidColorBrush x:Key="SelectionInk" Color="#cfe2fb" />
+
+    <!-- An accent tinted thing under the pointer. Derived rather than read: the design
+         draws no hovered accent tint anywhere, and the step here is the one its old pair
+         had, carried onto the new tint. Without it a hover on the rail's open page, on a
+         selected row or on a combo box's chosen line does nothing at all. -->
+    <SolidColorBrush x:Key="AccentTintStrong" Color="#244b71" />
 
     <!-- Accent. The one accent, used as a line and a mark rather than a flood. The
          primary button and the destructive button are the only fills in the system. -->
