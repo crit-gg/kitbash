@@ -83,12 +83,12 @@ behaviour uses the new ones.
 
 ## Neither grid is in this stage
 
-Both the data grid and the tree data grid are stage 10. A tree data grid is a tree that
-also lays out columns, and the column layout comes from `TableViewColumn`, which stage 10
+Both the data grid and the tree data grid are stage 11. A tree data grid is a tree that
+also lays out columns, and the column layout comes from `TableViewColumn`, which stage 11
 is where it is themed. Building it here would mean inventing a second column layout and
 then throwing one of the two away.
 
-What this stage owes stage 10 is the tree itself: the flat row list, the seven row states
+What this stage owes stage 11 is the tree itself: the flat row list, the seven row states
 and the branch row. Get those right and the tree data grid is column layout dropped on
 top of them.
 

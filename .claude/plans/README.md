@@ -96,7 +96,7 @@ want the same shell, so it is not the launcher's.
   not marked Pro is ours to use. Verified against the Pro tier: `TreeDataGrid`, Charts,
   Markdown, MediaPlayer, On Screen Keyboard and RichTextEditor are paid. Everything else
   on that page ships in `Avalonia.Controls`, which this project already references.
-- No third party control package for something this library should own. Dock in stage 11
+- No third party control package for something this library should own. Dock in stage 12
   is the one exception and it is MIT.
 
 - Keep the current caption button glyphs. Everything else about the title bar may
@@ -117,18 +117,18 @@ want the same shell, so it is not the launcher's.
 | 7 | `GridSplitter`, `Expander`, `SplitView` |
 | 8 | `ContextMenu`, `Menu`, `MenuItem`, `MenuFlyout`, `Flyout`, `Popup`, `ToolTip`, `Separator` |
 | 9 | `ListBox`, `ListBoxItem`, `TabControl`, `TabItem`. **Not `TreeView`**, which cannot virtualise, so the tree is `ui:Tree` over `ListBox` |
-| 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
+| 11 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
 
 Six things in this plan have no built in type and stay hand built: the chip, the status
-pill and the badge in stage 4, the range slider in stage 8, the colour picker in stage 12,
-and the toast in stage 13. The toast is hand built by decision rather than by absence.
+pill and the badge in stage 4, the range slider in stage 8, the toast in stage 10 and the
+colour picker in stage 13. The toast is hand built by decision rather than by absence.
 Libraries exist and none is taken, because a toast here is a control with an injected
-service behind it rather than a global. Stage 11's docking surface comes from Dock.
+service behind it rather than a global. Stage 12's docking surface comes from Dock.
 
 Two more are ours because the built in type cannot do the one thing that matters. `ui:Tree`
 in stage 9 is a `ListBox` subclass, since `TreeView` does not virtualise and there is no
-virtualising tree panel in the box. The tree data grid in stage 10 is built on that tree,
-since `TreeDataGrid` is paid and `TableView` is flat. Everything else in stages 4 to 10 is
+virtualising tree panel in the box. The tree data grid in stage 11 is built on that tree,
+since `TreeDataGrid` is paid and `TableView` is flat. Everything else in stages 4 to 11 is
 a theme over the list above.
 
 Two near misses worth naming, because both look hand built and are not. A stepped slider
@@ -149,10 +149,10 @@ custom well.
 | 7 | `stage-07-panels-and-splitters.md` | 1, 3 |
 | 8 | `stage-08-input-controls.md` | 1, 2, 4, 5 |
 | 9 | `stage-09-lists-and-trees.md` | 1, 2, 7 |
-| 10 | `stage-10-data-grid.md` | 1, 2, 8, 9 |
-| 11 | `stage-11-docking.md` | 1, 2, 5, 7, 9 |
-| 12 | `stage-12-colour-picker.md` | 1, 2, 4, 5, 8 |
-| 13 | `stage-13-toasts-and-alerts.md` | 1, 2, 4, 5, 7 |
+| 10 | `stage-10-toasts-and-alerts.md` | 1, 2, 4, 5, 7 |
+| 11 | `stage-11-data-grid.md` | 1, 2, 8, 9 |
+| 12 | `stage-12-docking.md` | 1, 2, 5, 7, 9 |
+| 13 | `stage-13-colour-picker.md` | 1, 2, 4, 5, 8 |
 
 **The numbers are the order.** Every stage depends only on lower numbers, so the plan
 runs straight through and nothing has to be scheduled around.
@@ -168,8 +168,13 @@ need it: the launcher, which opens three menus and a tooltip, and the input cont
 whose date, time and colour editors all open a picker in the shell overlays defines. So
 overlays became stage 5 and the two moved down. Panels stayed at 7.
 
+Toasts and alerts moved as well, from 13 to 10, which pushed the data grid, docking and
+the colour picker up one each. It depends on nothing above 7, so it could have gone
+anywhere after that, and it is the last thing in the plan that the launcher itself will
+use. The three it passed are all Foundry's.
+
 Stage 6 is the first point where the app looks like the design.
 
-Stages 7 to 12 build what Foundry will need and are not visible in the launcher, so they
+Stages 7 to 13 build what Foundry will need and are not visible in the launcher, so they
 can be reordered or paused without leaving the app half themed. Stages 1 to 6 cannot,
 because each is the ground the next stands on.

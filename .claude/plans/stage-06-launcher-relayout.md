@@ -160,7 +160,7 @@ and a badge that can drop its icon would quietly become a pill that can.
 
 The tool card used to carry a real status pill and no longer does, so with the card
 simplified the launcher uses no `StatusPill` at all. That does not make the pill dead. It
-is the control a data grid's status cell uses, which stage 10 names.
+is the control a data grid's status cell uses, which stage 11 names.
 
 **Status bar.** 32px. A branch chip at 22px and 8px radius on `SurfaceNest2` with a
 `LineSeam` border, holding a 14px branch icon, the branch name in monospace with a 96px

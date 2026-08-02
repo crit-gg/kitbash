@@ -45,7 +45,7 @@ actions.
 
 **The picker shell, which three editors share.** Colour, date and time all open the same
 way: the popup edge, a deep shadow, and a monospace readout in the footer of exactly what
-will be written. Build the shell once here and let stage 8 and stage 12 fill it, because
+will be written. Build the shell once here and let stage 8 and stage 13 fill it, because
 three pickers that drift apart is the failure this section exists to prevent.
 
 The footer carries Cancel and Apply when the edit commits more than one value at once,

@@ -436,7 +436,7 @@ it lands and only the container moves. No control theme reads any of this.
 place in the tree is on, and `ui:Surface.Nests` marks an element that starts a new one. A
 nesting element reads its parent's level and holds one below it, so a panel moved to another
 depth is right without being told. That is not a nicety: docking reparents panels in stage
-11, and a depth worked out once and kept would be wrong the moment it moved.
+12, and a depth worked out once and kept would be wrong the moment it moved.
 
 Set `Nests` from a control theme, which is how `SurfacePanel` and `Expander` share one
 behaviour without sharing a base type, or on a plain `Border` to make a region. Set `Level`
@@ -488,7 +488,7 @@ this rule exists to prevent.
 The seven states are in `Themes/Controls/List.axaml` over `ListBoxItem`, and everything else
 here is built on them. Two of them are classes rather than states, because nothing in the
 control says them: `modified` draws the amber square at the end of the row, and `drop` draws
-the dashed outline. Drag and drop itself is stage 11.
+the dashed outline. Drag and drop itself is stage 12.
 
 A row is 27px in a list and 25px in a tree, both with 2px under them and the control radius
 on the row itself. A list row rests at `InkSecondary` and comes up to `InkPrimary` under the
@@ -1145,7 +1145,7 @@ panel, the expander, the splitter, the collapsing sidebar, the text fields, the 
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box, the hyperlink, the list row, the tree and the tabs.
 
-Stage 8 is done except the colour field, which waits on stage 12 because its swatch has
+Stage 8 is done except the colour field, which waits on stage 13 because its swatch has
 nothing to open until the picker exists.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.

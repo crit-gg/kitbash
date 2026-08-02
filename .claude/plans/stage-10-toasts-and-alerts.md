@@ -1,4 +1,4 @@
-# Stage 13: toasts and alerts
+# Stage 10: toasts and alerts
 
 How the app says something happened, and how it says something is wrong.
 

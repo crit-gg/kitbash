@@ -42,7 +42,7 @@ Implementation options, in order of preference:
    has to count, and they will get it wrong.
 
 Do not compute it from the visual tree at runtime. Panels get reparented by docking in
-stage 11 and the answer has to survive that.
+stage 12 and the answer has to survive that.
 
 ## Build
 

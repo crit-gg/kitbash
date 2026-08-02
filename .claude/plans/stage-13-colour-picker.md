@@ -1,4 +1,4 @@
-# Stage 12: colour picker
+# Stage 13: colour picker
 
 The one control in this library with no Avalonia type behind it and no way to avoid
 building it. A data tool that authors materials, tints and graph colours needs it, and

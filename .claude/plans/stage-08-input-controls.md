@@ -3,7 +3,7 @@
 The controls that take a value. None of these appear in the launcher, so this stage is
 invisible in the app and is verified in a harness.
 
-**Built**, except the colour field, which waits on stage 12. See "What is left" at the end.
+**Built**, except the colour field, which waits on stage 13. See "What is left" at the end.
 `.claude/CLAUDE.md` under Inputs is what the code actually does.
 
 ## Goal
@@ -91,7 +91,7 @@ and the colour swatch sit *inside* the well behind a hairline. Nothing floats ou
 | Editor | What it is |
 |---|---|
 | spinbox | `NumericUpDown`, 18px stepper column inside the well |
-| colour | a field whose swatch adorner opens the picker, stage 12 |
+| colour | a field whose swatch adorner opens the picker, stage 13 |
 | date | `CalendarDatePicker` with a calendar adorner |
 | time | `TimePicker`, 24 hour, clock adorner |
 | date and time | one well, both adorners |
@@ -213,7 +213,7 @@ picture and has no such need.
 
 One thing.
 
-**The colour field.** Deferred to stage 12 rather than skipped: the field is a well with a
+**The colour field.** Deferred to stage 13 rather than skipped: the field is a well with a
 14px swatch adorner, and the swatch has nothing to open until the picker exists.
 
 `AutoCompleteBox` is unthemed. It is listed in this stage only as the alternative to a

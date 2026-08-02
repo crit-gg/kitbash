@@ -44,7 +44,7 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
 7a. **Value editors** (10) spinbox, colour, date, time, date and time, hyperlink, and
    four sliders: continuous, stepped, range, and paired with a spinbox. Each in all five
    states. Then three popovers: the colour picker in three shape modes, the calendar, and
-   the clock. Stage 8 builds the editors, stage 5 the shell they share, stage 12 the
+   the clock. Stage 8 builds the editors, stage 5 the shell they share, stage 13 the
    picker.
 8. **Tree** (7) disclosure arrow, indent guides at 14px per level, and the row states:
    normal, hover, selected, selected with focus, modified, drop target, disabled.
@@ -60,7 +60,7 @@ Thirteen sections. The count in brackets is how many distinct pieces the section
     eight regions they anchor to. The busy tier spins its glyph and never its square.
 12b. **In content alerts** (4 forms) block, strip, inline and in place. An alert is
     content rather than a popover, so no shadow and no dwell, and it never draws a
-    coloured bar down its left side. Stage 13 builds both.
+    coloured bar down its left side. Stage 10 builds both.
 13. **Notes** the written rules repeated inline next to the controls they govern.
 
 ## Tokens
@@ -249,7 +249,7 @@ of it.
 **One trap, measured.** The colour picker's swatch and recent grids are filled with the
 Slate palette as example content, so a naive scan reads them as the section using those
 tokens. It does not. `Destructive` appears five times in the section and all five are
-swatches. Count a colour as used only where it is chrome. Stage 12 records the matching
+swatches. Count a colour as used only where it is chrome. Stage 13 records the matching
 rule that the grids ship empty.
 
 ## Where the design repeats a value

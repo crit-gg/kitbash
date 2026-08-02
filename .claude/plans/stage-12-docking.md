@@ -1,4 +1,4 @@
-# Stage 11: docking
+# Stage 12: docking
 
 Adopt Dock and theme it to Slate. This is the last stage because it consumes almost
 everything the earlier ones built.

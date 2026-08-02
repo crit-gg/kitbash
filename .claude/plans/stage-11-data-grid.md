@@ -1,4 +1,4 @@
-# Stage 10: data grid
+# Stage 11: data grid
 
 The densest surface in the system, and the one a data tool lives in. Both grids are
 here, the flat one and the tree one, because they share a column layout and splitting
@@ -79,7 +79,7 @@ one surface has no built in type behind it. It is the exception, and it is built
 stage 9 tree, which is where the hierarchy and the flat row list already are.
 
 Take the column layout from `TableViewColumn` rather than inventing a second one. That
-is the whole reason this sits in stage 10 and not stage 9: a tree grid is a tree that
+is the whole reason this sits in stage 11 and not stage 9: a tree grid is a tree that
 also lays out columns, so the columns have to exist first.
 
 Its group header is the branch row, which is hierarchy. The flat grid's group header
