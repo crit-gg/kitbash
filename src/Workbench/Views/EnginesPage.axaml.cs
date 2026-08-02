@@ -66,14 +66,11 @@ public partial class EnginesPage : UserControl
 
     private async Task<bool> ConfirmAsync(InstalledEngine engine)
     {
-        if (TopLevel.GetTopLevel(this) is not Window owner
-            || DataContext is not EnginesViewModel engines)
+        if (TopLevel.GetTopLevel(this) is not Window owner)
         {
             return false;
         }
 
-        var path = engines.Shorten(engine.Directory, EnginesViewModel.DialogPathLength);
-
-        return await UninstallDialog.For(engine, path).ShowDialog<bool>(owner);
+        return await UninstallDialog.For(engine).ShowDialog<bool>(owner);
     }
 }

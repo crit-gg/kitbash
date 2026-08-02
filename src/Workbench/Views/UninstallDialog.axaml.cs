@@ -21,12 +21,12 @@ public partial class UninstallDialog : DialogWindow
     /// engine Workbench installed is deleted. One a person pointed at is forgotten and its
     /// files are left alone, since Workbench did not put them there.
     /// </summary>
-    /// <param name="path">
-    /// The install path, already written for the width of the well. A path is shortened
-    /// wherever it is shown, so the middle goes and the folder's own name survives, which
-    /// trimming the end would take away.
-    /// </param>
-    public static UninstallDialog For(InstalledEngine engine, string path)
+    /// <remarks>
+    /// **The path is shown whole here**, which is the one exception to writing a path for
+    /// the width it is shown in. This is the evidence for a question about deleting a
+    /// folder, so it wraps and the dialog grows rather than the path being elided.
+    /// </remarks>
+    public static UninstallDialog For(InstalledEngine engine)
     {
         ArgumentNullException.ThrowIfNull(engine);
 
@@ -43,7 +43,7 @@ public partial class UninstallDialog : DialogWindow
             : "The files are deleted from disk. You can install this build again at any time.";
 
         dialog.Confirm.Content = engine.IsImported ? "Remove" : "Uninstall";
-        dialog.Path.Text = path;
+        dialog.Path.Text = engine.Directory;
         dialog.Size.Text = engine.IsMissing
             ? "the folder is gone"
             : $"{EngineRowViewModel.Size(engine.SizeOnDisk)} on disk";

@@ -35,8 +35,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>Roughly what fits a toast card, which is 352 wide.</summary>
     private const int ToastPathLength = 44;
 
-    /// <summary>Roughly what fits the well in the uninstall dialog, which is 428 wide.</summary>
-    public const int DialogPathLength = 52;
 
     private readonly IEngineCatalogue _catalogue;
     private readonly IEngineStore _store;
@@ -505,9 +503,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// A path written for a fixed width. **Anywhere a path is shown it comes through here**,
-    /// so the middle is elided and the end, which is the part that says which folder it is,
-    /// survives.
+    /// A path written for a fixed width. **A path shown in a row, a bar or a toast comes
+    /// through here**, so the middle is elided and the end, which is the part that says
+    /// which folder it is, survives. The uninstall dialog is the one place that overrides
+    /// that and shows the whole thing, since it is evidence rather than a readout.
     /// </summary>
     public string Shorten(string path, int length) => _paths.Shorten(path, length);
 
