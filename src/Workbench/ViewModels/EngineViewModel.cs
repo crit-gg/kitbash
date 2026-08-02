@@ -184,7 +184,7 @@ public sealed partial class EngineViewModel : ViewModelBase
             return;
         }
 
-        _launcher.ShowEngines();
+        ShowEngines();
     }
 
     [RelayCommand]
@@ -196,7 +196,8 @@ public sealed partial class EngineViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    // Not a command. The rail is how a person goes to the engines page, and the only
+    // reason this exists is that Install has nowhere else to send them.
     private void ShowEngines() => _launcher?.ShowEngines();
 
     private static string MismatchNote(

@@ -333,8 +333,6 @@
                                         <MenuItem Header="Open project folder"
                                                   Command="{Binding Engine.OpenProjectFolderCommand}"
                                                   IsEnabled="{Binding Engine.CanOpenProject}" />
-                                        <MenuItem Header="Manage engine installs"
-                                                  Command="{Binding Engine.ShowEnginesCommand}" />
                                     </MenuFlyout>
                                 </SplitButton.Flyout>
                             </SplitButton>
