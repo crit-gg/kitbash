@@ -20,7 +20,7 @@ The design lives in the Claude Design project **Workbench**,
 | `Theme Slate - Toasts.dc.html` | toasts, their eight regions, and in content alerts |
 | `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
 | `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 6 |
-| `Workbench Settings.dc.html` | the settings page, and a v2 beside it, not yet planned |
+| `Workbench Settings v3.dc.html` | the settings window every app opens, planned in `settings-schema.md` |
 | `Foundry Editor.dc.html` | the tool that consumes the library, not built here |
 | `icons/` | 48 named SVGs, all present in the Box Icons set |
 
@@ -151,6 +151,12 @@ custom well.
 
 **The numbers are the order.** Every stage depends only on lower numbers, so the plan
 runs straight through and nothing has to be scheduled around.
+
+## Beside the stages
+
+`settings-schema.md` is not a Slate stage. It defines settings as descriptors so a
+settings window can be built over any app's settings, and it needs stage 8 for the input
+controls and stage 9 for the tree, so it lands after those.
 
 That took one reordering. Overlays used to be stage 8 and ran after the two stages that
 need it: the launcher, which opens three menus and a tooltip, and the input controls,
