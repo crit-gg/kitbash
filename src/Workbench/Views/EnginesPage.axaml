@@ -103,6 +103,21 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
+        <!-- A path in the status bar stays a quiet mono readout at rest and only reads as
+             a link under the pointer, where it takes the accent and the underline the
+             hyperlink theme already draws. Styles here are applied after the control
+             theme, so the later pointerover setter is the one that wins, which is the
+             precedence rule the theme file states. -->
+        <Style Selector="HyperlinkButton.path">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="HyperlinkButton.path:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
         <Style Selector="TextBlock.rowMark">
             <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
             <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
@@ -303,11 +318,15 @@
                     <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeStatus}"
                              Foreground="{DynamicResource InkMuted}"
                              VerticalAlignment="Center" />
-                    <TextBlock Classes="mono" Text="{Binding InstallRoot}"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               Foreground="{DynamicResource InkSecondary}"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
+                    <!-- The one thing in this row that is a control rather than a
+                         readout, which the status bar's first rule would normally
+                         forbid. It earns it: the folder is the page's subject and
+                         opening it is the only thing anyone wants to do with the
+                         path. -->
+                    <HyperlinkButton Classes="path"
+                                     Content="{Binding InstallRoot}"
+                                     Command="{Binding OpenEngineDirectoryCommand}"
+                                     ToolTip.Tip="Show this folder in the file browser" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14"

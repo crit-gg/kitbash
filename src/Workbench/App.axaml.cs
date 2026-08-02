@@ -6,6 +6,7 @@ using Workbench.Core;
 using Workbench.Core.Git;
 using Workbench.Core.Godot;
 using Workbench.Core.IO;
+using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 using Workbench.ViewModels;
@@ -55,7 +56,9 @@ public partial class App : Application
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineStore>(),
                 provider.GetRequiredService<IGodotSettings>(),
-                provider.GetRequiredService<IPathShortener>()))
+                provider.GetRequiredService<IPathShortener>(),
+                provider.GetRequiredService<IPlatformServices>(),
+                provider.GetRequiredService<IFileSystem>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IPathShortener>(),

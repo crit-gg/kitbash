@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Workbench.Core.Godot;
 using Workbench.Core.IO;
+using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 
 namespace Workbench.ViewModels;
@@ -34,6 +35,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IEngineStore _store;
     private readonly IGodotSettings _settings;
     private readonly IPathShortener _paths;
+    private readonly IPlatformServices _platform;
+    private readonly IFileSystem _files;
     private readonly SemaphoreSlim _loading = new(1, 1);
 
     private IReadOnlyList<EngineRelease> _releases = [];
@@ -92,17 +95,23 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IEngineCatalogue catalogue,
         IEngineStore store,
         IGodotSettings settings,
-        IPathShortener paths)
+        IPathShortener paths,
+        IPlatformServices platform,
+        IFileSystem files)
     {
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(platform);
+        ArgumentNullException.ThrowIfNull(files);
 
         _catalogue = catalogue;
         _store = store;
         _settings = settings;
         _paths = paths;
+        _platform = platform;
+        _files = files;
 
         // Not read in the constructor, unlike the workspace page. That one reads a config
         // file and this one fetches over a network, so the window would wait on it.
@@ -152,6 +161,42 @@ public sealed partial class EnginesViewModel : ViewModelBase
             _loading.Release();
         }
     }
+
+    /// <summary>
+    /// Shows the engine directory in whatever file browser this desktop has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **The directory is created when it is not there.** It is Workbench's own folder and
+    /// the first install would create it anyway, so a person who clicks it before
+    /// installing anything sees where engines go rather than nothing happening. The
+    /// alternative was a link that does nothing until an engine exists.
+    /// </para>
+    /// <para>
+    /// Off the UI thread. On Linux, opening a folder searches PATH for a launcher before it
+    /// starts anything, and that reads a disk.
+    /// </para>
+    /// </remarks>
+    [RelayCommand]
+    private Task OpenEngineDirectoryAsync() => Task.Run(() =>
+    {
+        var directory = _settings.EngineDirectory;
+
+        try
+        {
+            _files.CreateDirectory(directory);
+            _platform.OpenInFileBrowser(DirectoryLocation.Parse(directory));
+        }
+        catch (Exception error) when (error is DirectoryNotFoundException
+                                          or IOException
+                                          or UnauthorizedAccessException
+                                          or ArgumentException
+                                          or ProcessStartException)
+        {
+            // Nothing on this page can report yet. Step 7 brings the toast host, and this
+            // is the first thing that will use it.
+        }
+    });
 
     /// <summary>Goes past the cache, which is what the button in the band means.</summary>
     [RelayCommand]
