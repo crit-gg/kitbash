@@ -125,13 +125,16 @@
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayGap}"
-                                Padding="4">
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                                          VerticalScrollBarVisibility="Auto">
-                                <ItemsPresenter Name="PART_ItemsPresenter"
-                                                ItemsPanel="{TemplateBinding ItemsPanel}" />
-                            </ScrollViewer>
+                                Margin="{DynamicResource OverlayGap}">
+                            <Border CornerRadius="{DynamicResource RadiusControl}"
+                                    ClipToBounds="True"
+                                    Padding="4">
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter Name="PART_ItemsPresenter"
+                                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+                            </Border>
                         </Border>
                     </Popup>
                 </Panel>

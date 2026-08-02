@@ -29,7 +29,6 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Overlays.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ActivityRail.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ComboBox.axaml" />
-                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Pickers.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Slider.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/NumericUpDown.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/GridSplitter.axaml" />
@@ -45,6 +44,7 @@
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Panel.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/TextBox.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Choices.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Pickers.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Surfaces.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Focus.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Motion.axaml" />
