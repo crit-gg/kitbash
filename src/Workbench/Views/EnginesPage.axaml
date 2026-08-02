@@ -85,16 +85,6 @@
             </Style>
         </ControlTheme>
 
-        <!-- A row action. The shared button is the right height already, so this is the
-             design's own fill and seam over it rather than a new shape. -->
-        <ControlTheme x:Key="RowButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
-            <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
-            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
-            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
-        </ControlTheme>
-
         <!-- Removing is the one destructive thing on the page, so it reads as ordinary
              until the pointer is on it and then it goes red. -->
         <ControlTheme x:Key="RemoveButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -563,11 +553,6 @@
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
                                                     VerticalAlignment="Center">
-                                            <Button Content="Set default"
-                                                    Theme="{StaticResource RowButton}"
-                                                    Command="{Binding SetDefaultCommand}"
-                                                    IsVisible="{Binding CanSetDefault}" />
-
                                             <!-- Danger, and it says which of the two things
                                                  it will do before it is pressed. -->
                                             <Button Theme="{StaticResource RemoveButton}"
@@ -587,6 +572,16 @@
                                                 <ui:Icon Glyph="DotsVerticalRounded" Size="15" />
                                                 <Button.Flyout>
                                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                        <!-- Naming the default is a choice
+                                                             made once and rarely, so it
+                                                             sits with the other choices
+                                                             rather than beside the one
+                                                             destructive button. It hides
+                                                             itself on the row that already
+                                                             is the default. -->
+                                                        <MenuItem Header="Set as default"
+                                                                  Command="{Binding SetDefaultCommand}"
+                                                                  IsVisible="{Binding CanSetDefault}" />
                                                         <MenuItem Header="Open install folder"
                                                                   Command="{Binding OpenFolderCommand}" />
                                                         <MenuItem Header="Copy path"

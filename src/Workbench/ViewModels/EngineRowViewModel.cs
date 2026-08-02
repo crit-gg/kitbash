@@ -16,6 +16,9 @@ namespace Workbench.ViewModels;
 /// </remarks>
 public sealed partial class EngineRowViewModel : ViewModelBase
 {
+    /// <summary>Roughly what fits a row's subtitle beside the size and the processor.</summary>
+    private const int PathLength = 52;
+
     private readonly EnginesViewModel _page;
 
     [ObservableProperty]
@@ -37,7 +40,7 @@ public sealed partial class EngineRowViewModel : ViewModelBase
         Title = NameOf(engine.Tag);
         Channel = ChannelOf(engine.Tag);
         IsDefault = theDefault == engine.Id;
-        Path = paths.Shorten(engine.Directory, 52);
+        Path = paths.Shorten(engine.Directory, PathLength);
 
         Parts =
         [
@@ -80,7 +83,11 @@ public sealed partial class EngineRowViewModel : ViewModelBase
     public bool HasNotes => _page.NotesFor(Engine.Tag) is not null;
 
     [RelayCommand]
-    private void SetDefault() => _page.SetDefault(Engine);
+    private void SetDefault()
+    {
+        IsMenuOpen = false;
+        _page.SetDefault(Engine);
+    }
 
     [RelayCommand]
     private Task Remove() => _page.RemoveAsync(Engine);
