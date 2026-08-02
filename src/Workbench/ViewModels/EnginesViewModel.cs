@@ -43,8 +43,15 @@ public sealed partial class EnginesViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoading;
 
+    /// <summary>
+    /// **Installed is what opens, which the design does not do.** The page is opened far
+    /// more often to see what is here than to fetch something new, and the release list is
+    /// a network read, so the first thing on screen is the half that is already true. The
+    /// release list is still read, since the Available count and the update marker in the
+    /// status bar both need it.
+    /// </summary>
     [ObservableProperty]
-    private bool _onAvailable = true;
+    private bool _onAvailable;
 
     [ObservableProperty]
     private string _query = string.Empty;

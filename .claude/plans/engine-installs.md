@@ -376,6 +376,7 @@ design's fourth alert form and was already built.
 | A specific cause for a withdrawn release | A generic sentence | The feed and the manifest say only that files are absent, never why. See below |
 | An install marked per file | Marked per version | One install per version, so a second processor replaces rather than joins |
 | One download at a time | Three at a time, the rest queued | Asked for. Each row owns its progress and its cancel |
+| Opens on Available | Opens on Installed | Asked for. The page is opened to see what is here more often than to fetch something new |
 | Channel as selectable chips | A second `ui:Segmented` | `ui:Chip` has no selected state and channel is one choice among several, which is what a segmented row is |
 | Four channels | Five, from the feed | Counted over 356 releases: `rc` 120, `beta` 94, `stable` 72, `dev` 42, `alpha` 27. The design's list is its sample data |
 | Verify checksum in the menu | Removed | The published hash is over the archive, which is gone after install |
