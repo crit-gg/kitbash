@@ -32,6 +32,12 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>Roughly what fits the status bar beside the counts.</summary>
     private const int RootLength = 46;
 
+    /// <summary>Roughly what fits a toast card, which is 352 wide.</summary>
+    private const int ToastPathLength = 44;
+
+    /// <summary>Roughly what fits the well in the uninstall dialog, which is 428 wide.</summary>
+    public const int DialogPathLength = 52;
+
     private readonly IEngineCatalogue _catalogue;
     private readonly IEngineStore _store;
     private readonly IGodotSettings _settings;
@@ -472,7 +478,9 @@ public sealed partial class EnginesViewModel : ViewModelBase
                                           or ArgumentException
                                           or ProcessStartException)
         {
-            Post(ToastTier.Error, "Could not open the folder", error.Message);
+            // Our own words with a path written for the card, rather than the operating
+            // system's, which puts the whole path in and runs off the edge.
+            Post(ToastTier.Error, "Could not open the folder", Shorten(directory, ToastPathLength));
         }
     });
 
@@ -489,10 +497,19 @@ public sealed partial class EnginesViewModel : ViewModelBase
             return;
         }
 
+        // The whole path is copied and a shortened one is shown, since a toast is 352 wide
+        // and a path is not.
         await Copier(text).ConfigureAwait(true);
 
-        Post(ToastTier.Ok, "Path copied", text);
+        Post(ToastTier.Ok, "Path copied", Shorten(text, ToastPathLength));
     }
+
+    /// <summary>
+    /// A path written for a fixed width. **Anywhere a path is shown it comes through here**,
+    /// so the middle is elided and the end, which is the part that says which folder it is,
+    /// survives.
+    /// </summary>
+    public string Shorten(string path, int length) => _paths.Shorten(path, length);
 
     /// <summary>
     /// Names the machine default. **Nothing is chosen automatically**, here or when the
@@ -533,7 +550,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            Post(ToastTier.Error, $"Could not remove Godot {EngineRowViewModel.NameOf(engine.Tag)}", error.Message);
+            Post(
+                ToastTier.Error,
+                $"Could not remove Godot {EngineRowViewModel.NameOf(engine.Tag)}",
+                $"{Shorten(engine.Directory, ToastPathLength)} could not be deleted.");
         }
 
         await LoadAsync().ConfigureAwait(true);
@@ -565,7 +585,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
             return;
         }
 
-        Post(ToastTier.Ok, $"Godot {EngineRowViewModel.NameOf(added.Tag)} added", added.Directory);
+        Post(
+            ToastTier.Ok,
+            $"Godot {EngineRowViewModel.NameOf(added.Tag)} added",
+            Shorten(added.Directory, ToastPathLength));
 
         OnAvailable = false;
 
@@ -617,7 +640,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
             Post(
                 ToastTier.Ok,
                 $"Godot {EngineRowViewModel.NameOf(row.Build.Tag)} installed",
-                $"Unpacked to {_paths.Shorten(Path.Combine(_settings.EngineDirectory, row.Build.Id.DirectoryName), 44)}.",
+                $"Unpacked to {Shorten(Path.Combine(_settings.EngineDirectory, row.Build.Id.DirectoryName), ToastPathLength)}.",
                 new ToastAction("Show in Installed", () => OnAvailable = false) { IsPrimary = true });
 
             await LoadAsync().ConfigureAwait(true);
