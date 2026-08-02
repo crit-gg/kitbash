@@ -31,7 +31,13 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <!-- Two borders rather than one: a clip on the border that draws the
-                     stroke would cut the corner into two colours. -->
+                     stroke would cut the corner into two colours.
+
+                     It is also what lets a body fill the panel corner to corner. A Border
+                     clips to its outer radius, so a child painting to the edge clears the
+                     stroke along a straight run and covers it at a corner. Inset by the
+                     border thickness, this one clears it everywhere. Measured with a tab
+                     strip, which is the case that shows it. -->
                 <Border Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"

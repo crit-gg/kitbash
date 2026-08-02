@@ -560,11 +560,17 @@ tab is square, because it meets the page below it. Its label is mono, which is w
 design draws and is worth keeping, since a tab names a document rather than a sentence. Top
 placement only.
 
-**Whatever holds them has to clip.** A tab strip fills its container corner to corner and
-is square, so in a panel with a radius the strip and its accent marker paint straight into
-the curve. `ui:SurfacePanel` already clips and a plain `Border` used as a region needs
-`ClipToBounds="True"`. The design says the same thing its own way, with `overflow:hidden`
-on the dock frame.
+**Whatever holds them needs two borders.** A tab strip fills its container corner to corner
+and is square, so in a panel with a radius the strip and its accent marker paint straight
+into the curve. `ui:SurfacePanel` is built for it: the outer border draws the stroke and an
+inner one carries the radius and the clip.
+
+`ClipToBounds` on a single stroked `Border` is not enough, which was measured rather than
+reasoned about. A `Border` clips to its **outer** radius, so along a straight edge the child
+sits inside the 1px stroke but at a corner it paints over it: the marker came through at
+`#569eff` where the stroke should have been. Inset by the border thickness, the inner curve
+clears the stroke by about 1.4px at 45 degrees, which is why two borders work and one does
+not. The design says the same thing its own way, with `overflow:hidden` on the dock frame.
 
 ### Overlays
 

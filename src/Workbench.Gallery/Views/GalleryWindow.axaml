@@ -46,15 +46,14 @@
         <!-- The page's own panels ride the depth ramp rather than naming a tone, so every
              section on this page is also a check that the ramp works.
 
-             They clip, because a panel with a radius has to. A control that fills one
-             corner to corner, such as a tab strip, paints square into the curve otherwise.
-             ui:SurfacePanel does this already and this is the plain Border catching up. -->
+             They do not clip, and nothing on this page needs them to. A child that fills
+             one corner to corner belongs in ui:SurfacePanel, which draws its stroke and
+             clips inside it with two borders. One border cannot do both. -->
         <Style Selector="Border.panel">
             <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
             <Setter Property="Padding" Value="16" />
-            <Setter Property="ClipToBounds" Value="True" />
         </Style>
     </Window.Styles>
 
@@ -964,7 +963,12 @@
                         <TextBlock Classes="note"
                                    Text="The open tab is the only one that takes the page's surface and the only one that draws the accent marker. Both together, since either alone would be saying it in colour." />
 
-                        <Border Classes="panel" Padding="0" Height="150">
+                        <!-- The library's own panel rather than the page's, since a strip
+                             that fills a rounded frame corner to corner is the case that
+                             needs two borders: one to draw the stroke and one inside it to
+                             clip. A single border clips to its outer radius, which lets a
+                             child paint over the stroke at the corners. -->
+                        <ui:SurfacePanel Padding="0" Height="150">
                             <TabControl>
                                 <TabItem Header="one.toml">
                                     <TextBlock Classes="note" Margin="14"
@@ -976,7 +980,7 @@
                                 </TabItem>
                                 <TabItem Header="three.toml" IsEnabled="False" />
                             </TabControl>
-                        </Border>
+                        </ui:SurfacePanel>
                     </StackPanel>
                 </Border>
 
