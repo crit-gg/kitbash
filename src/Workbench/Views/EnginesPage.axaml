@@ -154,15 +154,6 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
         </Style>
 
-        <!-- A channel option carries its own mark, since a channel means something and a
-             row of five words alone would not say which is which at a glance. -->
-        <Style Selector="Border.channelMark">
-            <Setter Property="Width" Value="5" />
-            <Setter Property="Height" Value="5" />
-            <Setter Property="CornerRadius" Value="2" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
         <!-- The card rides the depth ramp rather than naming a tone. Nothing counts: the
              page nests once, a card nests again, and its open body nests once more, so
              each takes the fill and the seam that go together and a rule inside reads the
@@ -468,36 +459,20 @@
                                  Content="all" />
 
                     <RadioButton GroupName="engineChannel" IsChecked="True"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="stable">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Classes="channelMark" Background="{DynamicResource Ok}" />
-                            <TextBlock Text="stable" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </RadioButton>
+                                 Command="{Binding PickChannelCommand}" CommandParameter="stable"
+                                 Content="stable" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="rc">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Classes="channelMark" Background="{DynamicResource Warn}" />
-                            <TextBlock Text="rc" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </RadioButton>
+                                 Command="{Binding PickChannelCommand}" CommandParameter="rc"
+                                 Content="rc" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="beta">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Classes="channelMark" Background="{DynamicResource Data}" />
-                            <TextBlock Text="beta" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </RadioButton>
+                                 Command="{Binding PickChannelCommand}" CommandParameter="beta"
+                                 Content="beta" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="dev">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Classes="channelMark" Background="{DynamicResource InkMuted}" />
-                            <TextBlock Text="dev" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </RadioButton>
+                                 Command="{Binding PickChannelCommand}" CommandParameter="dev"
+                                 Content="dev" />
                 </ui:Segmented>
 
                 <TextBlock Grid.Column="2" Classes="mono"
