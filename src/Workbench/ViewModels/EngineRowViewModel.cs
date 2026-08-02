@@ -89,8 +89,19 @@ public sealed partial class EngineRowViewModel : ViewModelBase
         _page.SetDefault(Engine);
     }
 
+    /// <summary>An engine whose folder has gone cannot be started.</summary>
+    public bool CanOpen => !Engine.IsMissing;
+
     [RelayCommand]
-    private Task Remove() => _page.RemoveAsync(Engine);
+    private void OpenProjectManager() => _page.OpenProjectManager(Engine);
+
+    [RelayCommand]
+    private Task Remove()
+    {
+        IsMenuOpen = false;
+
+        return _page.RemoveAsync(Engine);
+    }
 
     [RelayCommand]
     private void ToggleMenu() => IsMenuOpen = !IsMenuOpen;

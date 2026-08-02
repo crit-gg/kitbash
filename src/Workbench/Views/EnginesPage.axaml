@@ -85,20 +85,6 @@
             </Style>
         </ControlTheme>
 
-        <!-- Removing is the one destructive thing on the page, so it reads as ordinary
-             until the pointer is on it and then it goes red. -->
-        <ControlTheme x:Key="RemoveButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
-            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
-            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
-
-            <Style Selector="^:pointerover /template/ Border#PART_Root">
-                <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource ErrorLine}" />
-            </Style>
-        </ControlTheme>
-
         <!-- The footer disclosure. Outlined rather than filled, since it changes what is
              listed rather than doing anything. -->
         <ControlTheme x:Key="DisclosureButton" TargetType="Button">
@@ -553,16 +539,15 @@
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
                                                     VerticalAlignment="Center">
-                                            <!-- Danger, and it says which of the two things
-                                                 it will do before it is pressed. -->
-                                            <Button Theme="{StaticResource RemoveButton}"
-                                                    Command="{Binding RemoveCommand}">
+                                            <!-- The one thing on a row worth pressing often.
+                                                 Everything else it can do is a choice and
+                                                 lives in the menu. -->
+                                            <Button Command="{Binding OpenProjectManagerCommand}"
+                                                    IsEnabled="{Binding CanOpen}"
+                                                    ToolTip.Tip="Open this version's project manager">
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                                    <ui:Icon Glyph="Trash" Size="14" VerticalAlignment="Center" />
-                                                    <TextBlock Text="Remove" VerticalAlignment="Center"
-                                                               IsVisible="{Binding IsImported}" />
-                                                    <TextBlock Text="Uninstall" VerticalAlignment="Center"
-                                                               IsVisible="{Binding !IsImported}" />
+                                                    <ui:Icon Glyph="Window" Size="14" VerticalAlignment="Center" />
+                                                    <TextBlock Text="Project manager" VerticalAlignment="Center" />
                                                 </StackPanel>
                                             </Button>
 
@@ -589,6 +574,19 @@
                                                         <MenuItem Header="Release notes"
                                                                   Command="{Binding ReleaseNotesCommand}"
                                                                   IsVisible="{Binding HasNotes}" />
+
+                                                        <!-- The one destructive thing here,
+                                                             so it is last and set apart. It
+                                                             still says which of the two it
+                                                             will do before it is pressed. -->
+                                                        <Separator />
+
+                                                        <MenuItem Header="Uninstall"
+                                                                  Command="{Binding RemoveCommand}"
+                                                                  IsVisible="{Binding !IsImported}" />
+                                                        <MenuItem Header="Remove from the list"
+                                                                  Command="{Binding RemoveCommand}"
+                                                                  IsVisible="{Binding IsImported}" />
                                                     </MenuFlyout>
                                                 </Button.Flyout>
                                             </Button>

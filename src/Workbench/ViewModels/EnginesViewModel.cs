@@ -44,6 +44,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IFileSystem _files;
     private readonly IEngineInstaller _installer;
     private readonly IEngineFiles _engineFiles;
+    private readonly IProcessRunner _processes;
     private readonly IToastService _toasts;
 
     /// <summary>One token per build being installed, so each cancels on its own.</summary>
@@ -114,8 +115,11 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IFileSystem files,
         IEngineInstaller installer,
         IEngineFiles engineFiles,
+        IProcessRunner processes,
         IToastService toasts)
     {
+        ArgumentNullException.ThrowIfNull(processes);
+
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(engineFiles);
         ArgumentNullException.ThrowIfNull(toasts);
@@ -135,6 +139,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _files = files;
         _installer = installer;
         _engineFiles = engineFiles;
+        _processes = processes;
         _toasts = toasts;
 
         // Not read in the constructor, unlike the workspace page. That one reads a config
@@ -464,6 +469,35 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// </summary>
     public WebAddress? NotesFor(EngineTag tag) =>
         _releases.FirstOrDefault(release => release.Tag == tag)?.Notes;
+
+    /// <summary>
+    /// Starts this engine's project manager, which is the window Godot opens when it is
+    /// run outside a project.
+    /// </summary>
+    /// <remarks>
+    /// The flag is <c>--project-manager</c>, read off <c>--help</c> on 4.7.1 rather than
+    /// remembered: "Start the project manager, even if a project is auto-detected." It is
+    /// started and not waited on, since the editor outlives this app's interest in it.
+    /// </remarks>
+    public void OpenProjectManager(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        Task.Run(() =>
+        {
+            try
+            {
+                _processes.Run(ProcessRequest.Command(engine.Executable, "--project-manager"));
+            }
+            catch (ProcessStartException)
+            {
+                Post(
+                    ToastTier.Error,
+                    $"Could not start Godot {EngineRowViewModel.NameOf(engine.Tag)}",
+                    Shorten(engine.Executable, ToastPathLength));
+            }
+        });
+    }
 
     /// <summary>Shows a folder in the file browser. Off the UI thread, like the root does.</summary>
     public void OpenFolder(string directory) => Task.Run(() =>
