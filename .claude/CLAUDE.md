@@ -357,6 +357,19 @@ carry it. Its button lives in inner content, which no control theme can reach, s
 styles it from a plain style and the control hears the click bubble. See
 `.claude/avalonia.md` under control themes for why.
 
+**The pickers read the culture and nothing here writes a date format.** Measured across
+three: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and
+starts on Monday, ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a
+specification. The clock is pinned to 24 hour, so the one thing a culture would still move,
+where the period sits, never arises.
+
+**A picker template has to carry every part the control names, even the ones it will never
+draw.** The build refuses a template that leaves one out, and `TimePicker` throws a null
+reference from `SetGrid` for a part that is present but not wrapped in the `Border` host it
+expects. Its readout is the control's own hidden grid, read back through two element name
+bindings, because that grid is a segmented row of numbers between rules where the design is
+one string.
+
 **Validation runs on `INotifyDataErrorInfo`.** A field draws an `Error` border when its
 binding reports one. Measured on 12.1.1: Avalonia turns the data annotations plugin off, so
 a `[Required]` attribute alone does nothing, but a source implementing
@@ -975,7 +988,7 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 7 are done and stage 8 is most of the way. `Workbench.Ui` carries the Slate
+Stages 1 to 8 are done. `Workbench.Ui` carries the Slate
 tokens, the type scale, the 49 icons, the window shell, the activity rail, every overlay
 surface, the depth ramp, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -983,8 +996,8 @@ panel, the expander, the splitter, the collapsing sidebar, the text fields, the 
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box and the hyperlink.
 
-Two things in stage 8 are not built: the date and time pickers, and the colour field, which
-waits on stage 12. The stage file lists what each one needs.
+Stage 8 is done except the colour field, which waits on stage 12 because its swatch has
+nothing to open until the picker exists.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, with only the workspace page built.

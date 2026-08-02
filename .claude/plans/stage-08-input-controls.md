@@ -3,9 +3,7 @@
 The controls that take a value. None of these appear in the launcher, so this stage is
 invisible in the app and is verified in a harness.
 
-**Partly built.** Fields, choices, sliders, the range slider, the spinbox with scrubbing,
-the dropdown, the hyperlink and validation are done and in the gallery. Two things in this
-stage are not: see "What is left" at the end.
+**Built**, except the colour field, which waits on stage 12. See "What is left" at the end.
 `.claude/CLAUDE.md` under Inputs is what the code actually does.
 
 ## Goal
@@ -175,19 +173,42 @@ everything around it and `StateHover` would lighten it past its own surface.
 lightens to `#1a1b1e` and this one alone shows `#1e1f22`, which would put a window tone
 inside a control. Built as the other wells are.
 
+## What the pickers cost
+
+Both were built, and three things about them are worth keeping.
+
+**A template must carry every part the control names.** The build refuses one that leaves
+a part out, which is a good error. `TimePicker` then throws a null reference from
+`SetGrid` for a part that is present but not wrapped in the `Border` host it expects, which
+is not. Its four picker hosts, three splitters and four text blocks all have to be there
+before it will apply its template at all.
+
+**The calendar's grids have to be built empty.** `PART_MonthView` and `PART_YearView` are
+filled by row and column, so the cells exist in the template before the control can put
+anything in them. Seven across by six weeks down plus a row of day names, and four by three
+for the months and years the header opens. Leave the definitions out and the month draws as
+one cell of overlapping days.
+
+**The time readout is the control's, read back.** Its own grid is a segmented row of
+numbers between rules, where the design is one string, so the grid stays and is hidden and
+two element name bindings read the hours and the minutes out of it. Formatting the value
+here instead would have hardcoded a field order.
+
+The locale question the list above asks is measured: en-US reads 7/28/2026 and starts its
+week on Sunday, de-DE reads 28.07.2026 and starts on Monday, ja-JP reads 2026/07/28. The
+clock is pinned to 24 hour, so the one thing a culture would still move, where the period
+sits, never arises.
+
+The clock popover carries Set and Cancel as well as the design's Now, because a working
+`TimePickerPresenter` only writes the time when it is accepted. The design's popover is a
+picture and has no such need.
+
 ## What is left
 
-Two things, and each named here so nobody has to rediscover it.
-
-**The date and time pickers.** `CalendarDatePicker` and `TimePicker` are the two largest
-templates in the stage: the first needs `Calendar`, `CalendarItem`, `CalendarButton` and
-`CalendarDayButton` as well, and the second needs `TimePickerPresenter` with four
-`DateTimePickerPanel` columns and its own accept and dismiss buttons. The design's calendar
-and clock popovers are in `Theme Slate.dc.html` at the DATE and TIME headings inside the
-value editors section. The locale check in the list above belongs with them.
+One thing.
 
 **The colour field.** Deferred to stage 12 rather than skipped: the field is a well with a
 14px swatch adorner, and the swatch has nothing to open until the picker exists.
 
-`AutoCompleteBox` is also unthemed. It is listed in this stage only as the alternative to a
+`AutoCompleteBox` is unthemed. It is listed in this stage only as the alternative to a
 plain search field, and nothing needs it yet.

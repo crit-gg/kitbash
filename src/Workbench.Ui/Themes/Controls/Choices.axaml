@@ -493,4 +493,24 @@
         <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
     </Style>
 
+    <!-- The clock's column headings and the time a field reads back. Classes rather than
+         inline values, because both sit inside a control template that a theme cannot
+         reach with a descendant selector. -->
+    <Style Selector="TextBlock.clockHead">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingLabel}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+
+    <Style Selector="TextBlock.clockRead">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
 </Styles>
