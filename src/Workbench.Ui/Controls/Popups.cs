@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Reactive;
 using Avalonia.Controls.Primitives.PopupPositioning;
 
@@ -53,7 +54,47 @@ public class Popups
     {
         UnderProperty.Changed.AddClassHandler<TemplatedControl, bool>(OnUnderChanged);
         InPopupProperty.Changed.AddClassHandler<Control, bool>(OnInPopupChanged);
+        KeepsWheelProperty.Changed.AddClassHandler<Control, bool>(OnKeepsWheelChanged);
     }
+
+    private static void OnKeepsWheelChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        control.RemoveHandler(InputElement.PointerWheelChangedEvent, OnWheel);
+
+        if (change.GetNewValue<bool>())
+        {
+            control.AddHandler(InputElement.PointerWheelChangedEvent, OnWheel);
+        }
+    }
+
+    private static void OnWheel(object? sender, PointerWheelEventArgs e) => e.Handled = true;
+
+    /// <summary>
+    /// A wheel that nothing inside this overlay wanted stops here rather than reaching the
+    /// page behind it.
+    /// </summary>
+    /// <remarks>
+    /// A popup is its own window, but its child's logical parent is the popup itself,
+    /// which lives in the parent window's tree. So an unhandled wheel routes out of the
+    /// popup and into the page behind it.
+    /// <para>
+    /// Measured: a wheel raised inside the time popover scrolled the page 150px and left
+    /// the popover where it was. The same wheel inside a dropdown or a calendar did
+    /// nothing, because a scroll viewer in those had already taken it. Nothing was
+    /// protecting the page, one popover simply had somewhere for the wheel to land.
+    /// </para>
+    /// <para>
+    /// Bubbling does the deciding. A handled event never reaches this, so anything inside
+    /// that wanted the wheel still gets it.
+    /// </para>
+    /// </remarks>
+    public static readonly AttachedProperty<bool> KeepsWheelProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Control, bool>("KeepsWheel");
+
+    public static bool GetKeepsWheel(Control control) => control.GetValue(KeepsWheelProperty);
+
+    public static void SetKeepsWheel(Control control, bool value) =>
+        control.SetValue(KeepsWheelProperty, value);
 
     /// <summary>
     /// This element is the child of a popup, and that popup should be placed under its

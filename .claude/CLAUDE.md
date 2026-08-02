@@ -477,6 +477,17 @@ card, it reads as an extension of the trigger that opened it.
 shell a picker opens in, and its `inPanel` class drops the shadow and the surface so the
 same body works dropped into a property panel.
 
+**A wheel inside an overlay stays in it.** A popup is its own window, but its child's
+logical parent is the popup, which lives in the parent window's tree, so an unhandled wheel
+routes out of the popup and scrolls the page behind it. Measured: a wheel inside the time
+popover scrolled the page 150px and left the popover where it was, while the same wheel
+inside a dropdown did nothing, because a scroll viewer there had already taken it. Nothing
+was protecting the page, one popover simply had somewhere for the wheel to land.
+
+`ui:Popups.KeepsWheel` on an overlay's root stops it. Bubbling does the deciding, so
+anything inside that wants the wheel still gets it: measured after, an hour column still
+picks by wheel and the page no longer moves.
+
 **A dialog has no scrim.** It is a real window and the window manager owns modality. A
 scrim belongs only to a popup that covers a page, and it is `ui:Dimmer.Dims="True"` on
 that popup's flyout. The scrim goes in the window's overlay layer, so it needs the named

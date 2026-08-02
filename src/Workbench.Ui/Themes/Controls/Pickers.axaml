@@ -353,7 +353,8 @@
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayRoom}">
+                                Margin="{DynamicResource OverlayRoom}"
+                                ui:Popups.KeepsWheel="True">
                           <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
                             <DockPanel LastChildFill="True">
                                 <Border DockPanel.Dock="Top"
@@ -687,7 +688,8 @@
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"
                                 BoxShadow="{DynamicResource ShadowPopup}"
-                                Margin="{DynamicResource OverlayRoom}">
+                                Margin="{DynamicResource OverlayRoom}"
+                                ui:Popups.KeepsWheel="True">
                           <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
                             <TimePickerPresenter Name="PART_PickerPresenter" />
                           </Border>

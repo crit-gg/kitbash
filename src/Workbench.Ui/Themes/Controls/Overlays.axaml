@@ -20,6 +20,8 @@
          keyframe on RenderTransform throws at startup, and one against a
          TransformOperations value does nothing at all. Both are in .claude/avalonia.md. -->
     <ControlTheme x:Key="OverlayRoot" TargetType="Border">
+        <!-- A wheel nothing inside wanted stops here rather than reaching the page. -->
+        <Setter Property="(ui:Popups.KeepsWheel)" Value="True" />
         <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
         <Setter Property="BorderThickness" Value="1" />
