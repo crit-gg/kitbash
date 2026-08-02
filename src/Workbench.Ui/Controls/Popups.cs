@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Reactive;
 using Avalonia.Controls.Primitives.PopupPositioning;
 
@@ -55,6 +56,39 @@ public class Popups
         UnderProperty.Changed.AddClassHandler<TemplatedControl, bool>(OnUnderChanged);
         InPopupProperty.Changed.AddClassHandler<Control, bool>(OnInPopupChanged);
         KeepsWheelProperty.Changed.AddClassHandler<Control, bool>(OnKeepsWheelChanged);
+        MatchesTargetProperty.Changed.AddClassHandler<Control, bool>(OnMatchesTargetChanged);
+    }
+
+    private static void OnMatchesTargetChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        control.AttachedToVisualTree -= OnMeasureAgainstTarget;
+
+        if (change.GetNewValue<bool>())
+        {
+            control.AttachedToVisualTree += OnMeasureAgainstTarget;
+        }
+    }
+
+    private static void OnMeasureAgainstTarget(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is Control control && Containing(control) is { PlacementTarget: { } target })
+        {
+            control.SetCurrentValue(Layoutable.MinWidthProperty, target.Bounds.Width);
+        }
+    }
+
+    /// <summary>The popup this element is drawn inside, if it is inside one.</summary>
+    private static Popup? Containing(StyledElement element)
+    {
+        for (var parent = element.Parent; parent is not null; parent = parent.Parent)
+        {
+            if (parent is Popup popup)
+            {
+                return popup;
+            }
+        }
+
+        return null;
     }
 
     private static void OnKeepsWheelChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)
@@ -68,6 +102,31 @@ public class Popups
     }
 
     private static void OnWheel(object? sender, PointerWheelEventArgs e) => e.Handled = true;
+
+    /// <summary>
+    /// This overlay is at least as wide as whatever it opened from.
+    /// </summary>
+    /// <remarks>
+    /// A menu or a popover narrower than the button that opened it reads as a mistake, and
+    /// the width a person expects is the one they just clicked. It is a floor rather than a
+    /// width, so an overlay with more to say is still as wide as it needs to be.
+    /// <para>
+    /// Set on the element that draws the overlay rather than on the presenter, since the
+    /// room a shadow needs sits outside that and should not count towards the width.
+    /// </para>
+    /// <para>
+    /// It is written with SetCurrentValue, so a view that sets a minimum width of its own
+    /// keeps it. A context menu does not take this: it belongs to whatever it was opened
+    /// on, which may be a whole page.
+    /// </para>
+    /// </remarks>
+    public static readonly AttachedProperty<bool> MatchesTargetProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Control, bool>("MatchesTarget");
+
+    public static bool GetMatchesTarget(Control control) => control.GetValue(MatchesTargetProperty);
+
+    public static void SetMatchesTarget(Control control, bool value) =>
+        control.SetValue(MatchesTargetProperty, value);
 
     /// <summary>
     /// A wheel that nothing inside this overlay wanted stops here rather than reaching the

@@ -477,6 +477,12 @@ card, it reads as an extension of the trigger that opened it.
 shell a picker opens in, and its `inPanel` class drops the shadow and the surface so the
 same body works dropped into a property panel.
 
+**An overlay is at least as wide as what opened it.** A menu narrower than the button that
+opened it reads as a mistake. `ui:Popups.MatchesTarget` puts a floor under the width, read
+off the placement target the popup already holds, so an overlay with more to say is still
+as wide as it needs to be. Menus and plain flyouts take it. A context menu does not, since
+it belongs to whatever it was opened on and that may be a whole page.
+
 **A wheel inside an overlay stays in it.** A popup is its own window, but its child's
 logical parent is the popup, which lives in the parent window's tree, so an unhandled wheel
 routes out of the popup and scrolls the page behind it. Measured: a wheel inside the time

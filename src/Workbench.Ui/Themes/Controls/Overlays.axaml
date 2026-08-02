@@ -139,7 +139,8 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayRoom}">
+                        Margin="{DynamicResource OverlayRoom}"
+                        ui:Popups.MatchesTarget="True">
                     <ItemsPresenter Name="PART_ItemsPresenter" />
                 </Border>
             </ControlTemplate>
@@ -157,7 +158,8 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayRoom}">
+                        Margin="{DynamicResource OverlayRoom}"
+                        ui:Popups.MatchesTarget="True">
                     <ItemsPresenter Name="PART_ItemsPresenter" />
                 </Border>
             </ControlTemplate>
@@ -171,7 +173,8 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Theme="{StaticResource OverlayRoot}" Padding="{TemplateBinding Padding}"
-                        Margin="{DynamicResource OverlayGap}">
+                        Margin="{DynamicResource OverlayGap}"
+                        ui:Popups.MatchesTarget="True">
                     <ContentPresenter Content="{TemplateBinding Content}"
                                       ContentTemplate="{TemplateBinding ContentTemplate}" />
                 </Border>
