@@ -49,3 +49,6 @@ desktop.ini
 # Editor scratch files
 *.swp
 *~
+
+# Worktrees this session creates. A nested checkout, never part of the tree.
+.claude/worktrees/
