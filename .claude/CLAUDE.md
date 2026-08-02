@@ -270,9 +270,10 @@ the launcher page, and they are the reason the row looks the way it does.
    commits when there is nothing local that taking them could cost. Pushing and resolving
    a conflict still belong to a git client. See Git below for the guards.
 7. **Counts are pluralised properly.** "1 conflict", "2 conflicts", never "1 conflict(s)".
-   `WordCount` in `Workbench.Core/Text` is where that happens and every count goes through
-   it. Only nouns inflect: a count of something described rather than named, such as twelve
-   modified files, keeps its word.
+   Humanizer does that, through `"conflict".ToQuantity(n, ShowQuantityAs.None)`, which
+   inflects the noun and leaves the number out so the view can style the two apart. Only
+   nouns inflect: a count of something described rather than named, such as twelve modified
+   files, keeps its word.
 8. **A slow action reports on itself in place.** The glyph turns for as long as the update
    runs and the label beside it says Updating. No toast, no dialog. `ui:Icon` with the
    `spin` class from `Themes/Motion.axaml`.
@@ -1020,11 +1021,16 @@ dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
 ## Stack
 
 - .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1,
-  Microsoft.Extensions.DependencyInjection 10.0.10
+  Humanizer.Core 3.0.10, Microsoft.Extensions.DependencyInjection 10.0.10
 - Avalonia 12 changed a lot from 11 and most material online still describes 11.
   Read `.claude/avalonia.md` before working on views, styling or window chrome.
 - Tomlyn 2.10 is a redesign. The old `Toml` static class is gone, replaced by
   `TomlSerializer` with a `System.Text.Json` style API.
+- Humanizer writes the English a person reads: plurals that agree with a count, and a
+  timestamp as how long ago it was. **It is `Humanizer.Core`, not `Humanizer`.** The meta
+  package carries a satellite assembly per language, and nothing here is translated.
+  `Workbench.Core` does not reference it, so it goes in each executable that needs it and
+  the contract stays on Tomlyn alone.
 
 ## Status
 

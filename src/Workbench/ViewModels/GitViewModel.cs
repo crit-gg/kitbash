@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Humanizer;
 using Workbench.Core.Git;
-using Workbench.Core.Text;
 
 namespace Workbench.ViewModels;
 
@@ -61,7 +61,11 @@ public partial class GitViewModel : ViewModelBase
     /// The word beside the conflict count, agreeing with it. Modified and staged describe
     /// the files rather than name them, so they never inflect and are written in the view.
     /// </summary>
-    public string ConflictWord => new WordCount(Conflicted, "conflict").Word;
+    /// <remarks>
+    /// <see cref="ShowQuantityAs.None"/> because the count is its own run of text beside
+    /// this one, so the view can style the number and the word apart.
+    /// </remarks>
+    public string ConflictWord => "conflict".ToQuantity(Conflicted, ShowQuantityAs.None);
 
     /// <summary>
     /// When this branch last looked at its remote, or that an update is happening now.
@@ -71,39 +75,24 @@ public partial class GitViewModel : ViewModelBase
     /// Read off the fetch timestamp, since every update fetches whether or not it goes on to
     /// take anything. So this is when the repository was last known to be right, which is
     /// the question a person is asking.
+    /// <para>
+    /// Humanizer writes whole units only, largest that fits, which is the question a person
+    /// reading a status bar is asking: whether this is stale, not how stale. It carries the
+    /// word "ago" itself, and it answers a timestamp in the future rather than throwing,
+    /// which is what a moved clock or a file from a machine that disagrees produces.
+    /// </para>
     /// </remarks>
     public string UpdateLabel => (IsUpdating, Status?.LastFetch) switch
     {
         (true, _) => "Updating",
         (_, null) => "Never updated",
-        (_, { } updated) => $"Updated {Ago(DateTimeOffset.Now - updated)} ago",
+
+        // No comparison date, so Humanizer takes UtcNow. The stamp carries its own offset,
+        // so that is right wherever this machine sits.
+        (_, { } updated) => $"Updated {updated.Humanize()}",
     };
 
     partial void OnStatusChanged(GitStatus? value) => OnPropertyChanged(string.Empty);
 
     partial void OnIsUpdatingChanged(bool value) => OnPropertyChanged(nameof(UpdateLabel));
-
-    // Whole units only, largest that fits. A person reading a status bar wants to know
-    // whether this is stale, not how stale.
-    private static string Ago(TimeSpan elapsed)
-    {
-        if (elapsed < TimeSpan.FromMinutes(1))
-        {
-            // Negative as well, which happens when a clock moved or the file came from a
-            // machine that disagrees.
-            return "moments";
-        }
-
-        if (elapsed.TotalHours < 1)
-        {
-            return $"{(int)elapsed.TotalMinutes}m";
-        }
-
-        if (elapsed.TotalDays < 1)
-        {
-            return $"{(int)elapsed.TotalHours}h";
-        }
-
-        return $"{(int)elapsed.TotalDays}d";
-    }
 }
