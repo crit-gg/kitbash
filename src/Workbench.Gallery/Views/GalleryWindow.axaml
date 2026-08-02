@@ -44,12 +44,17 @@
         </Style>
 
         <!-- The page's own panels ride the depth ramp rather than naming a tone, so every
-             section on this page is also a check that the ramp works. -->
+             section on this page is also a check that the ramp works.
+
+             They clip, because a panel with a radius has to. A control that fills one
+             corner to corner, such as a tab strip, paints square into the curve otherwise.
+             ui:SurfacePanel does this already and this is the plain Border catching up. -->
         <Style Selector="Border.panel">
             <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
             <Setter Property="Padding" Value="16" />
+            <Setter Property="ClipToBounds" Value="True" />
         </Style>
     </Window.Styles>
 

@@ -560,6 +560,12 @@ tab is square, because it meets the page below it. Its label is mono, which is w
 design draws and is worth keeping, since a tab names a document rather than a sentence. Top
 placement only.
 
+**Whatever holds them has to clip.** A tab strip fills its container corner to corner and
+is square, so in a panel with a radius the strip and its accent marker paint straight into
+the curve. `ui:SurfacePanel` already clips and a plain `Border` used as a region needs
+`ClipToBounds="True"`. The design says the same thing its own way, with `overflow:hidden`
+on the dock frame.
+
 ### Overlays
 
 Everything that floats lives in `Themes/Controls/Overlays.axaml`: menus, context menus,
