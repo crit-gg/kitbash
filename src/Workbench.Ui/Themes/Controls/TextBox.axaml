@@ -43,11 +43,14 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
+                    <!-- The halo's radius is grown from the control's rather than named,
+                         so a field with a wider radius keeps a ring concentric with it.
+                         The search field is 8 where every other field is 5. -->
                     <Border Name="PART_Halo"
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Frame"
