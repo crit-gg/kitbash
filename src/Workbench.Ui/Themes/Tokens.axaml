@@ -30,6 +30,14 @@
     <SolidColorBrush x:Key="SurfaceRowAlt" Color="#212328" />
     <SolidColorBrush x:Key="SurfaceControlOff" Color="#232427" />
 
+    <!-- A well answers the pointer on its own ramp rather than on the control one, because
+         it is darker than everything around it and StateHover would lighten it past the
+         surface it sits on. Focus lightens it a step, which is what says the caret is in
+         it. -->
+    <SolidColorBrush x:Key="SurfaceWellHover" Color="#26282c" />
+    <SolidColorBrush x:Key="SurfaceWellPressed" Color="#2f3238" />
+    <SolidColorBrush x:Key="SurfaceWellFocus" Color="#1a1b1e" />
+
     <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill
          and its border together: LineSeam with the root and level 1, LineControl with
          level 2, LineControlDeep with level 3. Themes/Surfaces.axaml holds the pairs.
@@ -46,6 +54,13 @@
     <SolidColorBrush x:Key="LineWindow" Color="#4a4e55" />
     <SolidColorBrush x:Key="LineWell" Color="#565d66" />
     <SolidColorBrush x:Key="LineControlOff" Color="#2c2e32" />
+
+    <!-- The well border under a pointer, and when it is switched off. LineWellOff carries
+         StateHover's value and is a different role: one is a fill every control uses and
+         the other is the edge of a checkbox nobody can click. A disabled well keeps a
+         lighter edge than a disabled control, because the well it draws is darker. -->
+    <SolidColorBrush x:Key="LineWellHover" Color="#6b727b" />
+    <SolidColorBrush x:Key="LineWellOff" Color="#34363c" />
 
     <!-- States. StatePressed carries the same value as LineControl and is kept apart
          because one is a fill and the other is a line. Every use of the first is a
@@ -102,6 +117,21 @@
          the rest of the palette does not have, because the rail sits on the root tone
          where a muted icon disappears and a secondary one shouts. -->
     <SolidColorBrush x:Key="InkRail" Color="#9ba6b0" />
+
+    <!-- The brightest ink in the system, and the only pure white. It belongs to a knob
+         being dragged and to nothing else: a slider knob goes InkChip, InkPrimary, then
+         this, so the thing under the finger is always the brightest thing on the row. -->
+    <SolidColorBrush x:Key="InkKnobPressed" Color="#ffffff" />
+
+    <!-- Disabled comes in two weights. InkDisabled is text. MarkOff is a glyph or a knob,
+         a step darker, because a solid 7px shape at InkDisabled reads louder than a word
+         does. It carries LineWindow's value and is a different role. -->
+    <SolidColorBrush x:Key="MarkOff" Color="#4a4e55" />
+
+    <!-- What a flood flattens to. A checked box, a toggle track and a slider fill are all
+         Accent when they are on, and all of them take this when they are not available.
+         Disabled never uses opacity, so the flood needs a tone of its own. -->
+    <SolidColorBrush x:Key="FillOff" Color="#3a3d43" />
 
     <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text.
          The mark and the text are separate because a 5px mark needs saturation where
@@ -164,6 +194,10 @@
     <CornerRadius x:Key="RadiusSurface">8</CornerRadius>
     <CornerRadius x:Key="RadiusMark">2</CornerRadius>
 
+    <!-- The 14px box a checkbox draws, and the colour swatch that is the same box. Between
+         the mark radius and the control radius, because the box is between those sizes. -->
+    <CornerRadius x:Key="RadiusBox">3</CornerRadius>
+
     <!-- The scrim behind a popup that covers a page. Not behind a dialog: a dialog is a
          real window and the window manager owns modality, so the parent stays legible
          rather than being dimmed. Avalonia's own light dismiss layer is internal, so a
@@ -223,6 +257,33 @@
     <!-- The square mark a chip and a status pill carry. It takes RadiusMark. -->
     <x:Double x:Key="SizeMark">5</x:Double>
 
+    <!-- The choice controls. A checkbox and a radio are the same box, one round. The
+         toggle is a 30 by 17 track with an 11px knob, and the knob sits 3 from each end,
+         which is what the travel below is measured from. -->
+    <x:Double x:Key="SizeCheck">14</x:Double>
+
+    <!-- The stroke a well draws around a checkbox, a radio or a toggle. Heavier than a
+         control border, because a 14px box with a hairline round it disappears. Written
+         twice because Avalonia needs a Thickness for a border and a double for the bar the
+         mixed state draws, and one value cannot be both. -->
+    <Thickness x:Key="ThicknessCheck">1.5</Thickness>
+    <x:Double x:Key="SizeCheckStroke">1.5</x:Double>
+    <x:Double x:Key="WidthToggle">30</x:Double>
+    <x:Double x:Key="HeightToggle">17</x:Double>
+    <x:Double x:Key="SizeKnob">11</x:Double>
+    <x:Double x:Key="TravelKnob">13</x:Double>
+
+    <!-- A slider. The knob grows while it is being pointed at or dragged, so a value can
+         be read while a finger is on it. The tick is drawn behind the track and stands
+         3 clear of it either side. -->
+    <x:Double x:Key="HeightTrack">3</x:Double>
+    <x:Double x:Key="SizeKnobActive">13</x:Double>
+    <x:Double x:Key="HeightTick">9</x:Double>
+
+    <!-- The stepper column inside a well, and the well's own inset. -->
+    <x:Double x:Key="WidthSpinner">18</x:Double>
+    <x:Double x:Key="PaddingWell">9</x:Double>
+
     <!-- The design does not record a bar height, so this is chosen. It is the shortest
          bar that still reads as a bar at the mark radius. -->
     <x:Double x:Key="HeightProgress">6</x:Double>
@@ -236,5 +297,14 @@
     <x:Double x:Key="IconSizeLarge">20</x:Double>
     <x:Double x:Key="IconSizeCompact">12</x:Double>
     <x:Double x:Key="IconSizeStatus">13</x:Double>
+
+    <!-- An adorner inside a 26px well. The design states 14 for the calendar and the clock
+         marks, and the search field's mark is a placeholder circle rather than a glyph, so
+         it takes this too rather than a size of its own. -->
+    <x:Double x:Key="IconSizeField">14</x:Double>
+
+    <!-- The check inside a 14px box. It fills the box almost entirely, which is what makes
+         a ticked box read as ticked at a glance rather than as a box with something in it. -->
+    <x:Double x:Key="IconSizeCheck">11</x:Double>
 
 </ResourceDictionary>
