@@ -1,6 +1,7 @@
 <ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+        xmlns:views="clr-namespace:Workbench.Gallery.Views"
         x:Class="Workbench.Gallery.Views.GalleryWindow"
         Title="Workbench Gallery"
         Width="1024" Height="784"
@@ -849,6 +850,128 @@
                             <Button Content="Move it" Click="OnMovePanel" />
                             <TextBlock Name="NomadLevel" Classes="caption" VerticalAlignment="Center" />
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="LISTS AND TREES" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="A row never carries both a fill and an outline. Hover and selection are fills, focus is the same halo every control draws, and a drop target is the only dashed edge in the theme." />
+
+                        <Grid ColumnDefinitions="230,*" ColumnSpacing="16">
+                            <StackPanel Grid.Column="0" Spacing="9">
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="ROW STATES" />
+
+                                <Border Classes="panel" Padding="5">
+                                    <StackPanel>
+                                        <ListBoxItem Content="Normal" />
+                                        <ListBoxItem Content="Hover" Classes="forceHover" />
+                                        <ListBoxItem Content="Pressed" Classes="forcePressed" />
+                                        <ListBoxItem Content="Selected" IsSelected="True" />
+                                        <ListBoxItem Content="Selected and focused" IsSelected="True" Classes="forceFocus" />
+                                        <ListBoxItem Content="Modified" Classes="modified" />
+                                        <ListBoxItem Content="Drop target" Classes="drop" />
+                                        <ListBoxItem Content="Disabled" IsEnabled="False" />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Classes="note"
+                                           Text="Focus on a selected row is the halo over the tint, so neither one replaces the other." />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="9">
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="TREE" Content="click a caret" />
+
+                                <Border Classes="panel" Padding="0" Height="266">
+                                    <ui:Tree Name="SampleTree">
+                                        <ui:Tree.ItemTemplate>
+                                            <DataTemplate x:DataType="views:Node">
+                                                <DockPanel LastChildFill="True">
+                                                    <TextBlock DockPanel.Dock="Right"
+                                                               Text="{Binding Count}"
+                                                               FontFamily="{DynamicResource FontFamilyMono}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
+                                                               Foreground="{DynamicResource InkMuted}"
+                                                               VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Name}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ui:Tree.ItemTemplate>
+                                    </ui:Tree>
+                                </Border>
+
+                                <TextBlock Classes="note"
+                                           Text="A single click picks a row, a double click opens it, and a click on the caret opens it without changing what is picked. Left and right arrow do the same from the keyboard." />
+                            </StackPanel>
+                        </Grid>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="TEN THOUSAND ROWS" Content="the reason a tree is flat" />
+
+                        <TextBlock Classes="note"
+                                   Text="Avalonia has no virtualising tree, so this one is a flat list of the rows that can be seen and expanding edits the list. Open everything and the row count runs into five figures while the number of controls stays in two." />
+
+                        <Border Classes="panel" Padding="0" Height="180">
+                            <ui:Tree Name="BigTree">
+                                <ui:Tree.ItemTemplate>
+                                    <DataTemplate x:DataType="views:Node">
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:Tree.ItemTemplate>
+                            </ui:Tree>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Open everything" Click="OnExpandAll" />
+                            <Button Classes="ghost" Content="Close everything" Click="OnCollapseAll" />
+                            <Button Classes="ghost" Content="Count what is real" Click="OnCountRows" />
+                            <TextBlock Name="RowCount" Classes="caption" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="LIST" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                            <Border Grid.Column="0" Classes="panel" Padding="0" Height="172">
+                                <ListBox Name="SampleList">
+                                    <ListBoxItem Content="One" />
+                                    <ListBoxItem Content="Two" />
+                                    <ListBoxItem Content="Three" Classes="modified" />
+                                    <ListBoxItem Content="Four" />
+                                    <ListBoxItem Content="Five" IsEnabled="False" />
+                                </ListBox>
+                            </Border>
+
+                            <TextBlock Grid.Column="1" Classes="note" VerticalAlignment="Center"
+                                       Text="A list is the same row without the indent, the caret or the guides. It virtualises on its own, since ListBox is the one items control in Avalonia that replaces its panel with a virtualising one." />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="TABS" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="The open tab is the only one that takes the page's surface and the only one that draws the accent marker. Both together, since either alone would be saying it in colour." />
+
+                        <Border Classes="panel" Padding="0" Height="150">
+                            <TabControl>
+                                <TabItem Header="one.toml">
+                                    <TextBlock Classes="note" Margin="14"
+                                               Text="A tab names a document, so its label is mono." />
+                                </TabItem>
+                                <TabItem Header="two.toml" Classes="modified">
+                                    <TextBlock Classes="note" Margin="14"
+                                               Text="This one has unsaved changes, which is the round mark at its end." />
+                                </TabItem>
+                                <TabItem Header="three.toml" IsEnabled="False" />
+                            </TabControl>
+                        </Border>
                     </StackPanel>
                 </Border>
 

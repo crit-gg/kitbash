@@ -357,6 +357,27 @@ is reused at a different index.
 virtualizing panel means deriving from `VirtualizingPanel` and implementing
 `GetControl` for keyboard navigation.
 
+**Only `ListBox` virtualizes.** Checked against the 12.1.1 source. `ItemsControl`
+defaults to a plain `StackPanel`, and `TreeView` does not override the panel either, so
+it inherits that same one and so does every `TreeViewItem` for its children. There is no
+virtualizing tree panel in the box, so a tree of ten thousand nodes realizes ten thousand
+controls. Flatten the expanded nodes into a list and virtualize that instead.
+
+**Overriding the container hooks needs `protected`, not `protected internal`.** They are
+declared `protected internal` in Avalonia, which from another assembly means `protected`,
+and C# refuses an override that says otherwise. `ContainerIndexChangedOverride` really is
+`protected`. Measured: all five refused to compile as `protected internal`.
+
+**A selection made inside an `OnKeyDown` override is put back if `base` then runs.**
+Measured on a `ListBox` subclass: setting `SelectedIndex` in the override took, and by the
+time the press returned the index was whatever the focused container had been, so left and
+right appeared to do nothing at all. `e.Handled = true` is not enough on its own. Return
+without calling `base` once the key has been answered.
+
+Selection and focus travel together when a key moves the selection. Setting `SelectedIndex`
+alone leaves focus on the old container, so follow it with `ContainerFromIndex(index)
+?.Focus(NavigationMethod.Directional)`, after a layout pass so the container exists.
+
 Selection in 12 changed: touch and pen select on release rather than press.
 `UpdateSelection` and `UpdateSelectionFromEventSource` are obsolete. Override
 `ShouldTriggerSelection` and `UpdateSelectionFromEvent`, and use the helpers in
@@ -383,6 +404,13 @@ on   moving left=13  knob at 16..27
 
 `KnobTransitions` is where the movement is timed, and it transitions `Canvas.Left`. That
 is the supported way and it avoids the transform animation trap above entirely.
+
+## Border cannot draw a dashed edge
+
+`Border` has `BorderBrush` and `BorderThickness` and nothing else. There is no
+`BorderDashArray` on it in 12.1.1. A dashed outline is a `Rectangle` with `Stroke`,
+`StrokeThickness` and `StrokeDashArray`, sized by the panel it sits in, and its corners
+are `RadiusX` and `RadiusY`, which are two doubles rather than a `CornerRadius`.
 
 ## Controls added in 12
 
@@ -705,6 +733,24 @@ positions in device pixels while the app works in the scaled ones.
 A scroll offset is set rather than scrolled to: find the `ScrollViewer`, assign
 `Offset`, call `UpdateLayout`, capture. That is how the gallery pages in this project are
 read.
+
+Three things about that, all measured while shooting a long page:
+
+- **One jump lands short.** The scroller clamps to the extent it knows about, and the
+  part of the page below has not been measured yet, so the offset asked for is cut down.
+  Set it, lay out, read where the target actually is and set it again until it arrives.
+- **Measure against the viewport, not the page.** Translating a point into the scrolled
+  content gives a number in a space that moves with the offset. Translating into the
+  `ScrollViewer` gives the distance from the top of what is on screen, which is the thing
+  worth adding to the offset already set.
+- **The first captured frame is the layout before the first scroll.** Every later capture
+  is current, so throw the first picture away rather than trusting it. It cost an hour
+  reading a screenshot of the wrong part of a page as a bug in the part being built.
+
+**Headless input carries no click count**, so a double tap cannot be produced by clicking
+twice. Raise the gesture instead:
+`control.RaiseEvent(new TappedEventArgs(InputElement.DoubleTappedEvent, null!) { Source =
+control })`. The last pointer arguments may be null when nothing reads them.
 
 ## Resources and fonts
 

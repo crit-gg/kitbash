@@ -9,11 +9,14 @@ namespace Workbench.Gallery.Views;
 public partial class GalleryWindow : ChromelessWindow
 {
     private readonly List<Control> _chips = [];
+    private readonly List<Node> _big = [];
     private bool _disabled;
 
     public GalleryWindow()
     {
         InitializeComponent();
+
+        BuildTrees();
 
         _chips.AddRange(Chips.Children);
 
@@ -64,6 +67,93 @@ public partial class GalleryWindow : ChromelessWindow
 
             control.IsHitTestVisible = false;
         }
+    }
+
+    /// <summary>
+    /// The two trees. Both are flattened by <see cref="TreeRows"/>, which is what a tree
+    /// is given here, and the big one is the case a nested tree of controls cannot do.
+    /// </summary>
+    private void BuildTrees()
+    {
+        var sample = new List<Node>
+        {
+            new("First group", "3",
+            [
+                new("A row"),
+                new("A row that is picked"),
+                new("A branch", "2",
+                [
+                    new("Deeper"),
+                    new("Deeper again"),
+                ]),
+            ]),
+            new("Second group", "2",
+            [
+                new("A leaf keeps the caret's room, so a branch and a leaf line up"),
+                new("Another"),
+            ]),
+            new("A group with nothing in it"),
+        };
+
+        var opened = new TreeRows(sample, Under);
+
+        // Opened, so the indent, the guides and a branch inside a branch are all on the
+        // page rather than a click away.
+        opened.Expand(opened[0]);
+        opened.Expand(opened[3]);
+
+        SampleTree.ItemsSource = opened;
+
+        for (var group = 1; group <= 200; group++)
+        {
+            var rows = new List<Node>();
+
+            for (var row = 1; row <= 50; row++)
+            {
+                rows.Add(new Node($"Row {group}.{row}"));
+            }
+
+            _big.Add(new Node($"Group {group}", rows.Count.ToString(), rows));
+        }
+
+        BigTree.ItemsSource = new TreeRows(_big, Under);
+    }
+
+    private static IEnumerable<Node> Under(object item) => ((Node)item).Children;
+
+    private void OnExpandAll(object? sender, RoutedEventArgs e)
+    {
+        if (BigTree.ItemsSource is not TreeRows rows)
+        {
+            return;
+        }
+
+        // Backwards, so expanding one does not move the rows still to be opened.
+        for (var index = rows.Count - 1; index >= 0; index--)
+        {
+            rows.Expand(rows[index]);
+        }
+
+        ShowRowCount();
+    }
+
+    private void OnCollapseAll(object? sender, RoutedEventArgs e)
+    {
+        if (BigTree.ItemsSource is TreeRows rows)
+        {
+            rows.Reset(_big);
+            ShowRowCount();
+        }
+    }
+
+    private void OnCountRows(object? sender, RoutedEventArgs e) => ShowRowCount();
+
+    private void ShowRowCount()
+    {
+        var rows = BigTree.ItemsSource is TreeRows source ? source.Count : 0;
+        var real = BigTree.GetVisualDescendants().OfType<TreeItem>().Count();
+
+        RowCount.Text = $"{rows} rows, {real} of them are controls";
     }
 
     private void OnToggleEnabled(object? sender, RoutedEventArgs e)

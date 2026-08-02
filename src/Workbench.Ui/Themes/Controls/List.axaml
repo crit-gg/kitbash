@@ -1,0 +1,173 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Workbench.Ui.Controls">
+
+    <!-- Rows, and the seven states one can be in.
+
+         The rule the whole thing is written to keep: a row never carries both a fill and
+         an outline. Hover and selection are fills, focus is the halo every other control
+         draws, and a drop target is the one dashed edge in the theme. A row wearing a
+         tint, a border and a halo at once is what this shape prevents.
+
+         Selection is the tint alone. No left marker, no second fill, and the ink lifts to
+         SelectionInk so a selected row reads as selected without the row moving.
+
+         The order is the order every control theme here is written in: base, base states,
+         then each kind with its states, then disabled last so it beats all of them. -->
+
+    <ControlTheme x:Key="{x:Type ListBox}" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingList}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <ScrollViewer Name="PART_ScrollViewer"
+                                  Padding="{TemplateBinding Padding}"
+                                  HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                  VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                        <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </ScrollViewer>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ListBoxItem}" TargetType="ListBoxItem">
+        <Setter Property="Height" Value="{DynamicResource HeightControlTall}" />
+        <Setter Property="Margin" Value="{DynamicResource MarginRow}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingListRow}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+
+        <!-- The halo reaches outside the row, and a ContentControl clips to its bounds
+             unless it is told not to. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            IsHitTestVisible="False" />
+
+                    <!-- The dashed outline a drag lands on. A Rectangle rather than the
+                         frame's own edge, because a Border in Avalonia 12 has no dash of
+                         any kind. -->
+                    <Rectangle Name="PART_Drop"
+                               Stroke="{DynamicResource LineControl}"
+                               StrokeThickness="1"
+                               StrokeDashArray="3,2"
+                               RadiusX="{DynamicResource SizeRadiusControl}"
+                               RadiusY="{DynamicResource SizeRadiusControl}"
+                               IsHitTestVisible="False"
+                               IsVisible="False" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <DockPanel LastChildFill="True">
+                            <!-- The modified mark. Part of the row rather than of what a
+                                 view puts in it, so a row can say it has unsaved changes
+                                 without every view drawing its own square. -->
+                            <Border Name="PART_Modified"
+                                    DockPanel.Dock="Right"
+                                    Width="{DynamicResource SizeMarkModified}"
+                                    Height="{DynamicResource SizeMarkModified}"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    CornerRadius="{DynamicResource RadiusMark}"
+                                    Background="{DynamicResource Warn}"
+                                    IsVisible="False" />
+
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </DockPanel>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- Selection is the tint and the ink together. The weight lifts with them, which
+             is what the design draws, and it is why a row reserves no room for a marker. -->
+        <Style Selector="^:selected">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        </Style>
+
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <!-- Focus is the halo, the same one every control draws, so a selected row keeps
+             its tint and gains a ring rather than swapping one for the other. -->
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <!-- A row that has changed and not been saved. -->
+        <Style Selector="^.modified /template/ Border#PART_Modified">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- What a drag would land on. The only dashed edge in the theme, and it takes no
+             fill, because a row carries one or the other and never both. A view sets the
+             class while a drag is over the row, and drag and drop itself is stage 11. -->
+        <Style Selector="^.drop">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^.drop /template/ Rectangle#PART_Drop">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <!-- A mark goes a step darker than text does, the way the design draws a switched
+             off row's leading mark, since a solid square reads louder than a word. -->
+        <Style Selector="^:disabled /template/ Border#PART_Modified">
+            <Setter Property="Background" Value="{DynamicResource MarkOff}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

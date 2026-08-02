@@ -186,6 +186,10 @@ Only two controls here are hand built, and only because Avalonia has no type for
 smallest of those: a `HeaderedContentControl` plus a footer, since no built in type carries
 a header, a body and a footer at once.
 
+`Tree` is the one that is a subclass rather than a new control. It derives from `ListBox`,
+because a tree that virtualises is a flat list of the rows that can be seen and Avalonia has
+no virtualising tree of its own. See Rows, lists and trees below.
+
 Theme the whole type rather than reaching past it. Where a control publishes settings for
 a theme to drive, such as `ProgressBar.TemplateSettings`, use them and take the values it
 computes. Holding a built in control to a number it does not compute means owning it.
@@ -470,6 +474,78 @@ back, so no theme can read which way it runs. Measured both ways.
 **The empty panel** is a class rather than a control, `StackPanel.emptyState`, the way the
 status bar readouts are. The design draws a neutral square where the glyph belongs, so the
 view names the glyph.
+
+### Rows, lists and trees
+
+One row look, used by a list and by a tree, and the rule that keeps it readable.
+
+**A row never carries both a fill and an outline.** Hover and selection are fills, focus is
+the same halo every other control draws, and a drop target is the one dashed edge in the
+theme. Selection is the tint alone, `AccentTint` with `SelectionInk` text at medium weight,
+with no left marker and no border. A row wearing a tint, a border and a halo at once is what
+this rule exists to prevent.
+
+The seven states are in `Themes/Controls/List.axaml` over `ListBoxItem`, and everything else
+here is built on them. Two of them are classes rather than states, because nothing in the
+control says them: `modified` draws the amber square at the end of the row, and `drop` draws
+the dashed outline. Drag and drop itself is stage 11.
+
+A row is 27px in a list and 25px in a tree, both with 2px under them and the control radius
+on the row itself. A list row rests at `InkSecondary` and comes up to `InkPrimary` under the
+pointer, which is what the design's five columns draw.
+
+**`ui:Tree` is a tree that virtualises, and it is ours because Avalonia has no such thing.**
+`ListBox` is the only items control in Avalonia 12 that replaces its panel with a
+virtualising one. `TreeView` does not, and neither does any `TreeViewItem` for its children,
+so a tree of ten thousand nodes is ten thousand controls. **`TreeView` is deliberately not
+themed**, so there is one tree in this library rather than two that behave differently.
+
+```csharp
+tree.ItemsSource = new TreeRows(roots, item => ((Node)item).Children);
+```
+
+`TreeRows` is the tree flattened to the rows that can be seen, and it is what a tree is
+given. Expanding splices a subtree into the list and collapsing takes it out again, so the
+list only ever holds rows a person could see. Collapsing forgets, and opening a row asks
+what is under it again rather than trusting what it was told before.
+
+Depth is a value on a row rather than a place in the tree of controls. `TreeItem` reads it
+and turns it into three things: the frame is pushed in by `Level` times `IndentTree`, the
+caret sits at the front of the frame and holds its width whether it is drawn or not, and the
+guides are rendered by the row itself, since one element per level would be built and thrown
+away on every scroll.
+
+**A container is told everything in one place and untold in the same one.** `TreeItem.Follow`
+is that place. A virtualising panel reuses a container for another row, so anything set when
+one is prepared has to be unset there too. `ContainerIndexChangedOverride` is the case
+usually missed, where a container is kept but moved. Measured over 10,200 rows: 303 recycled
+rows read while scrolling, none wearing another row's state, with 7 or 8 controls realised
+throughout.
+
+**The indent is 14 and the guide falls at 8 into the band.** The design's prose says 14 and
+its markup steps 21, and the two agree once the leading slot is taken out: a child there
+swaps a 22 wide caret slot for a 15 wide mark, and 21 less 7 is 14. Every row here reserves
+the caret slot instead, so a branch and a leaf that are siblings line up and the step is 14
+outright. Measured: frames at 0, 14, 28 and labels at 30, 44, 58.
+
+**A guide follows the tone it stands on** and stays one step quieter than that tone's seam.
+The design draws a tree on the root tone, where the seam is `LineSeam` and the guide is
+`LineRow`, and the ramp in the theme keeps that gap at depth. Measured, and the reason it is
+not one brush: `LineRow` on `SurfaceNest2` differs by one in each channel, so a guide named
+once disappears the moment a tree is put inside two panels.
+
+**A click on the caret opens a row without changing what is picked.** The caret's hit area
+handles the press and marks it handled, which stops the row selecting. A single click
+elsewhere picks the row, a double click opens it, and left and right arrow do the same from
+the keyboard: right opens a closed branch and steps into an open one, left closes an open
+branch and goes out to the parent from a closed one.
+
+**Tabs** are `TabControl` and `TabItem` in `Themes/Controls/Tabs.axaml`, drawn from the
+design's docking page with the dock's own tier left out. The open tab takes the page's
+surface and the accent marker together, since either alone would be saying it in colour. A
+tab is square, because it meets the page below it. Its label is mono, which is what the
+design draws and is worth keeping, since a tab names a document rather than a sentence. Top
+placement only.
 
 ### Overlays
 
@@ -1042,13 +1118,13 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 8 are done. `Workbench.Ui` carries the Slate
+Stages 1 to 9 are done. `Workbench.Ui` carries the Slate
 tokens, the type scale, the 49 icons, the window shell, the activity rail, every overlay
 surface, the depth ramp, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
-combo box and the hyperlink.
+combo box, the hyperlink, the list row, the tree and the tabs.
 
 Stage 8 is done except the colour field, which waits on stage 12 because its swatch has
 nothing to open until the picker exists.

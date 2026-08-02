@@ -1,5 +1,9 @@
 # Stage 9: lists and trees
 
+**Built.** See Rows, lists and trees in `.claude/CLAUDE.md` for what the library holds and
+"Where this departed from the plan" at the foot of this file for what the design said that
+this did not.
+
 Row surfaces. The first stage where virtualisation and container recycling matter.
 
 ## Goal
@@ -95,3 +99,44 @@ top of them.
 - All seven row states render and none of them stack a fill with an outline.
 - Focus is visible on a selected row.
 - Keyboard navigation moves through the tree and expands and collapses.
+
+All four hold. Measured in the gallery, headless with real drawing: 200 groups of 50
+opened to 10,200 rows with 7 controls realised and 8 at the foot, 303 recycled rows read
+while scrolling the whole thing with none wearing another row's state, and every state
+and every key in the list above.
+
+## Where this departed from the plan
+
+Four things above are wrong against the design page. The design was read again and won
+each time.
+
+**Focus on a selected row is the halo, not an inset line.** The design draws
+`0 0 0 2px rgba(86,158,255,.3)` on a selected row, which is the same halo every control
+in the system draws, and its own note says so: "hover and selection are fills, focus is
+the halo". An inset line would have been a second focus look for one surface.
+
+**A drop target is neutral, not accent.** The design draws `1px dashed #3d4045`, which is
+`LineControl`. The same note calls it "the only dashed edge in the theme", and dashed is
+what says drop rather than the colour.
+
+**A list row is 27px and rests at `InkSecondary`.** The control inventory draws it at 27
+with 9px of padding, resting at `#a9aeb6` and coming up to `#e3e5e9` under the pointer.
+The plan said 26px at `InkPrimary`.
+
+**The caret does not rotate.** It swaps glyph, chevron right to chevron down, which is
+what the design draws and what the expander here already does. A rotation would have been
+a second answer to the same question.
+
+Two more things this had to decide, neither of them in the plan.
+
+**`TreeView` is not themed at all.** The plan named it as the built in type and then said
+to flatten the tree, which cannot both be done: a flattened tree is a `ListBox`. Themeing
+`TreeView` as well would leave two trees in the library, one that virtualises and one that
+does not, and every consumer picking between them. So there is one, `ui:Tree`, and
+`TreeView` keeps whatever Fluent gives it.
+
+**The indent is 14 with the caret slot reserved on every row.** The design's prose says 14
+per level and its markup steps 21. Both are right: a child there swaps a 22 wide caret slot
+for a 15 wide mark, so a label lands 14 further in. Reserving the slot on every row reaches
+the same 14 and also lines up a branch with a leaf beside it, which the design never draws
+and would otherwise be ragged.

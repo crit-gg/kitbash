@@ -33,6 +33,9 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/NumericUpDown.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/GridSplitter.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/SplitView.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/List.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Tree.axaml" />
+                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Tabs.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

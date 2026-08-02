@@ -116,15 +116,20 @@ want the same shell, so it is not the launcher's.
 | 6 | `TextBox`, `AutoCompleteBox`, `MaskedTextBox`, `CheckBox`, `RadioButton`, `ToggleSwitch`, `Slider`, `TickBar`, `NumericUpDown`, `ComboBox`, `CalendarDatePicker`, `TimePicker` |
 | 7 | `GridSplitter`, `Expander`, `SplitView` |
 | 8 | `ContextMenu`, `Menu`, `MenuItem`, `MenuFlyout`, `Flyout`, `Popup`, `ToolTip`, `Separator` |
-| 9 | `ListBox`, `ListBoxItem`, `TreeView`, `TreeViewItem`, `TabControl`, `TabItem` |
+| 9 | `ListBox`, `ListBoxItem`, `TabControl`, `TabItem`. **Not `TreeView`**, which cannot virtualise, so the tree is `ui:Tree` over `ListBox` |
 | 10 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
 
 Six things in this plan have no built in type and stay hand built: the chip, the status
 pill and the badge in stage 4, the range slider in stage 8, the colour picker in stage 12,
 and the toast in stage 13. The toast is hand built by decision rather than by absence.
 Libraries exist and none is taken, because a toast here is a control with an injected
-service behind it rather than a global. Everything else in stages 4 to 10 is a theme over the list above. Stage 11's
-docking surface comes from Dock.
+service behind it rather than a global. Stage 11's docking surface comes from Dock.
+
+Two more are ours because the built in type cannot do the one thing that matters. `ui:Tree`
+in stage 9 is a `ListBox` subclass, since `TreeView` does not virtualise and there is no
+virtualising tree panel in the box. The tree data grid in stage 10 is built on that tree,
+since `TreeDataGrid` is paid and `TableView` is flat. Everything else in stages 4 to 10 is
+a theme over the list above.
 
 Two near misses worth naming, because both look hand built and are not. A stepped slider
 is `Slider` with `TickFrequency` and `IsSnapToTickEnabled` and a `TickBar` whose `Fill`
