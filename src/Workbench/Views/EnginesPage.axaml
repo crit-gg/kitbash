@@ -246,7 +246,19 @@
                                 <Border Classes="engineRow">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                                         <StackPanel Grid.Column="0">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
+
+                                            <!-- The floor is the pill's own height, so a
+                                                 row is the same whether it carries one or
+                                                 not. Measured without it: a card with a
+                                                 pill is 61 and one without is 58, because
+                                                 a pill is 17 and the title's line box at
+                                                 12.5 is 14. Three pixels is enough to read
+                                                 as an uneven list. A floor rather than a
+                                                 height, so a title that ever grows past
+                                                 the pill still fits and still grows every
+                                                 row alike. -->
+                                            <StackPanel Orientation="Horizontal" Spacing="8"
+                                                        MinHeight="{DynamicResource HeightPill}">
                                                 <TextBlock Classes="rowTitle" Text="{Binding Title}" />
                                                 <ui:Badge Content="DEFAULT" IsVisible="{Binding IsDefault}" />
                                                 <ui:Badge Content="{Binding Channel}" IsVisible="{Binding HasChannel}" />
