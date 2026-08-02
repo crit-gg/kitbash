@@ -28,7 +28,6 @@
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ProgressBar.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/Overlays.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ActivityRail.axaml" />
-                <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/ItemsControl.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/GridSplitter.axaml" />
                 <ResourceInclude Source="avares://Workbench.Ui/Themes/Controls/SplitView.axaml" />
             </ResourceDictionary.MergedDictionaries>

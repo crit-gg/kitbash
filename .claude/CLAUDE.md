@@ -193,13 +193,15 @@ computes. Holding a built in control to a number it does not compute means ownin
 One `ControlTheme` per type in `Workbench.Ui/Themes/Controls`, all merged by
 `WorkbenchTheme.axaml`. A view names a kind and never a value.
 
-**A built in control with no theme here has no template at all.** Avalonia ships its
-default templates in its own themes, which this app does not load, so `Template` is null
-and the control measures to nothing and draws nothing with no warning. Measured on
-`ItemsControl`, which the launcher's tool list uses: the list was empty for that reason
-until `Themes/Controls/ItemsControl.axaml` was added, and that theme is deliberately bare
-because the rows belong to the consumer. Expect the same of every list surface until
-stage 9 themes it.
+**Fluent sits underneath, and it is what makes an unthemed control work.** Every
+executable loads `<FluentTheme />` before `WorkbenchTheme`, so a type this library has not
+themed still has a template and still draws. That is why a `ScrollViewer` scrolls and an
+`ItemsControl` lists without either appearing in `Themes/Controls`.
+
+So a theme written here is always a replacement rather than a first look, and dropping one
+in takes away whatever Fluent was doing for that type. Do not add a bare theme to a type
+that is working. Measured: with Fluent removed, an `ItemsControl` has a null template and
+draws nothing at all, silently.
 
 ```xml
 <Button Classes="primary" Content="Add workspace" />
