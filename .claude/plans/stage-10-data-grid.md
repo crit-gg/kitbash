@@ -1,11 +1,13 @@
 # Stage 10: data grid
 
-The densest surface in the system, and the one a data tool lives in.
+The densest surface in the system, and the one a data tool lives in. Both grids are
+here, the flat one and the tree one, because they share a column layout and splitting
+them would mean writing that twice.
 
 ## Goal
 
 A grid that reads cleanly at 31px rows with thousands of rows, sorts, edits in place
-and groups.
+and groups, and a tree grid that puts hierarchy in its first column.
 
 ## Build it on TableView, not from scratch
 
@@ -66,6 +68,23 @@ switches them on.
 The two must not fight. Sorting, selection and the counts all read the full set, not the
 current page, so turning pagination on changes what is rendered and nothing else.
 
+## The tree data grid
+
+Hierarchy in the first column, aggregates on the branch rows. The branch row shows
+rolled up values in the same columns its children use, in monospace, at `InkSecondary`
+so it reads as a summary rather than as data.
+
+`TreeDataGrid` is a Pro control and is not an option, and `TableView` is flat, so this
+one surface has no built in type behind it. It is the exception, and it is built on the
+stage 9 tree, which is where the hierarchy and the flat row list already are.
+
+Take the column layout from `TableViewColumn` rather than inventing a second one. That
+is the whole reason this sits in stage 10 and not stage 9: a tree grid is a tree that
+also lays out columns, so the columns have to exist first.
+
+Its group header is the branch row, which is hierarchy. The flat grid's group header
+below is grouping, which is not. Two different rows, and neither one is the other.
+
 ## What is ours and what is not
 
 Decided, not open. The grid is `TableView` with a control theme over it. Do not plan
@@ -89,7 +108,8 @@ Build it in this order, so each piece is verifiable before the next depends on i
 4. Sorting and the sort indicator.
 5. Inline edit.
 6. Grouping and group headers.
-7. Pagination, last, because it is optional and nothing else may depend on it.
+7. Pagination, because it is optional and nothing else may depend on it.
+8. The tree data grid, last, since it takes the column layout from everything above.
 
 Step one is not optional. Everything after it assumes the control behaves, and that is
 the assumption to break early rather than late.
@@ -105,3 +125,5 @@ building it now.
 - Sorting, grouping and inline edit work and look like the design.
 - Selection of many rows shows a count in the footer.
 - No cell sets its own brush.
+- The tree grid lays out the same columns as the flat one, and its branch rows carry
+  aggregates that read as a summary rather than as data.

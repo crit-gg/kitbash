@@ -77,20 +77,16 @@ Selection in Avalonia 12 changed: touch and pen select on release rather than pr
 are now `ShouldTriggerSelection` and `UpdateSelectionFromEvent`. Any custom selection
 behaviour uses the new ones.
 
-## Tree data grid
+## Neither grid is in this stage
 
-Hierarchy in the first column, aggregates on the branch rows. The branch row shows
-rolled up values in the same columns its children use, in monospace, at `InkSecondary`
-so it reads as a summary rather than as data.
+Both the data grid and the tree data grid are stage 10. A tree data grid is a tree that
+also lays out columns, and the column layout comes from `TableViewColumn`, which stage 10
+is where it is themed. Building it here would mean inventing a second column layout and
+then throwing one of the two away.
 
-`TreeDataGrid` is a Pro control and is not an option, and `TableView` is flat, so this
-one surface has no built in type behind it. It is the exception, and it is built on
-`TreeView`, which is where the hierarchy already lives.
-
-Build the tree first and the columns second. A tree data grid is a tree that also lays
-out columns, so if the stage 9 tree is right, this is column layout on top of it rather
-than a separate control. Take that column layout from `TableViewColumn` in stage 10
-rather than inventing a second one.
+What this stage owes stage 10 is the tree itself: the flat row list, the seven row states
+and the branch row. Get those right and the tree data grid is column layout dropped on
+top of them.
 
 ## Done when
 
