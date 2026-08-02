@@ -377,6 +377,7 @@ design's fourth alert form and was already built.
 | An install marked per file | Marked per version | One install per version, so a second processor replaces rather than joins |
 | One download at a time | Three at a time, the rest queued | Asked for. Each row owns its progress and its cancel |
 | Opens on Available | Opens on Installed | Asked for. The page is opened to see what is here more often than to fetch something new |
+| A size on every build row | No size column | A size is a request per file, 350 of them and 26 seconds cold, for a number Godots does not draw either |
 | Channel as selectable chips | A second `ui:Segmented` | `ui:Chip` has no selected state and channel is one choice among several, which is what a segmented row is |
 | Four channels | Five, from the feed | Counted over 356 releases: `rc` 120, `beta` 94, `stable` 72, `dev` 42, `alpha` 27. The design's list is its sample data |
 | Verify checksum in the menu | Removed | The published hash is over the archive, which is gone after install |
@@ -466,39 +467,32 @@ editors, so by the time a card is built the macOS, web and Android names have be
 and there is nothing left to name. The catalogue keeps the set of platforms seen in the
 manifest, including the ones it cannot install, purely so that line can be written.
 
-## The gap the design cannot fill, and how it is closed
+## No size column, and everything else up front
 
-**`versions.json` carries no file sizes**, and the design draws a size on every build row.
-The checksum file carries names and hashes only. The GitHub releases API carries sizes and
-is the thing we are staying off.
+**A card holds everything it will ever draw the moment it is made.** The feed says a
+release exists and says nothing about its files, so every manifest is read with the feed
+rather than one per card on expand. Measured: 183 of them in 1.8 seconds cold, and a
+manifest is cached without an expiry because a tag names a fixed set of files once it is
+cut, so every launch after the first reads them off a disk. Opening a card fetches nothing
+and waits for nothing.
 
-**Measured on 2 August 2026, and the column stands.** The download host answers `HEAD`
-with the real `Content-Length`, but only on the final response: the `github.com` URL is a
-302 to a signed URL and the 302 itself reports zero. So follow the redirect and read the
-length off the 200.
+**The size is dropped rather than fetched.** The design draws one per build row and neither
+the feed nor a manifest carries it, so each would be a request of its own: measured, 350 of
+them for one processor across every Godot 4 release, about 26 seconds cold. That is a long
+time for a number nobody asked for, and it is the one thing that cannot be had up front.
 
-A card needs two of those while the disclosure is closed, since one machine sees one pair
-of builds, and eight on Linux or six on Windows once it is opened. They go at once.
-Measured through the catalogue: eight Linux sizes for one release took 169 to 309 ms in
-parallel, against 1.34 seconds for six done one after another. The column is blank until
-it answers and never blocks the row.
+Godots settles the question. Read from its source: it takes the version list from the same
+website data, fetches one release's assets from the GitHub API when that release is
+expanded, and **never shows a size at all**. Its asset type carries a name, a file name, a
+URL and whether it is a zip, and the API response it parses does carry a size, which it
+ignores.
 
-**The signed URL expires in about an hour**, so a resolved URL is never cached. The
-`github.com` one is cached and the redirect is followed each time.
+The GitHub API is the other way to have both, since it gives names and sizes together in
+one call per release. It stays rejected for the reason it always was: 60 requests an hour
+per address, shared with the person's browser, which one call per card opened survives and
+183 up front does not.
 
-## Scrolling is imprecise while a card is open
-
-**Measured and left alone on purpose.** A card that opens is much taller than one that is
-closed, and `VirtualizingStackPanel` estimates its extent from the rows it has realised, so
-the same list reports an extent anywhere between 1730 and 6196 depending on where it is
-scrolled. The thumb changes size as it moves and a scroll past the estimate stops short.
-
-It is not this page's to fix. `.claude/plans/variable-height-list.md` is the panel that
-fixes it, and stage 11's grids need the same thing. Until it lands the page keeps the
-built in panel, since the alternative is realising all 183 cards, which is the 348 to
-709 ms this already came back from.
-
-## Hazards
+## Hazards## Hazards
 
 **The engine directory can be anything.** It is a setting, it is rooted and that is all
 the rule checks. It can be missing, unwritable, on a full disk, or on a different mount

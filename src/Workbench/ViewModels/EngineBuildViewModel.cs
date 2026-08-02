@@ -19,9 +19,6 @@ public sealed partial class EngineBuildViewModel : ViewModelBase
     private readonly Action<EngineBuildViewModel> _cancel;
 
     [ObservableProperty]
-    private string _size = string.Empty;
-
-    [ObservableProperty]
     private bool _isInstalled;
 
     [ObservableProperty]
@@ -60,8 +57,6 @@ public sealed partial class EngineBuildViewModel : ViewModelBase
 
     /// <summary>True while this row can be started, which is the Install button.</summary>
     public bool CanInstall => !IsInstalled && !IsWorking;
-
-    public bool HasSize => Size.Length > 0;
 
     /// <summary>Waiting for a slot. Several installs run at once and the rest queue.</summary>
     public bool IsQueued => IsWorking && Stage == EngineInstallStage.Queued;
@@ -122,8 +117,6 @@ public sealed partial class EngineBuildViewModel : ViewModelBase
     partial void OnIsWorkingChanged(bool value) => NotifyState();
 
     partial void OnStageChanged(EngineInstallStage value) => NotifyState();
-
-    partial void OnSizeChanged(string value) => OnPropertyChanged(nameof(HasSize));
 
     private void NotifyState()
     {

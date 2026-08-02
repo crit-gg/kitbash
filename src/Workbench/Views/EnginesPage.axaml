@@ -212,17 +212,20 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
 
-        <Style Selector="Button.cardHead /template/ ContentPresenter">
+        <!-- The fill goes on the frame, not on the presenter. A presenter sits inside the
+             button's padding, so a background there draws a rectangle floating inside the
+             header rather than the header lighting up. -->
+        <Style Selector="Button.cardHead /template/ Border#PART_Root">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="0" />
         </Style>
 
-        <Style Selector="Button.cardHead:pointerover /template/ ContentPresenter">
+        <Style Selector="Button.cardHead:pointerover /template/ Border#PART_Root">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
         </Style>
 
-        <Style Selector="Button.cardHead:pressed /template/ ContentPresenter">
+        <Style Selector="Button.cardHead:pressed /template/ Border#PART_Root">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
         </Style>
 
@@ -610,9 +613,6 @@
                                     <Border Classes="cardBody" IsVisible="{Binding IsOpen}">
                                         <StackPanel>
 
-                                            <TextBlock Classes="cardNote" Text="Reading what this release holds"
-                                                       IsVisible="{Binding IsLoading}" />
-
                                             <ui:Alert Form="Block" Tier="Error"
                                                       Title="This release could not be read"
                                                       Description="{Binding Failure}"
@@ -648,7 +648,13 @@
                                                                 <ItemsControl.ItemTemplate>
                                                                     <DataTemplate x:DataType="vm:EngineBuildViewModel">
                                                                         <Border Classes="buildRow">
-                                                                            <Grid ColumnDefinitions="*,80,218"
+                                                                            <!-- No size column.
+                                                                                 A size is a
+                                                                                 request per
+                                                                                 file and the
+                                                                                 list does not
+                                                                                 show one. -->
+                                                                            <Grid ColumnDefinitions="*,218"
                                                                                   ColumnSpacing="12">
                                                                                 <StackPanel Grid.Column="0"
                                                                                             Orientation="Horizontal" Spacing="9">
@@ -659,11 +665,7 @@
                                                                                               IsVisible="{Binding IsMono}" />
                                                                                 </StackPanel>
 
-                                                                                <TextBlock Grid.Column="1" Classes="buildSize"
-                                                                                           Text="{Binding Size}"
-                                                                                           IsVisible="{Binding HasSize}" />
-
-                                                                                <Panel Grid.Column="2">
+                                                                                <Panel Grid.Column="1">
                                                                                     <Button Theme="{StaticResource InstallButton}"
                                                                                             HorizontalAlignment="Right"
                                                                                             Command="{Binding InstallCommand}"

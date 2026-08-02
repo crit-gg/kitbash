@@ -37,14 +37,10 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     /// </summary>
     private readonly Dictionary<string, EngineBuildViewModel> _rows = new(StringComparer.Ordinal);
 
-    private IReadOnlyList<EngineBuild> _forHost = [];
-    private bool _read;
+    private readonly IReadOnlyList<EngineBuild> _forHost;
 
     [ObservableProperty]
     private bool _isOpen;
-
-    [ObservableProperty]
-    private bool _isLoading;
 
     /// <summary>
     /// The subtitle is two parts rather than one string, since the design spaces them 18
@@ -85,7 +81,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     [ObservableProperty]
     private string _failure = string.Empty;
 
-    public ReleaseCardViewModel(EngineRelease release, EnginesViewModel page)
+    public ReleaseCardViewModel(EngineRelease release, EngineManifest? manifest, EnginesViewModel page)
     {
         ArgumentNullException.ThrowIfNull(release);
         ArgumentNullException.ThrowIfNull(page);
@@ -96,6 +92,26 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
         Title = EngineRowViewModel.NameOf(release.Tag);
         Channel = EngineRowViewModel.ChannelOf(release.Tag);
         Released = $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}";
+
+        // **Everything the card will ever show, worked out here.** Opening it does no
+        // reading and no fetching, so there is nothing to wait for and nothing to pop in.
+        _forHost = manifest is null
+            ? []
+            : [.. manifest.Builds.Where(build => build.Platform == page.HostPlatform)];
+
+        Failure = manifest is null ? "This release could not be read." : string.Empty;
+        IsUnavailable = manifest is not null && _forHost.Count == 0;
+        UnavailableNote = $"No {page.HostPlatformText} builds in this release";
+
+        PublishedFor = manifest is { PublishedTargets.Count: > 0 }
+            ? $"Published for {string.Join(", ", manifest.PublishedTargets)}."
+            : string.Empty;
+
+        BuildCount = _forHost.Count == 0
+            ? string.Empty
+            : _forHost.Count == 1 ? "1 build" : $"{_forHost.Count} builds";
+
+        Arrange();
     }
 
     public EngineTag Tag => _release.Tag;
@@ -128,16 +144,9 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
     public ObservableCollection<EngineArchitectureGroupViewModel> Groups { get; } = [];
 
+    /// <summary>Opening is a flag. Everything it reveals was worked out when it was made.</summary>
     [RelayCommand]
-    private async Task ToggleAsync()
-    {
-        IsOpen = !IsOpen;
-
-        if (IsOpen)
-        {
-            await OpenAsync().ConfigureAwait(true);
-        }
-    }
+    private void Toggle() => IsOpen = !IsOpen;
 
     [RelayCommand]
     private void OpenNotes()
@@ -151,54 +160,6 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     [RelayCommand]
     private void ToggleArchitectures() => _page.ShowAllArchitectures = !_page.ShowAllArchitectures;
 
-    /// <summary>Reads the manifest once, then arranges what it holds.</summary>
-    public async Task OpenAsync()
-    {
-        if (_read)
-        {
-            Arrange();
-
-            return;
-        }
-
-        IsLoading = true;
-
-        try
-        {
-            var manifest = await _page.ReadManifestAsync(Tag).ConfigureAwait(true);
-
-            _forHost = [.. manifest.Builds.Where(build => build.Platform == _page.HostPlatform)];
-            _read = true;
-
-            IsUnavailable = _forHost.Count == 0;
-            UnavailableNote = $"No {_page.HostPlatformText} builds in this release";
-            PublishedFor = manifest.PublishedTargets.Count > 0
-                ? $"Published for {string.Join(", ", manifest.PublishedTargets)}."
-                : string.Empty;
-
-            // A release with nothing for this platform has no count to give, which is what
-            // the design drops from its subtitle rather than writing a zero.
-            BuildCount = IsUnavailable
-                ? string.Empty
-                : _forHost.Count == 1 ? "1 build" : $"{_forHost.Count} builds";
-
-            Arrange();
-
-            // Sizes come from a request per build, so they go out together and land as they
-            // answer. The column is blank until then and never holds the rows up.
-            await _page.MeasureAsync(Groups.SelectMany(group => group.Builds).ToList()).ConfigureAwait(true);
-        }
-        catch (EngineCatalogueException error)
-        {
-            Failure = error.Message;
-            OnPropertyChanged(nameof(HasFailed));
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
     /// <summary>Groups what was read by processor, host first, honouring the disclosure.</summary>
     public void Arrange()
     {
@@ -210,6 +171,13 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
             HasNoNative = false;
 
             return;
+        }
+
+        // A row per build whatever is shown, so a size that arrives lands on one and the
+        // disclosure reveals rows that are already filled in.
+        foreach (var build in _forHost)
+        {
+            RowFor(build);
         }
 
         var native = _forHost.Where(build => build.Architecture == _page.HostArchitecture).ToList();
@@ -252,6 +220,9 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
         return row;
     }
+
+    /// <summary>Every row this card holds, whatever the disclosure is showing.</summary>
+    public IReadOnlyCollection<EngineBuildViewModel> Rows => _rows.Values;
 
     /// <summary>How many builds of this release are on the machine, for the header mark.</summary>
     public void CountInstalled(IReadOnlyList<InstalledEngine> installed)

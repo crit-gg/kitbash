@@ -11,7 +11,6 @@ internal sealed class EngineCatalogue : IEngineCatalogue
     private const string Feed = "https://godotengine.org/versions.json";
     private const string Manifests = "https://raw.githubusercontent.com/godotengine/godot-builds/main/releases";
     private const string FeedCacheName = "godot-versions.json";
-
     // gdvm's number, and the feed is a static file on a website rather than a CDN edge.
     // Measured: 0.63 seconds for 48 KB, with 0.40 of it waiting on the first byte.
     private static readonly TimeSpan FeedLife = TimeSpan.FromHours(48);
@@ -103,13 +102,6 @@ internal sealed class EngineCatalogue : IEngineCatalogue
         {
             throw new EngineCatalogueException($"The file list for Godot {tag} could not be read.", error);
         }
-    }
-
-    public Task<long?> MeasureAsync(EngineBuild build, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(build);
-
-        return _web.MeasureAsync(build.Address, cancellationToken);
     }
 
     /// <summary>

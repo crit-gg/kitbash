@@ -25,9 +25,9 @@ public interface IEngineCatalogue
     Task<EngineManifest> ReadManifestAsync(EngineTag tag, CancellationToken cancellationToken);
 
     /// <summary>
-    /// How large one build is, or null when the server will not say. The feed carries no
-    /// sizes and neither does a manifest, so this is a request of its own and the only
-    /// reason a card touches the network when it opens.
+    /// How large one build is is deliberately absent. The list does not show a size, so
+    /// nothing here fetches one. A size is a request per file and there are 350 of them
+    /// for one processor across every Godot 4 release, about 26 seconds cold, for a column
+    /// Godots does not draw either.
     /// </summary>
-    Task<long?> MeasureAsync(EngineBuild build, CancellationToken cancellationToken);
 }

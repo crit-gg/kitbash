@@ -49,6 +49,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly Dictionary<EngineTag, ReleaseCardViewModel> _cards = [];
 
     private IReadOnlyList<EngineRelease> _releases = [];
+    private IReadOnlyDictionary<EngineTag, EngineManifest> _manifests = new Dictionary<EngineTag, EngineManifest>();
     private IReadOnlyList<InstalledEngine> _installed = [];
     private EngineChannel? _channel = EngineChannel.Stable;
 
@@ -317,17 +318,43 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             var releases = await _catalogue.ReadReleasesAsync(refresh, CancellationToken.None).ConfigureAwait(false);
 
-            return new Loaded(releases.Releases, installed, releases.IsStale, releases.ReadAt, string.Empty);
+            // **Every manifest, not one per card as it opens.** A card should hold
+            // everything it will ever show the moment it is made, so a release that cannot
+            // be read is a card that says so rather than one that finds out later.
+            // Measured: 183 of them in 1.8 seconds cold, and they are cached without an
+            // expiry, so every launch after the first reads them off a disk.
+            var manifests = await Task.WhenAll(releases.Releases.Select(async release =>
+            {
+                try
+                {
+                    return await _catalogue
+                        .ReadManifestAsync(release.Tag, CancellationToken.None)
+                        .ConfigureAwait(false);
+                }
+                catch (EngineCatalogueException)
+                {
+                    return null;
+                }
+            })).ConfigureAwait(false);
+
+            return new Loaded(
+                releases.Releases,
+                manifests.Where(manifest => manifest is not null).ToDictionary(m => m!.Tag, m => m!),
+                installed,
+                releases.IsStale,
+                releases.ReadAt,
+                string.Empty);
         }
         catch (EngineCatalogueException error)
         {
-            return new Loaded([], installed, false, default, error.Message);
+            return new Loaded([], new Dictionary<EngineTag, EngineManifest>(), installed, false, default, error.Message);
         }
     }
 
     private void Apply(Loaded loaded)
     {
         _releases = loaded.Releases;
+        _manifests = loaded.Manifests;
         _installed = loaded.Installed;
 
         Failure = loaded.Failure;
@@ -335,6 +362,22 @@ public sealed partial class EnginesViewModel : ViewModelBase
         StaleNote = loaded.IsStale
             ? $"This list was read {Ago(loaded.ReadAt)} and could not be checked just now."
             : string.Empty;
+
+        // **A card per release, whatever tab is showing and whatever the filter is.** They
+        // hold everything they will ever draw, so making them is the point at which the
+        // page is complete, and filtering only decides which of them are listed.
+        foreach (var release in _releases)
+        {
+            if (!_cards.ContainsKey(release.Tag))
+            {
+                _cards[release.Tag] = new ReleaseCardViewModel(
+                    release,
+                    _manifests.GetValueOrDefault(release.Tag),
+                    this);
+            }
+
+            _cards[release.Tag].CountInstalled(_installed);
+        }
 
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
         InstalledCount = _installed.Count;
@@ -373,14 +416,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
                     continue;
                 }
 
-                if (!_cards.TryGetValue(release.Tag, out var card))
+                if (_cards.TryGetValue(release.Tag, out var card))
                 {
-                    card = new ReleaseCardViewModel(release, this);
-                    _cards[release.Tag] = card;
+                    cards.Add(card);
                 }
-
-                card.CountInstalled(_installed);
-                cards.Add(card);
             }
 
             Cards.Clear();
@@ -414,10 +453,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsEmpty));
     }
 
-    /// <summary>What a card asks for when it opens. Cached by the catalogue.</summary>
-    public Task<EngineManifest> ReadManifestAsync(EngineTag tag) =>
-        Task.Run(() => _catalogue.ReadManifestAsync(tag, CancellationToken.None));
-
     /// <summary>Opens a release notes page in the browser.</summary>
     public void OpenNotes(WebAddress notes) => Task.Run(() =>
     {
@@ -434,35 +469,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>One build row, wired to the install and the cancel.</summary>
     public EngineBuildViewModel BuildFor(EngineBuild build) =>
         new(build, _installed.Any(engine => engine.Id == build.Id), InstallAsync, Cancel);
-
-    /// <summary>
-    /// Sizes for the rows a card just opened, all at once. Neither the feed nor a manifest
-    /// carries one, so each is a request of its own. Measured: eight together take about a
-    /// fifth of a second where one after another takes over a second.
-    /// </summary>
-    public async Task MeasureAsync(IReadOnlyList<EngineBuildViewModel> builds)
-    {
-        ArgumentNullException.ThrowIfNull(builds);
-
-        var sizes = await Task.WhenAll(builds.Select(row =>
-            Task.Run(async () =>
-            {
-                try
-                {
-                    return await _catalogue.MeasureAsync(row.Build, CancellationToken.None).ConfigureAwait(false);
-                }
-                catch (Exception error) when (error is TimeoutException or HttpRequestException)
-                {
-                    // A size is worth having and never worth failing a card over.
-                    return null;
-                }
-            }))).ConfigureAwait(true);
-
-        for (var i = 0; i < builds.Count; i++)
-        {
-            builds[i].Size = sizes[i] is { } bytes ? Size(bytes) : string.Empty;
-        }
-    }
 
     /// <summary>
     /// Installs one build. Several run at once behind the installer's own cap, and each
@@ -588,6 +594,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>Everything one load read, ready to be put on screen.</summary>
     private sealed record Loaded(
         IReadOnlyList<EngineRelease> Releases,
+        IReadOnlyDictionary<EngineTag, EngineManifest> Manifests,
         IReadOnlyList<InstalledEngine> Installed,
         bool IsStale,
         DateTimeOffset ReadAt,
