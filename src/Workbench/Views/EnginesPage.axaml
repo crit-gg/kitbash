@@ -7,6 +7,32 @@
 
     <!-- The band and page classes are the launcher's and reach here from the window, so
          the two pages sit on the same tones without either naming one. -->
+    <UserControl.Resources>
+
+        <!-- A card is not a row. The library's ListBoxItem carries a height, a padding and
+             the seven row states, all of which would sit under a card that draws its own
+             surface, so the container here is a bare presenter and the card is the whole
+             look. Keyed rather than a class, for the reason the caption buttons are. -->
+        <ControlTheme x:Key="EngineCard" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Margin" Value="0,0,0,7" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+
+            <!-- A card is not a row to pick, and there is no SelectionMode that says so,
+                 so the container refuses focus and the theme draws no selected state. -->
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalContentAlignment="Stretch" />
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+    </UserControl.Resources>
+
     <UserControl.Styles>
 
         <!-- The mark beside the page title. The same square the workspace rows use, with
@@ -206,12 +232,18 @@
 
         <Border Grid.Row="3" Classes="page" BorderThickness="0">
             <Panel>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                              Padding="20,12,20,18">
-                    <ItemsControl ItemsSource="{Binding Rows}">
-                        <ItemsControl.ItemTemplate>
+                <!-- **A ListBox, because it is the only items control in Avalonia 12 that
+                     virtualises.** An ItemsControl realises every row, and this list is 183
+                     releases, so picking a channel cost 348 to 709 ms of layout. Nothing
+                     here is selectable: SelectionMode has no None in Avalonia, so the
+                     container is unfocusable and its theme draws no selected state. -->
+                <ListBox ItemsSource="{Binding Rows}"
+                         Padding="20,12,20,18"
+                         ItemContainerTheme="{StaticResource EngineCard}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:EngineRowViewModel">
-                                <Border Classes="engineRow" Margin="0,0,0,7">
+                                <Border Classes="engineRow">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                                         <StackPanel Grid.Column="0">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -230,9 +262,8 @@
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
                 <StackPanel Classes="emptyState" IsVisible="{Binding IsEmpty}">
                     <ui:Icon Glyph="Package" Size="{DynamicResource IconSizeLarge}" />

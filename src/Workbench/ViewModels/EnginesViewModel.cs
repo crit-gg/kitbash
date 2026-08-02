@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+using Avalonia.Collections;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -86,6 +86,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     [ObservableProperty]
     private string _emptyNote = string.Empty;
 
+
+
     public EnginesViewModel(
         IEngineCatalogue catalogue,
         IEngineStore store,
@@ -107,7 +109,14 @@ public sealed partial class EnginesViewModel : ViewModelBase
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
     }
 
-    public ObservableCollection<EngineRowViewModel> Rows { get; } = [];
+    /// <summary>
+    /// The rows on screen. **One collection, refilled in two notifications.** An
+    /// ObservableCollection raises one per item, so filtering 183 releases cost 184 rounds
+    /// of work, and replacing the whole ItemsSource instead made the list throw its
+    /// containers away and build them again. AvaloniaList adds a range in one go and the
+    /// list keeps its panel.
+    /// </summary>
+    public AvaloniaList<EngineRowViewModel> Rows { get; } = [];
 
     public bool OnInstalled => !OnAvailable;
 
@@ -242,8 +251,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private void Rebuild()
     {
         var query = Query.Trim();
-
-        Rows.Clear();
+        var built = new List<EngineRowViewModel>();
 
         if (OnAvailable)
         {
@@ -258,7 +266,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
                 if (Matches(row, query))
                 {
-                    Rows.Add(row);
+                    built.Add(row);
                 }
             }
         }
@@ -270,12 +278,15 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
                 if (Matches(row, query))
                 {
-                    Rows.Add(row);
+                    built.Add(row);
                 }
             }
         }
 
         EmptyNote = query.Length > 0 ? $"No versions match {query}" : "Nothing here yet";
+
+        Rows.Clear();
+        Rows.AddRange(built);
 
         OnPropertyChanged(nameof(IsEmpty));
     }

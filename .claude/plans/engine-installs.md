@@ -600,6 +600,14 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
    update marker still reads the highest version rather than the most recent date, since a
    patch of an older line is not an update however recently it landed.
 
+   **The list is a `ListBox`, because it is the only items control in Avalonia 12 that
+   virtualises.** It was an `ItemsControl` first and picking a channel cost 348 to 709 ms,
+   which is 20 to 40 dropped frames, because all 183 releases were realised. Measured after:
+   44 to 65 ms, 8 or 9 containers realised, and the cost no longer grows with the row count.
+   The rows are also filled through one `AddRange` rather than a clear and an add per row,
+   which took the projection itself from 129 ms to 4. This is the rule the plan already
+   states, broken and then put back.
+
    Rows arrived a step early. The plan had the list in step 7, but an empty body under a
    tab reading 183 says two different things at once, so the shell got the row and step 7
    keeps the card.
