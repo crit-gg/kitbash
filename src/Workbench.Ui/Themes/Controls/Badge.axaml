@@ -106,6 +106,16 @@
             <Setter Property="Fill" Value="{DynamicResource Data}" />
         </Style>
 
+        <Style Selector="^.graph">
+            <Setter Property="Background" Value="{DynamicResource GraphSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource GraphLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource GraphInk}" />
+        </Style>
+
+        <Style Selector="^.graph /template/ Ellipse#PART_Dot">
+            <Setter Property="Fill" Value="{DynamicResource Graph}" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />

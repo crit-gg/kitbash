@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Workbench.Core.Godot;
+using Workbench.Ui.Controls;
 
 namespace Workbench.ViewModels;
 
@@ -37,8 +38,15 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoading;
 
+    /// <summary>
+    /// The subtitle is two parts rather than one string, since the design spaces them 18
+    /// apart and a joined string cannot be spaced.
+    /// </summary>
     [ObservableProperty]
-    private string _subtitle = string.Empty;
+    private string _released = string.Empty;
+
+    [ObservableProperty]
+    private string _buildCount = string.Empty;
 
     [ObservableProperty]
     private string _installedNote = string.Empty;
@@ -79,7 +87,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
         Title = EngineRowViewModel.NameOf(release.Tag);
         Channel = EngineRowViewModel.ChannelOf(release.Tag);
-        Subtitle = $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}";
+        Released = $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}";
     }
 
     public EngineTag Tag => _release.Tag;
@@ -90,11 +98,25 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
     public bool HasChannel => Channel.Length > 0;
 
+    /// <summary>
+    /// The tint a channel pill takes. Stable carries no pill at all, which is why it has
+    /// no tier here.
+    /// </summary>
+    public BadgeTier ChannelTier => Tag.Channel switch
+    {
+        EngineChannel.Rc => BadgeTier.Modified,
+        EngineChannel.Beta => BadgeTier.Graph,
+        EngineChannel.Alpha => BadgeTier.Error,
+        _ => BadgeTier.Neutral,
+    };
+
     public bool HasNotes => _release.Notes is not null;
 
     public bool HasInstalled => InstalledNote.Length > 0;
 
     public bool HasFailed => Failure.Length > 0;
+
+    public bool HasBuildCount => BuildCount.Length > 0;
 
     public ObservableCollection<EngineArchitectureGroupViewModel> Groups { get; } = [];
 
@@ -146,10 +168,11 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
                 ? $"Published for {string.Join(", ", manifest.PublishedTargets)}."
                 : string.Empty;
 
-            Subtitle = IsUnavailable
-                ? $"released {_release.Released.ToString("d", CultureInfo.CurrentCulture)}"
-                : $"released {_release.Released.ToString("d", CultureInfo.CurrentCulture)}"
-                  + $"   {_forHost.Count} builds";
+            // A release with nothing for this platform has no count to give, which is what
+            // the design drops from its subtitle rather than writing a zero.
+            BuildCount = IsUnavailable
+                ? string.Empty
+                : _forHost.Count == 1 ? "1 build" : $"{_forHost.Count} builds";
 
             Arrange();
 
@@ -225,6 +248,8 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     }
 
     partial void OnInstalledNoteChanged(string value) => OnPropertyChanged(nameof(HasInstalled));
+
+    partial void OnBuildCountChanged(string value) => OnPropertyChanged(nameof(HasBuildCount));
 }
 
 /// <summary>One processor's builds inside an open card.</summary>

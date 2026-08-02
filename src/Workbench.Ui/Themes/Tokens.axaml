@@ -167,6 +167,13 @@
 
     <SolidColorBrush x:Key="Graph" Color="#a78bfa" />
     <SolidColorBrush x:Key="Data" Color="#5bc8a8" />
+    <!-- The purple tint. The colour existed as Graph and had no surface, line and ink to
+         go with it, which every other semantic here has. A pre release channel needs one:
+         the design gives beta its own pill and none of the other tints is it. -->
+    <SolidColorBrush x:Key="GraphSurface" Color="#231d33" />
+    <SolidColorBrush x:Key="GraphLine" Color="#3c3357" />
+    <SolidColorBrush x:Key="GraphInk" Color="#bda6ff" />
+
     <SolidColorBrush x:Key="DataSurface" Color="#1b2c28" />
     <SolidColorBrush x:Key="DataLine" Color="#2f4a44" />
 

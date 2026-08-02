@@ -17,4 +17,7 @@ public enum BadgeTier
     Error,
     Accent,
     Data,
+
+    /// <summary>The purple tint. A pre release channel, and nothing else so far.</summary>
+    Graph,
 }

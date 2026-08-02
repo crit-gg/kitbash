@@ -31,6 +31,104 @@
                 </ControlTemplate>
             </Setter>
         </ControlTheme>
+        <!--
+            Two buttons a card needs that the library has no kind for. Both are keyed
+            rather than a class on the shared theme, for the reason the caption buttons
+            are: a class inherits whatever that theme later gains, and the shared button
+            is 26 tall with a border where these are 22 and one of them has none.
+        -->
+
+        <!-- Install. A filled 22px button with no border, one step above the card's own
+             seam, so a row of them reads as the row's one action. -->
+        <ControlTheme x:Key="InstallButton" TargetType="Button">
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="Background" Value="{DynamicResource LineControl}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource PinStruct}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Frame"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^:pointerover /template/ Border#PART_Frame">
+                <Setter Property="Background" Value="{DynamicResource LineWindow}" />
+            </Style>
+
+            <Style Selector="^:pressed /template/ Border#PART_Frame">
+                <Setter Property="Background" Value="{DynamicResource LineControlDeep}" />
+            </Style>
+
+            <Style Selector="^:disabled /template/ Border#PART_Frame">
+                <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            </Style>
+
+            <Style Selector="^:disabled">
+                <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+            </Style>
+        </ControlTheme>
+
+        <!-- The footer disclosure. Outlined rather than filled, since it changes what is
+             listed rather than doing anything. -->
+        <ControlTheme x:Key="DisclosureButton" TargetType="Button">
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="Cursor" Value="Hand" />
+
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Frame"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+
+            <Style Selector="^:pointerover /template/ Border#PART_Frame">
+                <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            </Style>
+
+            <Style Selector="^:pointerover">
+                <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+            </Style>
+
+            <Style Selector="^:pressed /template/ Border#PART_Frame">
+                <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+            </Style>
+        </ControlTheme>
+
     </UserControl.Resources>
 
     <UserControl.Styles>
@@ -107,8 +205,12 @@
             <Setter Property="Foreground" Value="{DynamicResource Accent}" />
         </Style>
 
-        <!-- The header of a card is the whole row, so it is a button with no look of its
-             own. The card behind it draws the surface and the hover. -->
+        <!-- The card, read off the design's own values rather than approximated.
+
+             The header is the whole row, so it is a button with no look of its own and the
+             card behind it draws the surface. Its hover is the next tone down rather than
+             the control hover fill, which is what the design draws and what makes an open
+             card's header meet its body. -->
         <Style Selector="Button.cardHead">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -119,12 +221,54 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         </Style>
 
-        <Style Selector="Button.cardHead:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        <Style Selector="Button.cardHead /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
         </Style>
 
-        <Style Selector="TextBlock.rowTitle.muted">
+        <Style Selector="Button.cardHead:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+        </Style>
+
+        <Style Selector="Button.cardHead:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+        </Style>
+
+        <!-- A card title is the subhead size, not the title size. -->
+        <Style Selector="TextBlock.cardTitle">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSubhead}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- A release with nothing for this platform drops its title a tier. -->
+        <Style Selector="TextBlock.cardTitle.muted">
             <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <!-- The subtitle is separate parts spaced 18 apart, not one joined string. -->
+        <Style Selector="StackPanel.cardSub">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Spacing" Value="18" />
+            <Setter Property="Margin" Value="0,5,0,0" />
+        </Style>
+
+        <Style Selector="StackPanel.cardSub > TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <!-- The marks at the right of a header. Body size at medium, muted, whatever the
+             glyph beside them means. -->
+        <Style Selector="TextBlock.cardMark">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <!-- The body sits one tone down from the card, which is what tells an open card
@@ -138,24 +282,38 @@
             <Setter Property="Margin" Value="46,9,14,6" />
         </Style>
 
+        <!-- Tracked out, which is what a small capitalised label takes to stay readable.
+             The design says .12em, and at 11 that is 1.32. -->
         <Style Selector="TextBlock.groupLabel">
             <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
             <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
             <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            <Setter Property="LetterSpacing" Value="1.32" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
-        <Style Selector="Grid.buildRow">
+        <Style Selector="Border.buildRow">
             <Setter Property="Height" Value="31" />
-            <Setter Property="Margin" Value="46,0,14,0" />
+            <Setter Property="Padding" Value="46,0,14,0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Border.buildRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
         </Style>
 
         <Style Selector="TextBlock.buildName">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
-            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <!-- A build already here drops to the muted tier, so the row still reads and stops
+             asking to be pressed. -->
+        <Style Selector="TextBlock.buildName.here">
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
         </Style>
 
         <Style Selector="TextBlock.buildSize">
@@ -166,15 +324,38 @@
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
+        <!-- The percentage takes the accent's readable ink, since it is the one number in
+             the row that is moving. -->
+        <Style Selector="TextBlock.buildProgress">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
+            <Setter Property="MinWidth" Value="62" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="ProgressBar.buildBar">
+            <Setter Property="Height" Value="5" />
+            <Setter Property="MaxWidth" Value="104" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Grid.cardAbsentBlock">
+            <Setter Property="Margin" Value="46,14,16,15" />
+            <Setter Property="ColumnSpacing" Value="11" />
+        </Style>
+
         <Style Selector="StackPanel.cardAbsent">
-            <Setter Property="Margin" Value="46,10,14,10" />
             <Setter Property="Spacing" Value="5" />
         </Style>
 
         <Style Selector="TextBlock.cardAbsentHead">
             <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
             <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
-            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
 
         <Style Selector="TextBlock.cardNote">
@@ -188,8 +369,20 @@
             <Setter Property="Margin" Value="0" />
         </Style>
 
-        <Style Selector="Grid.cardFoot">
-            <Setter Property="Margin" Value="46,9,14,10" />
+        <!-- The footer is separated by its own rule and is pushed off the rows above it,
+             so it never reads as another build. -->
+        <Style Selector="Border.cardFootLine">
+            <Setter Property="Margin" Value="0,7,0,0" />
+        </Style>
+
+        <Style Selector="Border.cardFootLine">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+            <Setter Property="Padding" Value="46,9,14,10" />
+        </Style>
+
+        <Style Selector="HyperlinkButton.notes">
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
         </Style>
 
         <Style Selector="TextBlock.rowMark">
@@ -385,50 +578,54 @@
                                     <!-- The header. The whole row opens the card. -->
                                     <Button Classes="cardHead" Command="{Binding ToggleCommand}">
                                         <Grid ColumnDefinitions="20,*,Auto" ColumnSpacing="12">
+
                                             <!-- Two glyphs rather than one rotated. A
                                                  render transform on the icon did not
-                                                 take, and the set already draws both
-                                                 directions. -->
-                                            <Panel Grid.Column="0">
-                                                <ui:Icon Glyph="ChevronRight"
+                                                 take, and the set draws both directions. -->
+                                            <Panel Grid.Column="0" Width="20" Height="20">
+                                                <ui:Icon Glyph="ChevronRight" Size="16"
                                                          Foreground="{DynamicResource InkSecondary}"
-                                                         VerticalAlignment="Center"
                                                          IsVisible="{Binding !IsOpen}" />
-                                                <ui:Icon Glyph="ChevronDown"
+                                                <ui:Icon Glyph="ChevronDown" Size="16"
                                                          Foreground="{DynamicResource InkSecondary}"
-                                                         VerticalAlignment="Center"
                                                          IsVisible="{Binding IsOpen}" />
                                             </Panel>
 
                                             <StackPanel Grid.Column="1">
                                                 <StackPanel Orientation="Horizontal" Spacing="8"
                                                             MinHeight="{DynamicResource HeightPill}">
-                                                    <TextBlock Classes="rowTitle"
+                                                    <TextBlock Classes="cardTitle"
                                                                Classes.muted="{Binding IsUnavailable}"
                                                                Text="{Binding Title}" />
                                                     <ui:Badge Content="{Binding Channel}"
+                                                              Tier="{Binding ChannelTier}"
+                                                              HasDot="True"
                                                               IsVisible="{Binding HasChannel}" />
                                                 </StackPanel>
 
-                                                <TextBlock Classes="rowSub" Text="{Binding Subtitle}" />
+                                                <StackPanel Classes="cardSub">
+                                                    <TextBlock Text="{Binding Released}" />
+                                                    <TextBlock Text="{Binding BuildCount}"
+                                                               IsVisible="{Binding HasBuildCount}" />
+                                                </StackPanel>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="9"
                                                         VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" Spacing="6"
                                                             IsVisible="{Binding IsUnavailable}">
-                                                    <ui:Icon Glyph="InfoCircle" Size="{DynamicResource IconSizeStatus}"
+                                                    <ui:Icon Glyph="InfoCircle" Size="14"
                                                              Foreground="{DynamicResource InkMuted}"
                                                              VerticalAlignment="Center" />
-                                                    <TextBlock Classes="rowMark" Text="{Binding UnavailableNote}" />
+                                                    <TextBlock Classes="cardMark" Text="{Binding UnavailableNote}" />
                                                 </StackPanel>
 
                                                 <StackPanel Orientation="Horizontal" Spacing="6"
                                                             IsVisible="{Binding HasInstalled}">
-                                                    <ui:Icon Glyph="Check" Size="{DynamicResource IconSizeStatus}"
+                                                    <ui:Icon Glyph="Check" Size="14"
                                                              Foreground="{DynamicResource Ok}"
                                                              VerticalAlignment="Center" />
-                                                    <TextBlock Classes="rowMark" Text="{Binding InstalledNote}" />
+                                                    <TextBlock Classes="cardMark" Text="{Binding InstalledNote}" />
                                                 </StackPanel>
                                             </StackPanel>
                                         </Grid>
@@ -449,10 +646,16 @@
 
                                             <!-- Spec 5.1. The card keeps its place and says
                                                  what it is, and never guesses why. -->
-                                            <StackPanel Classes="cardAbsent" IsVisible="{Binding IsUnavailable}">
-                                                <TextBlock Classes="cardAbsentHead" Text="{Binding UnavailableNote}" />
-                                                <TextBlock Classes="cardNote" Text="{Binding PublishedFor}" />
-                                            </StackPanel>
+                                            <Grid Classes="cardAbsentBlock" ColumnDefinitions="20,*"
+                                                  IsVisible="{Binding IsUnavailable}">
+                                                <ui:Icon Grid.Column="0" Glyph="InfoCircle" Size="20"
+                                                         Foreground="{DynamicResource InkMuted}"
+                                                         VerticalAlignment="Top" />
+                                                <StackPanel Grid.Column="1" Classes="cardAbsent">
+                                                    <TextBlock Classes="cardAbsentHead" Text="{Binding UnavailableNote}" />
+                                                    <TextBlock Classes="cardNote" Text="{Binding PublishedFor}" />
+                                                </StackPanel>
+                                            </Grid>
 
                                             <ItemsControl ItemsSource="{Binding Groups}">
                                                 <ItemsControl.ItemTemplate>
@@ -469,67 +672,67 @@
                                                             <ItemsControl ItemsSource="{Binding Builds}">
                                                                 <ItemsControl.ItemTemplate>
                                                                     <DataTemplate x:DataType="vm:EngineBuildViewModel">
-                                                                        <Grid Classes="buildRow"
-                                                                              ColumnDefinitions="*,80,218"
-                                                                              ColumnSpacing="12">
-                                                                            <StackPanel Grid.Column="0"
-                                                                                        Orientation="Horizontal" Spacing="9">
-                                                                                <TextBlock Classes="buildName"
-                                                                                           Text="{Binding FileName}" />
-                                                                                <ui:Badge Content=".NET"
-                                                                                          IsVisible="{Binding IsMono}" />
-                                                                            </StackPanel>
-
-                                                                            <TextBlock Grid.Column="1" Classes="buildSize"
-                                                                                       Text="{Binding Size}"
-                                                                                       IsVisible="{Binding HasSize}" />
-
-                                                                            <Panel Grid.Column="2">
-                                                                                <Button Classes="install"
-                                                                                        HorizontalAlignment="Right"
-                                                                                        Command="{Binding InstallCommand}"
-                                                                                        IsVisible="{Binding CanInstall}">
-                                                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                                        <ui:Icon Glyph="ArrowToBottom"
-                                                                                                 Size="{DynamicResource IconSizeStatus}"
-                                                                                                 VerticalAlignment="Center" />
-                                                                                        <TextBlock Text="Install" VerticalAlignment="Center" />
-                                                                                    </StackPanel>
-                                                                                </Button>
-
-                                                                                <StackPanel Orientation="Horizontal" Spacing="6"
-                                                                                            HorizontalAlignment="Right"
-                                                                                            IsVisible="{Binding IsInstalled}">
-                                                                                    <ui:Icon Glyph="Check"
-                                                                                             Size="{DynamicResource IconSizeStatus}"
-                                                                                             Foreground="{DynamicResource Ok}"
-                                                                                             VerticalAlignment="Center" />
-                                                                                    <TextBlock Classes="rowMark" Text="Installed" />
+                                                                        <Border Classes="buildRow">
+                                                                            <Grid ColumnDefinitions="*,80,218"
+                                                                                  ColumnSpacing="12">
+                                                                                <StackPanel Grid.Column="0"
+                                                                                            Orientation="Horizontal" Spacing="9">
+                                                                                    <TextBlock Classes="buildName"
+                                                                                               Classes.here="{Binding IsInstalled}"
+                                                                                               Text="{Binding FileName}" />
+                                                                                    <ui:Badge Content=".NET" Tier="Data"
+                                                                                              IsVisible="{Binding IsMono}" />
                                                                                 </StackPanel>
 
-                                                                                <TextBlock Classes="rowMark" Text="queued"
-                                                                                           HorizontalAlignment="Right"
-                                                                                           IsVisible="{Binding IsQueued}" />
+                                                                                <TextBlock Grid.Column="1" Classes="buildSize"
+                                                                                           Text="{Binding Size}"
+                                                                                           IsVisible="{Binding HasSize}" />
 
-                                                                                <Grid ColumnDefinitions="*,Auto,Auto"
-                                                                                      ColumnSpacing="9"
-                                                                                      IsVisible="{Binding IsRunning}">
-                                                                                    <ProgressBar Grid.Column="0"
-                                                                                                 Minimum="0" Maximum="1"
-                                                                                                 Value="{Binding Progress}"
-                                                                                                 IsIndeterminate="{Binding !HasProgress}"
-                                                                                                 VerticalAlignment="Center" />
-                                                                                    <TextBlock Grid.Column="1" Classes="buildSize"
-                                                                                               Text="{Binding ProgressLabel}" />
-                                                                                    <Button Grid.Column="2" Classes="icon"
-                                                                                            Command="{Binding CancelCommand}"
-                                                                                            ToolTip.Tip="Stop this install"
-                                                                                            AutomationProperties.Name="Stop this install">
-                                                                                        <ui:Icon Glyph="X" />
+                                                                                <Panel Grid.Column="2">
+                                                                                    <Button Theme="{StaticResource InstallButton}"
+                                                                                            HorizontalAlignment="Right"
+                                                                                            Command="{Binding InstallCommand}"
+                                                                                            IsVisible="{Binding CanInstall}">
+                                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                                            <ui:Icon Glyph="ArrowToBottom" Size="13"
+                                                                                                     VerticalAlignment="Center" />
+                                                                                            <TextBlock Text="Install" VerticalAlignment="Center" />
+                                                                                        </StackPanel>
                                                                                     </Button>
-                                                                                </Grid>
-                                                                            </Panel>
-                                                                        </Grid>
+
+                                                                                    <StackPanel Orientation="Horizontal" Spacing="6"
+                                                                                                HorizontalAlignment="Right"
+                                                                                                IsVisible="{Binding IsInstalled}">
+                                                                                        <ui:Icon Glyph="Check" Size="13"
+                                                                                                 Foreground="{DynamicResource Ok}"
+                                                                                                 VerticalAlignment="Center" />
+                                                                                        <TextBlock Classes="cardMark" Text="Installed" />
+                                                                                    </StackPanel>
+
+                                                                                    <TextBlock Classes="cardMark" Text="queued"
+                                                                                               HorizontalAlignment="Right"
+                                                                                               IsVisible="{Binding IsQueued}" />
+
+                                                                                    <Grid ColumnDefinitions="*,Auto,Auto"
+                                                                                          ColumnSpacing="9"
+                                                                                          IsVisible="{Binding IsRunning}">
+                                                                                        <ProgressBar Grid.Column="0" Classes="buildBar"
+                                                                                                     Minimum="0" Maximum="1"
+                                                                                                     Value="{Binding Progress}"
+                                                                                                     IsIndeterminate="{Binding !HasProgress}" />
+                                                                                        <TextBlock Grid.Column="1" Classes="buildProgress"
+                                                                                                   Text="{Binding ProgressLabel}" />
+                                                                                        <Button Grid.Column="2" Classes="icon"
+                                                                                                Width="22" Height="22"
+                                                                                                Command="{Binding CancelCommand}"
+                                                                                                ToolTip.Tip="Stop this install"
+                                                                                                AutomationProperties.Name="Stop this install">
+                                                                                            <ui:Icon Glyph="X" Size="13" />
+                                                                                        </Button>
+                                                                                    </Grid>
+                                                                                </Panel>
+                                                                            </Grid>
+                                                                        </Border>
                                                                     </DataTemplate>
                                                                 </ItemsControl.ItemTemplate>
                                                             </ItemsControl>
@@ -541,20 +744,23 @@
                                             <!-- The card has builds but none for this
                                                  processor, which the design does not draw
                                                  and which every ARM machine meets. -->
-                                            <StackPanel Classes="cardAbsent" IsVisible="{Binding HasNoNative}">
-                                                <TextBlock Classes="cardNote" Text="{Binding NoNativeNote}" />
-                                            </StackPanel>
+                                            <TextBlock Classes="cardNote" Text="{Binding NoNativeNote}"
+                                                       IsVisible="{Binding HasNoNative}" />
 
-                                            <Grid Classes="cardFoot" ColumnDefinitions="Auto,*,Auto">
-                                                <Button Grid.Column="0" Classes="ghost small"
-                                                        Content="{Binding OtherArchitecturesLabel}"
-                                                        Command="{Binding ToggleArchitecturesCommand}"
-                                                        IsVisible="{Binding HasOtherArchitectures}" />
+                                            <Border Classes="cardFootLine">
+                                                <Grid Classes="cardFoot" ColumnDefinitions="Auto,*,Auto">
+                                                    <Button Grid.Column="0"
+                                                            Theme="{StaticResource DisclosureButton}"
+                                                            Content="{Binding OtherArchitecturesLabel}"
+                                                            Command="{Binding ToggleArchitecturesCommand}"
+                                                            IsVisible="{Binding HasOtherArchitectures}" />
 
-                                                <HyperlinkButton Grid.Column="2" Content="Release notes"
-                                                                 Command="{Binding OpenNotesCommand}"
-                                                                 IsVisible="{Binding HasNotes}" />
-                                            </Grid>
+                                                    <HyperlinkButton Grid.Column="2" Classes="notes"
+                                                                     Content="Release notes"
+                                                                     Command="{Binding OpenNotesCommand}"
+                                                                     IsVisible="{Binding HasNotes}" />
+                                                </Grid>
+                                            </Border>
                                         </StackPanel>
                                     </Border>
                                 </StackPanel>

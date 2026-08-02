@@ -76,6 +76,7 @@ public class Badge : ContentControl
         BadgeTier.Error => "error",
         BadgeTier.Accent => "accent",
         BadgeTier.Data => "data",
+        BadgeTier.Graph => "graph",
         _ => "neutral",
     };
 }
