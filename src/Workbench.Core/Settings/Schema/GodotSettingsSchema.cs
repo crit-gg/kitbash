@@ -27,17 +27,42 @@ public sealed class GodotSettingsSchema
             Rules = [new PathShapeRule(PathKind.Directory, mustBeRooted: true)],
         };
 
+        DefaultEngine = new SettingDescriptor<string>
+        {
+            Key = "godot.engines.default",
+            Name = "Default engine",
+            Description =
+                "Which install a project uses when it pins no version. Named the way an "
+                + "engine is named, such as 4.7.1-stable or 4.7.1-stable-mono. Blank means "
+                + "this machine has no default, which is what uninstalling the default "
+                + "leaves behind.",
+            Default = string.Empty,
+            Rules =
+            [
+                new PatternRule(
+                    @"^$|^\d+\.\d+(\.[1-9]\d*)?-(stable|dev\d+|alpha\d+|beta\d+|rc\d+)(-mono)?$",
+                    "an engine name such as 4.7.1-stable or 4.7.1-stable-mono, or blank for none"),
+            ],
+        };
+
         Page = new SettingsPage
         {
             Id = "godotEngines",
             Title = "Godot engines",
             Home = SettingsHome.Application,
-            Sections = [new SettingsSection("Installs", [EngineDirectory])],
+            Sections = [new SettingsSection("Installs", [EngineDirectory, DefaultEngine])],
         };
     }
 
     /// <summary>Never blank. Defaults to the engines folder under the data directory.</summary>
     public SettingDescriptor<string> EngineDirectory { get; }
+
+    /// <summary>
+    /// The install a project falls back to, by name. Blank is a real answer and means
+    /// there is none, which is the state uninstalling the default leaves the machine in.
+    /// Choosing the next one is a deliberate act and never automatic.
+    /// </summary>
+    public SettingDescriptor<string> DefaultEngine { get; }
 
     public SettingsPage Page { get; }
 }

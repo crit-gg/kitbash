@@ -19,7 +19,8 @@ The design lives in the Claude Design project **Workbench**,
 | `Theme Slate - Surfaces.dc.html` | the tree, both grids, docking and the overlays |
 | `Theme Slate - Toasts.dc.html` | toasts, their eight regions, and in content alerts |
 | `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
-| `Engine Installs.dc.html` | the engines page the rail opens, not built in stage 6 |
+| `Engine Installs.dc.html` | the engines page the rail opens, planned in `engine-installs.md` |
+| `Engine Installs - Spec.dc.html` | the written specification for that page |
 | `Workbench Settings v3.dc.html` | the settings window every app opens, planned in `settings-schema.md` |
 | `Foundry Editor.dc.html` | the tool that consumes the library, not built here |
 | `icons/` | 48 named SVGs, all present in the Box Icons set |
@@ -162,6 +163,10 @@ runs straight through and nothing has to be scheduled around.
 `settings-schema.md` is not a Slate stage. It defines settings as descriptors so a
 settings window can be built over any app's settings, and it needs stage 8 for the input
 controls and stage 9 for the tree, so it lands after those.
+
+`engine-installs.md` is not one either. It is the second page in the activity rail, and it
+needs nothing above stage 10, so it can be built now. Its research is `.claude/godot-engines.md`,
+which is where the measurements live.
 
 That took one reordering. Overlays used to be stage 8 and ran after the two stages that
 need it: the launcher, which opens three menus and a tooltip, and the input controls,

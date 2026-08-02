@@ -28,6 +28,19 @@ internal sealed class GodotSettings : IGodotSettings
         }
     }
 
+    public Workbench.Core.Godot.EngineId? DefaultEngine
+    {
+        get
+        {
+            var stored = _schema.DefaultEngine.Read(_settings.Global);
+
+            return Workbench.Core.Godot.EngineId.TryParse(stored, out var id) ? id : null;
+        }
+    }
+
+    public void SetDefaultEngine(Workbench.Core.Godot.EngineId? value) =>
+        _settings.Set(SettingsScope.Global, _schema.DefaultEngine.Key, value?.ToString() ?? string.Empty);
+
     public void SetEngineDirectory(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);

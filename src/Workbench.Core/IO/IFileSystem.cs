@@ -30,4 +30,19 @@ public interface IFileSystem
 
     /// <summary>Immediate subdirectories, ordered by name so a search is repeatable.</summary>
     IReadOnlyList<string> EnumerateDirectories(string path);
+
+    /// <summary>
+    /// Files under a path, ordered by name. A folder that cannot be read counts as empty,
+    /// the way <see cref="EnumerateDirectories"/> treats one.
+    /// </summary>
+    IReadOnlyList<string> EnumerateFiles(string path, bool recursive);
+
+    /// <summary>How large a file is, or zero when it is not there or cannot be read.</summary>
+    long GetFileLength(string path);
+
+    /// <summary>
+    /// Removes a directory and everything under it. Does nothing when it is already gone,
+    /// since the caller wanted it absent rather than wanted to be the one to remove it.
+    /// </summary>
+    void DeleteDirectory(string path);
 }

@@ -63,4 +63,47 @@ public sealed class FileSystem : IFileSystem
             return [];
         }
     }
+
+    public IReadOnlyList<string> EnumerateFiles(string path, bool recursive)
+    {
+        if (!Directory.Exists(path))
+        {
+            return [];
+        }
+
+        var depth = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
+        try
+        {
+            return [.. Directory.EnumerateFiles(path, "*", depth).Order(StringComparer.Ordinal)];
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return [];
+        }
+    }
+
+    public long GetFileLength(string path)
+    {
+        try
+        {
+            var file = new FileInfo(path);
+
+            return file.Exists ? file.Length : 0;
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return 0;
+        }
+    }
+
+    public void DeleteDirectory(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            return;
+        }
+
+        Directory.Delete(path, recursive: true);
+    }
 }

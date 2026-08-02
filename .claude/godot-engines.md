@@ -6,6 +6,16 @@ engine costs on each platform we support.
 
 Nothing here is built yet. This is the reference to work from when it is.
 
+**Scope: Godot 4 and later.** Godot 3 and below are not offered and not installed. Their
+naming carries per version overrides for most of the 1.x and 2.x range and a different
+spelling for Linux and macOS, and none of it is worth carrying. Where this document
+describes Godot 3, it is background rather than a requirement, and it is marked.
+
+**The whole of Godot 4 was swept on 2 August 2026**, all 183 releases from 4.0-alpha1 to
+4.8-dev2, by fetching every release manifest and reading inside twenty of the archives.
+That sweep is the section called The landscape, and it replaced four guesses that were
+each wrong in a different way. Read it before writing anything that names a file.
+
 Everything marked **measured** was run on this machine on 1 August 2026, against
 Godot 4.7.1 and .NET 10.0.302, on Linux. Everything marked **read** came from source.
 Windows behaviour is read only, since this machine is Linux, and is called out where
@@ -66,9 +76,13 @@ A static file the website publishes. No authentication, no rate limit, small.
 ```
 
 Every entry has exactly `name` and `releases`. Every release has exactly `name`,
-`release_date` and `release_notes`. Measured: no release in the file is missing its
-notes URL. Dates are human strings such as "21 July 2026", not ISO, so they need
-parsing with an invariant culture and a day month year format.
+`release_date` and `release_notes`. Dates are human strings such as "21 July 2026", not
+ISO, so they need parsing with an invariant culture and a day month year format.
+
+**Corrected 2 August 2026.** This said no release is missing its notes URL, and one is.
+`3.2-alpha0-unofficial` carries an empty string. It is the same entry that fails the tag
+grammar, so a reader that drops what it cannot parse never reaches the empty value. Do
+not rely on that: read the field as optional.
 
 This gives the version list and the release notes link in one request, which is the
 whole engines page apart from the file sizes.
@@ -198,11 +212,11 @@ and one without.
 is `dev` < `alpha` < `beta` < `rc` < `stable`. Note gdvm's table omits alpha and so ranks
 it below dev, which only matters for Godot 3 era listings. Do not repeat it.
 
-## What the files are called
+## What the files are called, as first believed
 
-From `_data/download_configs.yml` in `godotengine/godot-website`, which is the project's
-own mapping and covers every version back to 1.0. Filenames are `Godot_v<tag>` plus the
-suffix below.
+**Superseded by The landscape below, which measured it.** Kept because it is what
+`_data/download_configs.yml` in `godotengine/godot-website` states, and because three of
+the claims under it turned out to be wrong. Filenames are `Godot_v<tag>` plus the suffix.
 
 Godot 4:
 
@@ -256,6 +270,141 @@ this machine's gdvm tree, where the wrapper folder is gone:
 
 Stripping is the better answer. It turns a naming rule that has changed several times
 into one that does not have to be known at all.
+
+## The landscape
+
+The whole of Godot 4 as it was actually published, rather than as a table says it should
+be. **Measured 2 August 2026**: every one of the 183 releases in the version feed, from
+`4.0-alpha1` on 24 January 2022 to `4.8-dev2` on 21 July 2026, by fetching each release
+manifest from `godot-builds`. All 183 came back in 2.6 seconds and none failed.
+
+Across those releases there are **38 distinct asset shapes** and **19 of them are desktop
+editors**. The rest is export templates, the Android editor in five flavours, the web
+editor, the Android libraries, native debug symbols and the source tarball.
+
+### The nineteen desktop editors, and when each one existed
+
+`Godot_v<tag>` plus the suffix. First and last are the releases each shape appears in.
+
+| Suffix | Platform | Processor | .NET | First | Last |
+|---|---|---|---|---|---|
+| `_linux.32.zip` | Linux | x86_32 | | 4.0-alpha1 | 4.0-alpha14 |
+| `_linux.64.zip` | Linux | x86_64 | | 4.0-alpha1 | 4.0-alpha14 |
+| `_linux.x86_32.zip` | Linux | x86_32 | | 4.0-alpha15 | current |
+| `_linux.x86_64.zip` | Linux | x86_64 | | 4.0-alpha15 | current |
+| `_linux.arm32.zip` | Linux | arm32 | | 4.2-beta5 | current |
+| `_linux.arm64.zip` | Linux | arm64 | | 4.2-beta5 | current |
+| `_mono_linux_x86_32.zip` | Linux | x86_32 | yes | 4.0-alpha17 | current |
+| `_mono_linux_x86_64.zip` | Linux | x86_64 | yes | 4.0-alpha17 | current |
+| `_mono_linux_arm32.zip` | Linux | arm32 | yes | 4.2-beta5 | current |
+| `_mono_linux_arm64.zip` | Linux | arm64 | yes | 4.2-beta5 | current |
+| `_win32.exe.zip` | Windows | x86_32 | | 4.0-alpha1 | current |
+| `_win64.exe.zip` | Windows | x86_64 | | 4.0-alpha1 | current |
+| `_windows_arm64.exe.zip` | Windows | arm64 | | 4.3-rc1 | current |
+| `_mono_win32.zip` | Windows | x86_32 | yes | 4.0-alpha17 | current |
+| `_mono_win64.zip` | Windows | x86_64 | yes | 4.0-alpha17 | current |
+| `_mono_windows_arm64.zip` | Windows | arm64 | yes | 4.3-rc1 | current |
+| `_osx.universal.zip` | macOS | universal | | 4.0-alpha1 | 4.0-alpha12 |
+| `_macos.universal.zip` | macOS | universal | | 4.0-alpha13 | current |
+| `_mono_macos.universal.zip` | macOS | universal | yes | 4.0-alpha17 | current |
+
+Everything else a manifest holds, and none of it is an editor Workbench can install:
+`_export_templates.tpz`, `_mono_export_templates.tpz`, `_web_editor.zip`,
+`_android_editor.apk`, `_android_editor.aab`, `_android_editor_meta.apk`,
+`_android_editor_horizonos.apk`, `_android_editor_picoos.apk`,
+`_android_debug.perfetto.apk`, `_android_release.perfetto.apk`,
+`_android_source.perfetto.zip`, the `godot-lib.*.aar` libraries,
+`Godot_native_debug_symbols.*` and `godot-<tag>.tar.xz`.
+
+### What that table kills
+
+Four things were believed before the sweep and all four are wrong.
+
+**Godot 4 has three Linux spellings, not one.** The first fourteen alphas used
+`_linux.64.zip`, and it became `_linux.x86_64.zip` at 4.0-alpha15. The `x11` spelling is
+Godot 3 only, which was the one part that held.
+
+**Godot 4 has two macOS spellings.** `_osx.universal.zip` up to 4.0-alpha12, then
+`_macos.universal.zip`. The osx spelling is not a Godot 3 marker.
+
+**There was no .NET build at all until 4.0-alpha17.** Sixteen releases carry no mono
+download of any kind, so .NET is not a flag that always has an answer.
+
+**Every boundary is at pre release granularity, not at a minor version.** Linux on ARM
+starts at **4.2-beta5** and Windows on arm64 at **4.3-rc1**. A rule reading "4.3 and
+later" is wrong for `4.3-dev1` through `4.3-beta3`, and a rule reading the minor number
+alone is wrong in a way that only shows on an old pre release.
+
+### So do not derive a file name. Ask the manifest.
+
+`https://raw.githubusercontent.com/godotengine/godot-builds/main/releases/godot-<tag>.json`
+lists exactly what a release holds, with a SHA 512 for each file. Measured: 8254 bytes and
+0.11 seconds for `4.7.1-stable`, from a CDN with no rate limit.
+
+That one request answers every question above and cannot go stale. It also carries the
+checksum, which has to be fetched before installing anyway, so on the common path it costs
+nothing extra. **The naming table becomes a classifier and never a generator**: take a
+published name, strip `Godot_v<tag>`, look the suffix up in the nineteen, and drop
+whatever does not match. No version logic survives.
+
+This is the posture git already has in this app. Where git keeps a repository is asked,
+never guessed. What a release contains is asked, never guessed.
+
+GodotEnv is the counter example and is worth reading as one. It derives, and:
+
+- `Linux.GetPlatformNameAndArchitecture` returns `x86_64` for every Godot 4 version, so it
+  cannot install a Linux arm64 or arm32 build at all.
+- `Windows.GetProcessorArchitecture` tests
+  `version.Number.Major < 4 || version.Number.Minor < 3`, reading the minor without first
+  checking the major. Right for 4.3 through 4.9 and wrong for any later major, where 5.0
+  takes the `Minor < 3` branch and asks for a file name that does not exist.
+- `MacOS.GetInstallerNameSuffix` tests `Minor > 3 && Patch > 2` for its universal
+  boundary, which fails on a zero patch.
+
+None of those are careless. They are what deriving costs.
+
+### What is inside the archives
+
+**Measured** across twenty archives spanning 4.0-alpha1 to 4.8-dev2, by reading each zip's
+central directory over an HTTP range request. Between 0.2 and 31 KB moved per archive
+rather than the 1.7 GB the files come to. The technique is worth keeping: a zip's index is
+at its end and `Range` reaches it, so an archive can be inspected without being fetched.
+
+| Archive | Top level | Entries | The editor inside |
+|---|---|---|---|
+| Linux standard | the binary itself | 1 | the one entry, mode 0755 |
+| Linux .NET | one folder | 41 to 74 | in the folder, beside `GodotSharp/` |
+| Windows standard | **two files** | 2 | the `.exe` that is not the console one |
+| Windows .NET | one folder | 47 to 82 | in the folder |
+| macOS standard | `Godot.app` | 79 to 80 | `Godot.app/Contents/MacOS/Godot` |
+| macOS .NET | `Godot_mono.app` | 119 to 153 | `Godot_mono.app/Contents/MacOS/Godot` |
+
+**The rule that the .NET archive wraps its contents in a folder and the standard one does
+not is wrong, and this document said it.** It holds for Linux and for nothing else.
+Windows ships two loose files and both macOS archives are an application bundle.
+
+**So the prefix strip needs a guard.** gdvm strips the common prefix so every install
+directory comes out the same shape, which is still the right idea, but applied blindly it
+lifts `Godot.app/Contents/...` to the root and destroys the bundle. The rule: strip a
+single top level entry only when it is a directory whose name does not end in `.app`.
+Windows standard has two top level entries, so there is no common prefix and nothing is
+stripped, which is right but only by accident, so write it deliberately.
+
+**Windows ships a console executable beside the editor**, which is why its standard archive
+holds two files. Measured: 4.0-alpha1 spelled it `_console.cmd` and every release from
+4.0-stable on spells it `_console.exe`. Launch the plain one. "The `.exe` that is not
+`_console.*`" is one rule covering both.
+
+**The executable bit is carried by the archive on Unix.** Measured across every Linux
+archive in the sweep: the editor binary is 0755. A .NET archive also carries 0744 on many
+files under `GodotSharp/Tools`, which is harmless. Windows entries are 0644 or 0664, which
+means nothing on Windows and would matter only if a Windows archive were unpacked on Unix.
+
+**Do not work the executable out from a file name.** After extracting, the candidates are
+few and obvious: on Unix a file carrying the executable bit that is not under
+`GodotSharp/`, and on Windows an `.exe` that is not the console one. Confirm the choice
+with `--version`, which has to run anyway to identify the install. That takes the last
+naming rule out of the installer.
 
 ## Release notes, and the four places they live
 
@@ -560,11 +709,13 @@ and the release notes URL. No GitHub API on the common path, so no rate limit an
 token. Cache it with a time to live, gdvm uses 48 hours, and fall back to the cached copy
 with a warning when the fetch fails rather than failing the page.
 
-**Download URLs are derived, not discovered.** The tag is `<name>-<release>` and the file
-name is `Godot_v<tag><suffix>`, with the suffix table above. That means the page can offer
-a download without a second request. Verify the SHA 512 from
-`godot-builds/releases/godot-<tag>.json` before extracting, and refuse rather than warn on
-a mismatch.
+**A release's files are read from its manifest, never derived.** This reversed after the
+sweep. `godot-builds/releases/godot-<tag>.json` is 8 KB and 0.11 seconds, it states
+exactly which files exist, and it carries the SHA 512 that has to be fetched before
+installing anyway. Deriving costs a version boundary per change Godot has ever made to its
+naming, and there are at least five inside Godot 4. Classify a published name against the
+nineteen shapes and drop what does not match. Verify the checksum before extracting, and
+refuse rather than warn on a mismatch.
 
 **Nothing here goes near the UI thread.** A version list fetch, a 76 MB download, a 145 MB
 extraction and a `--version` probe are all disk, network or process work. This is the
@@ -587,8 +738,14 @@ app fetched, not configuration a person wrote, and not a cache, since throwing i
 costs 76 MB of download. Archives belong in the cache directory, where
 `ApplicationPaths.CacheFileFor` already points, and can be deleted freely.
 
-**Strip the archive's common prefix on extraction.** It makes the .NET and standard
-layouts identical and retires the naming trap that has already changed twice.
+**Strip the archive's common prefix on extraction, with the `.app` guard.** It makes the
+.NET and standard layouts identical and retires a naming rule that has already changed
+three times. Strip a single top level entry only when it is a directory not ending in
+`.app`, since a macOS bundle flattened to the root is destroyed rather than tidied.
+
+**Find the editor in the extracted tree rather than naming it.** On Unix it is the file
+carrying the executable bit that is not under `GodotSharp/`, on Windows the `.exe` that is
+not the console one, and `--version` confirms the choice.
 
 **Extract with `System.IO.Compression` and chmod as a guard.** Measured above: .NET 10
 preserves the mode the archive carries, and the official archives carry `0755`. Shelling
@@ -602,6 +759,147 @@ engine itself, so it needs a path and nothing more. Everything GodotEnv does wit
 `.bashrc`, the `GODOT` variable and the Start Menu is for a tool that has to be reachable
 from a terminal. Offering a desktop entry later is fine. Editing three shell files at
 install time is not.
+
+## Measured for the engines page, 2 August 2026
+
+Step 1 of `.claude/plans/engine-installs.md`. Run on this machine, on Linux, on a warm
+network and a warm page cache. These are the numbers that plan was blocked on.
+
+### The download host answers HEAD, so the size column stands
+
+The open question was whether a build's size can be had without the GitHub API, since
+`versions.json` carries no sizes. It can.
+
+A download URL is a 302 from `github.com` to a signed URL on
+`release-assets.githubusercontent.com`. The 302 itself carries `content-length: 0`. The
+final 200 carries the real one.
+
+```
+HTTP/2 302   content-length: 0
+HTTP/2 200   content-length: 76056717
+             accept-ranges: bytes
+             etag: "0x8DEE1D172F2D386"
+             last-modified: Tue, 14 Jul 2026 17:58:02 GMT
+```
+
+76056717 is exactly the size the GitHub API reports for that asset, recorded earlier in
+this document. So **follow the redirect and read the length off the final response**. A
+HEAD that stops at the 302 reports zero, which is the way to get this wrong.
+
+**A derived name that does not exist answers 404**, which is what makes deriving URLs
+safe rather than hopeful. Measured: a nonsense file name gives 404, and
+`Godot_v4.7.1-stable_windows_arm64.exe.zip` gives 200, which is right, since Windows arm64
+exists from 4.3 on.
+
+Timings for the six Linux builds of one release, which is what a platform filter shows:
+
+| | Wall clock |
+|---|---|
+| six HEADs, one after another | 1.34 s |
+| six HEADs at once | 0.25 s |
+
+So sizes are fetched in parallel when a card opens, and the column fills a quarter of a
+second later. Do not do it sequentially and do not do it for all 33 files of a release.
+
+**The signed URL expires.** Its `se=` parameter was about an hour out. Never cache a
+resolved download URL. Cache the `github.com` one, which is stable, and follow the
+redirect each time.
+
+`accept-ranges: bytes` with a strong `ETag` is also present, so resume would work whenever
+it is wanted. It is deliberately not built yet.
+
+### What the two feed fetches cost
+
+| Fetch | Bytes | Total | Time to first byte |
+|---|---|---|---|
+| `versions.json` | 48722 | 0.63 to 0.67 s | 0.40 s |
+| `godot-4.7.1-stable.json` | 8254 | 0.11 s | 0.11 s |
+
+The version list is slow for its size and it is the website answering rather than a CDN
+edge, so the 48 hour cache is doing real work. The checksum file is served by
+`raw.githubusercontent.com` and is quick.
+
+That release lists **33 files**, not the 27 recorded further up. The count moves per
+release and is not something to hard code.
+
+### The feed's own shape, over all 356 releases
+
+Counted rather than sampled, since step 2 builds a parser against it.
+
+| Label | Count |
+|---|---|
+| `rc` | 120 |
+| `beta` | 94 |
+| `stable` | 72 |
+| `dev` | 42 |
+| `alpha` | 27 |
+| `alpha0-unofficial` | 1 |
+
+Five channels, which is what the engines page offers. The design's four are its sample
+data.
+
+**The GodotEnv grammar rejects exactly two of the 356**, and both are old:
+`3.2-alpha0-unofficial` and `2.0.4.1-stable`, the four component Godot 2 version.
+**Every Godot 4 tag parses.** So a reader that drops what it cannot parse loses two
+entries from 2019 and earlier and nothing else, which is the right trade for this app.
+
+**All 356 dates parse** as a day month year invariant format with no exceptions.
+
+### A size walk costs nothing worth avoiding
+
+The status bar reports total disk usage, so an install's size is walked rather than
+remembered. Measured over the four engines on this machine, third run, warm cache:
+
+| Install | Files | Size | Walk |
+|---|---|---|---|
+| `4.5.2-stable` | 1 | 131.0 MB | 0.0 ms |
+| `4.6.2-stable-csharp` | 74 | 212.4 MB | 0.5 ms |
+| `4.7.1-stable-csharp` | 74 | 220.0 MB | 0.5 ms |
+
+A standard install is one file and a .NET install is 74, which is the prefix strip working
+as described above. It still runs off the UI thread, since a cold cache, a busy disk or a
+network share have no upper bound, but nothing here needs caching or a progress report.
+
+### HttpClient, measured rather than assumed
+
+The downloader is one long lived `HttpClient`, which is what the type is for. A client per
+request exhausts sockets, since a closed one leaves connections in TIME_WAIT for minutes
+and this app fires several at once when a card opens. The handler takes a five minute
+`PooledConnectionLifetime`, which is the half a long lived client gets wrong on its own: a
+connection held forever keeps talking to an address that has moved, because DNS is only
+consulted when a connection is made.
+
+**`HttpClient.Timeout` does not behave the way it is usually described**, and the design
+rests on which way it goes. Measured on .NET 10 against a local server that sends headers
+at once and then dribbles a body over nine seconds:
+
+| Completion option | Timeout | Outcome |
+|---|---|---|
+| `ResponseContentRead`, the default | 3 s | threw at 3003 ms |
+| `ResponseHeadersRead` | 3 s | read the whole body, finished at 9006 ms |
+
+So the clock stops when the headers land under `ResponseHeadersRead`. The common warning,
+that the timeout covers the body and would cut a large download off partway through, is
+wrong for that path. The real gap is the opposite one: **a server that sends headers and
+then goes quiet is never ended at all**, because no timer is left running.
+
+That is what the idle guard is for. A linked `CancellationTokenSource` with `CancelAfter`
+called again before every read bounds silence rather than the transfer, so a hundred
+megabytes over a slow line never trips it and a stalled connection ends. Measured against a
+server that sends one block and then stops: the guard fired at 3000 ms.
+
+Automatic decompression is off. The only bodies read are a 48 KB feed and an 8 KB manifest,
+so it saves nothing worth having, and asking for it lets a server answer a HEAD with a
+compressed length or with none, which would put a wrong size on screen.
+
+`IHttpClientFactory` solves the first two of these and is not used, since it lives in
+`Microsoft.Extensions.Http` and `Workbench.Core` takes Tomlyn and the DI abstractions and
+nothing else.
+
+### Not measured here
+
+Everything Windows. This machine is Linux, so the file name suffixes, the console
+executable and the `%LOCALAPPDATA%` layout are read rather than run.
 
 ## Sources
 

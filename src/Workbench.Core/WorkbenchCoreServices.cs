@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Workbench.Core.Git;
+using Workbench.Core.Godot;
 using Workbench.Core.IO;
 using Workbench.Core.Platform;
 using Workbench.Core.Platform.Linux;
@@ -114,6 +115,46 @@ public static class WorkbenchCoreServices
     /// The list of workspaces this person has added, and which one is open. Builds on
     /// application state, since the list follows the user rather than a workspace.
     /// </summary>
+    /// <summary>
+    /// Reading what Godot has published. Takes <see cref="ApplicationPaths"/>, so
+    /// <see cref="AddWorkbenchApplicationStorage"/> goes in first.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchEngines(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IWebContent, WebContent>();
+        services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
+        services.TryAddSingleton<IEngineStore, EngineStore>();
+        services.AddEngineFiles();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The one part of engine handling that differs per OS. A third place in this file that
+    /// tests the running OS, and the file is still the only one allowed to.
+    /// </summary>
+    private static IServiceCollection AddEngineFiles(this IServiceCollection services)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            services.TryAddSingleton<IEngineFiles, WindowsEngineFiles>();
+
+            return services;
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            services.TryAddSingleton<IEngineFiles, UnixEngineFiles>();
+
+            return services;
+        }
+
+        throw new PlatformNotSupportedException("Workbench supports Windows and Linux on x64.");
+    }
+
     public static IServiceCollection AddWorkbenchWorkspaces(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
