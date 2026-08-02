@@ -141,7 +141,16 @@ internal sealed class EngineCatalogue : IEngineCatalogue
             }
         }
 
-        releases.Sort((left, right) => right.Tag.CompareTo(left.Tag));
+        // **By date, not by version.** The spec asks for it and the two really differ: a
+        // patch of an older line ships after a newer minor, so 4.5.2 in March 2026 belongs
+        // above 4.6 from January. Version order breaks the tie, since a release date is a
+        // day and several land on one.
+        releases.Sort((left, right) =>
+        {
+            var by = right.Released.CompareTo(left.Released);
+
+            return by != 0 ? by : right.Tag.CompareTo(left.Tag);
+        });
 
         return releases;
     }

@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Workbench.Core;
 using Workbench.Core.Git;
+using Workbench.Core.Godot;
 using Workbench.Core.IO;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
@@ -47,15 +48,22 @@ public partial class App : Application
             .AddWorkbenchPlatform()
             .AddWorkbenchWorkspaces()
             .AddWorkbenchGit()
+            .AddWorkbenchEngines()
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
             .AddSingleton(BuildRegistry())
+            .AddSingleton(provider => new EnginesViewModel(
+                provider.GetRequiredService<IEngineCatalogue>(),
+                provider.GetRequiredService<IEngineStore>(),
+                provider.GetRequiredService<IGodotSettings>(),
+                provider.GetRequiredService<IPathShortener>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IToolRegistry>(),
                 provider.GetRequiredService<IGitStatusMonitor>(),
                 provider.GetRequiredService<IGitUpdater>(),
-                provider.GetRequiredService<IUiDispatcher>()))
+                provider.GetRequiredService<IUiDispatcher>(),
+                provider.GetRequiredService<EnginesViewModel>()))
             .BuildServiceProvider();
 
     // Placeholders until real tools exist.

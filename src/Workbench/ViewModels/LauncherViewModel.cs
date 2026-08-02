@@ -34,6 +34,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasWorkspaces;
 
+    /// <summary>
+    /// Which rail item is open, as its index. The rail is a ListBox, so selection,
+    /// keyboard navigation and the open state are all its own and this only says which.
+    /// </summary>
+    [ObservableProperty]
+    private int _page;
+
 
 
     public LauncherViewModel(
@@ -42,8 +49,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IToolRegistry tools,
         IGitStatusMonitor git,
         IGitUpdater updater,
-        IUiDispatcher dispatcher)
+        IUiDispatcher dispatcher,
+        EnginesViewModel engines)
     {
+        ArgumentNullException.ThrowIfNull(engines);
+
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(tools);
@@ -56,6 +66,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _git = git;
         _updater = updater;
         _dispatcher = dispatcher;
+
+        Engines = engines;
 
         Tools = [.. tools.Tools.Select(tool => new ToolCardViewModel(tool))];
 
@@ -70,6 +82,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
+
+    /// <summary>The engines page, which the rail's second item opens.</summary>
+    public EnginesViewModel Engines { get; }
+
+    public bool OnWorkspacePage => Page == 0;
+
+    public bool OnEnginesPage => Page == 1;
 
     /// <summary>
     /// The repository the open workspace sits in, kept current by the monitor. Empty of a
@@ -186,6 +205,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// second would show a list built from the first's half finished write.
     /// </para>
     /// </remarks>
+    partial void OnPageChanged(int value)
+    {
+        OnPropertyChanged(nameof(OnWorkspacePage));
+        OnPropertyChanged(nameof(OnEnginesPage));
+    }
+
     private async Task LoadAsync(Action? work = null)
     {
         if (!await _loading.WaitAsync(0).ConfigureAwait(true))

@@ -1,0 +1,299 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+             xmlns:vm="clr-namespace:Workbench.ViewModels"
+             x:Class="Workbench.Views.EnginesPage"
+             x:DataType="vm:EnginesViewModel">
+
+    <!-- The band and page classes are the launcher's and reach here from the window, so
+         the two pages sit on the same tones without either naming one. -->
+    <UserControl.Styles>
+
+        <!-- The mark beside the page title. The same square the workspace rows use, with
+             the Godot glyph in it rather than a state colour. -->
+        <Style Selector="Border.pageMark">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="Width" Value="22" />
+            <Setter Property="Height" Value="22" />
+        </Style>
+
+        <Style Selector="TextBlock.pageTitle">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkTitle}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <!-- A tab is a label and a count side by side, and the count lifts to the accent
+             tint on the chosen one. That is a state of the option, so it is a class the
+             row sets rather than two brushes written per tab. -->
+        <Style Selector="TextBlock.tabCount">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="RadioButton:checked TextBlock.tabCount">
+            <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
+        </Style>
+
+        <!-- A channel option carries its own mark, since a channel means something and a
+             row of five words alone would not say which is which at a glance. -->
+        <Style Selector="Border.channelMark">
+            <Setter Property="Width" Value="5" />
+            <Setter Property="Height" Value="5" />
+            <Setter Property="CornerRadius" Value="2" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="Border.engineRow">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+            <Setter Property="Padding" Value="13,11" />
+        </Style>
+
+        <Style Selector="Border.engineRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+        </Style>
+
+        <Style Selector="TextBlock.rowTitle">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.rowSub">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="Margin" Value="0,5,0,0" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style Selector="TextBlock.rowMark">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+        <!-- The design draws this as a window title bar. Here it is a page band, because
+             the window already has a title bar and there is only one per window. -->
+        <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1" Padding="20,12">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                <Border Grid.Column="0" Classes="pageMark" VerticalAlignment="Center">
+                    <ui:Icon Glyph="Godot" Size="13"
+                             Foreground="{DynamicResource AccentTintInk}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock Grid.Column="1" Classes="pageTitle" Text="Godot engine installs" />
+
+                <ui:SearchBox Grid.Column="3" Width="176"
+                              PlaceholderText="Filter versions"
+                              Text="{Binding Query, Mode=TwoWay}" />
+
+                <Button Grid.Column="4" Command="{Binding RefreshCommand}"
+                        ToolTip.Tip="Read the release list again">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <ui:Icon Glyph="RefreshCw" Classes.spin="{Binding IsLoading}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Refresh" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Importing is step 7, so this says what it will do and cannot yet. -->
+                <Button Grid.Column="5" IsEnabled="False">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                        <TextBlock Text="Add existing" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Tabs, and on Available the channel filter. There is no platform control and no
+             architecture control, because the page shows what this machine runs. -->
+        <Border Grid.Row="1" Classes="page" BorderThickness="0,0,0,1"
+                Height="40" Padding="20,0">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+
+                <ui:Segmented Grid.Column="0" VerticalAlignment="Center">
+                    <RadioButton GroupName="engineTab"
+                                 IsChecked="{Binding OnInstalled, Mode=OneWay}"
+                                 Command="{Binding PickTabCommand}" CommandParameter="installed">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <TextBlock Text="Installed" VerticalAlignment="Center" />
+                            <TextBlock Classes="tabCount" Text="{Binding InstalledCount}" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton GroupName="engineTab"
+                                 IsChecked="{Binding OnAvailable, Mode=OneWay}"
+                                 Command="{Binding PickTabCommand}" CommandParameter="available">
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <TextBlock Text="Available" VerticalAlignment="Center" />
+                            <TextBlock Classes="tabCount" Text="{Binding ReleaseCount}" />
+                        </StackPanel>
+                    </RadioButton>
+                </ui:Segmented>
+
+                <!-- The design draws these as chips. A chip in this library carries no
+                     chosen state, and picking one of several is what a segmented row is,
+                     so they are options with the chip's mark kept. -->
+                <ui:Segmented Grid.Column="1" VerticalAlignment="Center"
+                              IsVisible="{Binding OnAvailable}">
+                    <RadioButton GroupName="engineChannel"
+                                 Command="{Binding PickChannelCommand}" CommandParameter="all"
+                                 Content="all" />
+
+                    <RadioButton GroupName="engineChannel" IsChecked="True"
+                                 Command="{Binding PickChannelCommand}" CommandParameter="stable">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Classes="channelMark" Background="{DynamicResource Ok}" />
+                            <TextBlock Text="stable" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton GroupName="engineChannel"
+                                 Command="{Binding PickChannelCommand}" CommandParameter="rc">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Classes="channelMark" Background="{DynamicResource Warn}" />
+                            <TextBlock Text="rc" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton GroupName="engineChannel"
+                                 Command="{Binding PickChannelCommand}" CommandParameter="beta">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Classes="channelMark" Background="{DynamicResource Data}" />
+                            <TextBlock Text="beta" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+
+                    <RadioButton GroupName="engineChannel"
+                                 Command="{Binding PickChannelCommand}" CommandParameter="dev">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Classes="channelMark" Background="{DynamicResource InkMuted}" />
+                            <TextBlock Text="dev" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </RadioButton>
+                </ui:Segmented>
+
+                <TextBlock Grid.Column="2" Classes="mono"
+                           Text="default install is used when a project pins no version"
+                           FontSize="{DynamicResource FontSizeSmall}"
+                           Foreground="{DynamicResource InkMuted}"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           IsVisible="{Binding OnInstalled}" />
+            </Grid>
+        </Border>
+
+        <!-- The list is from a cache and the network could not be reached. It describes
+             the state of what is on screen, so it is an alert and not a toast. -->
+        <ui:Alert Grid.Row="2" Form="Strip" Tier="Warn"
+                  Title="{Binding StaleNote}"
+                  IsOpen="{Binding IsStale}" />
+
+        <Border Grid.Row="3" Classes="page" BorderThickness="0">
+            <Panel>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              Padding="20,12,20,18">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EngineRowViewModel">
+                                <Border Classes="engineRow" Margin="0,0,0,7">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                                        <StackPanel Grid.Column="0">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Classes="rowTitle" Text="{Binding Title}" />
+                                                <ui:Badge Content="DEFAULT" IsVisible="{Binding IsDefault}" />
+                                                <ui:Badge Content="{Binding Channel}" IsVisible="{Binding HasChannel}" />
+                                                <ui:Badge Content=".NET" IsVisible="{Binding IsMono}" />
+                                            </StackPanel>
+
+                                            <TextBlock Classes="rowSub" Text="{Binding Subtitle}" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1" Classes="rowMark"
+                                                   Text="{Binding Mark}"
+                                                   IsVisible="{Binding HasMark}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <StackPanel Classes="emptyState" IsVisible="{Binding IsEmpty}">
+                    <ui:Icon Glyph="Package" Size="{DynamicResource IconSizeLarge}" />
+                    <TextBlock Text="{Binding EmptyNote}" />
+                </StackPanel>
+
+                <!-- Nothing could be read at all, from the network or from a cache. The
+                     one case with no list behind it. -->
+                <ui:Alert Form="Block" Tier="Error"
+                          Title="The Godot release list could not be read"
+                          Description="{Binding Failure}"
+                          IsOpen="{Binding HasFailed}"
+                          MaxWidth="420"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Panel>
+        </Border>
+
+        <!-- The page's own status bar. The workspace page has one too, so the classes come
+             from the library and neither page invents a row. -->
+        <Border Grid.Row="4" Classes="band" BorderThickness="0,1,0,0"
+                Height="{DynamicResource HeightTitleBar}" Padding="16,0,12,0">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10"
+                            VerticalAlignment="Center">
+                    <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeStatus}"
+                             Foreground="{DynamicResource InkMuted}"
+                             VerticalAlignment="Center" />
+                    <TextBlock Classes="mono" Text="{Binding InstallRoot}"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               Foreground="{DynamicResource InkSecondary}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14"
+                            VerticalAlignment="Center">
+
+                    <!-- Colour plus icon plus label, and a zero is never drawn, which are
+                         two of the status bar's own rules. -->
+                    <StackPanel Classes="countReadout" IsVisible="{Binding HasInstalled}">
+                        <ui:Icon Classes="countMark" Glyph="Package"
+                                 Foreground="{DynamicResource Accent}" />
+                        <TextBlock Classes="count" Text="{Binding InstalledCount}" />
+                        <TextBlock Classes="countLabel" Text="installed" />
+                    </StackPanel>
+
+                    <StackPanel Classes="countReadout" IsVisible="{Binding HasInstalled}">
+                        <ui:Icon Classes="countMark" Glyph="Database"
+                                 Foreground="{DynamicResource InkSecondary}" />
+                        <TextBlock Classes="count" Text="{Binding OnDisk}" />
+                        <TextBlock Classes="countLabel" Text="on disk" />
+                    </StackPanel>
+
+                    <StackPanel Classes="countReadout" IsVisible="{Binding HasUpdate}">
+                        <ui:Icon Classes="countMark" Glyph="ArrowToBottom"
+                                 Foreground="{DynamicResource Warn}" />
+                        <TextBlock Classes="count" Text="{Binding UpdateVersion}" />
+                        <TextBlock Classes="countLabel" Text="update available" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

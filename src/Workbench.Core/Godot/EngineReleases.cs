@@ -14,6 +14,14 @@ public sealed record EngineReleases(
     DateTimeOffset ReadAt,
     bool IsStale)
 {
-    /// <summary>The newest stable release, or null when the list holds none.</summary>
-    public EngineRelease? NewestStable => Releases.FirstOrDefault(r => r.IsStable);
+    /// <summary>
+    /// The highest stable version, or null when the list holds none.
+    /// </summary>
+    /// <remarks>
+    /// By version rather than by date, unlike the list itself. What an update means is a
+    /// version that is further on, and a patch of an older line released last week is not
+    /// that however recent it is.
+    /// </remarks>
+    public EngineRelease? NewestStable =>
+        Releases.Where(release => release.IsStable).MaxBy(release => release.Tag);
 }

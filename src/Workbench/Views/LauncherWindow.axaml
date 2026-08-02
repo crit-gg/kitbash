@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Workbench.ViewModels"
         xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+        xmlns:views="clr-namespace:Workbench.Views"
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
@@ -157,7 +158,7 @@
                          Theme="{StaticResource ActivityRail}"
                          Padding="0,8,0,0"
                          VerticalAlignment="Stretch"
-                         SelectedIndex="0">
+                         SelectedIndex="{Binding Page, Mode=TwoWay}">
                     <ListBoxItem Theme="{StaticResource ActivityRailItem}"
                                  ToolTip.Tip="Workspace" ToolTip.Placement="Right"
                                  AutomationProperties.Name="Workspace">
@@ -165,7 +166,6 @@
                     </ListBoxItem>
 
                     <ListBoxItem Theme="{StaticResource ActivityRailItem}"
-                                 IsEnabled="False"
                                  ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
                                  AutomationProperties.Name="Godot engines">
                         <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
@@ -173,9 +173,11 @@
                 </ListBox>
             </DockPanel>
 
-            <!-- The workspace page. The engines page and the settings page are separate
-                 designs and are not built here, so the rail leads nowhere yet. -->
+            <!-- The pages the rail opens. Both are built and only one is shown, so
+                 switching costs nothing and neither page reloads on the way back. The
+                 settings page is its own piece of work and its rail item stays disabled. -->
             <Panel Grid.Column="1">
+              <Panel IsVisible="{Binding OnWorkspacePage}">
                 <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,Auto,*,Auto">
 
                     <!-- workspace bar -->
@@ -527,6 +529,11 @@
                                 Click="OnChooseFolderClick" />
                     </StackPanel>
                 </Border>
+              </Panel>
+
+              <Panel IsVisible="{Binding OnEnginesPage}">
+                <views:EnginesPage DataContext="{Binding Engines}" />
+              </Panel>
             </Panel>
         </Grid>
     </Grid>

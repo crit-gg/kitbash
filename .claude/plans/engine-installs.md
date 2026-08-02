@@ -588,10 +588,23 @@ Seven steps. Each one is checkable on its own and the numbers are the order.
    bit. Checked by installing a real 4.7.1 editor end to end, reinstalling it from cache in
    303 ms, refusing a wrong checksum and a missing one, and refusing an archive that
    escapes its directory and one that claims to unpack to 2861 MB.
-6. **The page shell.** Rail switching, the two pages, the head band, the toolbar, the
-   filters, the status bar, the empty state and the stale alert. No install actions yet.
-7. **The lists and the actions.** Both tabs, the uninstall dialog, the menu, Set default,
-   Add existing, and the two toasts.
+6. ~~**The page shell.**~~ **Done, 2 August 2026.** Rail switching, the two pages, the head
+   band, the toolbar, the filters, the status bar, the empty state, the stale alert and a
+   plain row per release or install. No install actions, no card body, no dialog and no
+   menu, which are step 7. Checked by rendering the real window headless.
+
+   **The sort is by release date, which the code had wrong.** Spec 4 says date and the
+   catalogue sorted by version. The two really differ: 4.5.2 shipped in March 2026 and 4.6
+   in January, so version order buried a newer release under an older one. Fixed, and the
+   update marker still reads the highest version rather than the most recent date, since a
+   patch of an older line is not an update however recently it landed.
+
+   Rows arrived a step early. The plan had the list in step 7, but an empty body under a
+   tab reading 183 says two different things at once, so the shell got the row and step 7
+   keeps the card.
+7. **The cards and the actions.** The release card and its build rows, install with
+   progress and cancel, the architecture disclosure, the uninstall dialog, the menu, Set
+   default, Add existing, and the two toasts.
 
 Then the payoff, which is why the strip is worth wiring in the same piece of work:
 
