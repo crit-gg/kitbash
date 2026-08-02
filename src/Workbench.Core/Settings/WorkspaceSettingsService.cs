@@ -48,14 +48,23 @@ internal sealed class WorkspaceSettingsService : ISettingsService
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
 
+        Apply(scope, layer, [SettingsEdit.Set(key, value)]);
+    }
+
+    public void Apply(SettingsScope scope, SettingsLayer layer, IReadOnlyList<SettingsEdit> edits)
+    {
+        ArgumentNullException.ThrowIfNull(edits);
+
+        if (edits.Count == 0)
+        {
+            return;
+        }
+
         lock (_gate)
         {
-            var path = _paths.FileFor(scope, layer);
-
-            // Read again so a change made outside this process is not reverted.
-            var document = _store.Read(path);
-            document.SetValue(key, value);
-            _store.Write(path, document);
+            // The store reads the file again first, so a change made outside this
+            // process is not reverted, and refuses one it could not read.
+            _store.Apply(_paths.FileFor(scope, layer), edits);
 
             if (layer == SettingsLayer.User)
             {

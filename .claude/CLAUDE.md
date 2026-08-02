@@ -902,12 +902,148 @@ type counts as absent and falls through to the layer below.
 
 Reads go through `ISettings`. Writes go through `ISettingsService.Set`, which names
 its layer explicitly because writing to `TeamShared` changes the setting for
-everyone. Writes rewrite the file from the model and do not keep comments. There is
-no file watching, so one process does not see another's write until it reloads.
+everyone. `Apply` writes a batch to one file, so saving a page of edits is one read
+and one write rather than one of each per key, and `Set` is one edit through it.
+Writes rewrite the file from the model and do not keep comments, so a batch that
+changed nothing writes nothing. There is no file watching, so one process does not
+see another's write until it reloads.
 
 `ISettingsDocumentStore` is the only place the file format lives. `SettingsDocument`
 holds nested tables and no format specific types, so moving off TOML would touch one
-class.
+class. It reads two ways: `Read` throws on a file that will not parse and `Open`
+brings the failure back as a value, for a caller that draws it rather than fails.
+
+**A file that will not parse is never written back.** This is the one hazard in the
+whole system. A write reads the file, changes its keys and writes the whole document
+back, and a broken file reads as an empty document, so writing it back would replace
+every hand written value with almost nothing under a button that said Save changes.
+`Apply` refuses on the parse result rather than on the document being empty, because
+after the fact those two look identical. `SettingsFileUnreadableException` names the
+file, and it is what `Read` throws as well.
+
+### Schemas
+
+A setting is described once, as an object, so a settings window can be built over any
+app's settings without knowing anything about the app. `Workbench.Core/Settings/Schema`,
+composed by `AddWorkbenchSettingsSchema`. The plan is `.claude/plans/settings-schema.md`.
+
+**A descriptor is the one place a setting is defined**, and a reader takes its default
+from it rather than passing one at the call site. `WindowSettingsSchema` is the first,
+and `WindowSettings` is handed it rather than naming a key. **Hold a descriptor as an
+instance member reached through a constructor.** A `public static readonly` one is the
+obvious shortcut and it is ambient state.
+
+Three levels: a `SettingsPage` is a tree node, it holds `SettingsSection`s under rule
+headings, and a section holds rows. Almost every row is a `SettingDescriptor<T>`. The
+other `ISettingsRow` implementation is the escape hatch an app supplies for a row that
+is not a setting, such as a list of known workspaces or a button that resets the app,
+so the schema never grows a way to describe a button.
+
+**The scope belongs to the schema and the home belongs to the page.** Every page in the
+launcher's window writes `workbench.toml` and every page in a tool's writes that tool's
+file, so a tool cannot declare a global key by accident. `SettingsHome` is
+`Application`, `Workspace` or `State`, and it decides which files stand behind a page
+and whether there is a layer to choose. Only `Workspace` layers. There is no per setting
+home and no per setting scope.
+
+**A rule is data, never a predicate.** A `Func<T, bool>` can validate and nothing else,
+so it cannot bound a spinner, write its own summary or be reasoned about. The set is
+closed and adding to it is a deliberate change: `RangeRule<T>`, `LengthRule`,
+`NotBlankRule`, `PatternRule`, `ChoiceRule<T>`, `PathShapeRule`.
+
+**Rules, choices and probes are three different things.** `ChoiceRule` is a closed set,
+so a value outside it is wrong and the layer below decides instead. `ISettingChoices<T>`
+offers options discovered at runtime and never invalidates, because a pinned engine
+version that is not installed is still the right value. `ISettingProbe` asks the
+environment about a value that is already good, off the UI thread, and its answer
+changes after the value is written.
+
+**One message slot, two causes, and the origin says which.** A rule or conversion
+failure means the value did not survive, so the origin is `Invalid` and the setting
+falls back. A probe message means the value survived and the world is wrong, so the
+origin stays the layer it came from. That is the whole of severity, and there is no
+severity field.
+
+**The editor is derived unless named.** A bool is a toggle, a closed choice is a segment
+when it has at most three options of at most twelve characters and a dropdown otherwise,
+a number is a number, an array is a list, and anything left is text. The two thresholds
+are a guess rather than a measurement, so name a `SettingEditor` where they read wrong.
+
+**`ISettingsInspector` is the read side, because `ISettings` merges and forgets.** It
+opens every file behind a page and reports, per layer, what is stored and how it fared,
+which layer won, whether reset would do anything, and whether each file is there and
+readable. That closes three cases the merged read cannot: which layer won, that a lower
+layer also holds a value, and that a stored value could not be used. Without it the
+origin dot is decoration. It touches a disk, so it runs off the UI thread and caches
+nothing.
+
+**Reset removes the key, it does not write the default.** Writing the default pins
+today's value and quietly opts that person out of every future change to it.
+`SettingsEdit.Remove` is that, and it prunes a table it leaves empty.
+
+**A home that is not composed is a home with nothing behind it.** `ISettingsHome` is one
+per store, and `AddWorkbenchSettingsSchema` registers the two that need no workspace.
+`AddWorkbenchSettings` contributes the workspace one, so a window composed without a
+workspace reads its workspace pages as unavailable rather than failing on them. The
+launcher changes which workspace is open at runtime, and nothing yet follows that, which
+is the settings window's problem to solve when it lands.
+
+`ISettingsWriter` saves a page. It refuses a read only page or home, a layer that does
+not match whether the page layers, and any key the page does not declare, so a window
+can only write what it drew.
+
+### The schemas that exist
+
+Three, all Core's, all in the `Application` home. That home is per user per machine and
+has no layer, which is the point: **a path is right for one machine and wrong for every
+other**, so none of these can be shared through a workspace's team config by accident.
+
+| Schema | Keys |
+|---|---|
+| `WindowSettingsSchema` | `window.nativeChrome` |
+| `ExternalToolsSettingsSchema` | `tools.git.path`, `tools.dotnet.path` |
+| `GodotSettingsSchema` | `godot.engines.directory` |
+
+**A blank override means the app decides.** `tools.git.path` and `tools.dotnet.path`
+default to blank, and blank is an answer rather than a gap, so `PathShapeRule` takes
+`allowEmpty`. `IExternalTools` is what resolves it: the override when it points at
+something runnable, and `IExecutableFinder` on PATH otherwise, which is what the app did
+before the setting existed. `GitStatusReader` and `GitUpdater` both go through it, so the
+duplicated PATH lookup they each held is gone.
+
+**An override that points at nothing falls back rather than taking the program away.** A
+bad override should not be worse than no override. It is reported instead, through
+`ExternalTool.ConfiguredIsMissing`, so the choice is never silently ignored. Saying it is
+a probe's job when probes land.
+
+**Where there is a knowable default, the default is the real value, not blank.**
+`godot.engines.directory` defaults to `ApplicationPaths.Engines`, worked out when the
+schema is built, so a window shows the folder engines actually go in and resetting means
+that folder rather than meaning nothing. A program found on PATH cannot do this, since
+its answer is not known until something searches, which is why those two use blank.
+
+`ApplicationPaths.Engines` is `engines` under the data directory, which is the case
+`State` was put there for. It reads oddly on Windows, where the data directory already
+ends in `State`, so engines land in `%LOCALAPPDATA%\Workbench\State\engines`. Moving it
+means a fourth user directory and is a decision of its own.
+
+Nothing runs dotnet yet. `IExternalTools.Dotnet` resolves and no caller uses it.
+
+`IExternalTools` resolves once and holds, so a change applies at the next launch, which
+is what each description says and what the app already asked of someone installing git.
+
+Measured on this machine, Linux: blank resolving to the git on PATH, an override actually
+executed by `GitStatusReader` rather than PATH's git, an override pointing at nothing
+falling back while reporting that it did, a relative path refused, blank accepted for a
+tool and refused for the engine directory, and the engine default landing under the data
+directory. The Windows half of `ExecutableFinder`, PATHEXT and the `.exe` name, is
+unchanged by this and untested here.
+
+Measured over a real workspace on this machine, 53 checks: layering and origin, a masked
+team value, blank, out of range, unknown choice and wrong type all falling back with a
+reason, reset removing and pruning, a batch landing, a broken team file drawn while its
+write is refused and the file left byte for byte as it was, the personal layer still
+writable beside it, and the read only and undeclared key guards.
 
 ## Application storage
 
@@ -1362,6 +1498,12 @@ The git strip is real and reads the open workspace's repository. The engine stri
 from `EngineViewModel.Placeholder` and every value in it is invented, which is the only
 invented data in the app. It needs engine discovery, which is its own piece of work, and
 `EngineViewModel` records what is already readable without it.
+
+The settings schema is at step 3 of the six in `.claude/plans/settings-schema.md`. Core
+has the schema types, the rules, the per layer read, the batched write, the remove, the
+parse state as a value and the write refusal that goes with it. `window.nativeChrome` is
+on a descriptor and `WindowSettings` reads its default from it. Nothing draws any of it
+yet, and steps 4 to 6 are the window, the launcher's own schema and probes.
 
 The rail's other two pages, Godot engines and Settings, are drawn and disabled. Both have
 designs in the Claude Design project and neither has a stage yet. The rail itself carries

@@ -15,6 +15,16 @@ public interface ISettingsService
     /// </summary>
     void Set<T>(SettingsScope scope, SettingsLayer layer, string key, T value) where T : notnull;
 
+    /// <summary>
+    /// Writes several changes to one file at once, so saving a page of edits is one read
+    /// and one write rather than one of each per key. A removal takes the key out
+    /// entirely, which is what resetting a setting does.
+    /// </summary>
+    /// <exception cref="SettingsFileUnreadableException">
+    /// The file is there and could not be read, so nothing was written.
+    /// </exception>
+    void Apply(SettingsScope scope, SettingsLayer layer, IReadOnlyList<SettingsEdit> edits);
+
     /// <summary>Drops cached values so the next read comes from disk.</summary>
     void Reload();
 }

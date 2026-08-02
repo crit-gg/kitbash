@@ -49,18 +49,28 @@ internal sealed class ScopedDocuments
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
 
+        Apply(scope, [SettingsEdit.Set(key, value)]);
+    }
+
+    public void Apply(SettingsScope scope, IReadOnlyList<SettingsEdit> edits)
+    {
+        ArgumentNullException.ThrowIfNull(edits);
+
+        if (edits.Count == 0)
+        {
+            return;
+        }
+
         lock (_gate)
         {
-            var path = _fileFor(scope);
-
-            // Read again so a change made outside this process is not reverted.
-            var document = _store.Read(path);
-            document.SetValue(key, value);
-            _store.Write(path, document);
+            // The store reads the file again first, so a change made outside this
+            // process is not reverted, and refuses one it could not read.
+            _store.Apply(_fileFor(scope), edits);
 
             _cache.Remove(scope);
         }
     }
+
 
     public void Reload()
     {

@@ -31,45 +31,29 @@ namespace Workbench.Core.Git;
 /// </remarks>
 public sealed class GitStatusReader : IGitStatusReader
 {
-    private const string Program = "git";
-
     private readonly IProcessRunner _processes;
-    private readonly IExecutableFinder _executables;
+    private readonly IExternalTools _tools;
     private readonly IFileSystem _fileSystem;
 
-    private string? _git;
-    private bool _looked;
     private string? _resolvedRoot;
     private GitPlaces? _resolvedPlaces;
 
-    public GitStatusReader(IProcessRunner processes, IExecutableFinder executables, IFileSystem fileSystem)
+    public GitStatusReader(IProcessRunner processes, IExternalTools tools, IFileSystem fileSystem)
     {
         ArgumentNullException.ThrowIfNull(processes);
-        ArgumentNullException.ThrowIfNull(executables);
+        ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(fileSystem);
 
         _processes = processes;
-        _executables = executables;
+        _tools = tools;
         _fileSystem = fileSystem;
     }
 
     public bool IsAvailable => Git is not null;
 
-    // Looked up once. A person who installs git while the app is running can restart it,
-    // and the alternative is searching PATH on every refresh.
-    private string? Git
-    {
-        get
-        {
-            if (!_looked)
-            {
-                _looked = true;
-                _git = _executables.Find(Program);
-            }
-
-            return _git;
-        }
-    }
+    // Whichever git a person pointed at, and the first on PATH otherwise. Resolved once
+    // by IExternalTools, since the alternative is searching PATH on every refresh.
+    private string? Git => _tools.Git.Path;
 
     public async Task<GitStatus?> ReadAsync(string root, CancellationToken cancellation = default)
     {

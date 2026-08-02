@@ -255,16 +255,20 @@ writer, so a tool writes a schema class and one line to open it.
 
 ## Open decisions
 
-Do not assume either. Ask before building on one.
+Do not assume this. Ask before building on it.
 
 - **Does a broken file kill the page or only its own layer?** The banner says nothing on
   the page can be read, but a broken team file leaves the personal file perfectly good.
   Disabling the tab for the broken layer and keeping Save for the other is a smaller claim
-  and loses nothing.
-- **Are undeclared keys worth reporting?** A key present in a file that no descriptor
-  declares is drawn nowhere, which makes the window a complete account of a file except
-  for that. The backing row's status cell has room for `ok, 2 unknown keys`. It needs a
-  key listing on `SettingsDocument`, which does not exist.
+  and loses nothing. Nothing in Core rests on the answer, since the parse error is
+  recorded per file and both readings are drawn from the same `SettingsPageView`.
+
+## Decided
+
+- **Undeclared keys are not reported.** A key in a file that no descriptor declares is
+  drawn nowhere, so the window is a complete account of the settings rather than of the
+  file. `SettingsDocument` therefore never grows a key listing, and the backing row's
+  status cell says only whether the file is there and parses.
 
 `errorSource` is carried in the design's data as an offending TOML line and once as a file
 and a line number, and nothing draws it. Line numbers mean every leaf records where it

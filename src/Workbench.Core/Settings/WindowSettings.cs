@@ -1,22 +1,27 @@
+using Workbench.Core.Settings.Schema;
+
 namespace Workbench.Core.Settings;
 
 internal sealed class WindowSettings : IWindowSettings
 {
-    // Named once here so the key is never a literal at a call site.
-    private const string NativeChromeKey = "window.nativeChrome";
-
+    private readonly WindowSettingsSchema _schema;
     private readonly IApplicationSettings _settings;
 
-    public WindowSettings(IApplicationSettings settings)
+    /// <summary>
+    /// The schema arrives rather than being named, so the key and the default come from
+    /// the one place that declares them and there is no static descriptor to reach for.
+    /// </summary>
+    public WindowSettings(WindowSettingsSchema schema, IApplicationSettings settings)
     {
+        ArgumentNullException.ThrowIfNull(schema);
         ArgumentNullException.ThrowIfNull(settings);
 
+        _schema = schema;
         _settings = settings;
     }
 
-    // Workbench draws its own frame unless asked not to.
-    public bool UseNativeChrome => _settings.Global.Get(NativeChromeKey, false);
+    public bool UseNativeChrome => _schema.NativeChrome.Read(_settings.Global);
 
     public void SetUseNativeChrome(bool value) =>
-        _settings.Set(SettingsScope.Global, NativeChromeKey, value);
+        _settings.Set(SettingsScope.Global, _schema.NativeChrome.Key, value);
 }

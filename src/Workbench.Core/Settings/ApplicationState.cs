@@ -22,5 +22,8 @@ internal sealed class ApplicationState : IApplicationState
         where T : notnull =>
         _documents.Set(scope, key, value);
 
+    public void Apply(SettingsScope scope, IReadOnlyList<SettingsEdit> edits) =>
+        _documents.Apply(scope, edits);
+
     public void Reload() => _documents.Reload();
 }

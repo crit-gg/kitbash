@@ -14,5 +14,14 @@ public interface IApplicationSettings
 
     void Set<T>(SettingsScope scope, string key, T value) where T : notnull;
 
+    /// <summary>
+    /// Writes several changes to the file at once. A removal takes the key out entirely,
+    /// which is what resetting a setting does.
+    /// </summary>
+    /// <exception cref="SettingsFileUnreadableException">
+    /// The file is there and could not be read, so nothing was written.
+    /// </exception>
+    void Apply(SettingsScope scope, IReadOnlyList<SettingsEdit> edits);
+
     void Reload();
 }

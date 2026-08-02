@@ -86,6 +86,58 @@ internal sealed class SettingsDocument
         table[segments[^1]] = Canonicalize(value);
     }
 
+    /// <summary>
+    /// Drops a dotted key, and any table it leaves empty. Returns whether anything was
+    /// there. This is what resetting a setting does, rather than writing today's default
+    /// into the file, which would pin that value and opt the person out of every future
+    /// change to it.
+    /// </summary>
+    public bool RemoveValue(string key)
+    {
+        var segments = Split(key);
+
+        if (segments.Length == 0)
+        {
+            return false;
+        }
+
+        // The tables walked through, so an emptied one can be dropped on the way back.
+        var trail = new Dictionary<string, object?>[segments.Length];
+        var table = Root;
+
+        for (var index = 0; index < segments.Length - 1; index++)
+        {
+            trail[index] = table;
+
+            if (!table.TryGetValue(segments[index], out var child)
+                || child is not Dictionary<string, object?> childTable)
+            {
+                return false;
+            }
+
+            table = childTable;
+        }
+
+        trail[^1] = table;
+
+        if (!table.Remove(segments[^1]))
+        {
+            return false;
+        }
+
+        for (var index = segments.Length - 2; index >= 0; index--)
+        {
+            if (trail[index + 1].Count > 0)
+            {
+                break;
+            }
+
+            trail[index].Remove(segments[index]);
+        }
+
+        return true;
+    }
+
     private static string[] Split(string key)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);

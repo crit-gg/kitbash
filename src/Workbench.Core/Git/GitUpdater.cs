@@ -52,8 +52,6 @@ namespace Workbench.Core.Git;
 /// </remarks>
 public sealed class GitUpdater : IGitUpdater
 {
-    private const string Program = "git";
-
     /// <summary>Long enough for a large repository on a slow link, short enough to give up on.</summary>
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(30);
 
@@ -72,23 +70,23 @@ public sealed class GitUpdater : IGitUpdater
     };
 
     private readonly IProcessRunner _processes;
-    private readonly IExecutableFinder _executables;
+    private readonly IExternalTools _tools;
     private readonly IFileSystem _fileSystem;
     private readonly IGitStatusReader _status;
 
     public GitUpdater(
         IProcessRunner processes,
-        IExecutableFinder executables,
+        IExternalTools tools,
         IFileSystem fileSystem,
         IGitStatusReader status)
     {
         ArgumentNullException.ThrowIfNull(processes);
-        ArgumentNullException.ThrowIfNull(executables);
+        ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(fileSystem);
         ArgumentNullException.ThrowIfNull(status);
 
         _processes = processes;
-        _executables = executables;
+        _tools = tools;
         _fileSystem = fileSystem;
         _status = status;
     }
@@ -97,7 +95,7 @@ public sealed class GitUpdater : IGitUpdater
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
 
-        if (_executables.Find(Program) is not { } git || !_fileSystem.DirectoryExists(root))
+        if (_tools.Git.Path is not { } git || !_fileSystem.DirectoryExists(root))
         {
             return new GitUpdateResult(GitUpdateOutcome.Failed, "");
         }

@@ -6,6 +6,7 @@ using Workbench.Core.Platform;
 using Workbench.Core.Platform.Linux;
 using Workbench.Core.Platform.Windows;
 using Workbench.Core.Settings;
+using Workbench.Core.Settings.Schema;
 using Workbench.Core.Workspaces;
 
 namespace Workbench.Core;
@@ -70,6 +71,24 @@ public static class WorkbenchCoreServices
     }
 
     /// <summary>
+    /// Where the programs Workbench runs are on this machine. A person's override first
+    /// and PATH behind it, so this is the only registration that makes the platform
+    /// services depend on application settings, and only because where git is became a
+    /// choice a person can make.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchExternalTools(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchPlatform();
+        services.AddWorkbenchApplicationStorage();
+        services.TryAddSingleton<ExternalToolsSettingsSchema>();
+        services.TryAddSingleton<IExternalTools, ExternalTools>();
+
+        return services;
+    }
+
+    /// <summary>
     /// Reading a repository, following one so it stays current, and bringing one up to
     /// date. Needs the platform services, since all of it comes from running git.
     /// </summary>
@@ -82,7 +101,7 @@ public static class WorkbenchCoreServices
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddWorkbenchPlatform();
+        services.AddWorkbenchExternalTools();
         services.TryAddTransient<IDirectoryWatcher, DirectoryWatcher>();
         services.TryAddSingleton<IGitStatusReader, GitStatusReader>();
         services.TryAddSingleton<IGitUpdater, GitUpdater>();
@@ -131,7 +150,32 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
         services.TryAddSingleton<IApplicationSettings, ApplicationSettings>();
         services.TryAddSingleton<IApplicationState, ApplicationState>();
+        services.TryAddSingleton<WindowSettingsSchema>();
         services.TryAddSingleton<IWindowSettings, WindowSettings>();
+        services.TryAddSingleton<GodotSettingsSchema>();
+        services.TryAddSingleton<IGodotSettings, GodotSettings>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// What a settings window is built over: the stores a page can stand on, the read
+    /// that names its layer, and the write that saves a page at once.
+    /// </summary>
+    /// <remarks>
+    /// Registers the two homes that need no workspace. The workspace home comes from
+    /// <see cref="AddWorkbenchSettings"/>, so a window composed without a workspace draws
+    /// no workspace pages rather than failing on them.
+    /// </remarks>
+    public static IServiceCollection AddWorkbenchSettingsSchema(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchApplicationStorage();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, ApplicationSettingsHome>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, ApplicationStateHome>());
+        services.TryAddSingleton<ISettingsInspector, SettingsInspector>();
+        services.TryAddSingleton<ISettingsWriter, SettingsWriter>();
 
         return services;
     }
@@ -147,6 +191,10 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
         services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
         services.TryAddSingleton<ISettingsService, WorkspaceSettingsService>();
+
+        // Contributed whether or not a schema is in use, since an unresolved home costs
+        // nothing and this is the only place that knows a workspace is known.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, WorkspaceSettingsHome>());
 
         return services;
     }

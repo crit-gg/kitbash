@@ -20,5 +20,11 @@ public interface IApplicationState
 
     void Set<T>(SettingsScope scope, string key, T value) where T : notnull;
 
+    /// <summary>Writes several changes to the file at once, the way settings do.</summary>
+    /// <exception cref="SettingsFileUnreadableException">
+    /// The file is there and could not be read, so nothing was written.
+    /// </exception>
+    void Apply(SettingsScope scope, IReadOnlyList<SettingsEdit> edits);
+
     void Reload();
 }
