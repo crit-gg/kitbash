@@ -129,10 +129,15 @@
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type MenuFlyoutPresenter}" TargetType="MenuFlyoutPresenter">
+        <!-- The flyout owns this popup's offsets and cannot be themed, so the presenter
+             reaches the popup through its own logical parent and pulls it back itself.
+             It also aligns the menu with the left of what opened it, where Avalonia
+             centres it, which matches the dropdown and every other overlay here. -->
+        <Setter Property="(ui:Popups.InPopup)" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                        Margin="{DynamicResource OverlayGap}">
+                        Margin="{DynamicResource OverlayRoom}">
                     <ItemsPresenter Name="PART_ItemsPresenter" />
                 </Border>
             </ControlTemplate>

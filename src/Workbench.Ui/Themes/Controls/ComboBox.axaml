@@ -122,7 +122,12 @@
                            HorizontalOffset="{DynamicResource OverlayRoomX}"
                            VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
-                        <Border Background="{DynamicResource SurfaceNest2}"
+                        <!-- At least as wide as the field it drops from, so a list of
+                             short values does not open a strip narrower than the thing
+                             that opened it. The margin sits outside the border, so this
+                             measures the visible list rather than the room around it. -->
+                        <Border MinWidth="{Binding $parent[ComboBox].Bounds.Width}"
+                                Background="{DynamicResource SurfaceNest2}"
                                 BorderBrush="{DynamicResource LineControl}"
                                 BorderThickness="1"
                                 CornerRadius="{DynamicResource RadiusControl}"

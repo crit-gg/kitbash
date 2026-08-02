@@ -52,7 +52,20 @@ public class Popups
     static Popups()
     {
         UnderProperty.Changed.AddClassHandler<TemplatedControl, bool>(OnUnderChanged);
+        InPopupProperty.Changed.AddClassHandler<Control, bool>(OnInPopupChanged);
     }
+
+    /// <summary>
+    /// This element is the child of a popup, and that popup should be placed under its
+    /// target with room for its shadow. For a flyout's presenter, where the offsets live
+    /// on the flyout and a flyout is not a control and cannot be themed.
+    /// </summary>
+    public static readonly AttachedProperty<bool> InPopupProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Control, bool>("InPopup");
+
+    public static bool GetInPopup(Control control) => control.GetValue(InPopupProperty);
+
+    public static void SetInPopup(Control control, bool value) => control.SetValue(InPopupProperty, value);
 
     public static bool GetUnder(TemplatedControl control) => control.GetValue(UnderProperty);
 
@@ -66,6 +79,41 @@ public class Popups
         {
             control.TemplateApplied += OnTemplateApplied;
         }
+    }
+
+    private static void OnInPopupChanged(Control control, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        control.AttachedToVisualTree -= OnAttached;
+
+        if (change.GetNewValue<bool>())
+        {
+            control.AttachedToVisualTree += OnAttached;
+        }
+    }
+
+    // A popup's child has the popup as its logical parent, which is the only way in from
+    // here: the flyout that owns it is not a control and cannot be reached from a theme.
+    private static void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is not Control control || control.Parent is not Popup popup)
+        {
+            return;
+        }
+
+        Take(popup, control);
+        Place(popup);
+
+        popup.PropertyChanged -= OnPopupChanged;
+        popup.PropertyChanged += OnPopupChanged;
+    }
+
+    // The pull that cancels the room, read off the tokens rather than written here.
+    private static void Take(Popup popup, IResourceHost source)
+    {
+        var x = source.FindResource("OverlayRoomX") as double? ?? 0;
+        var y = source.FindResource("OverlayRoomY") as double? ?? 0;
+
+        popup.SetValue(WantedProperty, new Point(x, y));
     }
 
     private static void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
@@ -123,6 +171,8 @@ public class Popups
             | PopupPositionerConstraintAdjustment.SlideY
             | PopupPositionerConstraintAdjustment.FlipY;
 
+        // A flyout sets its own target and it is the right one, so it is only replaced
+        // when this was attached to the control rather than to the popup's child.
         if (popup.GetValue(OwnerProperty) is { } owner)
         {
             popup.PlacementTarget = owner;
