@@ -1,11 +1,15 @@
 using System.Globalization;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 
 namespace Workbench.Ui.Controls;
 
 /// <summary>
 /// What the running culture says about telling the time, for the controls that have to
-/// ask rather than assume.
+/// ask rather than assume, and the one column that is a choice rather than a list.
 /// </summary>
 /// <remarks>
 /// A time field cannot be written down once. Whether it reads twelve hours or twenty four,
@@ -21,6 +25,29 @@ public class Clock : IValueConverter
 {
     /// <summary>Formats a <see cref="TimeSpan"/> the way the culture writes a time.</summary>
     public static readonly IValueConverter Reads = new Clock();
+
+    /// <summary>
+    /// This column holds two values, so a wheel turns it over rather than scrolling it.
+    /// </summary>
+    /// <remarks>
+    /// A column of hours is a list and scrolls like one. A column of AM and PM is a choice
+    /// of two, and the panel has no third thing to show. Letting it loop instead fills the
+    /// column with the same two words over and over, and because the panel marks every row
+    /// holding the selected value, several rows read as chosen at once: measured at three
+    /// of the seven rows a looping period column realises.
+    /// </remarks>
+    public static readonly AttachedProperty<bool> TurnsProperty =
+        AvaloniaProperty.RegisterAttached<Clock, DateTimePickerPanel, bool>("Turns");
+
+    public static bool GetTurns(DateTimePickerPanel panel) => panel.GetValue(TurnsProperty);
+
+    public static void SetTurns(DateTimePickerPanel panel, bool value) =>
+        panel.SetValue(TurnsProperty, value);
+
+    static Clock()
+    {
+        TurnsProperty.Changed.AddClassHandler<DateTimePickerPanel, bool>(OnTurnsChanged);
+    }
 
     /// <summary>
     /// What <c>TimePicker.ClockIdentifier</c> should be. Avalonia defaults to twelve hours
@@ -52,7 +79,32 @@ public class Clock : IValueConverter
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        Avalonia.AvaloniaProperty.UnsetValue;
+        AvaloniaProperty.UnsetValue;
+
+    private static void OnTurnsChanged(DateTimePickerPanel panel, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        panel.RemoveHandler(InputElement.PointerWheelChangedEvent, OnWheel);
+
+        if (change.GetNewValue<bool>())
+        {
+            panel.AddHandler(InputElement.PointerWheelChangedEvent, OnWheel, handledEventsToo: true);
+        }
+    }
+
+    // Either way turns it over, since there is only one other value to reach.
+    private static void OnWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (sender is not DateTimePickerPanel panel)
+        {
+            return;
+        }
+
+        panel.SelectedValue = panel.SelectedValue == panel.MinimumValue
+            ? panel.MaximumValue
+            : panel.MinimumValue;
+
+        e.Handled = true;
+    }
 
     // A lower case h is the twelve hour hour, an upper case H the twenty four hour one.
     // Read off the pattern rather than off the designator, since a culture can name the

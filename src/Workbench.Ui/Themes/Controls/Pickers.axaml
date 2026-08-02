@@ -571,12 +571,12 @@
                         <StackPanel Name="PART_PeriodHost" Grid.Column="5">
                             <TextBlock Text="{x:Static ui:Clock.Period}" Classes="clockHead" />
                             <ScrollViewer Height="120" VerticalScrollBarVisibility="Hidden">
-                                <!-- Two values, so looping would put the chosen one on
-                                     every other row and the column would read as all
-                                     selected. -->
+                                <!-- Two values and no third, so it turns over rather than
+                                     scrolling. See ui:Clock.Turns. -->
                                 <DateTimePickerPanel Name="PART_PeriodSelector"
                                                      Theme="{StaticResource ClockColumn}"
                                                      ShouldLoop="False"
+                                                     ui:Clock.Turns="True"
                                                      PanelType="TimePeriod" />
                             </ScrollViewer>
                         </StackPanel>
