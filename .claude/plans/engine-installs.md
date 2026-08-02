@@ -486,6 +486,18 @@ it answers and never blocks the row.
 **The signed URL expires in about an hour**, so a resolved URL is never cached. The
 `github.com` one is cached and the redirect is followed each time.
 
+## Scrolling is imprecise while a card is open
+
+**Measured and left alone on purpose.** A card that opens is much taller than one that is
+closed, and `VirtualizingStackPanel` estimates its extent from the rows it has realised, so
+the same list reports an extent anywhere between 1730 and 6196 depending on where it is
+scrolled. The thumb changes size as it moves and a scroll past the estimate stops short.
+
+It is not this page's to fix. `.claude/plans/variable-height-list.md` is the panel that
+fixes it, and stage 11's grids need the same thing. Until it lands the page keeps the
+built in panel, since the alternative is realising all 183 cards, which is the 348 to
+709 ms this already came back from.
+
 ## Hazards
 
 **The engine directory can be anything.** It is a setting, it is rooted and that is all

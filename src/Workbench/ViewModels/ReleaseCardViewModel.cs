@@ -29,6 +29,14 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     private readonly EngineRelease _release;
     private readonly EnginesViewModel _page;
 
+    /// <summary>
+    /// The rows this card has already made, by file name. **Kept rather than rebuilt.**
+    /// Regrouping happens whenever the architecture disclosure moves, and building fresh
+    /// rows threw away whatever they were doing: a running install lost its bar, its
+    /// percentage and the button that cancels it.
+    /// </summary>
+    private readonly Dictionary<string, EngineBuildViewModel> _rows = new(StringComparer.Ordinal);
+
     private IReadOnlyList<EngineBuild> _forHost = [];
     private bool _read;
 
@@ -215,7 +223,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
         {
             Groups.Add(new EngineArchitectureGroupViewModel(
                 EngineBuild.TextFor(group.Key).ToUpperInvariant(),
-                [.. group.Select(_page.BuildFor)]));
+                [.. group.Select(RowFor)]));
         }
 
         // The design does not draw this one and it is the common case on an ARM machine.
@@ -230,12 +238,33 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
                 : $"Show {others} other architectures";
     }
 
+    /// <summary>
+    /// The row for one build, made once and kept. Whether it is installed is refreshed on
+    /// the way out, since that changes under a row that already exists.
+    /// </summary>
+    private EngineBuildViewModel RowFor(EngineBuild build)
+    {
+        if (!_rows.TryGetValue(build.FileName, out var row))
+        {
+            row = _page.BuildFor(build);
+            _rows[build.FileName] = row;
+        }
+
+        return row;
+    }
+
     /// <summary>How many builds of this release are on the machine, for the header mark.</summary>
     public void CountInstalled(IReadOnlyList<InstalledEngine> installed)
     {
         ArgumentNullException.ThrowIfNull(installed);
 
         var here = installed.Count(engine => engine.Tag == Tag);
+
+        // A row that already exists is told, rather than being made again to find out.
+        foreach (var row in _rows.Values)
+        {
+            row.IsInstalled = installed.Any(engine => engine.Id == row.Build.Id);
+        }
 
         InstalledNote = here switch
         {

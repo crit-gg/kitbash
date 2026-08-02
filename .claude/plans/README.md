@@ -167,6 +167,10 @@ runs straight through and nothing has to be scheduled around.
 settings window can be built over any app's settings, and it needs stage 8 for the input
 controls and stage 9 for the tree, so it lands after those.
 
+`variable-height-list.md` is not one either. It is a virtualising panel that handles rows
+of different heights, which `VirtualizingStackPanel` does badly, and it is what stage 11's
+grids and any tree row that wraps will need. The engines page is where it was measured.
+
 `engine-installs.md` is not one either. It is the second page in the activity rail, and it
 needs nothing above stage 10, so it can be built now. Its research is `.claude/godot-engines.md`,
 which is where the measurements live.
