@@ -118,7 +118,7 @@ want the same shell, so it is not the launcher's.
 | 7 | `GridSplitter`, `Expander`, `SplitView` |
 | 8 | `ContextMenu`, `Menu`, `MenuItem`, `MenuFlyout`, `Flyout`, `Popup`, `ToolTip`, `Separator` |
 | 9 | `ListBox`, `ListBoxItem`, `TabControl`, `TabItem`. **Not `TreeView`**, which cannot virtualise, so the tree is `ui:Tree` over `ListBox` |
-| 11 | `TableView`, and its `TableViewColumn`, `TableViewRow`, `TableViewCell` and `TableViewColumnHeader` |
+| 11 | `ListBox` and `ListBoxItem` again, under both grids. **Not `TableView`**, which is decided against in that stage |
 
 Six things in this plan have no built in type and stay hand built: the chip, the status
 pill and the badge in stage 4, the range slider in stage 8, the toast in stage 10 and the
@@ -126,11 +126,14 @@ colour picker in stage 13. The toast is hand built by decision rather than by ab
 Libraries exist and none is taken, because a toast here is a control with an injected
 service behind it rather than a global. Stage 12's docking surface comes from Dock.
 
-Two more are ours because the built in type cannot do the one thing that matters. `ui:Tree`
-in stage 9 is a `ListBox` subclass, since `TreeView` does not virtualise and there is no
-virtualising tree panel in the box. The tree data grid in stage 11 is built on that tree,
-since `TreeDataGrid` is paid and `TableView` is flat. Everything else in stages 4 to 11 is
-a theme over the list above.
+`ui:Tree` in stage 9 is ours because the built in type cannot do the one thing that
+matters. It is a `ListBox` subclass, since `TreeView` does not virtualise and there is no
+virtualising tree panel in the box.
+
+**Both grids in stage 11 are ours by decision.** `TreeDataGrid` is paid and `TableView` is
+flat, so the tree grid had no built in type either way, and taking `TableView` for the flat
+one would leave two column models to keep in step. The reasoning and what the choice costs
+are in that stage. Everything else in stages 4 to 11 is a theme over the list above.
 
 Two near misses worth naming, because both look hand built and are not. A stepped slider
 is `Slider` with `TickFrequency` and `IsSnapToTickEnabled` and a `TickBar` whose `Fill`

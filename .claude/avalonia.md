@@ -426,7 +426,8 @@ Worth knowing before hand building something that already ships.
 
 - `TableView`, a read only tabular control built on `ListBox` with configurable
   columns. Added in 12.1. It is not an editable grid, so it does not replace
-  TreeDataGrid for editing, but it covers a plain columnar list.
+  TreeDataGrid for editing, but it covers a plain columnar list. **Stage 11 decided
+  against it** and builds both grids instead. See that plan before reaching for it.
 - `GroupBox`, a `HeaderedContentControl`.
 - `CommandBar` with `CommandBarButton`, `CommandBarToggleButton`, `CommandBarSeparator`
   and overflow handling.

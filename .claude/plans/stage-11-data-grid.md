@@ -9,29 +9,39 @@ them would mean writing that twice.
 A grid that reads cleanly at 31px rows with thousands of rows, sorts, edits in place
 and groups, and a tree grid that puts hierarchy in its first column.
 
-## Build it on TableView, not from scratch
+## Both grids are ours
 
-`TableView` ships in `Avalonia.Controls`, the package this project already references,
-and it is not a Pro control. Verified by reflecting over 12.1.1 rather than read from a
-page. `TreeDataGrid` is the paid one and is still out.
+**Decided. Build the data grid and the tree data grid from scratch.** This is a
+deliberate choice made after the option below was on the table, so do not reopen it and
+do not quietly adopt a built in type partway through.
 
-That changes this stage from writing a grid to theming one. What comes with it:
+`TableView` ships in `Avalonia.Controls` and is not a Pro control, verified by reflecting
+over 12.1.1. It was the plan for a while. It is not what this stage builds. `TreeDataGrid`
+is the paid one and was never an option.
 
-| | |
-|---|---|
-| `TableView : ListBox` | so virtualisation is already there, and the row states from stage 9 apply because a row is a `ListBoxItem` |
-| `TableViewColumn` | `Header`, `Width` as a `GridLength`, `Binding`, `CellTemplate`, and `CellTheme` and `HeaderTheme` for styling a column on its own |
-| `TableViewRow` | a `ListBoxItem` holding `PART_CellsPresenter` |
-| `TableViewCell` | a `ContentControl` that knows its `Column` |
-| `TableViewColumnHeader` | holds `PART_Resizer`, a `Thumb`, so column resizing is built |
-| `CanUserResizeColumns` | on the view, and `CanUserResize` per column |
+This is the one place in the library where the rule to theme what Avalonia ships is set
+aside on purpose. The reasons:
 
-What it does not give, and so is still this stage's work: sorting and the sort
-indicator, grouping and group header rows, and inline editing. Build those over the
-control rather than replacing it.
+- The tree grid has no built in type either way, since `TableView` is flat. Taking
+  `TableView` for one grid means two column models, two row lifetimes and two sets of
+  behaviour that have to be kept saying the same thing.
+- Sorting, grouping, inline edit and the group header row are this stage's work under
+  either choice. They are most of the stage.
+- `TableView` was reflected, never used, so its behaviour under a real column set and how
+  far its own themes reach are both unproven. Building on it means finding that out with
+  the stage already committed to it.
 
-Read the type before designing against this table. It was reflected, not used, so its
-behaviour under a real column set is unproven.
+What that costs, stated plainly, because all of it comes free with `TableView` and none of
+it comes free here: column layout, keeping the header in step with a horizontally scrolled
+body, virtualisation that survives a column resize, and the resize thumb itself.
+
+**Virtualisation is not written from scratch.** The body is a `ListBox` underneath, the
+way `ui:Tree` already is, since that is the only items control in Avalonia 12 that
+virtualises. The row stays a `ListBoxItem`, so the seven row states from stage 9 apply to
+a grid row with nothing added.
+
+**One column model, used by both grids.** It is the reason the two are one stage. Write it
+once and let the tree grid lay out the same columns the flat grid does.
 
 ## Build
 
@@ -74,50 +84,40 @@ Hierarchy in the first column, aggregates on the branch rows. The branch row sho
 rolled up values in the same columns its children use, in monospace, at `InkSecondary`
 so it reads as a summary rather than as data.
 
-`TreeDataGrid` is a Pro control and is not an option, and `TableView` is flat, so this
-one surface has no built in type behind it. It is the exception, and it is built on the
-stage 9 tree, which is where the hierarchy and the flat row list already are.
+Built on the stage 9 tree, which is where the hierarchy and the flat row list already
+are. A tree grid is a tree that also lays out columns.
 
-Take the column layout from `TableViewColumn` rather than inventing a second one. That
-is the whole reason this sits in stage 11 and not stage 9: a tree grid is a tree that
-also lays out columns, so the columns have to exist first.
+It takes the same column model the flat grid uses rather than a second one. That is the
+whole reason this sits in stage 11 and not stage 9: the columns have to exist first.
 
 Its group header is the branch row, which is hierarchy. The flat grid's group header
 below is grouping, which is not. Two different rows, and neither one is the other.
 
-## What is ours and what is not
+## Build order
 
-Decided, not open. The grid is `TableView` with a control theme over it. Do not plan
-around `TreeDataGrid`, which is a Pro control.
+Each piece is verifiable before the next depends on it.
 
-That takes the expensive parts off this stage. Column layout, keeping the header in step
-with a horizontally scrolled body, virtualisation that survives a column resize, and the
-resize thumb itself all come with the control. What is left is the look, plus sorting,
-grouping and inline edit built over it.
+1. The column model and the layout it drives, over a fixed set of rows, unthemed. Every
+   later step assumes columns measure and place, so prove that first.
+2. The body over a `ListBox`, so virtualisation and selection are reused rather than
+   written, with the header kept in step with a horizontally scrolled body.
+3. The row, header and cell look.
+4. Column resizing and the resize thumb, which has to survive virtualisation.
+5. Sorting and the sort indicator.
+6. Inline edit.
+7. Grouping and group headers.
+8. Pagination, because it is optional and nothing else may depend on it.
+9. The tree data grid, last, since it takes the column model from everything above.
 
-Read the control before budgeting. It was found by reflection, so its behaviour under a
-real column set, and how far its own themes reach, are both unproven. If it turns out
-not to carry this surface, say so and reopen the question rather than quietly writing a
-grid.
+Steps 1 and 2 are where this stage can go wrong quietly. A column layout that only works
+because every row is realised, or a header that drifts once the body scrolls sideways,
+both look right on a short list and fail on a long one. Check both against ten thousand
+rows before building anything on top.
 
-Build it in this order, so each piece is verifiable before the next depends on it.
-
-1. A `TableView` with real columns, unthemed, to find out what it does on its own.
-2. The row, header and cell themes, which is the look.
-3. Selection, which should be `ListBox` behaviour reused rather than written.
-4. Sorting and the sort indicator.
-5. Inline edit.
-6. Grouping and group headers.
-7. Pagination, because it is optional and nothing else may depend on it.
-8. The tree data grid, last, since it takes the column layout from everything above.
-
-Step one is not optional. Everything after it assumes the control behaves, and that is
-the assumption to break early rather than late.
-
-Virtualisation and column layout come from the control. Column virtualisation is a
-separate question and is not in scope. A grid with two hundred columns is a real case
-for a data tool, but it is not one the design shows, so leave it for later rather than
-building it now.
+Column virtualisation is a separate question and is not in scope. A grid with two hundred
+columns is a real case for a data tool, but it is not one the design shows, so leave it
+for later rather than building it now. Leave room for it in the column model rather than
+writing something a later change would have to unpick.
 
 ## Done when
 
