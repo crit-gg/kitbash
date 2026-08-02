@@ -370,6 +370,13 @@ ja-JP and fr-FR give twenty four hours, hours 0 to 23, no period column and 14:0
 the hour and the minute out of the control's own parts and joining them with a colon, which
 is what this did first, drops the period and fixes an order that is not ours to fix.
 
+**A picker's popover has to be told what the field holds.** The calendar opens on today
+whatever the field says, and a two way binding from the calendar back to the field wipes the
+date on the way in, because the calendar starts empty and pushes that back. So nothing is
+bound to `PART_Calendar` and `ui:Picker` syncs it when the popover opens: the selected date,
+or today when there is none. Emptying the field is the Clear button in the popover rather
+than something that happens on the way in.
+
 **A picker template has to carry every part the control names, even the ones it will never
 draw.** The build refuses a template that leaves one out, and `TimePicker` throws a null
 reference from `SetGrid` for a part that is present but not wrapped in the `Border` host it

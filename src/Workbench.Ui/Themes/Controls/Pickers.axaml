@@ -293,7 +293,7 @@
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type CalendarDatePicker}" TargetType="CalendarDatePicker">
-        <Setter Property="(ui:PickerNow.Wires)" Value="True" />
+        <Setter Property="(ui:Picker.Wires)" Value="True" />
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
         <Setter Property="MinHeight" Value="0" />
         <Setter Property="MinWidth" Value="128" />
@@ -331,9 +331,11 @@
                                 <ui:Icon Glyph="History" Size="{DynamicResource IconSizeField}" />
                             </Button>
 
+                            <!-- The culture's pattern, not the control's, which wraps the
+                                 same pattern in angle brackets. -->
                             <TextBox Name="PART_TextBox"
                                      Theme="{StaticResource SpinnerField}"
-                                     Watermark="{TemplateBinding PlaceholderText}"
+                                     Watermark="{x:Static ui:Picker.DateHint}"
                                      VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
@@ -380,6 +382,15 @@
                                                 Theme="{StaticResource PickerFooterButton}"
                                                 Content="Today" />
 
+                                        <!-- Emptying the field is a thing a person does,
+                                             not a thing that happens to them on the way
+                                             in. -->
+                                        <Button Name="PART_Clear"
+                                                DockPanel.Dock="Right"
+                                                Theme="{StaticResource PickerFooterButton}"
+                                                Margin="0,0,6,0"
+                                                Content="Clear" />
+
                                         <TextBlock Text="{Binding $parent[CalendarDatePicker].SelectedDate, StringFormat='{}{0:yyyy-MM-dd}'}"
                                                    FontFamily="{DynamicResource FontFamilyMono}"
                                                    FontSize="{DynamicResource FontSizeSmall}"
@@ -389,10 +400,11 @@
                                     </DockPanel>
                                 </Border>
 
-                                <Calendar Name="PART_Calendar"
-                                          Margin="11"
-                                          SelectedDate="{Binding $parent[CalendarDatePicker].SelectedDate, Mode=TwoWay}"
-                                          DisplayDate="{Binding $parent[CalendarDatePicker].DisplayDate, Mode=TwoWay}" />
+                                <!-- Nothing bound to it. The control owns this part and
+                                     fills it when the popup opens, and a two way binding
+                                     here pushed the fresh calendar's empty selection back
+                                     into the field, wiping the date on the way in. -->
+                                <Calendar Name="PART_Calendar" Margin="11" />
                             </DockPanel>
                           </Border>
                         </Border>
@@ -588,7 +600,7 @@
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type TimePicker}" TargetType="TimePicker">
-        <Setter Property="(ui:PickerNow.Wires)" Value="True" />
+        <Setter Property="(ui:Picker.Wires)" Value="True" />
 
         <!-- The control places its own popup in code and puts it at the top of the screen.
              See Popups for what was measured. -->

@@ -693,7 +693,7 @@
                         </StackPanel>
 
                         <TextBlock Classes="note"
-                                   Text="The clock follows the culture too. Avalonia defaults to twelve hours whatever the culture says, so it is asked instead: en-US reads 2:05 PM with a period column and hours 1 to 12, and de-DE reads 14:05 with hours 0 to 23. Its popover carries Set and Cancel as well as Now, because a working presenter only writes the time when it is accepted, where the design's popover is a picture." />
+                                   Text="The calendar opens on the date the field holds, or on today when it holds none, and the field is only emptied by the Clear button in the popover. The clock follows the culture too. Avalonia defaults to twelve hours whatever the culture says, so it is asked instead: en-US reads 2:05 PM with a period column and hours 1 to 12, and de-DE reads 14:05 with hours 0 to 23. Its popover carries Set and Cancel as well as Now, because a working presenter only writes the time when it is accepted, where the design's popover is a picture." />
                     </StackPanel>
                 </Border>
 
