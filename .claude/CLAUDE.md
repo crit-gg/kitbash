@@ -1403,6 +1403,12 @@ measured, a headless import writes no layout of its own. A failure putting it ba
 swallowed, since losing a dock arrangement is a bad afternoon and losing the rebuild over
 it would be worse.
 
+**No layout file is the ordinary case and not a problem.** Godot writes it when a person
+closes the editor, so a project that has only ever been imported has none and a fresh
+clone has none either. Then nothing is kept and nothing is put back, which leaves the
+project exactly as it would have been. A file that exists and cannot be read is treated
+the same way.
+
 **It does not open the editor when it finishes.** The dialog stays up and offers Dismiss
 and Open in Editor, and pressing the second goes the ordinary way rather than starting
 the editor from there, so the build is confirmed to still be good rather than assumed

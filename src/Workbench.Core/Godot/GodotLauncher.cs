@@ -277,6 +277,18 @@ internal sealed class GodotLauncher : IGodotLauncher
     private static string LayoutFile(GodotProject project) =>
         Path.Combine(project.Directory, CacheDirectoryName, "editor", LayoutFileName);
 
+    /// <summary>
+    /// The file's text, or null when there is nothing to keep.
+    /// </summary>
+    /// <remarks>
+    /// **No layout file is the ordinary case, not a problem.** Godot writes it when a
+    /// person closes the editor, so a project that has only ever been imported has none,
+    /// and a fresh clone has none either. Null means nothing is put back afterwards,
+    /// which leaves the project exactly as it would have been.
+    ///
+    /// A file that exists and cannot be read reads the same way. It is a dock arrangement
+    /// and it is not worth failing a rebuild over.
+    /// </remarks>
     private string? Read(string file)
     {
         try
