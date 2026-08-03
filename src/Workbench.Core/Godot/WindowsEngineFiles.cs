@@ -51,11 +51,6 @@ internal sealed class WindowsEngineFiles : IEngineFiles
         return candidates.FirstOrDefault();
     }
 
-    /// <summary>Nothing here decides whether a file runs, so there is nothing to set.</summary>
-    public void MakeExecutable(string path)
-    {
-    }
-
     [SupportedOSPlatform("windows")]
     public void Hide(string path)
     {

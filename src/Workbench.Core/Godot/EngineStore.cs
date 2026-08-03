@@ -135,7 +135,7 @@ internal sealed class EngineStore : IEngineStore
         var editor = _engineFiles.FindEditor(directory)
             ?? throw new EngineStoreException($"No Godot editor was found in {directory}.");
 
-        _engineFiles.MakeExecutable(editor);
+        _files.MakeExecutableFile(editor);
 
         var version = await AskVersionAsync(editor, cancellationToken).ConfigureAwait(false)
             ?? throw new EngineStoreException($"{editor} did not report a Godot version.");

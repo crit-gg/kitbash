@@ -45,24 +45,6 @@ internal sealed class UnixEngineFiles : IEngineFiles
         return candidates.FirstOrDefault();
     }
 
-    public void MakeExecutable(string path)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        if (!_files.FileExists(path))
-        {
-            return;
-        }
-
-        var mode = File.GetUnixFileMode(path);
-        var wanted = mode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-        if (mode != wanted)
-        {
-            File.SetUnixFileMode(path, wanted);
-        }
-    }
-
     /// <summary>A leading dot already hides it here, so there is nothing to set.</summary>
     public void Hide(string path)
     {

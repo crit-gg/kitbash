@@ -30,7 +30,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 
     private readonly IEngineCatalogue _catalogue;
     private readonly IEngineStore _store;
-    private readonly IEngineFiles _engineFiles;
     private readonly IWebContent _web;
     private readonly IFileSystem _files;
     private readonly IGodotSettings _settings;
@@ -40,7 +39,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     public EngineInstaller(
         IEngineCatalogue catalogue,
         IEngineStore store,
-        IEngineFiles engineFiles,
         IWebContent web,
         IFileSystem files,
         IGodotSettings settings,
@@ -48,7 +46,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     {
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(engineFiles);
         ArgumentNullException.ThrowIfNull(web);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(settings);
@@ -56,7 +53,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 
         _catalogue = catalogue;
         _store = store;
-        _engineFiles = engineFiles;
         _web = web;
         _files = files;
         _settings = settings;
@@ -312,7 +308,7 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
             // at all, so nothing is marked and the guard costs nothing.
             if ((entry.ExternalAttributes >> 16 & Executable) != 0)
             {
-                _engineFiles.MakeExecutable(target);
+                _files.MakeExecutableFile(target);
             }
         }
     }

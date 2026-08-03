@@ -25,6 +25,22 @@ public sealed class FileSystem : IFileSystem
         return (File.GetUnixFileMode(path) & executable) != 0;
     }
 
+    public void MakeExecutableFile(string path)
+    {
+        if (!File.Exists(path) || OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var mode = File.GetUnixFileMode(path);
+        var wanted = mode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+
+        if (mode != wanted)
+        {
+            File.SetUnixFileMode(path, wanted);
+        }
+    }
+
     public void CreateDirectory(string path) => Directory.CreateDirectory(path);
 
     public string ReadAllText(string path) => File.ReadAllText(path);
