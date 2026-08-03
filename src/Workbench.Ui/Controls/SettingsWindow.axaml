@@ -296,6 +296,16 @@
                                          FontFamily="{DynamicResource FontFamilyMono}"
                                          Text="{Binding TextValue, Mode=TwoWay}" />
 
+                                <!-- No filters: a setting's rule says the shape of a path
+                                     and never the extensions, and the one kind of file
+                                     these point at is a program, which has an extension on
+                                     Windows and none here. -->
+                                <ui:PathField MinWidth="180"
+                                              IsVisible="{Binding IsPath}"
+                                              IsEnabled="{Binding IsEditable}"
+                                              Target="{Binding PathTarget}"
+                                              Path="{Binding TextValue, Mode=TwoWay}" />
+
                                 <Border Classes="lines" IsVisible="{Binding IsList}">
                                     <ItemsControl ItemsSource="{Binding Lines}"
                                                   ItemTemplate="{StaticResource SettingLine}" />

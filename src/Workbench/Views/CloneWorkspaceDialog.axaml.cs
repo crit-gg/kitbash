@@ -1,5 +1,4 @@
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Workbench.Ui.Controls;
 using Workbench.ViewModels;
 
@@ -48,45 +47,4 @@ public partial class CloneWorkspaceDialog : DialogWindow
         Close(false);
     }
 
-    private async void OnBrowseClick(object? sender, RoutedEventArgs e)
-    {
-        if (Model is not { } model)
-        {
-            return;
-        }
-
-        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = "Choose a folder",
-            AllowMultiple = false,
-            SuggestedStartLocation = await StartingAtAsync(model.Folder),
-        });
-
-        if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } path)
-        {
-            model.Folder = path;
-        }
-    }
-
-    /// <summary>
-    /// The folder the picker opens in, or null to leave it to the platform. A path that is
-    /// not there answers null rather than failing.
-    /// </summary>
-    private async Task<IStorageFolder?> StartingAtAsync(string folder)
-    {
-        if (string.IsNullOrWhiteSpace(folder))
-        {
-            return null;
-        }
-
-        try
-        {
-            return await StorageProvider.TryGetFolderFromPathAsync(folder.Trim());
-        }
-        catch (Exception exception) when (exception is ArgumentException or IOException
-            or UnauthorizedAccessException)
-        {
-            return null;
-        }
-    }
 }

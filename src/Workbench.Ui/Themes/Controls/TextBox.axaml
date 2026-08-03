@@ -61,10 +61,12 @@
                                               VerticalAlignment="Center" />
 
                             <Panel Margin="{TemplateBinding Padding}">
+                                <!-- A placeholder is language, not a value, so it stays in
+                                     the UI family even where the value is mono. -->
                                 <TextBlock Name="PART_Placeholder"
                                            Text="{TemplateBinding PlaceholderText}"
                                            Foreground="{TemplateBinding PlaceholderForeground}"
-                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontFamily="{DynamicResource FontFamilyUi}"
                                            FontSize="{TemplateBinding FontSize}"
                                            VerticalAlignment="Center"
                                            IsVisible="False"
@@ -130,6 +132,20 @@
         <Style Selector="^.error">
             <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
             <Setter Property="Foreground" Value="{DynamicResource Error}" />
+        </Style>
+
+        <!-- The value is allowed and the world is wrong, so the text stays readable and only
+             the edge says so. -->
+        <Style Selector="^.warn">
+            <Setter Property="BorderBrush" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <!-- A field nothing can be typed into. It is not the disabled look: the text keeps
+             its tone and anything beside the field still works. -->
+        <Style Selector="^[IsReadOnly=True]">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellOff}" />
+            <Setter Property="CaretBrush" Value="Transparent" />
+            <Setter Property="Cursor" Value="Arrow" />
         </Style>
 
         <Style Selector="^:disabled">
@@ -216,12 +232,140 @@
         </Style>
     </ControlTheme>
 
+    <!-- One path or none, with a browse button beside it. Here rather than in a file of its
+         own, because it is a well and it shares the clear button above. -->
+    <ControlTheme x:Key="{x:Type ui:PathField}" TargetType="ui:PathField">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+
+        <!-- A templated control clips to its bounds in Avalonia 12, which would cut the
+             well's focus halo off flush with its edge. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <Panel Grid.Column="0">
+                            <TextBox Name="PART_Field"
+                                     Classes="mono"
+                                     Classes.error="{TemplateBinding IsInvalid}"
+                                     Classes.warn="{TemplateBinding IsWarned}"
+                                     Text="{Binding Path, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                     PlaceholderText="{TemplateBinding Prompt}"
+                                     IsReadOnly="{TemplateBinding IsLocked}"
+                                     ToolTip.Tip="{TemplateBinding Tip}">
+                                <TextBox.InnerRightContent>
+                                    <!-- Inner content is not a template child, so this
+                                         button is shown from a plain style below. -->
+                                    <Button Name="PART_Clear"
+                                            Theme="{StaticResource FieldButton}"
+                                            Margin="0,0,4,0"
+                                            ToolTip.Tip="Clear"
+                                            AutomationProperties.Name="Clear">
+                                        <ui:Icon Glyph="X" Size="{DynamicResource IconSizeCompact}" />
+                                    </Button>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
+
+                            <!-- Over the well rather than beside it, so the field says what a
+                                 drop would do instead of showing a path that is about to go. -->
+                            <Panel Name="PART_Drop" IsVisible="{TemplateBinding IsDropping}">
+                                <Border Background="{DynamicResource SurfaceDrop}"
+                                        CornerRadius="{DynamicResource RadiusControl}" />
+
+                                <!-- A Border cannot draw a dashed edge, so the outline is a
+                                     Rectangle over the fill. -->
+                                <Rectangle Stroke="{DynamicResource Accent}"
+                                           StrokeThickness="1"
+                                           StrokeDashArray="3,2"
+                                           RadiusX="{DynamicResource SizeRadiusControl}"
+                                           RadiusY="{DynamicResource SizeRadiusControl}" />
+
+                                <TextBlock Text="{TemplateBinding DropWord}"
+                                           Margin="9,0"
+                                           FontSize="{DynamicResource FontSizeBody}"
+                                           Foreground="{DynamicResource AccentTintInk}"
+                                           VerticalAlignment="Center" />
+                            </Panel>
+                        </Panel>
+
+                        <Button Name="PART_Browse" Grid.Column="1"
+                                AutomationProperties.Name="Browse">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeField}" />
+                                <TextBlock Name="PART_Word" Text="Browse"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- The problem replaces the hint rather than adding a second line. -->
+                    <DockPanel Name="PART_Note" IsVisible="{TemplateBinding HasNote}">
+                        <ui:Icon Name="PART_NoteMark" DockPanel.Dock="Left"
+                                 Glyph="AlertCircle"
+                                 Size="{DynamicResource IconSizeStatus}"
+                                 Margin="0,0,6,0"
+                                 VerticalAlignment="Center"
+                                 IsVisible="False" />
+
+                        <TextBlock Name="PART_NoteText"
+                                   Text="{TemplateBinding Note}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^.error /template/ ui|Icon#PART_NoteMark">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Glyph" Value="AlertCircle" />
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="^.error /template/ TextBlock#PART_NoteText">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ ui|Icon#PART_NoteMark">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Glyph" Value="AlertTriangle" />
+            <Setter Property="Foreground" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <Style Selector="^.warn /template/ TextBlock#PART_NoteText">
+            <Setter Property="Foreground" Value="{DynamicResource WarnInk}" />
+        </Style>
+
+        <!-- The word goes where the column is too narrow for it, such as an inspector row. -->
+        <Style Selector="^.compact /template/ Button#PART_Browse">
+            <Setter Property="Width" Value="{DynamicResource HeightControl}" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+
+        <Style Selector="^.compact /template/ TextBlock#PART_Word">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ControlTheme>
+
     </Styles.Resources>
 
     <!-- Nothing to clear, so nothing to press. Out here rather than inside the theme, and both
          halves of that are forced. -->
     <Style Selector="ui|SearchBox:empty Button#PART_Clear">
         <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The path field's clear button, out here for the same reason. There is something to
+         clear, the field is not being typed in, and the control is on. -->
+    <Style Selector="ui|PathField Button#PART_Clear">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="ui|PathField.clearable Button#PART_Clear">
+        <Setter Property="IsVisible" Value="True" />
     </Style>
 
     <!-- Every field that takes typing, including the ones inside a spinner and a picker.

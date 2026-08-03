@@ -49,8 +49,8 @@ list, and anything not marked Pro is ours to use. Paid, and therefore out:
 
 Only two controls here are hand built, and only because Avalonia has no type for either:
 `Chip` and `StatusPill`. `Icon`, `ChromelessWindow`, `WindowTitleBar`, `DialogWindow`,
-`DialogFooter`, `SurfacePanel`, `Segmented`, `Alert` and the three toast controls are ours
-for the same reason. `SurfacePanel` is the smallest of those: a `HeaderedContentControl`
+`DialogFooter`, `SurfacePanel`, `Segmented`, `PathField`, `Alert` and the three toast
+controls are ours for the same reason. `SurfacePanel` is the smallest of those: a `HeaderedContentControl`
 plus a footer, since no built in type carries a header, a body and a footer at once.
 
 `Tree` is the one that is a subclass rather than a new control. It derives from `ListBox`,
@@ -203,6 +203,10 @@ the UI family. A number, a date or a path says what it is by taking `FontFamilyM
 is what the numeric and picker themes do. That split is the most visible thing about this
 theme and the easiest to get wrong in a form.
 
+**A placeholder is language whatever the value is.** `PART_Placeholder` is pinned to
+`FontFamilyUi` in the template rather than following the control's own family, so a mono
+field still says "No file selected" in Archivo.
+
 **The adorner rule is the whole look of a value editor.** A stepper, a calendar mark or a
 colour swatch sits *inside* the well behind a hairline, never floating outside it. Nothing
 is built for it: `TextBox` and `NumericUpDown` both carry `InnerLeftContent` and
@@ -249,6 +253,70 @@ mark and a radius would be a class, but emptying a field is behaviour and a them
 carry it. Its button lives in inner content, which no control theme can reach, so the theme
 styles it from a plain style and the control hears the click bubble. See
 `.claude/avalonia.md` under control themes for why.
+
+**`ui:PathField`** is a well holding one path with a browse button beside it. **It holds
+exactly zero or one path**, so there is no list, no add button and no chip anywhere in it,
+multiple selection is never turned on, and browsing again replaces what is there. The design
+is `Theme Slate - Path Field`.
+
+```xml
+<ui:PathField Target="Folder" Path="{Binding Folder}" />
+
+<ui:PathField Path="{Binding Source}" AllowsTyping="False">
+    <ui:PathField.Filters>
+        <ui:PathFilter Name="Data files" Extensions=".json, .csv" />
+    </ui:PathField.Filters>
+</ui:PathField>
+```
+
+`Target` is `File` or `Folder` and it decides which dialog opens, what the empty field says
+and what a drop will take. Everything else about the two is the same, including the glyph.
+
+**Filters belong to the control, never to the person using it.** They gate the dialog and
+they gate a typed path, and the quiet line under the field says them in words without being
+written twice. A folder field ignores them, and so does a set where any one filter names no
+extensions, since that one takes anything. Extensions are matched ignoring case on both
+platforms, because a filter describes the shape of a name.
+
+**A typed path is judged when the field is left, and typing over a refusal takes it back.**
+So a half typed path never flashes red and a path being fixed is not red while it is half
+fixed.
+
+**Typing is on unless it is turned off.** `AllowsTyping="False"` is for a path a hand
+written answer would be meaningless for. The well drops to the chrome tone and takes no
+caret, and browse and clear both still work. **That is not the disabled look**: the text
+keeps its tone. Disabled flattens both halves and drops the clear button rather than greying
+it.
+
+**The clear button stays while the field has focus**, where the design takes it away. A
+press inside the well focuses the field, so a button that went on focus went under its own
+press and could never be clicked. Nothing is lost by keeping it: the design overlaps it with
+the text and ours is docked beside it, so no caret ever runs under it.
+
+**One message slot and two tiers**, which is the settings rule in a control. `Problem` with
+`ProblemTier="Error"` means the value will not do, and `Warn` means the value is fine and
+the world is wrong, such as a path that has gone. The control writes its own `Problem` for a
+filter failure and leaves a host's alone.
+
+**Nothing in it touches a disk.** Whether a path is really there is the host's answer, and
+in settings it is what a probe will report. The control only ever judges the shape of a
+name.
+
+`IsCompact` is the icon only form, for an inspector row or any column too narrow for the
+word Browse. **A long path shows its head rather than its tail**: the design ellipsises from
+the left so the file name stays readable, and a `TextBox` scrolls rather than trims, so the
+whole path is the tooltip instead. The design's other display rule, a path shown relative to
+the workspace, is not built either, since the control is handed a path and not a workspace.
+
+**A drop takes the first item and nothing else.** One acceptable item dragged over the well
+turns it into a drop target. Several are judged by the first, which is the one a drop takes.
+The design says a drop of several says so in a toast, and it does not: a library control has
+no toast service to reach.
+
+Its theme is in `Themes/Controls/TextBox.axaml` with the other fields, since it is a well
+and it shares the clear button with the search field. The clear button lives in inner
+content, so it is shown from a plain style outside the theme for the reason the search
+field's is.
 
 **`ui:Segmented`** is a row of radios with a thumb behind them, and the thumb is the reason
 it is a control. A border holds one child, and a fill on the chosen option would appear and

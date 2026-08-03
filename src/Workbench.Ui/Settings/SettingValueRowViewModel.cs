@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Workbench.Core.Settings;
 using Workbench.Core.Settings.Schema;
+using Workbench.Ui.Controls;
 
 namespace Workbench.Ui.Settings;
 
@@ -64,6 +65,7 @@ public sealed partial class SettingValueRowViewModel : SettingsRowViewModel
         Bound(descriptor, out var minimum, out var maximum);
         Minimum = minimum;
         Maximum = maximum;
+        PathTarget = Picks(descriptor);
     }
 
     public string Key => _descriptor.Key;
@@ -96,7 +98,12 @@ public sealed partial class SettingValueRowViewModel : SettingsRowViewModel
 
     public bool IsText => Editor is SettingEditor.Text;
 
+    public bool IsPath => Editor is SettingEditor.Path;
+
     public bool IsList => Editor is SettingEditor.List;
+
+    /// <summary>What a path row picks. A rule that says either is browsed as a file.</summary>
+    public PathTarget PathTarget { get; }
 
     /// <summary>A list is what a file holds, drawn. There is no editor for one yet.</summary>
     public bool IsEditable => IsPageWritable && !_descriptor.IsReadOnly && !IsList;
@@ -440,6 +447,11 @@ public sealed partial class SettingValueRowViewModel : SettingsRowViewModel
             }
         }
     }
+
+    private static PathTarget Picks(ISettingDescriptor descriptor) =>
+        descriptor.Rules.OfType<PathShapeRule>().FirstOrDefault()?.Kind is PathKind.Directory
+            ? PathTarget.Folder
+            : PathTarget.File;
 
     private static bool Same(object left, object right) =>
         left is string first && right is string second

@@ -286,12 +286,17 @@ icons, the window shell, the activity rail, every overlay surface, the depth ram
 settings window, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
-field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
+field, the path field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box, the hyperlink, the list row, the tree, the tabs, the toast, the alert, both data
 grids and the pager.
 
 Stage 8 is done except the colour field, which waits on stage 13 because its swatch has
 nothing to open until the picker exists.
+
+**`ui:PathField` is built**, from the `Theme Slate - Path Field` design, which is outside
+the twelve stages. It holds one path or none, browses for a file or a folder, filters both
+the dialog and a typed path, takes a drop, and is what the settings window draws for every
+setting carrying a `PathShapeRule`. The clone dialog uses it too.
 
 **Both grids are built and they share one column model.** `ui:DataGrid` is a `ListBox` and
 `ui:TreeDataGrid` is a `ui:Tree`, so neither writes virtualisation, selection or the row

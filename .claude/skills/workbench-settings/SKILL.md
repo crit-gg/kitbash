@@ -197,9 +197,21 @@ description, because the window offers to restart on the strength of it. Do not 
 "takes effect at the next launch" in a description as well.
 
 **The editor is derived unless named.** A bool is a toggle, a closed choice is a segment
-when it has at most three options of at most twelve characters and a dropdown otherwise,
-a number is a number, an array is a list, and anything left is text. The two thresholds
-are a guess rather than a measurement, so name a `SettingEditor` where they read wrong.
+when it has at most three options of at most twelve characters and a dropdown otherwise, a
+setting carrying a `PathShapeRule` is a path field, a number is a number, an array is a
+list, and anything left is text. The two thresholds are a guess rather than a measurement,
+so name a `SettingEditor` where they read wrong.
+
+**A choice beats a path.** A closed set is still a set when its values happen to be paths,
+so `ChoiceRule` is tested first and a descriptor carrying both draws a segment or a
+dropdown.
+
+**A path setting is drawn by `ui:PathField`, and the rule's `PathKind` picks the dialog.**
+`Directory` browses for a folder and both other kinds browse for a file, since a dialog is
+one or the other and `Any` has to choose. **No filters are passed.** A rule says the shape
+of a path and never its extensions, and the only files these point at are programs, which
+carry `.exe` on Windows and no extension on Linux. Whether the path is really there is a
+probe's answer, not the control's.
 
 **`ISettingsInspector` is the read side, because `ISettings` merges and forgets.** It
 opens every file behind a page and reports, per layer, what is stored and how it fared,

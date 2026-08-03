@@ -142,9 +142,17 @@ a `ContentControl`, is outside the template name scope: `/template/` does not ma
 `e.NameScope.Find` does not find it, and the descendant selector that would reach it is
 the one thing a control theme cannot have.
 
+**A `TemplateBinding` written on inner content does nothing, and nothing is logged.**
+Measured on a `Button` inside a `TextBox`'s `InnerRightContent` inside a control template:
+its `TemplatedParent` is **null**, where a real template child of the same template reports
+the templated control. So the binding has no source, the property keeps its default, and a
+button meant to hide stays visible.
+
 So a control theme that puts furniture in inner content has to style it from a plain
 `Style` outside the theme, and wire it by listening rather than by looking it up. A click
-bubbles, which is how `SearchBox` hears its clear button.
+bubbles, which is how `SearchBox` hears its clear button, and a class on the templated
+control is what a plain style can select to reach the furniture. `ui:PathField` shows the
+same button by `ui|PathField.clearable Button#PART_Clear`.
 `Themes/Controls/TextBox.axaml` is the use.
 
 ### Style versus ControlTheme
@@ -553,6 +561,11 @@ the clip off on the control and put it on the frame inside the template instead,
 content still cannot escape while the halo can. `Themes/Controls/Button.axaml` is the
 use.
 
+**A control that only hosts another control is caught by this too.** `ui:PathField` sets no
+halo of its own and still had to turn the clip off, because the well inside it draws one and
+the field's own bounds cut it flush. Any templated control wrapping a field or a button
+needs the same line.
+
 **A `BoxShadow` is caught by the same clip, and its symptom is different enough to miss.**
 A shadow is drawn outside the frame, so a clipping control cuts it off at its own
 rectangle. A rounded control's bounds sit outside its curve at each corner, so what
@@ -630,6 +643,16 @@ openings, including a reopened dialog whose scope had a remembered element.
   `DoDragDropAsync`, and `DragEventArgs.Data` became `DragEventArgs.DataTransfer`.
   `BinaryFormatter` is no longer used on Windows, so custom payloads need their own
   serialization. X11 gained XDND support in 12.1.
+- Dropped files arrive as `DataFormat.File`, whose data type is `IStorageItem` and whose
+  reader is `e.DataTransfer.TryGetValues(DataFormat.File)`, an extension in `Avalonia.Input`
+  giving every item. `TryGetValue` gives the first alone. A folder is an `IStorageFolder`
+  and a file is not, which is the only way to tell them apart.
+- **A drop can be measured headless.** `DragEventArgs` has a public constructor and
+  `DataTransfer` and `DataTransferItem.CreateFile` are public, so a drag can be raised on a
+  control directly. The items themselves cannot be written here, since `IStorageItem` is
+  `[NotClientImplementable]` and carries an internal member. Avalonia's own
+  `BclStorageFile` and `BclStorageFolder` are internal and reachable by reflection, which is
+  how `ui:PathField` was checked.
 - `IClipboard.SetTextAsync` is gone with it. Putting text on the clipboard is
   `clipboard.SetValueAsync(DataFormat.Text, text)`, an extension in
   `Avalonia.Input.Platform`, and reading it back is `TryGetTextAsync`.
@@ -647,6 +670,13 @@ openings, including a reopened dialog whose scope had a remembered element.
 
 ## Bindings
 
+- **`{TemplateBinding X, Mode=TwoWay}` stops going forwards once it has gone backwards.**
+  Measured on a `TextBox.Text` inside a control template: writing the control's property
+  updates the field, until the field writes back once, and from then on the field ignores
+  every later write to the property. The symptom is a Clear button that empties the value
+  and leaves the text on screen, and nothing is logged. Write
+  `{Binding X, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}` for a template
+  child that a person edits. `ui:PathField` is the use.
 - Compiled bindings are on by default in 12, so `x:DataType` is required on views and
   on every `DataTemplate`.
 - `IBinding` was removed. Everything derives from `BindingBase`. `Binding` now always

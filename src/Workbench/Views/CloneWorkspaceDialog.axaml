@@ -42,15 +42,10 @@
             <StackPanel Spacing="7">
                 <TextBlock Classes="fieldLabel" Text="Put it in" />
 
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <TextBox Grid.Column="0" Text="{Binding Folder}"
-                             IsEnabled="{Binding CanEdit}"
-                             PlaceholderText="Choose a folder" />
-
-                    <Button Grid.Column="1" Content="Browse"
-                            IsEnabled="{Binding CanEdit}"
-                            Click="OnBrowseClick" />
-                </Grid>
+                <ui:PathField Target="Folder"
+                              Path="{Binding Folder}"
+                              IsEnabled="{Binding CanEdit}"
+                              DialogTitle="Choose a folder" />
 
                 <!-- The folder git will make, named before it is made. -->
                 <TextBlock FontFamily="{DynamicResource FontFamilyMono}"

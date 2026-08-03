@@ -27,4 +27,7 @@ public enum SettingEditor
 
     /// <summary>An array, drawn as a list.</summary>
     List = 6,
+
+    /// <summary>A path to one file or folder, with a way to browse for it.</summary>
+    Path = 7,
 }

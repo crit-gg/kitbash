@@ -586,6 +586,89 @@
                         </Grid>
 
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="PATHS" Content="one path, or none" />
+
+                        <TextBlock Classes="note"
+                                   Text="A well holding one path with a browse button beside it. It holds exactly zero or one, so there is no list and no add button, and browsing again replaces what is there. The value is mono because it is a value, and the placeholder is Archivo because it is language. The first one below opens a real dialog." />
+
+                        <Grid ColumnDefinitions="86,340,*"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              ColumnSpacing="14" RowSpacing="11">
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="caption" Text="file"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="0" Grid.Column="1">
+                                <ui:PathField.Filters>
+                                    <ui:PathFilter Name="Data files" Extensions=".json, .csv" />
+                                </ui:PathField.Filters>
+                            </ui:PathField>
+                            <TextBlock Grid.Row="0" Grid.Column="2" Classes="note"
+                                       Text="Empty, and the placeholder names what will be picked. The hint is the filters said in words."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="filled"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="1" Grid.Column="1"
+                                          Path="/home/jason/Projects/game/data/items.json" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Classes="note"
+                                       Text="The clear button appears only now. The design hides it again on focus, and it stays, because a press inside the well focuses the field and a button that went would go under its own press."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="folder"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="2" Grid.Column="1" Target="Folder" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Classes="note"
+                                       Text="The same glyph. The placeholder, the hint and the dialog it opens are what differ."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="no typing"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="3" Grid.Column="1" Target="Folder"
+                                          AllowsTyping="False"
+                                          Path="/home/jason/Projects/game" />
+                            <TextBlock Grid.Row="3" Grid.Column="2" Classes="note"
+                                       Text="The well drops to the chrome tone and takes no caret. This is not the disabled look: the text keeps its tone and browse and clear both still work."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="invalid"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="4" Grid.Column="1"
+                                          Path="/home/jason/Projects/game/data/items.txt"
+                                          Problem="Only .json and .csv files are accepted" />
+                            <TextBlock Grid.Row="4" Grid.Column="2" Classes="note"
+                                       Text="Only reachable when typing is on. The message replaces the hint rather than adding a row."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Classes="caption" Text="missing"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="5" Grid.Column="1"
+                                          Path="/mnt/old/game/data/items.json"
+                                          Problem="That file is not there any more"
+                                          ProblemTier="Warn" />
+                            <TextBlock Grid.Row="5" Grid.Column="2" Classes="note"
+                                       Text="A path that was good and no longer resolves is a warning. The value is kept so the drive can be fixed rather than the path retyped."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Classes="caption" Text="compact"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="6" Grid.Column="1" Width="240"
+                                          HorizontalAlignment="Left"
+                                          IsCompact="True"
+                                          Path="/home/jason/Projects/game" />
+                            <TextBlock Grid.Row="6" Grid.Column="2" Classes="note"
+                                       Text="The icon only form, for an inspector row or any column too narrow for the word."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" Classes="caption" Text="disabled"
+                                       VerticalAlignment="Center" />
+                            <ui:PathField Grid.Row="7" Grid.Column="1" IsEnabled="False"
+                                          Path="/home/jason/Projects/game/data/items.json" />
+                            <TextBlock Grid.Row="7" Grid.Column="2" Classes="note"
+                                       Text="Both halves flatten and the clear button is dropped rather than greyed."
+                                       VerticalAlignment="Center" />
+                        </Grid>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                 Header="CHOICES" Content="mixed is real, not styled" />
 
                         <Grid ColumnDefinitions="86,60,60,60,60,Auto"

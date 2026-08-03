@@ -233,9 +233,9 @@ public sealed class SettingDescriptor<T> : ISettingDescriptor
 
     /// <summary>
     /// A bool is a toggle, a closed choice is a segment when it is short enough to draw
-    /// one and a dropdown otherwise, a number is a number, an array is a list, and
-    /// anything left is text. The two thresholds below are a guess at what fits, not a
-    /// measurement, so name an editor where they read wrong.
+    /// one and a dropdown otherwise, a path is a path field, a number is a number, an
+    /// array is a list, and anything left is text. The two thresholds below are a guess at
+    /// what fits, not a measurement, so name an editor where they read wrong.
     /// </summary>
     private SettingEditor Derive()
     {
@@ -260,6 +260,11 @@ public sealed class SettingDescriptor<T> : ISettingDescriptor
                 && closed.Options.All(option => option.Label.Length <= LongestSegmentLabel)
                     ? SettingEditor.Segment
                     : SettingEditor.Select;
+        }
+
+        if (Rules.Any(rule => rule is PathShapeRule))
+        {
+            return SettingEditor.Path;
         }
 
         if (Choices is not null || type.IsEnum)

@@ -20,6 +20,13 @@
     <SolidColorBrush x:Key="SurfaceWellPressed" Color="#2f3238" />
     <SolidColorBrush x:Key="SurfaceWellFocus" Color="#1a1b1e" />
 
+    <!-- A well nothing can be typed into. It carries SurfaceRoot's value and is a different
+         role, so a field that takes no caret reads as chrome instead of as a well. -->
+    <SolidColorBrush x:Key="SurfaceWellOff" Color="#1e1f22" />
+
+    <!-- A well with something acceptable being dragged over it. -->
+    <SolidColorBrush x:Key="SurfaceDrop" Color="#14293f" />
+
     <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill and its
          border together. -->
     <SolidColorBrush x:Key="LineSeam" Color="#33353a" />
