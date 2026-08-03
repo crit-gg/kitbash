@@ -9,6 +9,7 @@ using Workbench.Core.IO;
 using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
+using Workbench.Mock;
 using Workbench.ViewModels;
 using Workbench.Ui;
 using Workbench.Ui.Toasts;
@@ -55,6 +56,7 @@ public partial class App : Application
             .AddWorkbenchToasts()
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
             .AddSingleton(BuildRegistry())
+            .AddSingleton<MockToolCatalogue>()
             .AddSingleton(provider => new EnginesViewModel(
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineStore>(),
@@ -69,6 +71,7 @@ public partial class App : Application
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IToolRegistry>(),
+                provider.GetRequiredService<MockToolCatalogue>(),
                 provider.GetRequiredService<IGitStatusMonitor>(),
                 provider.GetRequiredService<IGitUpdater>(),
                 provider.GetRequiredService<IUiDispatcher>(),
@@ -81,27 +84,45 @@ public partial class App : Application
                 provider.GetRequiredService<EnginesViewModel>()))
             .BuildServiceProvider();
 
-    // Placeholders until real tools exist.
+    // Placeholders until real tools exist. The ids are what MockToolCatalogue keys its
+    // versions off, so renaming one there and not here leaves a card with no version.
     private static IToolRegistry BuildRegistry() =>
         new ToolRegistry()
             .Add(new ToolDescriptor(
-                "data-editor",
-                "Data Editor",
-                "Edit gameplay definition files.",
+                "foundry",
+                "Foundry",
+                "Data editor for attributes, stats, effects, machines and recipes, plus the "
+                + "graphs designers author: pure, exec, state machines and behaviour trees.",
                 "Content",
-                NotBuiltYet("Data Editor")))
+                NotBuiltYet("Foundry")))
             .Add(new ToolDescriptor(
-                "schema-inspector",
-                "Schema Inspector",
-                "Browse types and exported properties from a schema manifest.",
+                "balance-sim",
+                "Balance Sim",
+                "Runs a factory graph headless over simulated time and reports throughput, "
+                + "bottlenecks and drift against the balance targets.",
+                "Analysis",
+                NotBuiltYet("Balance Sim")))
+            .Add(new ToolDescriptor(
+                "pipeline",
+                "Pipeline",
+                "Runs the export and packaging steps for a build, from data validation "
+                + "through to a signed archive.",
+                "Build",
+                NotBuiltYet("Pipeline")))
+            .Add(new ToolDescriptor(
+                "strings",
+                "Strings",
+                "Localization tables for every piece of player facing text, with coverage "
+                + "per language and a diff against the last shipped build.",
                 "Content",
-                NotBuiltYet("Schema Inspector")))
+                NotBuiltYet("Strings")))
             .Add(new ToolDescriptor(
-                "asset-index",
-                "Asset Index",
-                "Search project assets and their identifiers.",
-                "Project",
-                NotBuiltYet("Asset Index")));
+                "atlas",
+                "Atlas",
+                "Sprite and texture atlas packer that writes import presets straight into "
+                + "the workspace.",
+                "Content",
+                NotBuiltYet("Atlas")));
 
     private static IToolActivation NotBuiltYet(string name) =>
         DelegateToolActivation.Sync(() =>

@@ -8,6 +8,7 @@ using Workbench.Core.IO;
 using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
+using Workbench.Mock;
 
 namespace Workbench.ViewModels;
 
@@ -62,6 +63,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IWorkspaceRegistry workspaces,
         IPathShortener paths,
         IToolRegistry tools,
+        MockToolCatalogue catalogue,
         IGitStatusMonitor git,
         IGitUpdater updater,
         IUiDispatcher dispatcher,
@@ -76,6 +78,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(tools);
+        ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(updater);
         ArgumentNullException.ThrowIfNull(dispatcher);
@@ -101,7 +104,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         Engines = engines;
 
-        Tools = [.. tools.Tools.Select(tool => new ToolCardViewModel(tool))];
+        ToolGroups = catalogue.Build(tools.Tools);
 
         // The monitor reads on its own threads, so what it says has to be carried over
         // before anything bound to it is touched.
@@ -138,10 +141,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public GitViewModel Git { get; } = new();
 
     /// <summary>
-    /// The registered tools. This is the registry's list rather than a written one, so
-    /// the launcher shows what the app actually offers.
+    /// The registered tools, split into installed and available. The set comes from the
+    /// registry and every version, update and install state on it comes from the mock.
     /// </summary>
-    public IReadOnlyList<ToolCardViewModel> Tools { get; }
+    public IReadOnlyList<ToolGroupViewModel> ToolGroups { get; }
 
     /// <summary>
     /// Registers a folder and opens it. A folder inside a workspace already added is

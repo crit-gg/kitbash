@@ -9,6 +9,7 @@ public enum IconGlyph
 {
     AlertCircle,
     AlertTriangle,
+    ArrowBigDownLine,
     ArrowToBottom,
     Bolt,
     Check,

@@ -28,8 +28,21 @@ public class GestureText : IValueConverter
         if (gesture.KeyModifiers.HasFlag(KeyModifiers.Alt)) { parts.Add("Alt"); }
         if (gesture.KeyModifiers.HasFlag(KeyModifiers.Meta)) { parts.Add("Super"); }
 
-        parts.Add(gesture.Key.ToString());
+        parts.Add(Name(gesture.Key));
 
         return string.Join(" ", parts);
     }
+
+    /// <summary>
+    /// The word a keyboard prints, where the enum member is not it. Key.Enter is declared
+    /// as Return and Key.PageUp as Prior, so both spell themselves wrong.
+    /// </summary>
+    private static string Name(Key key) => key switch
+    {
+        Key.Return => "Enter",
+        Key.Prior => "PageUp",
+        Key.Next => "PageDown",
+        Key.Back => "Backspace",
+        _ => key.ToString(),
+    };
 }

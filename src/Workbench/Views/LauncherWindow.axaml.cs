@@ -133,6 +133,68 @@ public partial class LauncherWindow : ChromelessWindow
         }
     }
 
+    // A flyout is view furniture, and MenuFlyout takes items or an ItemsSource but not
+    // both, so the menu is assembled here rather than declared with the card.
+    private void OnToolMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: ToolCardViewModel card } button)
+        {
+            return;
+        }
+
+        var menu = new MenuFlyout();
+
+        foreach (var item in card.Menu)
+        {
+            menu.Items.Add(new MenuItem { Header = item.Label, InputGesture = Gesture(item.Hint) });
+        }
+
+        if (card.HasUpdate || card.ShowUpdateLead)
+        {
+            Separate(menu);
+            menu.Items.Add(new MenuItem { Header = card.ReleaseNoteLabel });
+        }
+
+        // Last, behind a separator, and it names its tool, so a click on the wrong card is
+        // visible before it is confirmed.
+        if (card.IsInstalled)
+        {
+            Separate(menu);
+            menu.Items.Add(new MenuItem { Header = card.UninstallLabel, Classes = { "danger" } });
+        }
+
+        menu.ShowAt(button);
+    }
+
+    private static void Separate(MenuFlyout menu)
+    {
+        if (menu.Items.Count > 0)
+        {
+            menu.Items.Add(new Separator());
+        }
+    }
+
+    /// <summary>
+    /// The shortcut a menu line shows, written the way a person says it. Null draws no
+    /// hint, and so does anything that is not a gesture, rather than taking the app down.
+    /// </summary>
+    private static KeyGesture? Gesture(string? hint)
+    {
+        if (hint is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return KeyGesture.Parse(hint.Replace(' ', '+'));
+        }
+        catch (Exception exception) when (exception is FormatException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
     private async Task AddWorkspaceFromFolderAsync()
     {
         var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions

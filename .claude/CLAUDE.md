@@ -274,8 +274,13 @@ to report yet. The one slow thing it does, updating from git, reports on itself 
 status bar in place, which is rule 8 of that row and not something a toast should take
 over. The gallery is where the toast service is wired to a composition root and exercised.
 
-The git strip and the engine strip are both real and both read the open workspace. Nothing
-in the app is invented any more.
+The git strip and the engine strip are both real and both read the open workspace.
+
+**The tools section is drawn and its data is invented.** The set of tools is the registry's,
+and every version, update, install state and blocked state on a card comes from
+`Workbench/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
+and download nothing. That stands until there is an answer to where a tool comes from, which
+is an open decision below. Delete the mock when there is.
 
 The settings schema is at step 3 of the six in `.claude/plans/settings-schema.md`. Core
 has the schema types, the rules, the per layer read, the batched write, the remove, the
@@ -297,4 +302,7 @@ Do not assume any of these. Ask before building on one.
   a runtime ResourceFormatLoader was the alternative)
 - How references between data files are expressed (source file path was the
   leading candidate)
+- Where a tool comes from. Compiled into the launcher as now, found on disk under a known
+  directory, or fetched from a remote index. The tools page draws all three states and
+  `ITool` answers none of them, so this decides what `src/tools/` builds into as well
 

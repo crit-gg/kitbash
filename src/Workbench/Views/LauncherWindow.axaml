@@ -3,6 +3,7 @@
         xmlns:vm="clr-namespace:Workbench.ViewModels"
         xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
         xmlns:views="clr-namespace:Workbench.Views"
+        xmlns:sys="using:System"
         x:Class="Workbench.Views.LauncherWindow"
         x:DataType="vm:LauncherViewModel"
         Title="Workbench"
@@ -43,7 +44,7 @@
             <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
-            <Setter Property="Padding" Value="15,14" />
+            <Setter Property="Padding" Value="14" />
         </Style>
 
         <Style Selector="Border.toolMark">
@@ -52,6 +53,30 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
         </Style>
+
+        <!-- A tool that is not on this machine drops the tile and the name to the muted
+             tier, so the solid Launch column belongs to the installed list alone. -->
+        <Style Selector="Border.toolMark > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="Border.toolMark.available">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        </Style>
+
+        <Style Selector="Border.toolMark.available > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="TextBlock.toolName">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="TextBlock.toolName.available">
+            <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
+        </Style>
+
 
         <!-- A row in the workspace list. Full bleed rather than an inset pill, because it
              carries two lines and a badge, which is the rule stage 5 recorded. -->
@@ -338,48 +363,191 @@
                     <!-- tools -->
                     <Border Grid.Row="2" Classes="page" BorderThickness="0">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                            <StackPanel Margin="20,16,20,18">
-                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
-                                                        Header="TOOLS" Margin="0,0,0,11" />
+                            <ItemsControl ItemsSource="{Binding ToolGroups}" Margin="20,16,20,18">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="20" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ToolGroupViewModel">
+                                        <StackPanel>
+                                            <!-- Update all appears only while something is pending and
+                                                 carries the count, so an up to date group is quiet. -->
+                                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                                    Header="{Binding Label}"
+                                                                    Margin="0,0,0,11">
+                                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                                    <Button Theme="{StaticResource CompactButton}"
+                                                            IsVisible="{Binding ShowsUpdateAll}"
+                                                            Command="{Binding UpdateAllCommand}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <ui:Icon Glyph="ArrowBigDownLine"
+                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                     Foreground="{DynamicResource Warn}"
+                                                                     VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding UpdateAllLabel}"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
 
-                                <ItemsControl ItemsSource="{Binding Tools}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Spacing="7" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ToolCardViewModel">
-                                            <Border Classes="toolCard">
-                                                <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="15">
-                                                    <!-- The square holds the tool's icon. Empty until a tool supplies one. -->
-                                                    <Border Grid.Column="0" Classes="toolMark"
-                                                            Width="48" Height="48"
-                                                            VerticalAlignment="Center" />
+                                                    <Button Theme="{StaticResource CompactButton}" Classes="link"
+                                                            IsVisible="{Binding ShowsCheck}"
+                                                            Content="{Binding CheckLabel}"
+                                                            Command="{Binding CheckCommand}" />
+                                                </StackPanel>
+                                            </HeaderedContentControl>
 
-                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
-                                                                   FontWeight="{DynamicResource FontWeightStrong}"
-                                                                   Foreground="{DynamicResource InkPrimary}" />
-                                                        <TextBlock Text="{Binding Description}"
-                                                                   Margin="0,6,0,0"
-                                                                   FontSize="{DynamicResource FontSizeControl}"
-                                                                   LineHeight="17.4"
-                                                                   TextWrapping="Wrap"
-                                                                   Foreground="{DynamicResource InkSecondary}" />
-                                                    </StackPanel>
+                                            <!-- Three across, and the negative margin takes back the
+                                                 gutter the last column and the last row would leave. -->
+                                            <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-9,-9">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="3" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ToolCardViewModel">
+                                                        <Border Classes="toolCard" MinHeight="226" Margin="0,0,9,9">
+                                                            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="11">
+                                                                <Grid Grid.Row="0" ColumnDefinitions="40,*,Auto"
+                                                                      ColumnSpacing="12">
+                                                                    <!-- The tile holds the tool's icon. A letter
+                                                                         until a tool supplies one. -->
+                                                                    <Border Grid.Column="0" Classes="toolMark"
+                                                                            Classes.available="{Binding !IsInstalled}"
+                                                                            Width="40" Height="40">
+                                                                        <TextBlock Text="{Binding Mark}"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   VerticalAlignment="Center"
+                                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}" />
+                                                                    </Border>
 
-                                                    <Button Grid.Column="2" Classes="primary"
-                                                            Content="Launch"
-                                                            VerticalAlignment="Center"
-                                                            Click="OnLaunchToolClick" />
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                                                                    <StackPanel Grid.Column="1" Margin="0,2,0,0">
+                                                                        <TextBlock Classes="toolName"
+                                                                                   Classes.available="{Binding !IsInstalled}"
+                                                                                   Text="{Binding Name}"
+                                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Classes="mono" Text="{Binding Version}"
+                                                                                   Margin="0,6,0,0"
+                                                                                   FontSize="{DynamicResource FontSizeBody}"
+                                                                                   Foreground="{DynamicResource InkMuted}" />
+                                                                    </StackPanel>
+
+                                                                    <!-- A plain menu rather than a split button, so
+                                                                         the primary has one target and one meaning. -->
+                                                                    <Button Grid.Column="2" Classes="icon"
+                                                                            VerticalAlignment="Top"
+                                                                            ToolTip.Tip="More"
+                                                                            AutomationProperties.Name="More"
+                                                                            Click="OnToolMenuClick">
+                                                                        <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                    </Button>
+                                                                </Grid>
+
+                                                                <!-- The floor keeps every card in a row ending its
+                                                                     actions on the same line. -->
+                                                                <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                                                           MinHeight="69"
+                                                                           VerticalAlignment="Top"
+                                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                                           LineHeight="17.4"
+                                                                           TextWrapping="Wrap"
+                                                                           Foreground="{DynamicResource InkSecondary}" />
+
+                                                                <StackPanel Grid.Row="2" Spacing="7">
+                                                                    <!-- Margins rather than ColumnSpacing, since a
+                                                                         hidden column would still take the gap. -->
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                            <ColumnDefinition Width="{Binding BarColumn}" />
+                                                                            <ColumnDefinition Width="*" />
+                                                                        </Grid.ColumnDefinitions>
+
+                                                                        <Button Grid.Column="0" Margin="0,0,7,0"
+                                                                                IsVisible="{Binding ShowUpdate}"
+                                                                                Command="{Binding UpdateCommand}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                                <ui:Icon Glyph="ArrowBigDownLine"
+                                                                                         Size="{DynamicResource IconSizeField}"
+                                                                                         Foreground="{DynamicResource Warn}"
+                                                                                         VerticalAlignment="Center" />
+                                                                                <TextBlock Text="Update"
+                                                                                           VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+
+                                                                        <Grid Grid.Column="1" Margin="0,0,7,0"
+                                                                              ColumnDefinitions="*,Auto" ColumnSpacing="9"
+                                                                              VerticalAlignment="Center"
+                                                                              IsVisible="{Binding IsUpdating}">
+                                                                            <ProgressBar Grid.Column="0"
+                                                                                         Value="{Binding Progress}"
+                                                                                         Foreground="{DynamicResource Warn}" />
+                                                                            <TextBlock Grid.Column="1" Classes="mono"
+                                                                                       Text="{Binding PercentLabel}"
+                                                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                                                       Foreground="{DynamicResource InkSecondary}" />
+                                                                        </Grid>
+
+                                                                        <Button Grid.Column="2" Classes="neutral"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                Content="Launch"
+                                                                                IsVisible="{Binding ShowLaunch}"
+                                                                                Click="OnLaunchToolClick" />
+
+                                                                        <Button Grid.Column="2"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                Content="Install"
+                                                                                IsVisible="{Binding ShowInstall}" />
+
+                                                                        <!-- One button is its own explanation, so a
+                                                                             blocked card greys nothing out. -->
+                                                                        <Button Grid.Column="2" Classes="neutral"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                IsVisible="{Binding ShowUpdateLead}"
+                                                                                Command="{Binding UpdateCommand}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                                <ui:Icon Glyph="ArrowBigDownLine"
+                                                                                         Size="{DynamicResource IconSizeField}"
+                                                                                         Foreground="{DynamicResource Warn}"
+                                                                                         VerticalAlignment="Center" />
+                                                                                <TextBlock Text="Update"
+                                                                                           VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+                                                                    </Grid>
+
+                                                                    <ItemsControl ItemsSource="{Binding Extras}"
+                                                                                  IsVisible="{Binding HasExtras}"
+                                                                                  Margin="0,0,-7,0">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <UniformGrid Rows="1" />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate x:DataType="sys:String">
+                                                                                <Button Content="{Binding}"
+                                                                                        Margin="0,0,7,0"
+                                                                                        HorizontalAlignment="Stretch" />
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </ScrollViewer>
                     </Border>
 
