@@ -5,6 +5,14 @@ namespace Workbench.Core.Platform;
 
 public sealed class ProcessRunner : IProcessRunner
 {
+    private readonly IBundleEnvironment _bundle;
+
+    public ProcessRunner(IBundleEnvironment bundle)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        _bundle = bundle;
+    }
+
     public void Run(ProcessRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -134,7 +142,7 @@ public sealed class ProcessRunner : IProcessRunner
         }
     }
 
-    private static ProcessStartInfo Describe(ProcessRequest request)
+    private ProcessStartInfo Describe(ProcessRequest request)
     {
         var start = new ProcessStartInfo(request.FileName)
         {
@@ -151,9 +159,14 @@ public sealed class ProcessRunner : IProcessRunner
             start.ArgumentList.Add(argument);
         }
 
+        // The bundle's correction goes on first so a request that names the same variable
+        // still wins. Every program started here is somebody else's, so this applies to
+        // all of them rather than to the ones that happened to ask.
+        var environment = Merge(_bundle.Outside, request.Environment);
+
         // Environment needs the program started here rather than by the shell, so a request
         // that asks for both gets the variables and loses the shell.
-        if (request.Environment is { Count: > 0 } environment)
+        if (environment.Count > 0)
         {
             start.UseShellExecute = false;
 
@@ -164,5 +177,28 @@ public sealed class ProcessRunner : IProcessRunner
         }
 
         return start;
+    }
+
+    private static IReadOnlyDictionary<string, string> Merge(
+        IReadOnlyDictionary<string, string> bundle, IReadOnlyDictionary<string, string>? requested)
+    {
+        if (requested is not { Count: > 0 })
+        {
+            return bundle;
+        }
+
+        if (bundle.Count == 0)
+        {
+            return requested;
+        }
+
+        var merged = new Dictionary<string, string>(bundle, StringComparer.Ordinal);
+
+        foreach (var (name, value) in requested)
+        {
+            merged[name] = value;
+        }
+
+        return merged;
     }
 }

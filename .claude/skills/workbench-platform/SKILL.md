@@ -59,6 +59,40 @@ OS test.
 - `IPathRules` says whether two paths mean the same place, and whether one sits inside
   another. Only case sensitivity differs, so the subclasses are one line each
 
+Two more are registered there, both about the app being packaged rather than about IO.
+
+**`IBundleEnvironment` takes the bundle back out of a child's environment.** Velopack's
+AppImage `AppRun` puts `$APPDIR/usr/bin` on the front of `PATH`, so every program
+Workbench starts would search the bundle's 229 published files before the system. Read
+from the generated `AppRun` rather than assumed: **`PATH` is the only variable it
+exports.** The service strips a longer list anyway, since a hand built `.AppDir` passed to
+`--packDir` is copied through untouched and could carry any `AppRun`.
+
+`ProcessRunner` merges the overlay **underneath** a request's own, so `GitEnvironment.Unattended`
+still wins on a key both set, and merging in the runner is what makes it cover
+`GitStatusReader`, which passes no overlay at all. `ExecutableFinder` reads the corrected
+`PATH` too, so what is found is what runs.
+
+**Every caller runs somebody else's program today**, so the correction is applied to all of
+them. When tools land, a tool started from our own bundle should keep the environment, and
+that is the moment to add the distinction. `PlainEnvironment` is empty, for Windows and for
+a Linux run outside a bundle, and `Outside` being empty is the honest answer for both.
+
+**`IDesktopIntegration` makes the AppImage findable.** An AppImage is a file in Downloads
+with no menu entry. `LinuxDesktopIntegration` writes `applications/workbench.desktop` and
+`icons/hicolor/256x256/apps/workbench.png` under `XDG_DATA_HOME`, and rewrites whenever
+`$APPIMAGE` does not match, so moving the file fixes the entry at the next launch. It reads
+the variable itself rather than going through `IUserDirectories`, because the root it wants
+is the data root and not Workbench's folder inside it. The icon is `$APPDIR/.DirIcon`, the
+specification's own name for it whatever `--icon` was called.
+
+**There is no `Remove`.** Velopack runs no uninstall hook on Linux and an AppImage has no
+uninstaller, so nothing would call one. `WindowsDesktopIntegration` does nothing, since
+`Setup.exe` writes the shortcut and the uninstall entry.
+
+**`StartupWMClass` is deliberately absent** from the entry. A wrong one is worse than none,
+and the value Avalonia actually sets has not been checked with `xprop WM_CLASS`.
+
 `AddPlatformIO`, `AddEngineFiles` and `CreatePlatform`, all in `WorkbenchCoreServices`,
 are the only places that test the running OS.
 

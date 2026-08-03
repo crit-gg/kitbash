@@ -71,7 +71,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     private readonly Action _changed;
 
     private readonly List<SettingValueRowViewModel> _values = [];
-    private readonly List<(SettingsListRow Source, SettingsListRowViewModel Row)> _lists = [];
+    private readonly List<(SettingsReadoutRow Source, SettingsReadoutRowViewModel Row)> _readouts = [];
 
     [ObservableProperty]
     private bool _isAvailable = true;
@@ -248,7 +248,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
             row.IsPageWritable = IsWritable;
         }
 
-        foreach (var (row, entries) in load.Lists)
+        foreach (var (row, entries) in load.Readouts)
         {
             row.Entries = entries;
         }
@@ -307,10 +307,10 @@ public sealed partial class SettingsPageViewModel : ObservableObject
                         rows.Add(value);
                         break;
 
-                    case SettingsListRow list:
-                        var lines = new SettingsListRowViewModel(list);
-                        _lists.Add((list, lines));
-                        rows.Add(lines);
+                    case SettingsReadoutRow readout:
+                        var reading = new SettingsReadoutRowViewModel(readout);
+                        _readouts.Add((readout, reading));
+                        rows.Add(reading);
                         break;
                 }
             }
@@ -334,11 +334,11 @@ public sealed partial class SettingsPageViewModel : ObservableObject
             }
         }
 
-        var lists = _lists
+        var readouts = _readouts
             .Select(pair => (pair.Row, Entries: pair.Source.Read()))
             .ToArray();
 
-        return new PageLoad(view, choices, lists);
+        return new PageLoad(view, choices, readouts);
     }
 
     private void OnRowChanged()
@@ -389,5 +389,5 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     private sealed record PageLoad(
         SettingsPageView View,
         IReadOnlyDictionary<string, IReadOnlyList<SettingChoice>> Choices,
-        IReadOnlyList<(SettingsListRowViewModel Row, IReadOnlyList<SettingsListEntry> Entries)> Lists);
+        IReadOnlyList<(SettingsReadoutRowViewModel Row, IReadOnlyList<SettingsListEntry> Entries)> Readouts);
 }

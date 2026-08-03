@@ -3,9 +3,22 @@
 How Workbench and its tools reach a machine, and how they stay current, on Windows
 and on any Linux distribution.
 
-Nothing here is built. This is the research and the recommendation, written before
-the first tool exists, because the answer changes how the projects are published and
-that is cheaper to decide now.
+This was the research and the recommendation, written before the first tool existed,
+because the answer changes how the projects are published and that is cheaper to decide
+now.
+
+## Status
+
+**The launcher tier is built.** Velopack 1.2.0, the release script, the desktop entry and
+the bundle environment. At start it checks its feed before drawing anything, and either
+replaces itself over a progress dialog or opens on the version it already had. What is not
+built: the single launcher guard, a preview channel, code signing and every part of the
+tool system below.
+
+**Five claims below were wrong and are corrected in place**, each marked `Corrected`.
+They were written from documentation and reasoning, and the corrections come from
+reading Velopack's source and from running a real update. Anything still unmarked is
+still unverified.
 
 ## What has to be true
 
@@ -86,8 +99,124 @@ because Velopack reruns the main binary with hook arguments during install, upda
 uninstall, and those hooks exit from inside `Run()`. Then `UpdateManager` gives
 `CheckForUpdatesAsync`, `DownloadUpdatesAsync` and `ApplyUpdatesAndRestart`.
 
-**Velopack does not cross compile.** A Windows package is built on Windows and a Linux
-package on Linux. That is two CI jobs, and it matches how the app has to be tested anyway.
+**Corrected. Velopack does cross compile between Windows and Linux.** An OS directive
+goes before the verb, so `vpk [win] pack --runtime win-x64` runs here and
+`vpk [linux] pack` runs on Windows. Only macOS needs a Mac, because it shells out to
+`codesign` and `productbuild`. `dotnet publish -r win-x64` already runs anywhere too, so
+one machine builds both releases and `build/release.sh` is one script rather than two CI
+jobs.
+
+Two limits stay. Signing a Windows package needs `signtool.exe`, so it needs Windows, and
+nothing is being signed. And building a package is not testing it, so the Windows
+artifact made here has not been run anywhere.
+
+## The pack id is not the application name
+
+**Added after the fact, and it is the worst thing this page nearly missed.**
+
+Velopack installs to `%LocalAppData%\{packId}` and its uninstaller **removes that whole
+directory**. `WindowsUserDirectories` already puts state at `%LOCALAPPDATA%\Workbench\State`
+and cache at `%LOCALAPPDATA%\Workbench\Cache`. So a pack id of `Workbench` would make the
+install root their parent, and uninstalling would take the workspace list, every setting
+the app wrote, and every installed Godot engine under `State\engines`, which is gigabytes
+a person chose to download.
+
+**The pack id is `Slopworks.Workbench`.** It installs to `%LocalAppData%\Slopworks.Workbench`,
+which shares nothing with the three user directories, so all three sit outside the install
+root and survive. Velopack's own guidance is to namespace a pack id, and this is why.
+
+Two things follow. `--mainExe` becomes required rather than optional, since it otherwise
+defaults to the pack id and the executable is named after the project. And the same rule
+applies to anything added later: nothing a person owns may sit under the install root.
+
+## Updates are off, and the feed is not a visible setting
+
+`UpdateSettingsSchema.IsEnabled` is false. Nothing checks and nothing downloads.
+Everything below is built and reachable, it simply does not run.
+
+**Turning it on is two lines**: that property, and a real `DefaultFeed` pointing at the
+bucket. It waits on the pipeline under Hosting, since a feed with nothing behind it would
+have every copy checking a dead address on every launch.
+
+It is a property rather than a const so the code it turns off does not read as unreachable,
+which would fail the build under `TreatWarningsAsErrors`.
+
+### `updates.feed` is a real key on no page
+
+**The descriptor exists and the settings window never draws it.** Where releases come from
+is the app's answer rather than a person's, so `DefaultFeed` is a constant compiled in, and
+the Updates page shows the running version alone.
+
+It is still an ordinary setting in every other way. It reads from a descriptor like all the
+rest, out of `updates.feed` in the application settings file, so a copy can be pointed at a
+feed by hand, which is how the whole path was tested. Measured: a value written into that
+file by hand reads back through `SettingDescriptor.Read`, with no page involved.
+
+Two things follow from being on no page. `ISettingsWriter` **refuses** the key, since it
+guards against writing anything a page did not declare, so nothing can change it except a
+person with an editor. And nothing announces it, since the file that lists every setting
+from its descriptor is the workspace scaffold and this is an application setting, so the
+key is written down here instead:
+
+```toml
+[updates]
+feed = "https://..."   # or an absolute path to a folder
+```
+
+Everything measured below was measured with updates on, against a local feed and a
+throttled HTTP server.
+
+## Nothing about an update may cost somebody their app
+
+The rule the launcher tier is built to. **Every path through startup ends with a window**,
+because a copy that fails to update and shows nothing is worse than one that never tried.
+
+- **`VelopackApp.Run` is wrapped.** A broken install state would otherwise stop the app
+  before Avalonia loads. It carries on instead, unless the launch carries a `--veloapp-`
+  hook argument, where opening a window in the middle of an install would be worse than
+  stopping, so that one exits with a code.
+- **`CheckAsync` never throws**, cancellation included.
+- **A failed download closes the dialog and returns.** Measured with a package whose
+  SHA256 was made not to match: the checksum failed, the launcher opened 1.9 seconds in,
+  and the AppImage on disk was untouched at the old version.
+- **Any failure in the update path is caught in `App.StartAsync`**, which opens the
+  launcher afterwards whatever happened.
+
+### The launcher waits for the check, so the check has a deadline
+
+Nothing is drawn until the update is settled, which keeps a window from appearing and
+being covered a moment later. That makes the check's duration a blank screen, so it is
+bounded at three seconds.
+
+**A cancellation token does not bound it on its own.**
+`UpdateManager.CheckForUpdatesAsync` takes no token, so one handed to `Task.Run` only
+stops it starting. Measured before this was understood: a server that accepted the
+connection and never replied held the window back for over thirty seconds.
+
+So `CheckAsync` stops waiting rather than cancelling, with `Task.WhenAny` against the
+deadline, and reads the abandoned task's failure so it is never unobserved.
+
+**`SimpleWebSource.Timeout` is a second, lower backstop, at fifteen seconds.** Velopack's
+default is thirty minutes, which would leave an abandoned check holding a socket for half
+an hour. Short is safe here, and the reason is worth keeping: the feed is read with
+`GetStringAsync`, so the timeout bounds it end to end, while a package is read with
+`HttpCompletionOption.ResponseHeadersRead`, so for the download it bounds only the wait
+for the first response and never the body. Read from Velopack's `HttpClientFileDownloader`
+rather than assumed.
+
+Measured, launch to window, against a baseline start of about 1.7 seconds:
+
+| Feed | Window |
+|---|---|
+| a server that accepts and never replies | 4.8s |
+| nothing listening on the port | 1.8s |
+| a host that does not resolve | 1.7s |
+| a folder that is not there | 1.6s |
+
+**The dialog is the only window while it runs**, so it opens with `Show` rather than
+`ShowDialog`, centres on the screen, and sits in the task bar. `ShutdownMode` is
+`OnExplicitShutdown` until the launcher is up, because the dialog closing would otherwise
+be a last window closing and end the app before anything else opened.
 
 ## The four things that will actually bite
 
@@ -116,7 +245,26 @@ every tool. One updater, one place, and a tool stays a tool.
 
 ### 2. An AppImage leaks its environment into every program it starts
 
-This is the one that would ship broken and stay broken for a while.
+**Corrected. It is one variable, not a class of them, and the variable is `PATH`.**
+
+Velopack does not build a usual AppImage. The `AppRun` it generates, in
+`src/vpk/Velopack.Packaging.Unix/Commands/LinuxPackCommandRunner.cs` and confirmed by
+extracting a real one, exports `PATH` and nothing else. No `LD_LIBRARY_PATH`, no
+`PYTHONHOME`, no `QT_PLUGIN_PATH`. That follows from a self contained .NET app, which
+probes its own directory for native libraries rather than going through the loader path.
+So the two reports linked below do not describe what happens here.
+
+The `PATH` leak is real: `$APPDIR/usr/bin` goes on the front and holds the whole
+published output, 229 files. Only two of them, `Workbench` and `UpdateNix`, could shadow
+a program at all, and neither collides with `git`, `dotnet`, `setsid` or an opener, so
+this is a fix rather than an emergency.
+
+`IBundleEnvironment` is what does it, and it strips a list of variables rather than
+`PATH` alone, because a hand built `.AppDir` passed to `--packDir` is copied through
+untouched and could carry any `AppRun`. `ProcessRunner` merges it under a request's own
+overlay and `ExecutableFinder` reads the corrected `PATH`, so what is found is what runs.
+
+The reasoning that turned out not to apply, kept because it is why the service exists:
 
 An AppImage mounts itself and sets `LD_LIBRARY_PATH` and friends at the mount point so
 its own binaries find their bundled libraries. Those variables are inherited by every
@@ -152,26 +300,46 @@ Ubuntu, Mint or Arch, so telling people to install one is telling them to go and
 
 **So Workbench integrates itself on first run.** Write a `.desktop` file into
 `$XDG_DATA_HOME/applications` with `Exec` pointing at `$APPIMAGE`, and the icon into the
-hicolor theme under the same root. Both paths already come from `IUserDirectories`, and
-the file is a freedesktop specification we can read rather than a guess. Remove both when
-the app is uninstalled.
+hicolor theme under the same root. The file is a freedesktop specification we can read
+rather than a guess.
 
-This is ours to write. It is small, and it is the difference between a launcher and a
-file in Downloads.
+`IDesktopIntegration` is that, and it is rewritten whenever `$APPIMAGE` does not match,
+so moving the file fixes the entry at the next launch. Two details it turned out to need:
+the root it wants is the data root itself rather than the folder Workbench keeps its own
+files in, so it reads `XDG_DATA_HOME` rather than going through `IUserDirectories`, and
+the icon it copies is `$APPDIR/.DirIcon`, which is the specification's own name for it
+whatever `--icon` was called.
+
+**Corrected in one detail.** Velopack's `AppRun` does a little integration already: it
+copies the icon into `~/.cache/thumbnails` and runs `xdg-icon-resource forceupdate` on
+every launch. That is a file manager thumbnail, not a menu entry, so the entry is still
+ours.
+
+**There is no `Remove`.** Velopack runs no uninstall hook on Linux and an AppImage has no
+uninstaller, so nothing would ever call one. Deleting the file is how a person uninstalls,
+and the entry is left behind.
 
 ### 4. The update fails across filesystems
 
-Velopack downloads to `/var/tmp` and renames the result over the existing AppImage. A
-rename cannot cross a filesystem. Anyone whose home is a separate mount, or who keeps the
-file on a NAS or an external disk, gets a failed update. This is reported and the working
-answer so far was moving the file, which is a workaround rather than a fix.
+**Corrected. Velopack fixed this and there is nothing here to write.**
 
-Test it before release. If it still fails, the answer is to stage the download beside the
-target rather than in `/var/tmp`.
+`apply_linux_impl.rs` runs `mv -f` rather than `fs::rename`, with a comment saying it is
+because "rename fails cross-device". `mv` falls back to a copy and an unlink, so the
+crossing is handled. The staging directory is `<packages>/VelopackTemp`, and packages on
+Linux live under `/var/tmp/velopack/<id>/packages`, which is persistent disk rather than
+the tmpfs `/tmp` usually is.
+
+Measured here: an AppImage on `/tmp`, which is tmpfs, updated from a package staged on
+`/var/tmp`, which is btrfs. Two filesystems, and it worked.
+
+`VELOPACK_TEMP` exists and overrides the C# side's scratch directory, but it does not
+move the packages directory, so it is not the lever this would have needed anyway.
 
 One more thing worth knowing rather than fixing: **the first update on Linux is always a
 full download.** Only the Windows installer ships a complete package, so there is nothing
-for the first delta to diff against.
+for the first delta to diff against. Confirmed: the first update logged "There is no
+local/base package available for this update, so delta updates will be disabled" and
+fetched the full 48 MB, even though a delta was sitting in the feed beside it.
 
 ## Code signing: decided against
 
@@ -210,9 +378,54 @@ Per user install helps a little on its own account. `Setup.exe` writes to
 `%LocalAppData%` and needs no elevation, so there is no administrator prompt on top of the
 SmartScreen one.
 
-If this ever ships to people outside the team, revisit it. Azure Trusted Signing is about
-ten dollars a month and carries SmartScreen reputation immediately, and Velopack drives it
-through `--signTemplate`, so turning it on later is a build argument rather than a rewrite.
+If this ever ships to people outside the team, revisit it. Azure Artifact Signing, which
+is what Trusted Signing is called now, is about ten dollars a month and carries SmartScreen
+reputation immediately, and Velopack drives it through `--signTemplate`, so turning it on
+later is a build argument rather than a rewrite. Signing from Linux needs a cross platform
+tool such as JSign, since `--signParams` goes through `signtool.exe`.
+
+## AppImage on Linux, kept without enthusiasm
+
+**Nobody here wants to ship an AppImage.** It is kept because the alternatives cost more
+than they save today, and this section exists so that judgement can be checked again
+rather than assumed.
+
+**Velopack builds nothing else on Linux.** `vpk [linux] pack` creates an AppImage and
+that is the whole of its Linux output. There is no deb, no rpm, no tarball. So dropping
+the format means dropping Velopack on Linux, and the launcher tier splits in two.
+
+**Nothing surveyed covers both halves.** Every cross platform .NET updater is either
+Windows only in practice, or stops before applying the update on Linux. See the entries
+below for NetSparkle, Onova, Sewer56.Update and Qt Installer Framework. The gap is real
+and it is not closing: deb and rpm support is Velopack issue 370, open since November 2024
+with no plan attached.
+
+**So the honest replacement was ours to write**: a tar.gz into
+`$XDG_DATA_HOME/workbench/app/<version>/` with a `current` symlink, the desktop entry we
+already write, and an apply that extracts to `<version>.incoming`, renames, then renames a
+new symlink over `current`, which is atomic on POSIX. A running file is never overwritten,
+so the problem Velopack exists to solve does not arise on this side. **This is the same
+machinery the tool installer needs**, described under The tool system below in exactly
+those words, so building it is not wasted. JetBrains Toolbox works this way and is already
+this page's reference for the two tier model.
+
+It was not taken now because the launcher tier is finished and working, and because a hand
+written installer is a thing to maintain forever. That trade changes the moment the tool
+installer is built.
+
+**What should reopen this:**
+
+- **The tool installer landing.** Once a versioned directory and a symlink flip exist for
+  tools, the launcher can use them too and the AppImage buys nothing.
+- **The environment leak growing.** Today the generated `AppRun` exports `PATH` alone and
+  `IBundleEnvironment` handles it. A Velopack release that starts exporting library paths
+  would put this app back in the failure mode described under point 2.
+- **Anyone reporting the AppImage as awkward.** Not knowing where the file went, losing it
+  after a move, or the desktop entry failing on a session this machine could not test.
+- **A second Linux format appearing in Velopack.** Issue 370.
+
+`IBundleEnvironment` is the only code that exists purely because of the format. Everything
+else, the desktop entry included, survives whatever replaces it.
 
 ## What was rejected, and why
 
@@ -238,12 +451,26 @@ Velopack's installer does not.
 manifest just points at `Setup.exe`. Worth adding later on top of Velopack rather than
 instead of it.
 
-**NetSparkle.** Genuinely cross platform, with a prebuilt Avalonia UI and Ed25519
-signatures, which is more than Velopack offers on the presentation side. It stops at
-downloading and launching an installer. There is no installer on Linux, so the apply and
-restart half is ours to write, which is the hard half.
+**NetSparkle.** Genuinely cross platform, and the prebuilt Avalonia UI is current rather
+than stale: `NetSparkleUpdater.UI.Avalonia` 4.0.0-preview, May 2026, depends on Avalonia
+12.0.0 and ships `net10.0`. **It signs the appcast itself** with Ed25519, at
+`appcast.xml.signature`, as well as each package, which Velopack does not do at all. It
+stops at downloading and launching an installer. There is no installer on Linux, so the
+apply and restart half is ours to write.
 
-**Onova.** Automatic restart does not work with Avalonia applications.
+**Onova. Corrected: it is Windows only.** The reason recorded here was that automatic
+restart does not work with Avalonia, and that issue is closed. Unpacking 2.6.13 settles
+it: the package embeds `Onova.Updater.exe` with a config preferring .NET 3.5 or 4.x. The
+Avalonia question never arises.
+
+**Sewer56.Update.** 4.1.0, July 2026. Claims to run anywhere CoreCLR does and has CI on
+Ubuntu. Updates only, no installer, and it comes out of the game mod world, so it is a
+thin dependency to rest a launcher on.
+
+**Qt Installer Framework.** The only thing found that installs and updates on both
+Windows and Linux from a static HTTP repository, with a maintenance tool for the update
+half. It is a Qt project, so it drags Qt into a .NET app for the installer alone, and it
+is GPL or LGPL or commercial. Wrong shape for this.
 
 **Squirrel.Windows and Clowd.Squirrel.** Windows only, and Velopack supersedes both.
 There is a migration guide from either.
@@ -491,9 +718,39 @@ tools to the same rule means one comparer in the launcher rather than one per to
 The manifest version is the one thing on this page that is not a semantic version. It is a
 plain integer describing a file format, not a product.
 
-## Hosting: our own server, unlisted
+## Hosting: Backblaze B2, deployed from GitHub Actions
 
-Decided. Static files on a web server we run, at a URL that is not linked from anywhere.
+**Decided, and not built.** Releases go to a Backblaze B2 bucket, published by a GitHub
+workflow that works out the version itself. **Until that exists, updates are off**, which
+is the state the code is in now: `UpdateSettingsSchema.IsEnabled` is false, so nothing
+checks, nothing downloads, and the settings window offers no feed. See Updates are off
+below.
+
+Three things this needs, none of them written:
+
+**The workflow.** It publishes both runtimes and packs both, which one runner can do,
+because `vpk` cross compiles between Windows and Linux. `build/release.sh` is that already
+and takes a directory.
+
+**Autoversioning.** The version is `<Version>` in `Directory.Build.props` today, and
+`build/release.sh` reads it back out of MSBuild rather than repeating it. A workflow wants
+it computed instead, from a tag or the run number, and passed to both `dotnet publish` and
+`vpk pack --packVersion`. **Velopack takes three part semantic versions only**, so
+whatever computes it has to produce one.
+
+**The upload.** `vpk upload s3` is the command, and it works against B2 because B2 serves
+an S3 compatible API. That is worth knowing precisely: there is no `vpk upload http`, so a
+plain web server would have been a copy step of our own, and this is the reason to prefer
+a bucket over one. `vpk download s3` goes at the front of the same job, so the previous
+release is present and a delta gets built.
+
+The bucket has to be readable without credentials, since `SimpleWebSource` sends none, and
+everything under Four things the server has to get right below still applies to it.
+
+### The previous decision, kept for its reasoning
+
+Static files on a web server we run, at a URL that is not linked from anywhere. Backblaze
+replaces the server and changes none of the reasoning below.
 
 This is the case Velopack handles best. `SimpleWebSource` is what a plain URL passed to
 `UpdateManager` resolves to, and it fetches `<base>/releases.{channel}.json` and then the
@@ -557,6 +814,8 @@ later put something in that directory on the assumption that nobody will find it
 - **One launcher at a time**, in a release build only.
 - **Our own server, unlisted, over HTTPS.** No GitHub Releases, no Velopack Flow.
 - **Nothing is signed.** One SmartScreen warning at first install, on purpose.
+- **AppImage on Linux, for now.** Kept because Velopack builds nothing else there and
+  nothing surveyed covers both operating systems. Revisit when the tool installer lands.
 
 ## Open questions
 
@@ -580,16 +839,30 @@ Do not build on an assumption for any of these.
 
 ## The smallest thing that proves it
 
-In order. The first four are the launcher tier and can be done now, before any tool exists.
+Steps 1 to 4 are the launcher tier and are done. What was run, on this machine, Linux:
 
-1. Publish the launcher self contained and `vpk pack` it on Linux. Run the AppImage.
-2. **Run `git` from inside the AppImage and see whether it breaks.** If it works, find out
-   why before believing it, because the answer depends on which libraries got bundled and
-   it can change with any Avalonia update.
-3. Release a second version to a local directory feed and update to it. Then do it again
-   with the AppImage on a different filesystem from `/var/tmp`.
-4. Write the `.desktop` integration and confirm the launcher appears in the menu on two
-   different desktops.
+1. **Done.** `build/release.sh` publishes self contained and packs a 49 MB AppImage. It
+   runs.
+2. **Done, and the answer changed the fix.** The generated `AppRun` was extracted and
+   read: it exports `PATH` alone. See the correction under point 2 above. The scrub and
+   the merge were then measured over the real `IBundleEnvironment` and `ProcessRunner`,
+   twelve checks including a child process printing the `PATH` it was actually given, the
+   request overlay still winning over the bundle's, a wholly bundled variable being unset,
+   and a sibling directory whose name merely starts the same being kept.
+3. **Done, and it crossed a filesystem on the first try.** 0.1.0 on tmpfs updated itself
+   to 0.2.0 from a local directory feed, staging on btrfs. The modal drew the download,
+   the app restarted, and the new process reported 0.2.0 and then correctly found no
+   further update. A missing folder, an unreachable address, an `ftp` scheme and a
+   relative path each left the window usable with no dialog.
+4. **Half done.** The entry and the icon land under `~/.local/share` and the `Exec` line
+   follows the AppImage when it moves. **Not checked: how it looks in a menu on two
+   different desktops**, and whether the window groups under that icon, which is what
+   `StartupWMClass` is for and why the entry does not carry one yet.
+
+Two more that could not be run here. Running `git` from inside the AppImage against a real
+workspace needs somebody at the window, and cancelling the modal part way through needs a
+download slow enough to interrupt, which a local folder is not.
+
 5. **Put a shell script in `$XDG_DATA_HOME/workbench/tools/hello/1.0.0/` with a manifest
    beside it**, and have the launcher find it, list it and start it. No feed, no download,
    no installer, and deliberately not a .NET program. If the launcher can run a shell
@@ -611,11 +884,21 @@ that decision needs reopening.
 
 ## What could not be tested here
 
-This machine is Linux. Everything about `Setup.exe`, SmartScreen and the per machine MSI is
-read from documentation and has not been run, and the claim that automatic updates escape
-SmartScreen is reasoning from how the mark of the web works rather than something anyone
-has watched happen. The Linux claims are also documentation so far, and the steps above are
-exactly the ones this machine can settle.
+This machine is Linux. The Linux claims have now been run rather than read, and the
+corrections above are what that turned up.
+
+The Windows package **is built here**, since `vpk [win] pack` cross compiles: `Setup.exe`,
+a portable zip, the nupkg and `releases.win.json` all come out of `build/release.sh`. None
+of it has been executed. So these are still unwatched:
+
+- that `Setup.exe` installs to `%LocalAppData%\Slopworks.Workbench` without elevation
+- that `%LOCALAPPDATA%\Workbench` is left alone, and that uninstalling keeps the workspace
+  list and the installed engines
+- **whether an automatic update triggers SmartScreen.** The reasoning under Code signing
+  says it should not, because Velopack fetches over HTTP itself and never involves a
+  browser, so no mark of the web is written. That is reasoning, not something anyone has
+  watched. A warning on every update would be bad enough to reopen the signing decision.
+- everything about the per machine MSI
 
 ## Sources
 

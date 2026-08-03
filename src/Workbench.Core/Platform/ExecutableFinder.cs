@@ -12,21 +12,28 @@ public sealed class ExecutableFinder : IExecutableFinder
 
     private readonly IFileSystem _fileSystem;
     private readonly IEnvironment _environment;
+    private readonly IBundleEnvironment _bundle;
 
-    public ExecutableFinder(IFileSystem fileSystem, IEnvironment environment)
+    public ExecutableFinder(IFileSystem fileSystem, IEnvironment environment, IBundleEnvironment bundle)
     {
         ArgumentNullException.ThrowIfNull(fileSystem);
         ArgumentNullException.ThrowIfNull(environment);
+        ArgumentNullException.ThrowIfNull(bundle);
 
         _fileSystem = fileSystem;
         _environment = environment;
+        _bundle = bundle;
     }
 
     public string? Find(string fileName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
-        var path = _environment.GetVariable("PATH");
+        // The same PATH a child would get, so what is found here is what runs. Inside an
+        // AppImage the inherited one leads with the bundle's own directory.
+        var path = _bundle.Outside.TryGetValue("PATH", out var corrected)
+            ? corrected
+            : _environment.GetVariable("PATH");
 
         if (string.IsNullOrEmpty(path))
         {

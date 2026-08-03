@@ -2,16 +2,18 @@ namespace Workbench.Core.Settings.Schema;
 
 /// <summary>
 /// One row on a settings page. Almost every row is a <see cref="SettingDescriptor{T}"/>.
-/// The other implementation is the escape hatch an app supplies for a row that is not a
-/// setting at all, such as a list of known workspaces or a button that resets the app.
-/// Those have no key, no default and no rules, so the schema never grows a way to
-/// describe them.
+/// The other implementation is <see cref="SettingsReadoutRow"/>, the escape hatch an app
+/// supplies for something a page shows without editing it. That has no key, no default
+/// and no rules, so the schema never grows a way to describe an action.
 /// </summary>
 public interface ISettingsRow
 {
     string Name { get; }
 
-    /// <summary>Drawn under the name. Required, so no row arrives unexplained.</summary>
+    /// <summary>
+    /// Drawn under the name. Required on a setting, so none arrives unexplained, and
+    /// blank is allowed on a readout whose name says the whole of it.
+    /// </summary>
     string Description { get; }
 }
 

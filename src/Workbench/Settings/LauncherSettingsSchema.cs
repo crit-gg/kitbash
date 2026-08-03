@@ -2,6 +2,7 @@ using Workbench.Core.IO;
 using Workbench.Core.Settings;
 using Workbench.Core.Settings.Schema;
 using Workbench.Core.Workspaces;
+using Workbench.Updates;
 
 namespace Workbench.Settings;
 
@@ -20,6 +21,7 @@ public sealed class LauncherSettingsSchema
         GodotSettingsSchema godot,
         WorkspacesSettingsSchema workspaces,
         WorkspaceGodotSettingsSchema workspaceGodot,
+        UpdateSettingsSchema updates,
         IWorkspaceRegistry registry,
         IPathShortener shortener,
         IPathRules paths)
@@ -29,30 +31,39 @@ public sealed class LauncherSettingsSchema
         ArgumentNullException.ThrowIfNull(godot);
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceGodot);
+        ArgumentNullException.ThrowIfNull(updates);
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(shortener);
         ArgumentNullException.ThrowIfNull(paths);
 
         // The registry is what the app remembers rather than what a person chose, so it
         // has no descriptor and arrives as rows the launcher supplies for itself.
-        var current = new SettingsListRow
+        var current = new SettingsReadoutRow
         {
             Name = "Open workspace",
+            Style = SettingsReadoutStyle.List,
             Description = "The workspace every page below and every tool follows.",
+            // Shortened to draw and whole to copy, since an elided path pastes as nothing
+            // anybody can use.
             Read = () => registry.Current is { } workspace
-                ? [new SettingsListEntry(shortener.Shorten(workspace.Root, PathWidth), IsCurrent: true)]
+                ? [new SettingsListEntry(
+                    shortener.Shorten(workspace.Root, PathWidth),
+                    IsCurrent: true,
+                    Full: workspace.Root)]
                 : [],
         };
 
-        var known = new SettingsListRow
+        var known = new SettingsReadoutRow
         {
             Name = "Known workspaces",
+            Style = SettingsReadoutStyle.List,
             Description = "Every workspace offered in the selector. The open one is marked.",
             Read = () =>
             [
                 .. registry.All.Select(workspace => new SettingsListEntry(
                     shortener.Shorten(workspace.Root, PathWidth),
-                    IsCurrent: registry.Current is { } open && paths.AreSame(workspace.Root, open.Root))),
+                    IsCurrent: registry.Current is { } open && paths.AreSame(workspace.Root, open.Root),
+                    Full: workspace.Root)),
             ],
         };
 
@@ -73,6 +84,7 @@ public sealed class LauncherSettingsSchema
                 godot.Page,
                 workspaces.Page,
                 workspaceGodot.Page,
+                updates.Page,
                 State,
             ]);
     }

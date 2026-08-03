@@ -3,6 +3,24 @@ name: workbench-windows
 description: "Workbench window rules. ChromelessWindow, WindowTitleBar, DialogWindow and dialog roles, native versus drawn chrome, the shadow gutter, and keeping the UI thread free. Read before adding a window or dialog, or before doing work that touches a disk on the UI thread."
 ---
 
+### The first window is not shown from OnFrameworkInitializationCompleted
+
+The launcher checks for an update before it draws anything, so `MainWindow` is set and
+shown later, from an async method. Two things that costs, both in `App`:
+
+**`ShutdownMode` starts as `OnExplicitShutdown`** and goes back to `OnLastWindowClose`
+once the launcher is up. The update dialog is a window, so under the ordinary rule its
+closing would be a last window closing and would end the app before the launcher opened.
+
+**A window that opens before the launcher has no owner.** `ui:DialogWindow` centres on
+its owner, so one shown at startup sets `WindowStartupLocation` to `CenterScreen` and
+`ShowInTaskbar` itself, and opens with `Show` plus an await on `Closed` rather than
+`ShowDialog`.
+
+**Every path has to end with a window.** An exception on the way to opening one leaves the
+app running with nothing on screen and no way to reach it, which is worse than any failure
+it was reporting. The startup method catches everything and opens the launcher afterwards.
+
 ### Keeping the UI thread free
 
 Nothing that touches a disk, a process or a network belongs on the UI thread. A view model
@@ -59,6 +77,20 @@ double click. Its content is whatever else the window wants in the chrome, such 
 menu or a toolbar, and it is empty by default. Do not hand write a title bar row, and
 do not wire the gestures at the window, because both are already done here and doing
 them twice fights the built in behaviour.
+
+**`Version` is a readout after the title, and it is not the title.** Mono, one size
+down, `InkMuted`, and it gives up a tier through opacity when the window is inactive,
+because the title lands on `InkMuted` there and would otherwise match it. Blank collapses
+the slot, which is every window that sets none.
+
+It is a slot of its own rather than content, for two reasons. **Content decides whether
+the bar survives native chrome**, so putting a version there would keep a row alive that
+should collapse. And `Window.Title` is what the desktop and the task bar read, so the
+version stays out of it: the launcher's task bar entry says Workbench, not Workbench
+0.5.0.
+
+**Under `nativeChrome` the version is not shown at all**, since the row collapses when it
+carries no content. The settings window says it too, so it is not the only place.
 
 **A control in the bar keeps its own clicks.** A double tap bubbles, so one aimed at a
 button in the chrome would otherwise reach the bar as well and maximise the window

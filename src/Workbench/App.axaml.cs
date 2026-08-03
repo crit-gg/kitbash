@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,6 +12,7 @@ using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 using Workbench.Mock;
 using Workbench.Settings;
+using Workbench.Updates;
 using Workbench.ViewModels;
 using Workbench.Ui;
 using Workbench.Ui.Settings;
@@ -25,30 +27,105 @@ public partial class App : Application
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <summary>
+    /// How long the launcher stays off screen while the feed is asked. Short, because
+    /// nothing is drawn during it. A check that does not answer in time is dropped and
+    /// tried again at the next launch, which costs one launch and never costs a start.
+    /// </summary>
+    private static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(3);
+
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _services = BuildServices();
 
-            // Read once here. The window does not watch the setting, so a change to it
-            // takes effect the next time Workbench starts.
-            var windows = _services.GetRequiredService<IWindowSettings>();
-
-            desktop.MainWindow = new LauncherWindow
-            {
-                UsesNativeChrome = windows.UseNativeChrome,
-
-                // A window is built without a container, so the one service it opens for
-                // itself is handed over here rather than resolved inside it.
-                Settings = _services.GetRequiredService<ISettingsWindows>(),
-                DataContext = _services.GetRequiredService<LauncherViewModel>(),
-            };
-
+            // Nothing is on screen until the update is settled, and the update dialog
+            // closing would otherwise be a last window closing and end the app before the
+            // launcher had opened. Put back in Open.
+            desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.ShutdownRequested += (_, _) => _services?.Dispose();
+
+            _ = StartAsync(desktop);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Updates first, then opens. **Every path through this ends with a window**, because
+    /// an app that fails to update and shows nothing is worse than one that never tried.
+    /// </summary>
+    private async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        try
+        {
+            await UpdateAsync();
+        }
+        catch (Exception exception)
+        {
+            // Nothing above rethrows on purpose, so reaching here is a fault rather than
+            // a failed update. The copy on the machine still has to open either way.
+            _services?.GetService<UpdateLog>()?.Say("update could not run", exception);
+        }
+
+        Open(desktop);
+    }
+
+    /// <summary>
+    /// Asks the feed, and hands over to the dialog when it has something. Draws nothing
+    /// while asking, since a feed that has gone takes its own time to say so and a window
+    /// that flashed on every launch would be worse than the wait.
+    /// </summary>
+    private async Task UpdateAsync()
+    {
+        if (_services?.GetService<IApplicationUpdates>() is not { } updates)
+        {
+            return;
+        }
+
+        using var limit = new CancellationTokenSource(CheckLimit);
+
+        if (await updates.CheckAsync(limit.Token) is { } found)
+        {
+            await UpdateDialog.RunAsync(updates, found);
+        }
+    }
+
+    /// <summary>Opens the launcher on whatever version this copy ended up being.</summary>
+    private void Open(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        if (_services is not { } services)
+        {
+            return;
+        }
+
+        // Read once here. The window does not watch the setting, so a change to it
+        // takes effect the next time Workbench starts.
+        var windows = services.GetRequiredService<IWindowSettings>();
+
+        var window = new LauncherWindow
+        {
+            UsesNativeChrome = windows.UseNativeChrome,
+
+            // A window is built without a container, so the services it opens for
+            // itself are handed over here rather than resolved inside it.
+            Settings = services.GetRequiredService<ISettingsWindows>(),
+            Version = services.GetRequiredService<IApplicationVersion>(),
+            DataContext = services.GetRequiredService<LauncherViewModel>(),
+        };
+
+        desktop.MainWindow = window;
+
+        // Back to the ordinary rule now there is a window to close.
+        desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+
+        window.Show();
+
+        // Writes a menu entry for the AppImage. Touches a disk and matters to nothing
+        // else that happens here, so it goes off the UI thread and is not waited on.
+        var integration = services.GetRequiredService<IDesktopIntegration>();
+        _ = Task.Run(integration.Install);
     }
 
     // The composition root. Everything the launcher needs is registered here and
@@ -63,6 +140,10 @@ public partial class App : Application
             .AddWorkbenchKnownWorkspaceSettings()
             .AddWorkbenchToasts()
             .AddWorkbenchSettingsWindow()
+            .AddSingleton<IApplicationVersion, ApplicationVersion>()
+            .AddSingleton<UpdateSettingsSchema>()
+            .AddSingleton<UpdateLog>()
+            .AddSingleton<IApplicationUpdates, VelopackUpdates>()
             .AddSingleton<LauncherSettingsSchema>()
             .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()

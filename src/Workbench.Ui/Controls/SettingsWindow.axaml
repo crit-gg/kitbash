@@ -168,7 +168,15 @@
         <DataTemplate x:Key="SettingLine" x:DataType="schema:SettingsListEntry">
             <!-- A horizontal StackPanel measures against infinite width, so a path in one
                  never trims and runs past the well it is in. -->
-            <DockPanel Height="22" Margin="7,0">
+            <!-- Transparent rather than no background, or the line is not hit tested and
+                 the right click never reaches it. -->
+            <DockPanel Height="22" Margin="7,0" Background="Transparent">
+                <DockPanel.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuItem Header="Copy" Click="OnCopyLine" />
+                    </MenuFlyout>
+                </DockPanel.ContextFlyout>
+
                 <Border DockPanel.Dock="Left" Classes="fileMark"
                         Classes.missing="{Binding !IsCurrent}" Margin="0,0,8,0" />
                 <TextBlock Classes="mono" Text="{Binding Text}"
@@ -322,18 +330,49 @@
 
         <!-- A row the app supplied for itself. Same two columns, and it reads rather
              than edits, so it carries no gutter. -->
-        <DataTemplate x:Key="ListRow" DataType="s:SettingsListRowViewModel">
+        <!-- One line of a value readout. No mark and no well: it is a fact, not a set,
+             so there is nothing for it to stand out from and nothing to be bounded by. -->
+        <DataTemplate x:Key="ReadoutValue" x:DataType="schema:SettingsListEntry">
+            <TextBlock Classes="mono" Text="{Binding Text}"
+                       MinHeight="{DynamicResource SizeIconButton}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource InkSecondary}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       Background="Transparent">
+                <TextBlock.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuItem Header="Copy" Click="OnCopyLine" />
+                    </MenuFlyout>
+                </TextBlock.ContextFlyout>
+            </TextBlock>
+        </DataTemplate>
+
+        <!-- A row that reads rather than edits. The two presentations sit on top of each
+             other and the row shows the one its schema asked for, the same way a setting
+             row holds every editor and shows one. -->
+        <DataTemplate x:Key="ReadoutRow" DataType="s:SettingsReadoutRowViewModel">
             <Border Classes="settingRow">
                 <Grid ColumnDefinitions="288,*" ColumnSpacing="18">
                     <StackPanel Grid.Column="0" Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
-                        <TextBlock Classes="rowNote" Text="{Binding Description}" />
+
+                        <!-- Left out entirely rather than left empty, since an empty one
+                             still takes its line height and pushes the row taller. -->
+                        <TextBlock Classes="rowNote" Text="{Binding Description}"
+                                   IsVisible="{Binding HasDescription}" />
                     </StackPanel>
 
-                    <Border Grid.Column="1" Classes="lines" Margin="66,0,0,0">
-                        <ItemsControl ItemsSource="{Binding Entries}"
-                                      ItemTemplate="{StaticResource SettingLine}" />
-                    </Border>
+                    <Panel Grid.Column="1" Margin="66,0,0,0">
+                        <ItemsControl IsVisible="{Binding !IsList}"
+                                      ItemsSource="{Binding Entries}"
+                                      ItemTemplate="{StaticResource ReadoutValue}" />
+
+                        <Border Classes="lines" IsVisible="{Binding IsList}">
+                            <ItemsControl ItemsSource="{Binding Entries}"
+                                          ItemTemplate="{StaticResource SettingLine}" />
+                        </Border>
+                    </Panel>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -481,7 +520,7 @@
                                                             <ItemsControl ItemsSource="{Binding Rows}">
                                                                 <ItemsControl.DataTemplates>
                                                                     <StaticResource ResourceKey="SettingRow" />
-                                                                    <StaticResource ResourceKey="ListRow" />
+                                                                    <StaticResource ResourceKey="ReadoutRow" />
                                                                 </ItemsControl.DataTemplates>
                                                             </ItemsControl>
                                                         </StackPanel>

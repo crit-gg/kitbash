@@ -7,6 +7,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Workbench.Ui.Controls;
 using Workbench.Ui.Settings;
+using Workbench.Updates;
 using Workbench.ViewModels;
 
 namespace Workbench.Views;
@@ -46,6 +47,15 @@ public partial class LauncherWindow : ChromelessWindow
 
     /// <summary>Where the rail's Settings item goes. Handed over by the composition root.</summary>
     public ISettingsWindows? Settings { get; init; }
+
+    /// <summary>
+    /// What the title bar reads out beside the name. Set here rather than bound, since a
+    /// version does not change while the window is open: an update restarts the app.
+    /// </summary>
+    public IApplicationVersion? Version
+    {
+        init => TitleBar.Version = value?.Current;
+    }
 
     private LauncherViewModel? Model => DataContext as LauncherViewModel;
 

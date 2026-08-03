@@ -143,7 +143,9 @@
 
         <!-- The launcher adds nothing of its own to the chrome, so this row disappears
              entirely when the desktop draws the frame. -->
-        <ui:WindowTitleBar Grid.Row="0" Title="Workbench"
+        <!-- The version is set in code behind, since the window is built without a
+             container. It is not part of Title, so the task bar still reads Workbench. -->
+        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar" Title="Workbench"
                            Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">

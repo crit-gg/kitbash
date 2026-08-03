@@ -5,6 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <!-- The release version, and the only place it is written. Velopack refuses a
+         fourth part, and the release script reads this back rather than repeating it. -->
+    <Version>0.1.0</Version>
     <!-- The first covers the compilers, the second covers every other task,
          which is what turns an Avalonia XAML or a NuGet warning into a failure. -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

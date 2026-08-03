@@ -1,4 +1,8 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
+using Workbench.Core.Settings.Schema;
 using Workbench.Ui.Settings;
 
 namespace Workbench.Ui.Controls;
@@ -23,6 +27,25 @@ public partial class SettingsWindow : ChromelessWindow
     }
 
     private SettingsWindowViewModel? Model => DataContext as SettingsWindowViewModel;
+
+    /// <summary>
+    /// Copies one line of a readout. The menu sits inside the line's template, so its
+    /// data context is the line, and what goes on the clipboard is the whole value rather
+    /// than the shortened form the row draws.
+    /// </summary>
+    private async void OnCopyLine(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { DataContext: SettingsListEntry line })
+        {
+            return;
+        }
+
+        // Avalonia 12 replaced SetTextAsync with a format and a value.
+        if (Clipboard is { } clipboard)
+        {
+            await clipboard.SetValueAsync(DataFormat.Text, line.Copied);
+        }
+    }
 
     private async void OnOpened(object? sender, EventArgs e)
     {

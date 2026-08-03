@@ -244,11 +244,39 @@ window draws its empty state from.
 to be, a layer that does not match whether the page layers, and any key the page does not
 declare, so a window can only write what it drew.
 
-**A row that is not a setting is a `SettingsListRow`.** That is the whole escape hatch,
-and it reads rather than edits: a name, a description and a function returning lines, one
-of which may be marked. The launcher's State page is the only user, listing the open
-workspace and the known ones. The function is called again every time the page loads,
-since what it lists changes while the app runs. Anything an app wants to draw that this
+**A row that is not a setting is a `SettingsReadoutRow`.** That is the whole escape hatch,
+and it reads rather than edits: a name, an optional description, a style and a function
+returning lines. The function is called again every time the page loads, since what it
+says changes while the app runs.
+
+**The style is the presentation and it is never derived**, because the answer must not
+change with the data. A list that happened to hold one line would otherwise redraw itself
+as a value.
+
+| `SettingsReadoutStyle` | Drawn as | For |
+|---|---|---|
+| `Value`, the default | plain mono text where an editor would be | one fact, such as `Current version` |
+| `List` | a well of lines, each with a mark | a set, such as the known workspaces |
+
+**A description is optional here and required on a setting.** A fact whose name says the
+whole of it needs no sentence under it, and the window leaves the line out rather than
+drawing it empty, since an empty one still takes its height. `Current version` carries
+none.
+
+**Every line is copyable, by right click.** The line carries `Background="Transparent"`,
+without which it is not hit tested and the click never lands. The menu sits inside the
+line's own template, so its data context is the line.
+
+**A row that shortens for the display must say what it shortened.** `SettingsListEntry`
+takes a `Full`, and `Copied` hands that back when there is one. Otherwise a workspace row,
+which draws a path through `IPathShortener`, would put an elided path on the clipboard,
+which reads fine and pastes as nothing anybody can use. The same lines are what an array
+valued setting draws, so those are copyable too.
+
+**A readout can sit on a page that also has settings**, as its own section above them. The
+Updates page is the shape to copy: a `This copy` section holding the version, then a
+`Source` section holding the one key the page declares. `Descriptors` still reports one, so
+the writer's guard on undeclared keys is unaffected. Anything an app wants to draw that this
 cannot describe is a reason to change the window, not to add a row kind.
 
 ### The schemas that exist
@@ -267,6 +295,18 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
+| `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
+
+**A descriptor does not have to be on a page.** `updates.feed` is the first that is not:
+where releases come from is the app's answer rather than a person's, so its default is a
+constant compiled into the schema and the window draws only a readout of the running
+version. It is an ordinary setting otherwise, read from its descriptor out of the
+application settings file, so a copy can be pointed somewhere by hand.
+
+Two things follow. `ISettingsWriter` **refuses** a key no page declares, so nothing can
+change it but an editor. And nothing announces it: the file that lists every setting from
+its descriptor is the workspace scaffold, and an application setting has no such file, so
+an off page key has to be written down somewhere a person will find it.
 
 `ExternalToolsSettingsSchema` is registered by `AddWorkbenchApplicationStorage` alongside
 the others, so a settings window can draw the page without the lookup behind it, and by

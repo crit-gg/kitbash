@@ -97,7 +97,7 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         WindowDecorationProperties.ElementRole="TitleBar">
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" Margin="11,0,0,0">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="11,0,0,0">
                         <!-- The leading slot is an icon or nothing. There is no
                              lettermark: the design's square is a placeholder for an icon,
                              not a thing to build. -->
@@ -116,14 +116,26 @@
                                    Foreground="{DynamicResource InkTitle}"
                                    VerticalAlignment="Center" />
 
-                        <ContentPresenter Grid.Column="2"
+                        <!-- A readout rather than part of the name, so it is mono and a
+                             tier quieter. Blank collapses it, which is every window that
+                             does not set one. -->
+                        <TextBlock Grid.Column="2" Name="PART_Version"
+                                   Text="{TemplateBinding Version}"
+                                   IsVisible="{Binding $parent[ui:WindowTitleBar].Version, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Margin="7,0,0,0"
+                                   FontFamily="{DynamicResource FontFamilyMono}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   VerticalAlignment="Center" />
+
+                        <ContentPresenter Grid.Column="3"
                                           Margin="10,0,0,0"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
                                           VerticalAlignment="Stretch"
                                           HorizontalAlignment="Stretch" />
 
-                        <StackPanel Grid.Column="3" Name="PART_CaptionButtons"
+                        <StackPanel Grid.Column="4" Name="PART_CaptionButtons"
                                     Orientation="Horizontal">
                             <Button Classes="caption captionMinimize" Theme="{StaticResource CaptionButton}" Name="PART_MinimizeButton"
                                     ToolTip.Tip="Minimize"
@@ -162,6 +174,12 @@
     </Style>
 
     <Style Selector="ui|WindowTitleBar.inactive /template/ Image#PART_Icon">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <!-- The title lands on InkMuted when inactive, which is where the version already
+         sits, so this one gives up its tier through opacity the way the icon does. -->
+    <Style Selector="ui|WindowTitleBar.inactive /template/ TextBlock#PART_Version">
         <Setter Property="Opacity" Value="0.6" />
     </Style>
 

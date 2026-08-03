@@ -20,6 +20,9 @@ public class WindowTitleBar : ContentControl
     public static readonly StyledProperty<string?> TitleProperty =
         AvaloniaProperty.Register<WindowTitleBar, string?>(nameof(Title));
 
+    public static readonly StyledProperty<string?> VersionProperty =
+        AvaloniaProperty.Register<WindowTitleBar, string?>(nameof(Version));
+
     private ChromelessWindow? _window;
 
     public WindowTitleBar()
@@ -37,6 +40,17 @@ public class WindowTitleBar : ContentControl
     {
         get => GetValue(TitleProperty);
         set => SetValue(TitleProperty, value);
+    }
+
+    /// <summary>
+    /// Sits after the title and reads quieter than it. Blank shows nothing. It is not
+    /// part of <see cref="Title"/>, so the window's own title, and whatever the desktop
+    /// and the task bar make of it, are left alone.
+    /// </summary>
+    public string? Version
+    {
+        get => GetValue(VersionProperty);
+        set => SetValue(VersionProperty, value);
     }
 
     /// <summary>

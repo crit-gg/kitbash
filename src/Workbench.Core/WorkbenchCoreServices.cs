@@ -43,6 +43,11 @@ public static class WorkbenchCoreServices
             services.TryAddSingleton<IPathShortener, WindowsPathShortener>();
             services.TryAddSingleton<IPathRules, WindowsPathRules>();
 
+            // Setup.exe writes the shortcut and the uninstall entry, and there is no
+            // bundle to correct for, so both of these have nothing to do here.
+            services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
+            services.TryAddSingleton<IDesktopIntegration, WindowsDesktopIntegration>();
+
             return services;
         }
 
@@ -51,6 +56,8 @@ public static class WorkbenchCoreServices
             services.TryAddSingleton<IUserDirectories, LinuxUserDirectories>();
             services.TryAddSingleton<IPathShortener, LinuxPathShortener>();
             services.TryAddSingleton<IPathRules, LinuxPathRules>();
+            services.TryAddSingleton<IBundleEnvironment, AppImageEnvironment>();
+            services.TryAddSingleton<IDesktopIntegration, LinuxDesktopIntegration>();
 
             return services;
         }

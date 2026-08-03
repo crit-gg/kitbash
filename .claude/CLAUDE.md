@@ -233,12 +233,23 @@ dotnet publish src/Workbench/Workbench.csproj -r win-x64 --self-contained
 dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
 ```
 
+Releasing is `build/release.sh <feed directory> [linux|win]`, which does both of those and
+packs each into a Velopack feed. It needs `dotnet tool install -g vpk`. `vpk` cross
+compiles between Windows and Linux, so one machine builds both, and the version comes from
+`<Version>` in `Directory.Build.props` rather than being typed again.
+
+Set `updates.feed` to that directory to watch a real update happen. A copy started with
+`dotnet run` never updates itself, whatever the feed says.
+
 ## Stack
 
-- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1,
+- .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1, Velopack 1.2.0,
   Humanizer.Core 3.0.10, Microsoft.Extensions.DependencyInjection 10.0.10
 - Avalonia 12 changed a lot from 11 and most material online still describes 11.
   Read `.claude/avalonia.md` before working on views, styling or window chrome.
+- Velopack is the launcher's alone. Neither library takes it, because a tool never checks
+  for its own update. `VelopackApp.Build().Run()` has to stay the first statement in
+  `Main`, since Velopack reruns the binary with hook arguments and exits from inside it.
 - Tomlyn 2.10 is a redesign. The old `Toml` static class is gone, replaced by
   `TomlSerializer` with a `System.Text.Json` style API.
 - Humanizer writes the English a person reads: plurals that agree with a count, and a
@@ -252,6 +263,19 @@ dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
 Scaffolding, on the Slate design. The launcher lists the three placeholder tools the
 registry holds and opening one reports that it is not built. No tool is implemented, and
 no file format or Godot integration work has started.
+
+**The launcher can install and update itself, and updates are off.** Velopack packages it,
+`build/release.sh` publishes both runtimes and packs both from one machine, and at start
+the app checks its feed and replaces itself over a progress dialog before drawing anything.
+All of that is built and measured. **`UpdateSettingsSchema.IsEnabled` is false**, because
+there is nowhere to publish to yet, so nothing checks and the settings window offers no
+feed. Releases will go to Backblaze B2 from a GitHub workflow that versions them itself.
+
+The pack id is `Slopworks.Workbench` and it must stay namespaced, because Velopack's
+uninstaller deletes all of `%LocalAppData%\{packId}` and `Workbench` alone would put a
+person's state and engines inside it. `.claude/plans/distribution-and-updates.md` has the
+rules and records five things it originally got wrong. **Tool distribution is not built**,
+so `ITool` and the registry are unchanged.
 
 The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
@@ -279,10 +303,11 @@ The launcher is Slate throughout and holds no brush, hex, font size or radius of
 It is a shell now, a title bar over a rail and a page, carrying the workspace page, the
 Godot engines page and a settings window.
 
-**The launcher raises no toasts and holds no host, on purpose.** It has nothing transient
-to report yet. The one slow thing it does, updating from git, reports on itself in the
-status bar in place, which is rule 8 of that row and not something a toast should take
-over. The gallery is where the toast service is wired to a composition root and exercised.
+**The launcher holds a `ToastHost`**, wired in `LauncherWindow` to the engines page's
+`IToastService`, since installing an engine is the first thing it had worth reporting.
+The one slow thing it does over a workspace, updating from git, still reports on itself in
+the status bar in place, which is rule 8 of that row and not something a toast should take
+over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
 

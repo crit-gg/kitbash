@@ -22,6 +22,9 @@
          per language and nothing here is translated. -->
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <!-- The launcher installs and updates itself. Neither library takes this, since a
+         tool never checks for its own update. -->
+    <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup>

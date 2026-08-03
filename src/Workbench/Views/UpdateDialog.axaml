@@ -1,0 +1,36 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+                 x:Class="Workbench.Views.UpdateDialog"
+                 Title="Updating Workbench"
+                 Width="420" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Grid RowDefinitions="Auto,*">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding $parent[Window].Title}" />
+
+        <!-- The same progress modal as LaunchDialog: a line saying what is happening, a
+             mono line under it, then the bar. No footer, since there is nothing to press,
+             and no note under the bar, since the restart is not news to anybody. The
+             close glyph is the only way out and it cancels. -->
+        <StackPanel Grid.Row="1" Margin="16,16,16,16">
+            <!-- Both lines are written by Describe before the window opens. -->
+            <TextBlock Name="Stage"
+                       FontSize="{DynamicResource FontSizeControl}"
+                       FontWeight="{DynamicResource FontWeightMedium}"
+                       Foreground="{DynamicResource InkPrimary}"
+                       TextWrapping="Wrap" />
+
+            <!-- Its room is held whether or not it says anything, so the window does not
+                 change height as the download goes by. -->
+            <TextBlock Name="Detail" Margin="0,7,0,0" MinHeight="15"
+                       FontFamily="{DynamicResource FontFamilyMono}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource InkMuted}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <ProgressBar Name="Meter" Margin="0,11,0,0" Minimum="0" Maximum="100" />
+        </StackPanel>
+    </Grid>
+</ui:DialogWindow>
