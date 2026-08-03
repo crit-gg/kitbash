@@ -335,7 +335,7 @@
                                  same pattern in angle brackets. -->
                             <TextBox Name="PART_TextBox"
                                      Theme="{StaticResource SpinnerField}"
-                                     Watermark="{x:Static ui:Picker.DateHint}"
+                                     PlaceholderText="{x:Static ui:Picker.DateHint}"
                                      VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>
