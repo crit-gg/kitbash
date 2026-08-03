@@ -34,6 +34,14 @@ namespace Workbench.Core.Godot;
 /// deliberate act, not something a failure talks anybody into.
 /// </para>
 /// <para>
+/// <para>
+/// **A rebuild keeps the editor layout and throws away everything else.** Where a person
+/// put their docks lives at <c>.godot/editor/editor_layout.cfg</c>, among the files that
+/// are safe to delete, so a rebuild would quietly rearrange their editor. It is taken
+/// before the delete and written back after the import, in a finally, so a rebuild that
+/// failed does not take it as well.
+/// </para>
+/// <para>
 /// **The import runs before the editor rather than being left to it.** Godot imports on
 /// open by itself, so this is not work the editor would skip. Doing it here means the
 /// wait happens under a dialog that says what is happening and can be cancelled, instead
@@ -47,6 +55,11 @@ internal sealed class GodotLauncher : IGodotLauncher
 
     /// <summary>Everything Godot generates for a project, and everything a rebuild drops.</summary>
     private const string CacheDirectoryName = ".godot";
+
+    /// <summary>
+    /// The one file under the cache a person arranged rather than Godot generated.
+    /// </summary>
+    private const string LayoutFileName = "editor_layout.cfg";
 
     private readonly IProcessRunner _processes;
     private readonly IPlatformServices _platform;
@@ -91,11 +104,64 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Checking));
 
-        if (mode == GodotLaunchMode.Rebuild)
+        // Taken before the delete and put back after everything, so a rebuild costs a
+        // person the cache and never the way they had the editor arranged.
+        var layout = mode == GodotLaunchMode.Rebuild ? Clean(project, progress) : null;
+
+        try
         {
-            Clean(project, progress);
+            await RebuildAsync(engine, project, mode, progress, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            // In a finally, so a rebuild that failed or was cancelled does not take the
+            // layout with it as well. There is nothing to put back when there was none.
+            if (layout is not null)
+            {
+                Restore(project, layout);
+            }
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // A rebuild is the work and not a way of getting somewhere, so it stops here.
+        // Whoever asked for it can open the editor next, and that is their press to make.
+        if (mode == GodotLaunchMode.Rebuild)
+        {
+            return;
+        }
+
+        progress.Report(new GodotLaunchStep(GodotLaunchStage.Starting));
+
+        // Running is no flag at all, so editing is the one that adds an argument.
+        string[] arguments = mode == GodotLaunchMode.Editor
+            ? ["--path", project.Directory, "--editor"]
+            : ["--path", project.Directory];
+
+        try
+        {
+            _platform.StartDetached(ProcessRequest.Command(engine.Executable, arguments));
+        }
+        catch (ProcessStartException exception)
+        {
+            throw new GodotLaunchException(
+                GodotLaunchStage.Starting,
+                mode == GodotLaunchMode.Editor
+                    ? "The editor would not start."
+                    : "The project would not start.",
+                exception);
+        }
+    }
+
+    /// <summary>Everything that has to finish before anything is started.</summary>
+    private async Task RebuildAsync(
+        InstalledEngine engine,
+        GodotProject project,
+        GodotLaunchMode mode,
+        IProgress<GodotLaunchStep> progress,
+        CancellationToken cancellationToken)
+    {
         cancellationToken.ThrowIfCancellationRequested();
 
         if (BuildToolFor(engine, project) is { } tool)
@@ -134,36 +200,6 @@ internal sealed class GodotLauncher : IGodotLauncher
 
             progress.Report(reader.Finished());
         }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // A rebuild is the work and not a way of getting somewhere, so it stops here.
-        // Whoever asked for it can open the editor next, and that is their press to make.
-        if (mode == GodotLaunchMode.Rebuild)
-        {
-            return;
-        }
-
-        progress.Report(new GodotLaunchStep(GodotLaunchStage.Starting));
-
-        // Running is no flag at all, so editing is the one that adds an argument.
-        string[] arguments = mode == GodotLaunchMode.Editor
-            ? ["--path", project.Directory, "--editor"]
-            : ["--path", project.Directory];
-
-        try
-        {
-            _platform.StartDetached(ProcessRequest.Command(engine.Executable, arguments));
-        }
-        catch (ProcessStartException exception)
-        {
-            throw new GodotLaunchException(
-                GodotLaunchStage.Starting,
-                mode == GodotLaunchMode.Editor
-                    ? "The editor would not start."
-                    : "The project would not start.",
-                exception);
-        }
     }
 
     /// <summary>
@@ -180,16 +216,19 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// found. A folder that is not there is not a failure, since the result asked for is
     /// that it is gone.
     /// </remarks>
-    private void Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
+    /// <returns>The editor layout that was there, to be put back afterwards.</returns>
+    private string? Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
     {
         var cache = Path.Combine(project.Directory, CacheDirectoryName);
 
         if (!_fileSystem.DirectoryExists(cache))
         {
-            return;
+            return null;
         }
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Cleaning, cache));
+
+        var layout = Read(LayoutFile(project));
 
         try
         {
@@ -199,6 +238,54 @@ internal sealed class GodotLauncher : IGodotLauncher
         {
             throw new GodotLaunchException(
                 GodotLaunchStage.Cleaning, "The import cache could not be deleted.", exception);
+        }
+
+        return layout;
+    }
+
+    /// <summary>
+    /// Puts the editor layout back where the cache used to be.
+    /// </summary>
+    /// <remarks>
+    /// **This is the one thing in the cache a person made rather than Godot.** It is
+    /// where they put their docks, and it lives under <c>.godot</c> with everything that
+    /// is safe to throw away, so a rebuild would quietly rearrange their editor. Nothing
+    /// else in there is worth keeping, which is why this is one named file and not a
+    /// backup of the folder.
+    ///
+    /// It is written after the import rather than before, so whatever the headless editor
+    /// did on its way past cannot win. Measured: a headless import writes no layout of
+    /// its own, so this is a guard rather than a fix.
+    ///
+    /// A failure here is swallowed. Losing a dock arrangement is a bad afternoon and
+    /// taking the rebuild down over it would be worse.
+    /// </remarks>
+    private void Restore(GodotProject project, string layout)
+    {
+        var file = LayoutFile(project);
+
+        try
+        {
+            _fileSystem.CreateDirectory(Path.GetDirectoryName(file)!);
+            _fileSystem.WriteAllText(file, layout);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static string LayoutFile(GodotProject project) =>
+        Path.Combine(project.Directory, CacheDirectoryName, "editor", LayoutFileName);
+
+    private string? Read(string file)
+    {
+        try
+        {
+            return _fileSystem.FileExists(file) ? _fileSystem.ReadAllText(file) : null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 

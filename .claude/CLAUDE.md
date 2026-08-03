@@ -1393,6 +1393,16 @@ when one of those is the thing that is broken. All of it is Godot's to make agai
 none of it is committed. **The folder is named, never searched for**, so there is no case
 where this deletes something it found.
 
+**One file in there is kept: `editor/editor_layout.cfg`.** It is where a person put their
+docks, which is the one thing under the cache they arranged rather than Godot generated,
+and it sits among the files that are safe to delete. It is read before the delete and
+written back after the import, in a finally, so a rebuild that failed or was cancelled
+does not take it as well. Writing it back afterwards rather than before means whatever
+the headless editor did on its way past cannot win, which is a guard rather than a fix:
+measured, a headless import writes no layout of its own. A failure putting it back is
+swallowed, since losing a dock arrangement is a bad afternoon and losing the rebuild over
+it would be worse.
+
 **It does not open the editor when it finishes.** The dialog stays up and offers Dismiss
 and Open in Editor, and pressing the second goes the ordinary way rather than starting
 the editor from there, so the build is confirmed to still be good rather than assumed
