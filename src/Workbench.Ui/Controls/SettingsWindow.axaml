@@ -191,7 +191,9 @@
              on top of each other and the row shows the one its descriptor asked for. -->
         <DataTemplate x:Key="SettingRow" DataType="s:SettingValueRowViewModel">
             <Border Classes="settingRow">
-                <Grid ColumnDefinitions="288,*" ColumnSpacing="18">
+                <!-- The editor takes two thirds and the name and its note take one, and
+                     both columns are shares, so the split holds at any width. -->
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
                     <StackPanel Grid.Column="0" Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
                         <TextBlock Classes="rowNote" Text="{Binding Description}" />
@@ -363,7 +365,9 @@
              row holds every editor and shows one. -->
         <DataTemplate x:Key="ReadoutRow" DataType="s:SettingsReadoutRowViewModel">
             <Border Classes="settingRow">
-                <Grid ColumnDefinitions="288,*" ColumnSpacing="18">
+                <!-- The editor takes two thirds and the name and its note take one, and
+                     both columns are shares, so the split holds at any width. -->
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
                     <StackPanel Grid.Column="0" Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
 

@@ -42,7 +42,7 @@ public sealed class LauncherSettingsSchema
         {
             Name = "Open workspace",
             Style = SettingsReadoutStyle.List,
-            Description = "The workspace every page below and every tool follows.",
+            Description = "The workspace every tool follows.",
             // Shortened to draw and whole to copy, since an elided path pastes as nothing
             // anybody can use.
             Read = () => registry.Current is { } workspace
@@ -57,7 +57,7 @@ public sealed class LauncherSettingsSchema
         {
             Name = "Known workspaces",
             Style = SettingsReadoutStyle.List,
-            Description = "Every workspace offered in the selector. The open one is marked.",
+            Description = "Every workspace in the selector. The open one is marked.",
             Read = () =>
             [
                 .. registry.All.Select(workspace => new SettingsListEntry(

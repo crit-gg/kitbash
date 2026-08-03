@@ -13,9 +13,7 @@ public sealed class GodotSettingsSchema
         {
             Key = "godot.engines.directory",
             Name = "Engine install directory",
-            Description =
-                "Where Godot engines Workbench installs are kept. Engines already installed "
-                + "stay where they are, so moving this does not move them.",
+            Description = "Where engines Workbench installs go. Installed ones stay where they are.",
             Default = paths.Engines,
             Rules = [new PathShapeRule(PathKind.Directory, mustBeRooted: true)],
         };
@@ -25,10 +23,8 @@ public sealed class GodotSettingsSchema
             Key = "godot.engines.default",
             Name = "Default engine",
             Description =
-                "Which install a project uses when it pins no version. Named the way an "
-                + "engine is named, such as 4.7.1-stable or 4.7.1-stable-mono. Blank means "
-                + "this machine has no default, which is what uninstalling the default "
-                + "leaves behind.",
+                "The engine a project uses when it pins no version, such as 4.7.1-stable. "
+                + "Blank means this machine has none.",
             Default = string.Empty,
             Rules =
             [
@@ -42,11 +38,7 @@ public sealed class GodotSettingsSchema
         {
             Key = "godot.build",
             Name = "Build C# before opening",
-            Description =
-                "What builds a project's C# when it is opened from Workbench. Automatic "
-                + "uses dotnet when this machine has one and the Godot editor otherwise. "
-                + "A project with no C# never builds, and neither does one opened in an "
-                + "engine that has no C# support.",
+            Description = "What builds a project's C# when it opens. A project with no C# never builds.",
             Default = AutoTool,
             Rules =
             [

@@ -12,10 +12,8 @@ public sealed class WorkspaceGodotSettingsSchema
             Key = "godot.engine",
             Name = "Engine version",
             Description =
-                "Which Godot version this workspace needs. Any part may be left off, so "
-                + "4.7 means any 4.7 release and 4.7.1-stable means exactly that one. End "
-                + "it with mono to require the .NET build, which is how the engines page "
-                + "names one. Blank uses the version the project names in project.godot.",
+                "The version this workspace needs, such as 4.7 or 4.7.1-stable-mono. Blank "
+                + "follows project.godot.",
             Default = string.Empty,
             Rules =
             [

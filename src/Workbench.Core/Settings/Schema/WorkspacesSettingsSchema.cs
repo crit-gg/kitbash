@@ -12,9 +12,8 @@ public sealed class WorkspacesSettingsSchema
             Key = "workspaces.directory",
             Name = "Workspaces folder",
             Description =
-                "Where Workbench offers to put a workspace it clones from git. Blank means "
-                + "it has no suggestion and the folder is picked each time. Workspaces "
-                + "already added stay where they are, so changing this does not move them.",
+                "Where Workbench offers to put a workspace it clones. Blank means it "
+                + "suggests nothing.",
             Default = string.Empty,
             Rules = [new PathShapeRule(PathKind.Directory, mustBeRooted: true, allowEmpty: true)],
         };

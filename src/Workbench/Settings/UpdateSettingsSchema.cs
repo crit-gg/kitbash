@@ -40,9 +40,8 @@ public sealed class UpdateSettingsSchema
             Key = "updates.feed",
             Name = "Update feed",
             Description =
-                "An https address or a folder holding published releases. Blank means "
-                + "Workbench never looks for an update. A copy that was not installed "
-                + "never looks either, whatever this says.",
+                "An https address or a folder holding published releases. Blank never "
+                + "checks, and neither does a copy that was not installed.",
             Default = DefaultFeed,
             NeedsRestart = true,
         };
