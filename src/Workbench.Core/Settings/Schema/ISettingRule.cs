@@ -1,10 +1,8 @@
 namespace Workbench.Core.Settings.Schema;
 
 /// <summary>
-/// What a value has to be, as data rather than as a predicate. The set of rules is
-/// closed on purpose. A <c>Func&lt;T, bool&gt;</c> can validate and nothing else, so it
-/// cannot bound a spinner, cannot write its own summary and cannot be reasoned about.
-/// Adding a kind of rule is a deliberate change here.
+/// What a value has to be, as data rather than as a predicate, so a rule can also bound
+/// an editor and write its own summary. The set of implementations is closed.
 /// </summary>
 public interface ISettingRule
 {

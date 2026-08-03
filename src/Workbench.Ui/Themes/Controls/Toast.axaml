@@ -3,22 +3,10 @@
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls"
                     xmlns:toasts="clr-namespace:Workbench.Ui.Toasts">
 
-    <!-- A toast is a popover that nobody opened, so it takes the popover treatment
-         exactly: SurfaceNest2 on a LineControl edge with ShadowOverlay. Everything here
-         is stage 5's overlay surface reused rather than a second definition of it.
+    <!-- A toast is a popover that nobody opened, so it takes the popover treatment exactly. -->
 
-         The one thing this file adds to that surface is the rule about the bar along the
-         foot. A card with no bar is a card that will not go away by itself, so the bar is
-         never decoration and never optional on a card that dwells. -->
-
-    <!-- The bar. Two pixels, square, and driven by the built in ProgressBar, which sizes
-         its own indicator from the value. It says time left on a card that is counting
-         down and work done on one that is reporting progress, which is why it has one
-         name and not two.
-
-         Keyed rather than a class on the ProgressBar theme, for the reason the caption
-         buttons are keyed: that theme is 6px with a mark radius, and a class would take
-         both back the moment either moved. -->
+    <!-- The bar. Two pixels, square, and driven by the built in ProgressBar, which sizes its
+         own indicator from the value. -->
     <ControlTheme x:Key="ToastMeter" TargetType="ProgressBar">
         <Setter Property="Height" Value="{DynamicResource HeightToastMeter}" />
         <Setter Property="MinHeight" Value="0" />
@@ -55,12 +43,7 @@
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
 
-        <!-- The shadow is drawn outside the frame, so the card must not clip.
-
-             Measured with the clip left on: the shadow was cut off flush with the card's
-             rectangle, which took away all of it except the wedge at each rounded corner,
-             where the card's own bounds are outside its curve. Four dark corners and no
-             shadow at all. -->
+        <!-- The shadow is drawn outside the frame, so the card must not clip. -->
         <Setter Property="ClipToBounds" Value="False" />
 
         <!-- One width for every region, so a card reads the same wherever it lands and a
@@ -85,10 +68,7 @@
                         </Transitions>
                     </Border.Transitions>
 
-                    <!-- Two borders, because the bar fills the foot corner to corner. A
-                         Border clips to its outer radius, so a child painting to the edge
-                         clears the stroke along a straight run and covers it at a corner.
-                         Inset by the border thickness, this one clears it everywhere. -->
+                    <!-- Two borders, because the bar fills the foot corner to corner. -->
                     <Border Name="PART_Frame"
                             CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
                         <DockPanel LastChildFill="True">
@@ -232,13 +212,8 @@
             </Setter>
         </Style>
 
-        <!-- The undo bar. One line saying what changed and one way to put it back, in a
-             row rather than a card, because nobody reads a card to press Undo.
-
-             It keeps the bar, which the design does not draw on this form. It is the one
-             short form carrying something worth pressing, and a hidden clock on a button
-             a person means to press is exactly what the bar exists to prevent. The
-             compact form has nothing to press and keeps the design's plain pill. -->
+        <!-- The undo bar. One line saying what changed and one way to put it back, in a row rather
+             than a card, because nobody reads a card to press Undo. -->
         <Style Selector="^.undo">
             <Setter Property="Height" Value="{DynamicResource HeightToastUndo}" />
             <Setter Property="Padding" Value="11,0,8,0" />
@@ -289,10 +264,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="toasts:ToastAction">
-                                        <!-- The glyph belongs to the form rather than to
-                                             the action. An undo bar is the one place a
-                                             toast's action carries a mark, and it is
-                                             always the same mark, so no caller names it. -->
+                                        <!-- The glyph belongs to the form rather than to the action. -->
                                         <Button Theme="{StaticResource CompactButton}"
                                                 Classes="link"
                                                 Command="{Binding $parent[ui:ToastCard].Run}"
@@ -340,12 +312,7 @@
             <Setter Property="IsVisible" Value="False" />
         </Style>
 
-        <!-- The tiers. The mark is the same tinted pair the chips and the status marks
-             use, so nothing new enters the palette, and the bar takes the tier's own
-             colour so a card says the same thing twice over.
-
-             Info takes AccentTint, which the design brightened after this page was drawn.
-             Every accent tinted fill moved with it and this is one of them. -->
+        <!-- The tiers. -->
         <Style Selector="^.info /template/ Border#PART_Mark">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
@@ -402,10 +369,7 @@
             <Setter Property="Foreground" Value="{DynamicResource Error}" />
         </Style>
 
-        <!-- Busy holds its square still and turns the glyph inside it. Recorded because
-             the design was corrected on this exact point: turning the whole mark swings
-             the tint and the border around with it. The turn is the shared spin style
-             from Themes/Motion.axaml rather than an animation written here. -->
+        <!-- Busy holds its square still and turns the glyph inside it. -->
         <Style Selector="^.busy /template/ Border#PART_Mark">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
@@ -469,22 +433,8 @@
             <Setter Property="RenderTransformOrigin" Value="100%,100%" />
         </Style>
 
-        <!-- Older cards fall back rather than stacking flat, so the newest is always the
-             one being read. Three deep, because a region shows three.
-
-             A card behind keeps the whole shape of a card and runs on under the one in
-             front of it, so the end facing that card is hidden rather than changed.
-
-             It was cut square there first, which is wrong for a reason only a corner
-             shows: the front card's radius leaves a notch at each of its corners, the
-             card behind is what fills that notch, and a square corner with a straight
-             edge running up through a curve reads as a card in front rather than one
-             behind. A rounded end nested inside that notch reads as what it is.
-
-             The tucked end is frame and nothing else, so the body is held back by the
-             same amount and clipped there. A card behind is faded, and its own content
-             left under the card in front reads through as a second line of text across
-             the deck. -->
+        <!-- Older cards fall back rather than stacking flat, so the newest is always the one being
+             read. -->
         <Style Selector="^.depth1 /template/ Border#PART_Frame, ^.depth2 /template/ Border#PART_Frame">
             <Setter Property="Margin" Value="{DynamicResource MarginToastTuck}" />
         </Style>
@@ -512,14 +462,8 @@
             <Setter Property="IsVisible" Value="False" />
         </Style>
 
-        <!-- Entry. A card slides 12px from the nearest edge, and the two centre columns
-             slide vertically instead, having no near edge.
-
-             The keyframes name TranslateTransform.X rather than RenderTransform, because
-             a keyframe against RenderTransform throws and one against a
-             TransformOperations value does nothing at all and logs nothing. The scale
-             above is a transition on a different element for that same reason, so the two
-             never share a transform. Recorded in .claude/avalonia.md. -->
+        <!-- Entry. A card slides 12px from the nearest edge, and the two centre columns slide
+             vertically instead, having no near edge. -->
         <Style Selector="^.atLeft">
             <Style.Animations>
                 <Animation Duration="0:0:0.16" FillMode="None" Easing="CubicEaseOut">
@@ -580,11 +524,9 @@
             </Style.Animations>
         </Style>
 
-        <!-- Exit. The service keeps a dismissed toast for exactly this long before taking
-             it out of the region, so the fade and the removal are one number rather than
-             two that have to be kept in step. FillMode holds it at nothing, since the card
-             is still there for the rest of the tick. Declared last, so it beats the entry
-             on a card dismissed while it was still arriving. -->
+        <!-- Exit. The service keeps a dismissed toast for exactly this long before taking it out
+             of the region, so the fade and the removal are one number rather than two that have to
+             be kept in step. -->
         <Style Selector="^.leaving">
             <Style.Animations>
                 <Animation Duration="0:0:0.12" FillMode="Forward" Easing="LinearEasing">
@@ -602,11 +544,8 @@
     <ControlTheme x:Key="{x:Type ui:ToastStack}" TargetType="ui:ToastStack">
         <Setter Property="Padding" Value="{DynamicResource PaddingToastRegion}" />
 
-        <!-- A card's shadow falls outside the card, and a stack wraps its cards tightly,
-             so both this and the items control inside it have to let it out. Measured with
-             the clips left on: the shadow reached two pixels below a card and nothing at
-             all to either side. Only the host clips, and it does so on purpose, which is
-             what keeps a panel's toasts in the panel. -->
+        <!-- A card's shadow falls outside the card, and a stack wraps its cards tightly, so both
+             this and the items control inside it have to let it out. -->
         <Setter Property="ClipToBounds" Value="False" />
 
         <Setter Property="Template">
@@ -634,10 +573,7 @@
                     <ItemsControl Name="PART_Items"
                                   ClipToBounds="False"
                                   ItemsSource="{Binding Region.Visible, RelativeSource={RelativeSource TemplatedParent}}">
-                        <!-- A deck rather than a column. Only the newest card is whole and
-                             the ones behind it show a strip of their top edge, which is
-                             what the design draws and what keeps three cards from being
-                             most of a window. -->
+                        <!-- A deck rather than a column. -->
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <ui:ToastDeck Peek="{DynamicResource PeekToast}"
@@ -693,26 +629,15 @@
         </Style>
     </ControlTheme>
 
-    <!-- Where one service draws. Eight regions over whatever this is placed in, and it
-         clips, so a panel's toasts stay in the panel.
-
-         The centre cell is empty on purpose. The document area is never covered by more
-         than one region, which is what the eight of them are arranged around. -->
+    <!-- Where one service draws. Eight regions over whatever this is placed in, and it clips,
+         so a panel's toasts stay in the panel. -->
     <ControlTheme x:Key="{x:Type ui:ToastHost}" TargetType="ui:ToastHost">
         <Setter Property="ClipToBounds" Value="True" />
 
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- A Panel rather than a grid of nine cells. Every stack is given the
-                     whole surface and puts itself where its anchor says, which is what
-                     its alignment classes already decide.
-
-                     Measured with a three by three grid first, and it was wrong twice
-                     over: a 352 card in a third of a 1000px window was cut off at both
-                     side edges, and three tall cards came to 280 in a 233 row, which
-                     arranged from the top and put the newest card, the one nearest the
-                     anchored edge, off the bottom of the window. A cell can be smaller
-                     than a card and the whole surface never is. -->
+                <!-- A Panel rather than a grid of nine cells. Every stack is given the whole surface and
+                     puts itself where its anchor says, which is what its alignment classes already decide. -->
                 <Panel>
                     <ui:ToastStack Anchor="TopLeft" Service="{TemplateBinding Service}" />
                     <ui:ToastStack Anchor="TopCenter" Service="{TemplateBinding Service}" />

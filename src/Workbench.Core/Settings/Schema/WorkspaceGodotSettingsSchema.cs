@@ -3,20 +3,6 @@ namespace Workbench.Core.Settings.Schema;
 /// <summary>
 /// The Godot choices that belong to a workspace rather than to a machine.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **This is the one Godot page a team shares.** Which engine a project needs is a fact
-/// about the project, so it belongs beside the project and is committed. Where engines
-/// are installed and which one this machine falls back to are not, and they live in
-/// <see cref="GodotSettingsSchema"/> under the application home where nothing can share
-/// them by accident.
-/// </para>
-/// <para>
-/// It layers, since the workspace home is the only one that does. A team pins the
-/// version everybody needs and a person can hold a different one locally without
-/// changing what the repository says.
-/// </para>
-/// </remarks>
 public sealed class WorkspaceGodotSettingsSchema
 {
     public WorkspaceGodotSettingsSchema()

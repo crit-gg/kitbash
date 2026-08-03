@@ -4,11 +4,6 @@ namespace Workbench.Core.IO;
 /// Where an application keeps its own files for this user on this machine. Three
 /// places rather than one, because they are backed up, roamed and cleared differently.
 /// </summary>
-/// <remarks>
-/// The layout differs per OS, so resolve this from the container and never build a
-/// path from the running OS at the call site. Every member returns a directory that
-/// need not exist yet.
-/// </remarks>
 public interface IUserDirectories
 {
     /// <summary>Choices a person may edit by hand.</summary>

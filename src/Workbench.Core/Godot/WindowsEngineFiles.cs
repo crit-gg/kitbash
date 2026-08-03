@@ -37,10 +37,9 @@ internal sealed class WindowsEngineFiles : IEngineFiles
             return null;
         }
 
-        // Windows ships the editor and a console executable side by side, which is why the
-        // standard archive holds two loose files. Measured: 4.0-alpha1 spelled the console
-        // one _console.cmd and every release from 4.0-stable on spells it _console.exe, so
-        // matching on the stem covers both.
+        // Windows archives hold the editor and a console executable side by side. The
+        // console one is _console.cmd on 4.0-alpha1 and _console.exe from 4.0-stable on,
+        // so the stem is matched to cover both.
         var candidates = _files
             .EnumerateFiles(directory, recursive: false)
             .Where(path => path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))

@@ -4,12 +4,6 @@ namespace Workbench.Ui.Toasts;
 /// One thing a person can press on a toast. A description rather than a control, so a
 /// view model names an action without knowing what draws it.
 /// </summary>
-/// <remarks>
-/// There is no destructive kind here and there will not be one. A toast is read after
-/// the fact and often out of the corner of an eye, so nothing on one may destroy
-/// anything. Whatever is worth keeping is also in the log or the problem list, which is
-/// where a destructive answer belongs.
-/// </remarks>
 /// <param name="Text">The word on the button. A verb, and short.</param>
 /// <param name="Invoke">What pressing it does.</param>
 public sealed record ToastAction(string Text, Action Invoke)

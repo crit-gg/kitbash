@@ -54,13 +54,6 @@ public sealed class ExecutableFinder : IExecutableFinder
     /// <summary>
     /// The names to try for one program.
     /// </summary>
-    /// <remarks>
-    /// On Unix a program is its name and the executable bit says the rest. On Windows the
-    /// name on PATH is <c>git.exe</c> while every caller asks for <c>git</c>, so the
-    /// extensions in PATHEXT are tried in the order that variable gives, which is the
-    /// order the shell itself uses. A caller that already named an extension gets that
-    /// name alone.
-    /// </remarks>
     private IEnumerable<string> Names(string fileName)
     {
         yield return fileName;

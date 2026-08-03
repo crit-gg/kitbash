@@ -9,21 +9,6 @@ namespace Workbench.Ui.Controls;
 /// Lets a number be dragged rather than typed. Attach it to a <see cref="NumericUpDown"/>:
 /// <c>ui:Scrub.Drags="True"</c>, which the spinbox theme does for every one.
 /// </summary>
-/// <remarks>
-/// The one part of a value editor that is neither a look nor a setting. A property panel
-/// is full of numbers that want a rough value quickly, and reaching for the stepper twenty
-/// times is slower than pushing the number.
-/// <para>
-/// A click still puts the caret in the field. Nothing happens until the pointer has moved
-/// past a threshold, so pressing and releasing without moving is an ordinary click, and
-/// only then does this take the events off the field.
-/// </para>
-/// <para>
-/// The handlers are on the tunnel, so they run before the text box inside the template
-/// sees the same event. Bubbling would be too late: the field would already have started
-/// selecting.
-/// </para>
-/// </remarks>
 public class Scrub
 {
     /// <summary>How far the pointer moves before this is a drag rather than a click.</summary>

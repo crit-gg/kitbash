@@ -7,29 +7,9 @@ namespace Workbench.Ui.Controls;
 /// Lays toasts out as a deck: the newest card whole, and the ones behind it showing a
 /// strip of their top edge.
 /// </summary>
-/// <remarks>
-/// A panel rather than a spaced column, because a stack of three full cards is most of a
-/// window and reads as a list rather than as something passing through. The design draws
-/// the deck and nothing in Avalonia lays one out.
-/// <para>
-/// Every region stacks the same way, whichever edge it is anchored to: the newest card is
-/// at the foot of the deck and the ones behind it pile up above it, each one a
-/// <see cref="Peek"/> higher. What the anchor decides is where the deck sits and which way
-/// it grows as cards arrive, not which end the newest is at. The region hands the cards
-/// over in that order, oldest first.
-/// </para>
-/// <para>
-/// Which card is in front is not this panel's to say. A card sets its own
-/// <see cref="Visual.ZIndex"/> from its depth, so the newest draws over the rest wherever
-/// it sits in the order.
-/// </para>
-/// </remarks>
 public class ToastDeck : Panel
 {
-    /// <summary>
-    /// How much of the card behind shows. The design draws 20 and 26 for the two cards
-    /// behind the newest, and one value is taken for both.
-    /// </summary>
+    /// <summary>How much of a card behind shows, in pixels. One value for all of them.</summary>
     public static readonly StyledProperty<double> PeekProperty =
         AvaloniaProperty.Register<ToastDeck, double>(nameof(Peek));
 
@@ -87,18 +67,9 @@ public class ToastDeck : Panel
         }
 
         // A card behind is arranged as the strip of it that shows, plus the tuck that
-        // carries it under the card in front.
-        //
-        // Cards are not all the same height, and a deck of mixed heights cannot both put
-        // the newest at the foot and show an even strip of each card behind it. Stepping
-        // the tops leaves a short newest card floating clear of the foot, and stepping the
-        // bottoms hides a short card behind a tall one completely, which is the design's
-        // own illustration where the newest is the tallest of the three.
-        //
-        // Giving each card behind its own strip settles both, and holding it to that strip
-        // alone is what stops a faded card reading through to the text of the one under
-        // it. Measured, and it did. The tuck is the smallest overlap that still puts a
-        // card behind the front one's corner curves rather than the page.
+        // carries it under the card in front. Sizing it to the strip rather than stepping
+        // the tops or the bottoms is what makes a deck of mixed heights work, and it also
+        // keeps a faded card's own text out from under the card in front.
         var front = Front.DesiredSize.Height;
 
         for (var at = 0; at < Children.Count; at++)

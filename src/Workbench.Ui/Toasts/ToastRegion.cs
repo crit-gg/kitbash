@@ -143,11 +143,6 @@ internal sealed class ToastRegion : IToastRegion
     /// <summary>
     /// Moves every clock in the region on by one tick.
     /// </summary>
-    /// <remarks>
-    /// An exit runs whether the region is paused or not. A card that has been dismissed
-    /// is already gone as far as the person is concerned, so holding it there under the
-    /// pointer would read as a card that will not close.
-    /// </remarks>
     internal void Advance(TimeSpan by)
     {
         for (var i = _leaving.Count - 1; i >= 0; i--)
@@ -214,11 +209,6 @@ internal sealed class ToastRegion : IToastRegion
     /// Brings the visible list into line with what should be showing, by the fewest
     /// edits that get there.
     /// </summary>
-    /// <remarks>
-    /// Clearing and refilling would be shorter and would restart every card's entry
-    /// animation each time any one of them changed, which reads as the whole stack
-    /// flickering whenever a toast arrives.
-    /// </remarks>
     private void Sync()
     {
         var limit = Math.Max(1, _options.VisiblePerRegion);

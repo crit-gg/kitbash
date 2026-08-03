@@ -3,11 +3,8 @@
         xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
     <Styles.Resources>
-        <!-- The window is larger than its visible frame by this much on every side, and
-             the extra is transparent so the shadow has somewhere to fall. It matches the
-             shadow's blur, and the shadow has no offset, so the shadow is symmetric and
-             reaches the window edge exactly. Give the shadow an offset and the far side
-             is clipped, which reads as a hard line rather than a soft edge. -->
+        <!-- The window is larger than its visible frame by this much on every side, and the extra
+             is transparent so the shadow has somewhere to fall. -->
         <Thickness x:Key="WindowShadowGutter">12</Thickness>
 
         <!-- Caption glyphs, drawn as strokes on a 10 by 10 box. -->
@@ -16,14 +13,8 @@
         <StreamGeometry x:Key="GlyphRestore">M 2.5,2.5 V 0.5 H 9.5 V 7.5 H 7.5 M 0.5,2.5 H 7.5 V 9.5 H 0.5 Z</StreamGeometry>
         <StreamGeometry x:Key="GlyphClose">M 0,0 L 9,9 M 9,0 L 0,9</StreamGeometry>
 
-        <!-- Caption buttons are real buttons so they take focus, answer the keyboard and
-             report themselves to assistive technology, the way a system title bar does.
-
-             A whole control theme rather than a class on the ordinary Button theme,
-             because a caption button is not one. It has no height of its own, so it
-             fills the row and stops at the seam, and the ordinary Button theme's 26px
-             would otherwise leave it floating in a 32px bar. Keeping it separate is what
-             stops a later change to buttons from reshaping the window. -->
+        <!-- Caption buttons are real buttons so they take focus, answer the keyboard and report
+             themselves to assistive technology, the way a system title bar does. -->
         <ControlTheme x:Key="CaptionButton" TargetType="Button">
             <Setter Property="Width" Value="{DynamicResource HeightCaptionButton}" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
@@ -165,10 +156,7 @@
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
-    <!-- An inactive window drops its whole chrome one tier. The design states the drop
-         and does not map it per token, so it is derived here: the title falls to the
-         muted ink, the caption glyphs to the secondary ink, and the icon, which cannot
-         be recoloured, gives up the same presence through its opacity. -->
+    <!-- An inactive window drops its whole chrome one tier. -->
     <Style Selector="ui|WindowTitleBar.inactive /template/ TextBlock#PART_Title">
         <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
     </Style>
@@ -212,18 +200,9 @@
                                 BorderThickness="1"
                                 CornerRadius="{TemplateBinding CornerRadius}">
                             <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
-                                <!-- The name is the whole thing. TopLevel finds this part
-                                     by name and installs the overlay and adorner layers
-                                     into it, so a manager without the name gets neither
-                                     and nothing complains.
-
-                                     Those layers are what adorners, tooltips and the light
-                                     dismiss layer attach to. Without them a menu never saw
-                                     a press inside the window that opened it and stayed
-                                     open until the pointer landed outside the application.
-
-                                     Copied from Avalonia's own Window template, read at
-                                     runtime rather than guessed. -->
+                                <!-- The name is the whole thing. TopLevel finds this part by name and installs the overlay
+                                     and adorner layers into it, so a manager without the name gets neither and nothing
+                                     complains. -->
                                 <VisualLayerManager Name="PART_VisualLayerManager">
                                     <ContentPresenter Name="PART_ContentPresenter"
                                                       ContentTemplate="{TemplateBinding ContentTemplate}"

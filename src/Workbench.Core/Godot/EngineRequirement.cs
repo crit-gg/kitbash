@@ -16,11 +16,6 @@ public enum EngineRequirementSource
 /// <summary>
 /// The engine a workspace asks for, before anything looks at what is installed.
 /// </summary>
-/// <remarks>
-/// The version and the .NET flag come from different places on purpose. A workspace can
-/// pin a version, and nothing pins the flag, because whether a project needs C# is a fact
-/// about the project rather than a choice anybody makes.
-/// </remarks>
 public sealed record EngineRequirement
 {
     /// <summary>Nothing was asked for, which is what a folder with no Godot project gives.</summary>

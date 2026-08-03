@@ -6,22 +6,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// Reads whether a project has been imported, from the sidecars rather than the cache.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **The cache folder existing is not the answer.** Every importable asset keeps a
-/// <c>.import</c> sidecar naming the files Godot generates for it, and the sidecars are
-/// committed while the generated files are not. So a fresh clone has every sidecar and
-/// none of their outputs. The folder can also be there while its contents were cleared.
-/// A project is imported when every output every sidecar declares is present.
-/// </para>
-/// <para>
-/// A project with no importable assets has nothing to import and counts as imported. A
-/// sidecar that cannot be read counts as needing one, since nothing proves otherwise.
-/// </para>
-/// <para>
-/// Measured on the Slopworks project: 399 sidecars among 6560 files, walked in 20ms.
-/// </para>
-/// </remarks>
 internal sealed partial class GodotImports : IGodotImports
 {
     /// <summary>

@@ -5,28 +5,6 @@ namespace Workbench.Core.Platform;
 /// <summary>
 /// <see cref="IWebContent"/> over one <see cref="HttpClient"/>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **One client for the process, held for its life.** That is what the type is built for.
-/// A client per request exhausts sockets, because a closed one leaves its connections in
-/// TIME_WAIT for minutes, and this app fires several at once when a card opens.
-/// </para>
-/// <para>
-/// The handler is given a connection lifetime, which is the half a long lived client gets
-/// wrong on its own: a connection held forever keeps talking to an address that has moved,
-/// since the DNS answer is only consulted when a connection is made. Five minutes is the
-/// usual figure and costs one handshake.
-/// </para>
-/// <para>
-/// `IHttpClientFactory` solves both and is deliberately not used. It lives in
-/// `Microsoft.Extensions.Http`, and `Workbench.Core` takes Tomlyn and the DI abstractions
-/// and nothing else. A single configured client is the documented alternative.
-/// </para>
-/// <para>
-/// The container owns this. It is registered as a singleton, so the provider disposes it
-/// at shutdown, and disposing the client disposes the handler with it.
-/// </para>
-/// </remarks>
 internal sealed class WebContent : IWebContent, IDisposable
 {
     private const int BufferSize = 81920;
@@ -52,27 +30,17 @@ internal sealed class WebContent : IWebContent, IDisposable
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             ConnectTimeout = TimeSpan.FromSeconds(15),
 
-            // Left off on purpose. The only bodies read here are a 48 KB feed and an 8 KB
-            // manifest, so compression saves nothing worth having, and asking for it makes
-            // a server free to answer a HEAD with a compressed length or with no length at
-            // all. Measure has to report the real size of the file on disk.
+            // Left off. Bodies here are tens of kilobytes, and asking for compression
+            // lets a server answer a HEAD with a compressed length or none at all, which
+            // Measure needs to be the real size on disk.
             AutomaticDecompression = DecompressionMethods.None,
         };
 
         _client = new HttpClient(handler, disposeHandler: true)
         {
-            // Off, because one number cannot bound both kinds of request here. Every one
-            // below carries its own. Measured on .NET 10, since the rule is not the one it
-            // is usually said to be:
-            //
-            //   ResponseContentRead, the default, is bounded body and all. A 3 second
-            //   timeout against a body arriving over 9 seconds threw at 3003 ms.
-            //
-            //   ResponseHeadersRead stops the clock once the headers land. The same 3
-            //   second timeout read the whole 9 second body and finished at 9006 ms.
-            //
-            // So the default 100 seconds would never have cut a download off, and it would
-            // also never have ended one that stalled. An idle guard is what does that.
+            // Off, since one number cannot bound both kinds of request here and each call
+            // below sets its own. Note that under ResponseHeadersRead this timeout stops
+            // once the headers land, so it never bounds a download. The idle guard does.
             Timeout = Timeout.InfiniteTimeSpan,
         };
 

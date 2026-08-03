@@ -1,22 +1,8 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Focus in this system is one thing: a 2px halo of the accent at 30 percent, outside
-         the border and never in place of one. Every control theme draws its own.
-
-         Fluent draws a second one. Measured on 12.1.1: a keyboard focus puts a Border in
-         the adorner layer, black at 2px with a #99ffffff border inside it, and the adorner
-         layer is above everything a template draws, so it lands on top of our halo as a
-         white square. With Fluent left out there is no adorner layer at all, so it is
-         entirely Fluent's.
-
-         Fluent is loaded on purpose, since it is what gives every type this library has
-         not themed a template at all. This takes back the one thing it does that the
-         design forbids.
-
-         The cost is that a control we have not themed yet has no focus mark until it is
-         themed. That is the right way round: a control with no look of ours is temporary,
-         and a white square on a dark panel was never going to be right. -->
+    <!-- Focus in this system is one thing: a 2px halo of the accent at 30 percent, outside the
+         border and never in place of one. -->
 
     <Style Selector=":is(Control)">
         <Setter Property="FocusAdorner" Value="{x:Null}" />

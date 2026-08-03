@@ -15,10 +15,6 @@ public static class WorkbenchUiServices
     /// The toast service, its clock and its settings. Register any of the three
     /// beforehand to substitute it, since these all use <c>TryAdd</c>.
     /// </summary>
-    /// <remarks>
-    /// The library asks for the dependency injection contract rather than a container,
-    /// so an application still chooses which one to build.
-    /// </remarks>
     public static IServiceCollection AddWorkbenchToasts(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);

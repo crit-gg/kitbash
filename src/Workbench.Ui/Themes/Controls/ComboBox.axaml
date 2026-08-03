@@ -2,12 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- A field that picks one of a list.
-
-         It is a well rather than a button, which is what tells it apart from the dropdown
-         button: one holds a value and the other opens a menu of actions. The list it opens
-         sits on the same surface every floating thing does, from Overlays.axaml, so a
-         dropdown and a menu read the same. -->
+    <!-- A field that picks one of a list. It is a well rather than a button, which is what
+         tells it apart from the dropdown button. -->
 
     <ControlTheme x:Key="{x:Type ComboBoxItem}" TargetType="ComboBoxItem">
         <Setter Property="Height" Value="{DynamicResource HeightTreeRow}" />
@@ -122,15 +118,11 @@
                            HorizontalOffset="{DynamicResource OverlayRoomX}"
                            VerticalOffset="{DynamicResource OverlayRoomY}"
                            IsLightDismissEnabled="True">
-                        <!-- The room the shadow falls into is padding on a wrapper rather
-                             than a margin on the list, so it is part of a control and can
-                             answer a click. It is the popup window as far as the platform
-                             is concerned, and it reaches back over the field. -->
+                        <!-- The room the shadow falls into is padding on a wrapper rather than a margin on the
+                             list, so it is part of a control and can answer a click. -->
                         <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
-                            <!-- At least as wide as the field it drops from, so a list of
-                                 short values does not open a strip narrower than the thing
-                                 that opened it. This measures the visible list, since the
-                                 room around it belongs to the wrapper. -->
+                            <!-- At least as wide as the field it drops from, so a list of short values does not open a
+                                 strip narrower than the thing that opened it. -->
                             <Border MinWidth="{Binding $parent[ComboBox].Bounds.Width}"
                                     Background="{DynamicResource SurfaceNest2}"
                                     BorderBrush="{DynamicResource LineControl}"

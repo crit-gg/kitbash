@@ -96,11 +96,6 @@ public sealed class ProcessRunner : IProcessRunner
     /// <summary>
     /// Reads to the end a line at a time, handing each one over on the way past.
     /// </summary>
-    /// <remarks>
-    /// The whole output is still returned, so this costs a caller nothing over reading to
-    /// the end. A line the callback throws on would otherwise leave the pipe unread and
-    /// the program blocked on a full buffer, so it is swallowed rather than let out.
-    /// </remarks>
     private static async Task<string> ReadLinesCoreAsync(
         StreamReader reader, Action<string> onLine, CancellationToken cancellation)
     {

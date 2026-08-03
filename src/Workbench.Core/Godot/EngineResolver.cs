@@ -3,24 +3,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// Matches a requirement against the engines on this machine.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The order is: the right version with the right runtime, then the right version with
-/// the wrong runtime, then this machine's default, then nothing. Each step down is a
-/// worse answer and the first three all name an engine, so the strip can offer to open
-/// something in every case where opening something is possible.
-/// </para>
-/// <para>
-/// **A .NET project will not open in a plain engine**, which is why the runtime flag is
-/// the first thing filtered on rather than a detail checked afterwards. The version being
-/// right is not enough, and reporting a match on version alone would send somebody into
-/// an editor that cannot build their code.
-/// </para>
-/// <para>
-/// An engine whose folder has gone is left out of all of it. It is still listed on the
-/// engines page, since forgetting it has to be deliberate, but it cannot answer anything.
-/// </para>
-/// </remarks>
 internal sealed class EngineResolver : IEngineResolver
 {
     public EngineResolution Resolve(

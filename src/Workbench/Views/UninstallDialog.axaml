@@ -39,11 +39,7 @@
                     BorderThickness="1"
                     CornerRadius="{DynamicResource RadiusControl}">
                 <StackPanel Spacing="5">
-                    <!-- **The one place a path is shown whole**, and it wraps rather than
-                         eliding. Everywhere else a path is written for its width, because
-                         it is a readout beside other things. Here it is the evidence for a
-                         question about deleting a folder, so all of it is on screen and
-                         the dialog grows to fit rather than the path shrinking. -->
+                    <!-- The one place a path is shown whole, and it wraps rather than eliding. -->
                     <TextBlock Name="Path"
                                FontFamily="{DynamicResource FontFamilyMono}"
                                FontSize="{DynamicResource FontSizeSmall}"

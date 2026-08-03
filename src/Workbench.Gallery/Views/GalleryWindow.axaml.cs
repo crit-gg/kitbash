@@ -63,11 +63,6 @@ public partial class GalleryWindow : ChromelessWindow
     /// <summary>
     /// Pins the sample controls to one state so the five can be read side by side.
     /// </summary>
-    /// <remarks>
-    /// A pseudo class is normally the control's own answer to the pointer, so a pinned
-    /// one would be cleared the moment a real pointer arrived. The samples opt out of
-    /// hit testing for that reason, which is also honest: they are for looking at.
-    /// </remarks>
     private void HoldStates()
     {
         foreach (var control in this.GetVisualDescendants().OfType<Control>())
@@ -83,8 +78,8 @@ public partial class GalleryWindow : ChromelessWindow
 
             var pseudo = (IPseudoClasses)control.Classes;
 
-            // A press is always also a hover, which is why the two are set together and
-            // why the theme has to order pressed after hover.
+            // A press is always also a hover, so both are set and the theme must order
+            // pressed after hover.
             pseudo.Set(":pointerover", hover || pressed);
             pseudo.Set(":pressed", pressed);
             pseudo.Set(":focus-visible", focus);

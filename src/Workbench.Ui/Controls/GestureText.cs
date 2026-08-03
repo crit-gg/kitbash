@@ -7,12 +7,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// Writes a <see cref="KeyGesture"/> as the hint beside a menu item.
 /// </summary>
-/// <remarks>
-/// Avalonia's own rendering uses a plus between the parts. This uses a space, because
-/// the hint is set in monospace beside other hints and a run of them lines up better
-/// without punctuation between every word. It also keeps the copy free of symbols, the
-/// way the rest of the app's text is.
-/// </remarks>
 public class GestureText : IValueConverter
 {
     public static readonly GestureText Instance = new();

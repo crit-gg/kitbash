@@ -7,17 +7,6 @@ namespace Workbench.Ui.Controls;
 /// A short label in a pill, naming what something is. A runtime, a format, a workspace's
 /// access.
 /// </summary>
-/// <remarks>
-/// This is not a <see cref="StatusPill"/> and must not become one. A status reads as
-/// colour plus icon plus label and the pill enforces all three, because a status shown in
-/// colour alone is unreadable to a good share of people. A badge is a word, and the
-/// colour behind it is decoration rather than meaning, so it carries no icon and its dot
-/// is optional.
-/// <para>
-/// The test for which to reach for: if the colour is carrying information that the text
-/// does not already say, it is a status and belongs in a pill.
-/// </para>
-/// </remarks>
 public class Badge : ContentControl
 {
     public static readonly StyledProperty<BadgeTier> TierProperty =

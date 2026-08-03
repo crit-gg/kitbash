@@ -4,10 +4,8 @@ using Avalonia.Controls.Primitives;
 namespace Workbench.Ui.Controls;
 
 /// <summary>
-/// A status reads as colour plus icon plus label, never colour alone, so this control
-/// carries all three and none of them is optional. A pill showing colour on its own is
-/// a defect rather than a variant, which is why the icon has a default per tier instead
-/// of a way to turn it off.
+/// A status as colour, icon and label together. None of the three is optional, and each
+/// tier carries a default glyph, so a pill cannot say its meaning in colour alone.
 /// </summary>
 public class StatusPill : TemplatedControl
 {
@@ -15,9 +13,8 @@ public class StatusPill : TemplatedControl
         AvaloniaProperty.Register<StatusPill, PillStatus>(nameof(Status));
 
     /// <summary>
-    /// The icon. The theme sets one per tier, so a caller that says nothing still gets a
-    /// pill that reads correctly, and a caller that names a glyph wins because a local
-    /// value beats a control theme.
+    /// The icon. The theme sets one per tier, so a pill always has one. A caller that
+    /// names a glyph wins, since a local value outranks a control theme.
     /// </summary>
     public static readonly StyledProperty<IconGlyph> GlyphProperty =
         AvaloniaProperty.Register<StatusPill, IconGlyph>(nameof(Glyph));

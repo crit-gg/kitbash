@@ -117,9 +117,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // filled in rather than opening empty and filling in a moment later.
         Apply(Read());
 
-        // Deliberately not part of that read. The read above runs before the window exists
-        // and has to stay quick, and this one asks the disk about every install and can
-        // run a process. The strip says it is reading until this comes back.
+        // Not part of the read above, which runs before the window exists and has to stay
+        // quick. This one probes every install and can run a process.
         _ = RefreshEngineAsync();
     }
 
@@ -193,20 +192,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Brings the open workspace's repository up to date, then reads it again so the counts
     /// move without waiting for the monitor to come round.
     /// </summary>
-    /// <remarks>
-    /// One button and one word for two outcomes. It always fetches, and it takes the new
-    /// commits when there is nothing local that taking them could cost. Which of the two
-    /// happened is visible in the strip either way, since behind either went to zero or did
-    /// not. See <see cref="IGitUpdater"/> for what makes the second safe.
-    /// <para>
-    /// A failed update says nothing, because there is nowhere to say it yet. The same gap as
-    /// a refused nested workspace, and it closes the same way, with an error surface.
-    /// </para>
-    /// <para>
-    /// The generated command refuses to run twice at once, so the button is out of action
-    /// for as long as git is, and there is no guard here doing the same job.
-    /// </para>
-    /// </remarks>
     [RelayCommand]
     private async Task Update()
     {
@@ -232,18 +217,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Does a piece of work that touches disk, then reads the list back, both away from the
     /// UI thread, and puts the answer on screen when it lands.
     /// </summary>
-    /// <remarks>
-    /// Every one of these touches disk more than it looks like. Adding a workspace creates
-    /// directories and writes files, opening one rewrites application state, and reading the
-    /// list back resolves a name for each workspace, which reads a config file and can search
-    /// four levels of a project folder. On a warm page cache that is a few milliseconds, and
-    /// on a cold one, a busy disk or a network share there is no upper bound at all. None of
-    /// it belongs in front of a frame.
-    /// <para>
-    /// One at a time. Two of these overlapping would race on what the registry holds, and the
-    /// second would show a list built from the first's half finished write.
-    /// </para>
-    /// </remarks>
     partial void OnPageChanged(int value)
     {
         OnPropertyChanged(nameof(OnWorkspacePage));
@@ -330,19 +303,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Rebuilds the engine strip from what is on disk.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Every part of it is a disk read and one of them can run a process, so all of it is
-    /// gathered on the thread pool and only the finished view model touches a bound
-    /// property. That is the same split <see cref="Read"/> and <see cref="Apply"/> make.
-    /// </para>
-    /// <para>
-    /// **Runs one at a time and waits its turn rather than giving up.** Dropping the
-    /// second would leave the strip describing the workspace that was open a moment ago,
-    /// and switching twice quickly is exactly when that happens. Each turn reads which
-    /// workspace is open again, so the last one to run is the one that is right.
-    /// </para>
-    /// </remarks>
     private async Task RefreshEngineAsync()
     {
         await _reading.WaitAsync().ConfigureAwait(true);
@@ -383,10 +343,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Shows the progress dialog while a project opens. Set by the window, since a dialog
     /// belongs to one and a view model has none.
     /// </summary>
-    /// <remarks>
-    /// Answers true when the finished dialog was told to open the editor, which only a
-    /// rebuild ever offers.
-    /// </remarks>
     public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task<bool>>? Launching { get; set; }
 
     /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
@@ -396,15 +352,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Opens a project in an engine, building its C# and importing its assets first when
     /// either is needed.
     /// </summary>
-    /// <remarks>
-    /// **The wait is the reason there is a dialog.** A first open on a fresh clone imports
-    /// every asset, which is minutes, and a C# build is not instant either. Neither is
-    /// something to do behind a button that has already sprung back. Playing waits on the
-    /// same two steps, since a project that will not build will not run.
-    ///
-    /// Without a window to show one in, the same work still runs and only the reporting is
-    /// missing. That is the case a rendering harness composes.
-    /// </remarks>
     public async Task OpenInGodot(InstalledEngine engine, GodotProject project, GodotLaunchMode mode)
     {
         ArgumentNullException.ThrowIfNull(engine);
@@ -481,11 +428,6 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <summary>
     /// Writes a path in a step's detail line for the width it is shown in.
     /// </summary>
-    /// <remarks>
-    /// A path is shortened wherever one is shown, and the launcher reports one while it
-    /// imports. It cannot do this itself, since how wide a line is belongs to whatever
-    /// draws it. Only a rooted path is touched, which is the only kind it ever reports.
-    /// </remarks>
     private sealed class ShortenedDetail : IProgress<GodotLaunchStep>
     {
         /// <summary>Roughly what fits the dialog's mono line at 420 wide.</summary>

@@ -19,11 +19,6 @@ public partial class EnginesPage : UserControl
     /// built. It fetches over a network, so doing it at launch would make every start wait
     /// on one whether or not anyone opened this page.
     /// </summary>
-    /// <remarks>
-    /// The three things a page can do and a view model cannot are handed over here: a
-    /// folder picker, a clipboard and a dialog all belong to a window, and the view model
-    /// has none. It asks through a function rather than reaching for a top level.
-    /// </remarks>
     protected override async void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
@@ -41,14 +36,7 @@ public partial class EnginesPage : UserControl
         await engines.LoadAsync();
     }
 
-    /// <summary>
-    /// Scrolls a card into view. **The filter is deliberately left alone**, so what the
-    /// person was looking at is still there and only the view has moved.
-    /// </summary>
-    /// <remarks>
-    /// Posted rather than called, because the card may have been added by the load that
-    /// just ran and the list has not built a container for it yet.
-    /// </remarks>
+    /// <summary>Scrolls a card into view. Does not touch the filter.</summary>
     private void Reveal(ReleaseCardViewModel card) =>
         Avalonia.Threading.Dispatcher.UIThread.Post(
             () => CardList.ScrollIntoView(card),

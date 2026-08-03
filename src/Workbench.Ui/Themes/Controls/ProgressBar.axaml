@@ -1,17 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- One bar, two modes, both driven by the built in ProgressBar.
-
-         Determinate needs nothing here but the name. ProgressBar sizes PART_Indicator
-         from the value itself.
-
-         Indeterminate uses the control's own TemplateSettings, which is the contract the
-         built in control offers a theme: it measures the track and publishes the band
-         width and the distance to travel, and the theme animates a transform between
-         them. The band is 40 percent of the track, because that is what the control
-         computes. The design says 30, and holding it to 30 would mean owning the control
-         rather than theming it. -->
+    <!-- One bar, two modes, both driven by the built in ProgressBar. -->
     <ControlTheme x:Key="{x:Type ProgressBar}" TargetType="ProgressBar">
         <Setter Property="Height" Value="{DynamicResource HeightProgress}" />
         <Setter Property="MinHeight" Value="0" />
@@ -27,10 +17,9 @@
                         Background="{TemplateBinding Background}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         ClipToBounds="True">
-                    <!-- The transform is an explicit object rather than a transform
-                         operation, because a keyframe animation against a
-                         TransformOperations value does nothing at all and logs nothing.
-                         Recorded in .claude/avalonia.md. -->
+                    <!-- The transform is an explicit object rather than a transform operation, because a
+                         keyframe animation against a TransformOperations value does nothing at all and logs
+                         nothing. -->
                     <Border Name="PART_Indicator"
                             Background="{TemplateBinding Foreground}"
                             CornerRadius="{TemplateBinding CornerRadius}"

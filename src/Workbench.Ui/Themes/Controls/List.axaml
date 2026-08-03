@@ -2,18 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- Rows, and the seven states one can be in.
-
-         The rule the whole thing is written to keep: a row never carries both a fill and
-         an outline. Hover and selection are fills, focus is the halo every other control
-         draws, and a drop target is the one dashed edge in the theme. A row wearing a
-         tint, a border and a halo at once is what this shape prevents.
-
-         Selection is the tint alone. No left marker, no second fill, and the ink lifts to
-         SelectionInk so a selected row reads as selected without the row moving.
-
-         The order is the order every control theme here is written in: base, base states,
-         then each kind with its states, then disabled last so it beats all of them. -->
+    <!-- Rows, and the seven states one can be in. The rule the whole thing is written to keep. -->
 
     <ControlTheme x:Key="{x:Type ListBox}" TargetType="ListBox">
         <Setter Property="Background" Value="Transparent" />

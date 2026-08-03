@@ -23,8 +23,8 @@ public sealed class ToastOptions
     public TimeSpan DwellWithAction { get; init; } = TimeSpan.FromSeconds(8);
 
     /// <summary>
-    /// How long a dismissed toast is kept so it can fade rather than vanish. The card's
-    /// exit animation is this long, and the two are one number on purpose.
+    /// How long a dismissed toast is kept so it can fade. Must match the card's exit
+    /// animation, which is written in the toast theme.
     /// </summary>
     public TimeSpan Exit { get; init; } = TimeSpan.FromMilliseconds(120);
 

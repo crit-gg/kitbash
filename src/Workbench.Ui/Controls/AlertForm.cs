@@ -3,12 +3,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// Where an alert sits, which is what decides how much of it there is.
 /// </summary>
-/// <remarks>
-/// The design names a fourth, in place, which is an alert that replaces the content
-/// entirely. That is the empty state and it is already built: it is the
-/// <c>StackPanel.emptyState</c> class in <c>Themes/Controls/Panel.axaml</c>, on the
-/// surface it stands on rather than on a semantic tint. Nothing is added here for it.
-/// </remarks>
 public enum AlertForm
 {
     /// <summary>

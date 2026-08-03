@@ -12,12 +12,6 @@ namespace Workbench.Ui.Controls;
 /// The title bar row a Workbench window uses. It supplies the icon, the title and the
 /// caption buttons. Anything else a window wants in the chrome goes in its content.
 /// </summary>
-/// <remarks>
-/// When the desktop draws the frame the caption buttons go, because the desktop
-/// supplies its own. A bar left holding nothing of its own goes with them, since the
-/// desktop's title bar already says everything this one would have said. A bar that
-/// carries content stays, because that content has nowhere else to be.
-/// </remarks>
 public class WindowTitleBar : ContentControl
 {
     public static readonly StyledProperty<IImage?> IconProperty =
@@ -144,12 +138,6 @@ public class WindowTitleBar : ContentControl
     /// Whether the tap landed on something that answers the pointer itself, anywhere
     /// between the source and this bar.
     /// </summary>
-    /// <remarks>
-    /// Focusable is the test. A button, a text box or anything else a person can reach
-    /// with the keyboard is a control and keeps its own clicks, including the caption
-    /// buttons. A label, an icon, a border or a panel is decoration, so the bar keeps
-    /// the gesture and dragging or double clicking the title still works.
-    /// </remarks>
     private bool TakesItsOwnClicks(Visual? source)
     {
         for (var visual = source; visual is not null && !ReferenceEquals(visual, this); visual = visual.GetVisualParent())

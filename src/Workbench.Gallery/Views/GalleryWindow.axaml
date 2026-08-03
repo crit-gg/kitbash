@@ -43,12 +43,8 @@
             <Setter Property="Padding" Value="16,0,12,0" />
         </Style>
 
-        <!-- The page's own panels ride the depth ramp rather than naming a tone, so every
-             section on this page is also a check that the ramp works.
-
-             They do not clip, and nothing on this page needs them to. A child that fills
-             one corner to corner belongs in ui:SurfacePanel, which draws its stroke and
-             clips inside it with two borders. One border cannot do both. -->
+        <!-- The page's own panels ride the depth ramp rather than naming a tone, so every section
+             on this page is also a check that the ramp works. -->
         <Style Selector="Border.panel">
             <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
@@ -709,7 +705,7 @@
                                                 Header="DATE AND TIME" Content="both read the culture" />
 
                         <TextBlock Classes="note"
-                                   Text="Nothing here writes a day name, a month name, a field order or a time format. Measured across four cultures: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and starts on Monday, and ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a specification." />
+                                   Text="Nothing here writes a day name, a month name, a field order or a time format. The culture decides all four, so en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and starts on Monday, and ja-JP reads 2026/07/28." />
 
                         <StackPanel Orientation="Horizontal" Spacing="14">
                             <CalendarDatePicker Width="150" SelectedDate="2026-07-28" />
@@ -984,11 +980,8 @@
                         <TextBlock Classes="note"
                                    Text="The open tab is the only one that takes the page's surface and the only one that draws the accent marker. Both together, since either alone would be saying it in colour." />
 
-                        <!-- The library's own panel rather than the page's, since a strip
-                             that fills a rounded frame corner to corner is the case that
-                             needs two borders: one to draw the stroke and one inside it to
-                             clip. A single border clips to its outer radius, which lets a
-                             child paint over the stroke at the corners. -->
+                        <!-- The library's own panel rather than the page's, since a strip that fills a rounded
+                             frame corner to corner is the case that needs two borders. -->
                         <ui:SurfacePanel Padding="0" Height="150">
                             <TabControl>
                                 <TabItem Header="one.toml">

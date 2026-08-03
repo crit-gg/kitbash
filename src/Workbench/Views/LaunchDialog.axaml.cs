@@ -7,24 +7,6 @@ namespace Workbench.Views;
 /// <summary>
 /// Reports building and importing while a project opens.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The design's Progress kind. A line saying what is happening, a mono line under it, a
-/// bar, and what cancelling costs. There is no primary button while work runs.
-/// </para>
-/// <para>
-/// **Two departures, both because there is no number to show.** The bar is indeterminate,
-/// since neither a C# build nor a Godot import reports how far through it is, and the
-/// mono line carries which program is running rather than a count. Filling a bar at its
-/// own pace would be inventing the progress.
-/// </para>
-/// <para>
-/// **The close glyph stays live rather than flattening to disabled.** The design disables
-/// it, and here closing and Cancel do exactly the same thing, so a dead glyph would refuse
-/// a gesture the dialog already honours. The window keeps its shape either way, which is
-/// what that rule is protecting.
-/// </para>
-/// </remarks>
 public partial class LaunchDialog : DialogWindow
 {
     private readonly CancellationTokenSource _cancellation = new();
@@ -42,12 +24,6 @@ public partial class LaunchDialog : DialogWindow
     /// work starts once the dialog is up, so something quick cannot close a window that
     /// has not opened.
     /// </summary>
-    /// <remarks>
-    /// **The result is the work's, not the dialog's.** A dialog answers accept or cancel
-    /// and neither is what a caller wants here. Cancelling closes the window, closing
-    /// cancels the token, the token ends the work, and what comes back is what the caller
-    /// reports. Cancelling is an answer rather than a fault, so it is not thrown on.
-    /// </remarks>
     /// <returns>
     /// True when the person asked to open the editor from the finished dialog, which only
     /// a rebuild can offer. False for everything else, cancelling included.
@@ -140,11 +116,6 @@ public partial class LaunchDialog : DialogWindow
     /// <summary>
     /// The rebuild worked. The bar and the Cancel go, and the two answers arrive.
     /// </summary>
-    /// <remarks>
-    /// Public for the same reason <see cref="Report"/> is: this state is reached from
-    /// inside a run, and it has to be reachable from outside one to be looked at without
-    /// deleting somebody's import cache to see it.
-    /// </remarks>
     public void Finish()
     {
         Stage.Text = "Rebuild complete";

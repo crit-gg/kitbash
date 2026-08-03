@@ -1,22 +1,6 @@
 namespace Workbench.Core.IO;
 
 /// <summary>The real watcher.</summary>
-/// <remarks>
-/// A watch is the weaker half of any pair that keeps something current, so this is written
-/// to fail quietly and stay out of the way.
-/// <para>
-/// Not every filesystem can do this. A network share, a container mount and some fuse
-/// filesystems either report nothing or throw on the attempt, and a person working on one
-/// still needs the app. So a failure is silent and the caller is expected to poll as well
-/// rather than to trust this alone.
-/// </para>
-/// <para>
-/// A watch can also die after it starts, which is the case that catches people out. Deleting
-/// the watched directory ends the watch, and the operating system does not start it again
-/// when the directory comes back. So a dead watch clears <see cref="Watching"/>, which is
-/// how a caller finds out to ask for it again.
-/// </para>
-/// </remarks>
 public sealed class DirectoryWatcher : IDirectoryWatcher
 {
     /// <summary>

@@ -98,8 +98,8 @@ internal sealed class SettingsInspector : ISettingsInspector
             }
         }
 
-        // A stored value that did not survive is worth saying over where the value came
-        // from, since the file and the window now disagree about what the setting is.
+        // A stored value that did not survive outranks the origin, since the file and the
+        // window now disagree about what the setting is.
         if (problem is not null)
         {
             origin = SettingOrigin.Invalid;

@@ -11,16 +11,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// One row of a <see cref="Tree"/>. A list row that also knows how deep it is.
 /// </summary>
-/// <remarks>
-/// Depth is a number here rather than a place in the tree of controls, so the indent and
-/// the guides are arithmetic and a row can be recycled onto any other row.
-/// <para>
-/// Everything a row is told arrives through <see cref="Follow"/> and is taken back there
-/// as well. A virtualising panel reuses a container for a different row, so anything set
-/// when one is prepared has to be unset in the same place or a scrolled row wears the
-/// state of the row it used to be.
-/// </para>
-/// </remarks>
 public class TreeItem : ListBoxItem
 {
     public static readonly StyledProperty<int> LevelProperty =
@@ -172,16 +162,6 @@ public class TreeItem : ListBoxItem
     /// <summary>
     /// The indent guides, one per level above this row.
     /// </summary>
-    /// <remarks>
-    /// Drawn rather than laid out, because a row is realised and thrown away as the tree
-    /// scrolls and one element per level would be built and discarded with it.
-    /// <para>
-    /// A guide runs past the bottom of the row and across the gap under it, so the line a
-    /// person sees is continuous. The gap belongs to the row's margin, which is outside
-    /// its bounds, and this reaches into it. The theme leaves the row unclipped for the
-    /// focus halo, which is what lets that draw.
-    /// </para>
-    /// </remarks>
     public override void Render(DrawingContext context)
     {
         base.Render(context);
@@ -229,8 +209,7 @@ public class TreeItem : ListBoxItem
 
         Toggle();
 
-        // Handled, so the press never reaches the row. The design asks for a click on the
-        // caret to open a row without also selecting it.
+        // Handled, so the press never reaches the row and the caret opens without selecting.
         e.Handled = true;
     }
 

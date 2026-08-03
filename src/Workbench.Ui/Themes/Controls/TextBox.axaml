@@ -4,17 +4,8 @@
 
     <Styles.Resources>
 
-    <!-- Every field that takes typing. A well is darker than everything around it and does
-         not ride the depth ramp, so it reads as recessed at any level.
-
-         The states come from the design's five columns, with one reading applied. Its
-         pressed column shows the field being typed in, which is the same thing as focus in
-         a real control, so the two are one state here: the well lightens, the border comes
-         up to LineControl, and the halo appears. Nothing else could ever tell them apart.
-
-         The value is Archivo, because a field usually holds language. A field holding a
-         number, a date or a path says so by taking the mono family, which is what the
-         numeric and picker themes do. -->
+    <!-- Every field that takes typing. A well is darker than everything around it and does not
+         ride the depth ramp, so it reads as recessed at any level. -->
 
     <ControlTheme x:Key="{x:Type TextBox}" TargetType="TextBox">
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
@@ -32,8 +23,7 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="IBeam" />
 
-        <!-- The design draws no selection, so this is the selection pair the rest of the
-             system uses, which is the row tint and its ink. -->
+        <!-- The row tint and its ink, so a selection matches the rest of the system. -->
         <Setter Property="SelectionBrush" Value="{DynamicResource AccentTint}" />
         <Setter Property="SelectionForegroundBrush" Value="{DynamicResource SelectionInk}" />
 
@@ -125,29 +115,13 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
-        <!-- A plain field holds language, so it takes the UI family. One holding a number,
-             a date or a path says so by taking mono, which is what the numeric and picker
-             themes already do for the fields they own. This is the kind a view names when
-             it puts a value in an ordinary field. -->
+        <!-- A plain field holds language, so it takes the UI family. -->
         <Style Selector="^.mono">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
             <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
         </Style>
 
-        <!-- What a field looks like when what is in it will not do.
-
-             Measured: Avalonia 12 turns the data annotations binding plugin off, so a
-             validation attribute alone does nothing, but a binding to a source
-             implementing INotifyDataErrorInfo still reports, and HasErrors lands here.
-             CommunityToolkit's ObservableValidator implements it, so a view model gets
-             this by deriving from it.
-
-             The class is the same look for a view with no validating model behind it.
-
-             It recolours the border and the value and nothing else. An error is the only
-             thing that recolours the control it is attached to, and the label above the
-             field is never part of it. A warning and a hint leave the field alone
-             entirely and say what they have to say in an inline ui:Alert under it. -->
+        <!-- What a field looks like when what is in it will not do. -->
         <Style Selector="^[(DataValidationErrors.HasErrors)=True]">
             <Setter Property="BorderBrush" Value="{DynamicResource Error}" />
             <Setter Property="Foreground" Value="{DynamicResource Error}" />
@@ -244,13 +218,8 @@
 
     </Styles.Resources>
 
-    <!-- Nothing to clear, so nothing to press.
-
-         Out here rather than inside the theme, and both halves of that are forced. A
-         control theme may not hold a descendant selector at all, which throws the first
-         time the theme is resolved rather than failing to build. And a /template/ selector
-         would not reach this button anyway, because inner content is materialised into a
-         presenter and is not a template child. -->
+    <!-- Nothing to clear, so nothing to press. Out here rather than inside the theme, and both
+         halves of that are forced. -->
     <Style Selector="ui|SearchBox:empty Button#PART_Clear">
         <Setter Property="IsVisible" Value="False" />
     </Style>

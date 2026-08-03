@@ -9,14 +9,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// One region's cards, and the count of anything held back behind them.
 /// </summary>
-/// <remarks>
-/// A stack draws one region and pauses that region alone while a pointer is over it,
-/// which is what lets a person read one card without freezing the other seven regions.
-/// <para>
-/// It has no fill, so it is not hit tested and the page underneath is reachable
-/// everywhere a card is not. The cards are, which is how the pointer reaches this at all.
-/// </para>
-/// </remarks>
 public class ToastStack : TemplatedControl
 {
     /// <summary>Which service to draw. A host hands its own down to all eight of these.</summary>
@@ -39,8 +31,8 @@ public class ToastStack : TemplatedControl
 
     public ToastStack()
     {
-        // A card is what the pointer actually lands on, and enter and leave are raised
-        // along the chain from it, so this hears about a hover over any of its cards.
+        // The pointer lands on a card and the event bubbles, so this hears a hover over
+        // any of them.
         PointerEntered += (_, _) => Pause(true);
         PointerExited += (_, _) => Pause(false);
 
@@ -93,9 +85,8 @@ public class ToastStack : TemplatedControl
     }
 
     /// <summary>
-    /// Leaving the tree stops the pointer's pause with it. A stack taken away while a
-    /// card was under the pointer would otherwise leave that region paused for good, and
-    /// nothing would ever be there to unpause it.
+    /// Unpauses on the way out. A stack removed while a card was under the pointer would
+    /// otherwise leave its region paused with nothing left to unpause it.
     /// </summary>
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {

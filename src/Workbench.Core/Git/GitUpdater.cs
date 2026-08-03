@@ -7,49 +7,6 @@ namespace Workbench.Core.Git;
 /// Runs <c>git fetch</c>, and then takes the new commits when taking them cannot cost
 /// anything.
 /// </summary>
-/// <remarks>
-/// This is the one thing here that touches a network, and the one thing that writes to a
-/// person's repository. Both are guarded.
-/// <para>
-/// <b>Nothing may prompt.</b> Git will happily stop and wait for a password, a passphrase or
-/// an answer about a host key, and there is no terminal behind this to type into, so it
-/// would wait until the app closed. The variables below turn every one of those into an
-/// error. <c>GIT_TERMINAL_PROMPT</c> covers git's own asking, <c>GIT_ASKPASS</c> and
-/// <c>SSH_ASKPASS</c> stop a graphical helper being launched, and the ssh options refuse an
-/// unknown host rather than asking about it. A credential helper the person has already set
-/// up still works, because it answers without asking. That is the case worth keeping: an
-/// update that just works for anyone whose terminal already does.
-/// </para>
-/// <para>
-/// <b>There is still a timeout</b>, because a network can accept a connection and then say
-/// nothing. Cancelling the wait kills git, so a slow update costs one stopped process rather
-/// than one that runs forever.
-/// </para>
-/// <para>
-/// <b>Nothing local is ever at risk.</b> Taking the commits is refused unless every one of
-/// these holds, read after the fetch rather than before it:
-/// </para>
-/// <list type="bullet">
-/// <item>the working tree and the index are clean, so there is nothing of the person's to
-/// overwrite, stash or conflict with</item>
-/// <item>the head is a branch and not a commit, since a detached head has nothing to
-/// advance</item>
-/// <item>the branch tracks something</item>
-/// <item>the branch is behind, so there is a reason to</item>
-/// <item>the branch is not also ahead, so this is a straight line and not two histories</item>
-/// </list>
-/// <para>
-/// And then <c>--ff-only</c> on top, which is the guarantee rather than the check. Even if
-/// every count above were stale, git itself will only move the branch pointer forward. It
-/// cannot merge, cannot rebase, cannot commit and cannot rewrite anything. When it cannot do
-/// that it does nothing and says so.
-/// </para>
-/// <para>
-/// It is a merge against the upstream ref rather than a second <c>git pull</c>, because the
-/// fetch just above already brought everything down. A pull here would go back to the
-/// network to learn what it already knows.
-/// </para>
-/// </remarks>
 public sealed class GitUpdater : IGitUpdater
 {
     /// <summary>Long enough for a large repository on a slow link, short enough to give up on.</summary>

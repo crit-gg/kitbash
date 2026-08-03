@@ -9,21 +9,6 @@ namespace Workbench.Ui.Controls;
 /// Dims the window behind a flyout while it is open. Attach it to the flyout:
 /// <c>&lt;Flyout ui:Dimmer.Dims="True"&gt;</c>.
 /// </summary>
-/// <remarks>
-/// For a popup that covers a page, such as the workspace list, so the page reads as put
-/// aside rather than merely overlapped.
-/// <para>
-/// Not for a dialog. A dialog is a real window and the window manager owns modality, so
-/// the parent stays legible rather than being dimmed. That is the design's rule and this
-/// does not change it.
-/// </para>
-/// <para>
-/// The scrim goes in the window's overlay layer, which is also where Avalonia's own light
-/// dismiss layer sits, so it covers the window and nothing else. A flyout's popup is its
-/// own operating system window and draws above all of it, which is what leaves the popup
-/// bright over a dimmed page.
-/// </para>
-/// </remarks>
 public class Dimmer
 {
     public static readonly AttachedProperty<bool> DimsProperty =

@@ -6,50 +6,6 @@ namespace Workbench.Core.Git;
 /// <summary>
 /// Follows a repository by watching a few of its folders and reading it on a slow beat.
 /// </summary>
-/// <remarks>
-/// Shaped after what editors do, and checked against two of them: the git extension in VS
-/// Code and SourceGit, which is Avalonia like this app. Both watch the git directory rather
-/// than poll, both refuse to recurse into it, both throw away lock files, and both route a
-/// change through a debounce before running git. What is here is that, minus the parts that
-/// only pay off for a full git client.
-/// <para>
-/// <b>Watch a few folders, never a tree.</b> The git directory itself holds every file a
-/// command writes as it runs: <c>HEAD</c> and <c>index</c> for a branch switch, <c>index</c>
-/// for staging, <c>FETCH_HEAD</c> for a fetch, <c>ORIG_HEAD</c> and <c>MERGE_HEAD</c> for a
-/// merge. The common directory joins it when this is a worktree, since the refs live there.
-/// The reftable folder joins both when the repository stores refs that way, and it has to,
-/// because such a repository leaves <c>HEAD</c> a stub and writes nothing else at the top
-/// level: measured on git 2.55, a branch rename there changes nothing a watch on the git
-/// directory alone would see.
-/// </para>
-/// <para>
-/// <b>Never recurse.</b> A recursive watch costs one kernel handle per directory underneath,
-/// and <c>objects</c> alone holds hundreds: measured on this repository, 242 against 1. A
-/// fetch or a repack then writes thousands of files in them and says nothing that
-/// <c>FETCH_HEAD</c> did not already say. VS Code recurses over the working tree instead,
-/// which it can afford because the editor already runs one shared native watcher there for
-/// its own reasons. This app has no such watcher and no reason to grow one, so the beat
-/// below takes that job.
-/// </para>
-/// <para>
-/// <b>Ignore lock files.</b> A <c>.lock</c> file is git reserving the right to write, not
-/// git having written, and the write itself arrives under its own name a moment later. Both
-/// editors filter these by name for the same reason.
-/// </para>
-/// <para>
-/// <b>The beat covers what no watch reports.</b> Editing a file in another editor touches
-/// nothing git owns, a push moves only a remote ref, some filesystems report nothing at all,
-/// and a watch dies when the folder it sits on is replaced. The beat catches all four and
-/// puts the watches back when they have gone. VS Code closes the push case with an extra
-/// watch on the upstream ref file, which is more machinery than a status bar earns when the
-/// beat already answers it within a few seconds.
-/// </para>
-/// <para>
-/// <b>Nothing runs while the app is away.</b> VS Code parks its refresh until the window is
-/// focused again, and so does this. A launcher sitting behind other windows costs no
-/// processes.
-/// </para>
-/// </remarks>
 public sealed class GitStatusMonitor : IGitStatusMonitor
 {
     /// <summary>How long to wait for a burst to settle before reading.</summary>
@@ -61,10 +17,7 @@ public sealed class GitStatusMonitor : IGitStatusMonitor
     /// </summary>
     private static readonly TimeSpan Rest = TimeSpan.FromSeconds(1);
 
-    /// <summary>
-    /// The backstop for changes no watch reports. Slow on purpose: this runs git, and a
-    /// person editing a file is not watching the count.
-    /// </summary>
+    /// <summary>The backstop for changes no watch reports. Runs git, so keep it slow.</summary>
     private static readonly TimeSpan Beat = TimeSpan.FromSeconds(5);
 
     /// <summary>How much a read is allowed to insist on happening.</summary>

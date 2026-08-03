@@ -9,20 +9,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// A slider with two knobs and the fill between them.
 /// </summary>
-/// <remarks>
-/// Ours because Avalonia has no range type. <see cref="Slider"/> derives from
-/// <see cref="RangeBase"/>, which carries one value, and its template carries one track,
-/// so a second knob is not a setting.
-/// <para>
-/// It draws the same rail and the same knob the slider theme draws, so the two cannot
-/// drift apart. Only the arithmetic is here.
-/// </para>
-/// <para>
-/// Positions are written rather than laid out. A knob has to sit at a fraction of a track
-/// whose width is not known until arrange, and a panel that could express that would be
-/// more machinery than two lines of Canvas.Left.
-/// </para>
-/// </remarks>
 [TemplatePart(TrackPart, typeof(Canvas))]
 [TemplatePart(FillPart, typeof(Control))]
 [TemplatePart(LowerPart, typeof(Thumb))]

@@ -6,11 +6,6 @@ namespace Workbench.Core.Settings;
 /// person, and it is kept apart from settings so that deleting it resets the app
 /// without touching anything anyone chose.
 /// </summary>
-/// <remarks>
-/// Scopes work the way they do for settings, so a tool cannot collide with the
-/// launcher. Values are read through <see cref="ISettings"/>, which is only a typed
-/// read over a document and says nothing about being a setting.
-/// </remarks>
 public interface IApplicationState
 {
     /// <summary>State the launcher and every tool can read.</summary>

@@ -1,18 +1,8 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Five button kinds, one control theme. The resting look is the setters, the
-         kinds and the states are the nested styles, and nothing here is a plain type
-         selector.
-
-         That split is the whole reason this reads the way it does. A selector that
-         varies at runtime, which means any class or pseudo class, binds at StyleTrigger
-         and beats a plain type selector whatever the order. Mixing the two would leave
-         a state that can never be overridden. Inside one control theme every selector
-         is activated, so the later one wins and order alone decides.
-
-         The order below is therefore load bearing: base, base states, then each kind
-         with its own states, then disabled last so it beats all of them. -->
+    <!-- Five button kinds, one control theme. The resting look is the setters, the kinds and
+         the states are the nested styles, and nothing here is a plain type selector. -->
 
     <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
@@ -26,10 +16,9 @@
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
         <Setter Property="BorderThickness" Value="1" />
 
-        <!-- ContentControl clips to its bounds by default in Avalonia 12, which would
-             cut the focus halo off flush with the border and leave a hard ring instead
-             of one hugging the control. The clip moves to the frame below, so content
-             still cannot escape the button while the halo can. -->
+        <!-- ContentControl clips to its bounds by default in Avalonia 12, which would cut the
+             focus halo off flush with the border and leave a hard ring instead of one hugging the
+             control. -->
         <Setter Property="ClipToBounds" Value="False" />
 
         <!-- Secondary is what a button is when it is not told otherwise. -->
@@ -94,10 +83,7 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
         </Style>
 
-        <!-- The second lead. Where a view repeats one lead action across many cards or
-             rows, this outranks the bordered secondary inside its own card without every
-             card shouting, and it leaves the accent to mean selection and focus. A view
-             still gets at most one primary. -->
+        <!-- The second lead. -->
         <Style Selector="^.neutral">
             <Setter Property="Background" Value="{DynamicResource Neutral}" />
             <Setter Property="BorderBrush" Value="{DynamicResource NeutralLine}" />
@@ -132,7 +118,7 @@
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
         </Style>
 
-        <!-- Danger is solid on purpose, the one exception to the no flood rule. -->
+        <!-- Danger is the one solid fill outside primary. -->
         <Style Selector="^.danger">
             <Setter Property="Background" Value="{DynamicResource Destructive}" />
             <Setter Property="BorderBrush" Value="{DynamicResource Destructive}" />
@@ -194,16 +180,7 @@
         </Style>
     </ControlTheme>
 
-    <!-- The short button, for the row of actions on a toast or an alert.
-
-         Keyed rather than a class on the shared theme, for the reason the caption buttons
-         are keyed: this is 24 where a button is 26, and a class would take back the 26
-         and every other value that theme later gains.
-
-         It also sits a tone up. A toast and an alert both stand on their own surface
-         rather than on the page, so a secondary button here takes SurfaceNest3 where the
-         shared one takes SurfaceNest2. That is the design's value in both places rather
-         than a step derived here. -->
+    <!-- The short button, for the row of actions on a toast or an alert. -->
     <ControlTheme x:Key="CompactButton" TargetType="Button">
         <Setter Property="Height" Value="{DynamicResource HeightControlSmall}" />
         <Setter Property="MinWidth" Value="0" />
@@ -275,11 +252,8 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
         </Style>
 
-        <!-- The second lead, at 24px. Derived rather than read, since the design draws no
-             neutral button on a toast or an alert. The family is taken unchanged rather
-             than lightened for the tone up, which is what the accent above already does.
-             The weight is raised for the same reason it is there: a lead is strong where
-             a compact button rests at medium. -->
+        <!-- The second lead, at 24px. Derived rather than read, since the design draws no neutral
+             button on a toast or an alert. -->
         <Style Selector="^.neutral">
             <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
             <Setter Property="Background" Value="{DynamicResource Neutral}" />

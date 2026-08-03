@@ -93,11 +93,6 @@ public static class WorkbenchCoreServices
     /// Reading a repository, following one so it stays current, and bringing one up to
     /// date. Needs the platform services, since all of it comes from running git.
     /// </summary>
-    /// <remarks>
-    /// The watcher is transient because a monitor owns one for as long as it follows a
-    /// folder. The monitor is not, since one of them per repository is one git process per
-    /// beat per repository.
-    /// </remarks>
     public static IServiceCollection AddWorkbenchGit(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -229,11 +224,6 @@ public static class WorkbenchCoreServices
     /// What a settings window is built over: the stores a page can stand on, the read
     /// that names its layer, and the write that saves a page at once.
     /// </summary>
-    /// <remarks>
-    /// Registers the two homes that need no workspace. The workspace home comes from
-    /// <see cref="AddWorkbenchSettings"/>, so a window composed without a workspace draws
-    /// no workspace pages rather than failing on them.
-    /// </remarks>
     public static IServiceCollection AddWorkbenchSettingsSchema(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);

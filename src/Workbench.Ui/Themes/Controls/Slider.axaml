@@ -2,18 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- A 3px track with a filled portion and a round knob.
-
-         The knob is a Thumb with almost nothing in it, and every state is driven from the
-         slider rather than from the thumb. That is deliberate: the design's hover column
-         shows the whole row answering at once, the track, the fill and the knob together,
-         and a thumb only knows about its own pointer. Reaching the thumb from here takes
-         one /template/ hop, and reaching inside the thumb's own template would take two,
-         so the thumb exposes what it draws through Background and BorderBrush and this
-         theme sets those.
-
-         The knob grows while it is pointed at or dragged, which is what lets a value be
-         read with a finger on it. -->
+    <!-- A 3px track with a filled portion and a round knob. -->
 
     <ControlTheme x:Key="SliderKnob" TargetType="Thumb">
         <Setter Property="Width" Value="{DynamicResource SizeKnob}" />

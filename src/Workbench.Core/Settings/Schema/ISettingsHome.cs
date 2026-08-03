@@ -4,11 +4,6 @@ namespace Workbench.Core.Settings.Schema;
 /// Where one <see cref="SettingsHome"/> keeps its files, and how a change reaches them.
 /// One of these is composed per store an app's settings can stand on.
 /// </summary>
-/// <remarks>
-/// A home that is not composed is a home with nothing behind it, which is how a window
-/// opened with no workspace has no workspace pages. That is decided at composition
-/// rather than discovered, the same way tools are registered.
-/// </remarks>
 public interface ISettingsHome
 {
     SettingsHome Home { get; }

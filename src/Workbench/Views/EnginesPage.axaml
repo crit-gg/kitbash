@@ -9,10 +9,7 @@
          the two pages sit on the same tones without either naming one. -->
     <UserControl.Resources>
 
-        <!-- A card is not a row. The library's ListBoxItem carries a height, a padding and
-             the seven row states, all of which would sit under a card that draws its own
-             surface, so the container here is a bare presenter and the card is the whole
-             look. Keyed rather than a class, for the reason the caption buttons are. -->
+        <!-- A card is not a row. -->
         <ControlTheme x:Key="EngineCard" TargetType="ListBoxItem">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="0" />
@@ -31,12 +28,7 @@
                 </ControlTemplate>
             </Setter>
         </ControlTheme>
-        <!--
-            Two buttons a card needs that the library has no kind for. Both are keyed
-            rather than a class on the shared theme, for the reason the caption buttons
-            are: a class inherits whatever that theme later gains, and the shared button
-            is 26 tall with a border where these are 22 and one of them has none.
-        -->
+        <!-- Two buttons a card needs that the library has no kind for. -->
 
         <!-- Install. A filled 22px button with no border, one step above the card's own
              seam, so a row of them reads as the row's one action. -->
@@ -154,11 +146,7 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
         </Style>
 
-        <!-- The card rides the depth ramp rather than naming a tone. Nothing counts: the
-             page nests once, a card nests again, and its open body nests once more, so
-             each takes the fill and the seam that go together and a rule inside reads the
-             right one. Hardcoding SurfaceNest2 here worked and left Border.seam resolving
-             against the wrong level, which drew a rule nobody could see. -->
+        <!-- The card rides the depth ramp rather than naming a tone. -->
         <Style Selector="Border.engineRow">
             <Setter Property="(ui:Surface.Nests)" Value="True" />
             <Setter Property="BorderThickness" Value="1" />
@@ -181,11 +169,9 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
         </Style>
 
-        <!-- A path in the status bar stays a quiet mono readout at rest and only reads as
-             a link under the pointer, where it takes the accent and the underline the
-             hyperlink theme already draws. Styles here are applied after the control
-             theme, so the later pointerover setter is the one that wins, which is the
-             precedence rule the theme file states. -->
+        <!-- A path in the status bar stays a quiet mono readout at rest and only reads as a link
+             under the pointer, where it takes the accent and the underline the hyperlink theme
+             already draws. -->
         <Style Selector="HyperlinkButton.path">
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
             <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
@@ -196,12 +182,7 @@
             <Setter Property="Foreground" Value="{DynamicResource Accent}" />
         </Style>
 
-        <!-- The card, read off the design's own values rather than approximated.
-
-             The header is the whole row, so it is a button with no look of its own and the
-             card behind it draws the surface. Its hover is the next tone down rather than
-             the control hover fill, which is what the design draws and what makes an open
-             card's header meet its body. -->
+        <!-- The card, read off the design's own values rather than approximated. -->
         <Style Selector="Button.cardHead">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -388,15 +369,10 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
-        <!-- The design draws this as a window title bar. Here it is a page band, because
-             the window already has a title bar and there is only one per window. -->
+        <!-- A page band, not a title bar. The window already has one of those. -->
         <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1" Padding="20,12">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
-                <!-- The Godot mark in its own colours, so no tile behind it and no
-                     foreground over it. It is a DrawingImage rather than an ui:Icon,
-                     because a glyph in this library carries no fill and takes its colour
-                     from the control. The rail keeps the mono glyph, which is right for a
-                     row of icons that all answer the same selection state. -->
+                <!-- The Godot mark in its own colours, so no tile behind it and no foreground over it. -->
                 <Image Grid.Column="0" Source="{StaticResource GodotMark}"
                        Width="20" Height="20" Stretch="Uniform"
                        VerticalAlignment="Center" />
@@ -452,9 +428,7 @@
                     </RadioButton>
                 </ui:Segmented>
 
-                <!-- The design draws these as chips. A chip in this library carries no
-                     chosen state, and picking one of several is what a segmented row is,
-                     so they are options with the chip's mark kept. -->
+                <!-- A segmented row rather than chips, since a chip carries no chosen state. -->
                 <ui:Segmented Grid.Column="1" VerticalAlignment="Center"
                               IsVisible="{Binding OnAvailable}">
                     <RadioButton GroupName="engineChannel"
@@ -495,11 +469,7 @@
 
         <Border Grid.Row="3" Classes="page" BorderThickness="0">
             <Panel>
-                <!-- **A ListBox, because it is the only items control in Avalonia 12 that
-                     virtualises.** An ItemsControl realises every row, and this list is 183
-                     releases, so picking a channel cost 348 to 709 ms of layout. Nothing
-                     here is selectable: SelectionMode has no None in Avalonia, so the
-                     container is unfocusable and its theme draws no selected state. -->
+                <!-- A ListBox, because it is the only items control in Avalonia 12 that virtualises. -->
                 <!-- Installed rows. -->
                 <ListBox ItemsSource="{Binding Rows}"
                          IsVisible="{Binding OnInstalled}"
@@ -557,13 +527,8 @@
                                                 <ui:Icon Glyph="DotsVerticalRounded" Size="15" />
                                                 <Button.Flyout>
                                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                                        <!-- Naming the default is a choice
-                                                             made once and rarely, so it
-                                                             sits with the other choices
-                                                             rather than beside the one
-                                                             destructive button. It hides
-                                                             itself on the row that already
-                                                             is the default. -->
+                                                        <!-- Naming the default is a choice made once and rarely, so it sits with the other choices
+                                                             rather than beside the one destructive button. -->
                                                         <MenuItem Header="Set as default"
                                                                   Command="{Binding SetDefaultCommand}"
                                                                   IsVisible="{Binding CanSetDefault}" />
@@ -575,13 +540,7 @@
                                                                   Command="{Binding ReleaseNotesCommand}"
                                                                   IsVisible="{Binding HasNotes}" />
 
-                                                        <!-- Last and set apart, and it says
-                                                             which of the two it will do
-                                                             before it is pressed. Only one
-                                                             of them is red, because only
-                                                             one of them deletes anything.
-                                                             Forgetting an imported engine
-                                                             leaves it where it is. -->
+                                                        <!-- Last and set apart, and it says which of the two it will do before it is pressed. -->
                                                         <Separator />
 
                                                         <MenuItem Header="Uninstall"
@@ -707,12 +666,7 @@
                                                                 <ItemsControl.ItemTemplate>
                                                                     <DataTemplate x:DataType="vm:EngineBuildViewModel">
                                                                         <Border Classes="buildRow">
-                                                                            <!-- No size column.
-                                                                                 A size is a
-                                                                                 request per
-                                                                                 file and the
-                                                                                 list does not
-                                                                                 show one. -->
+                                                                            <!-- No size column. A size is a request per file and the list does not show one. -->
                                                                             <Grid ColumnDefinitions="*,218"
                                                                                   ColumnSpacing="12">
                                                                                 <StackPanel Grid.Column="0"
@@ -831,11 +785,8 @@
                     <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeStatus}"
                              Foreground="{DynamicResource InkMuted}"
                              VerticalAlignment="Center" />
-                    <!-- The one thing in this row that is a control rather than a
-                         readout, which the status bar's first rule would normally
-                         forbid. It earns it: the folder is the page's subject and
-                         opening it is the only thing anyone wants to do with the
-                         path. -->
+                    <!-- The one thing in this row that is a control rather than a readout, which the status
+                         bar's first rule would normally forbid. -->
                     <HyperlinkButton Classes="path"
                                      Content="{Binding InstallRoot}"
                                      Command="{Binding OpenEngineDirectoryCommand}"

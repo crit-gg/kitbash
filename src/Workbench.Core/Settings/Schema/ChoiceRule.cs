@@ -4,13 +4,6 @@ namespace Workbench.Core.Settings.Schema;
 /// The value has to be one of a set the schema knows in full. This is the closed
 /// choice, so a value outside the set is refused and the layer below decides instead.
 /// </summary>
-/// <remarks>
-/// Not the same thing as <see cref="ISettingChoices{T}"/>, and the difference matters.
-/// A theme name is closed, so an unknown one is wrong. An engine version is a list of
-/// what is installed, so a pinned version that is missing is still the right value and
-/// must be kept. This rule is also where an editor gets its options from, since a closed
-/// set is known without asking anything.
-/// </remarks>
 public sealed class ChoiceRule<T> : ISettingRule<T>
     where T : notnull
 {

@@ -7,21 +7,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// A condition that is true right now, said in the layout rather than over it.
 /// </summary>
-/// <remarks>
-/// Where a toast is a popover nobody opened, an alert is content. No shadow and no
-/// dwell: it sits there until the condition goes away. Anything a person has to act on
-/// before continuing is one of these and never a toast.
-/// <para>
-/// The surface is the tier's own tint with the tier's own edge, the same pair the chips
-/// and the status marks use, which is why an alert never needs a coloured bar down its
-/// left side.
-/// </para>
-/// <para>
-/// The two lines are strings rather than content slots, unlike <see cref="Popover"/> and
-/// <see cref="SurfacePanel"/>. They are prose and they wrap, and a content presenter has
-/// no way to say so. Anything richer belongs in <see cref="Actions"/>, which is a slot.
-/// </para>
-/// </remarks>
 public class Alert : TemplatedControl
 {
     public static readonly StyledProperty<AlertTier> TierProperty =
@@ -31,9 +16,8 @@ public class Alert : TemplatedControl
         AvaloniaProperty.Register<Alert, AlertForm>(nameof(Form));
 
     /// <summary>
-    /// The icon. The theme sets one per tier, so an alert that says nothing still reads
-    /// as colour plus icon plus words, and a caller naming a glyph wins because a local
-    /// value beats a control theme.
+    /// The icon. The theme sets one per tier, so an alert always has one. A caller that
+    /// names a glyph wins, since a local value outranks a control theme.
     /// </summary>
     public static readonly StyledProperty<IconGlyph> GlyphProperty =
         AvaloniaProperty.Register<Alert, IconGlyph>(nameof(Glyph));

@@ -64,8 +64,7 @@ internal sealed class EngineStore : IEngineStore
 
         foreach (var directory in ReadImported())
         {
-            // An engine under the engine directory is already listed above, so a person who
-            // imported one and later moved the root does not see it twice.
+            // Already listed above if it now sits under the engine directory.
             if (found.Any(e => _paths.AreSame(e.Directory, directory)))
             {
                 continue;
@@ -113,8 +112,7 @@ internal sealed class EngineStore : IEngineStore
             _state.Set(SettingsScope.Global, ImportedKey, kept);
         }
 
-        // **Only what Workbench put there is deleted.** An imported engine is somebody
-        // else's folder and forgetting it is the whole of removing it.
+        // An imported engine is somebody else's folder, so removing it only forgets it.
         if (!engine.IsImported)
         {
             _files.DeleteDirectory(engine.Directory);
@@ -184,9 +182,8 @@ internal sealed class EngineStore : IEngineStore
     }
 
     /// <summary>
-    /// An engine a person pointed at. **No record is written**, since Workbench did not
-    /// create the folder, so this is probed on every refresh. Measured at 20 to 100 ms per
-    /// engine, and a person has a handful.
+    /// An engine a person pointed at. No record is written for it, so it is probed on
+    /// every refresh. Runs the editor, so call it off the UI thread.
     /// </summary>
     private async Task<InstalledEngine> ReadImportedAsync(string directory, CancellationToken cancellationToken)
     {
@@ -197,8 +194,8 @@ internal sealed class EngineStore : IEngineStore
             return Describe(probed, directory, imported: true);
         }
 
-        // A folder that has gone away, or one that no longer holds an engine. Kept in the
-        // list rather than dropped, so removing it stays a deliberate act.
+        // A folder that has gone, or no longer holds an engine. Kept in the list so that
+        // removing it stays an explicit act.
         var name = Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar));
         var gone = new EngineRecord(
             default,

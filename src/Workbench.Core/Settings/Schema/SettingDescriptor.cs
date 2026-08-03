@@ -6,12 +6,6 @@ namespace Workbench.Core.Settings.Schema;
 /// The one place a setting is defined. Its key, what it is called, what it means, what
 /// it is when nothing says otherwise, and what it is allowed to be.
 /// </summary>
-/// <remarks>
-/// Hold these as instance members reached through a constructor. A
-/// <c>public static readonly</c> descriptor is the obvious shortcut and it is ambient
-/// state, which is why <see cref="WindowSettings"/> is handed a schema rather than
-/// naming one.
-/// </remarks>
 public sealed class SettingDescriptor<T> : ISettingDescriptor
     where T : notnull
 {

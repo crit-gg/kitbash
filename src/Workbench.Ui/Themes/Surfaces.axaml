@@ -2,30 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- The depth ramp, and the only place a tone is paired with its seam.
-
-         The root tone belongs to the window and its chrome and never appears again
-         inside, so nothing here can produce it. Everything below cycles three tones and
-         starts over, which is the shortest cycle where a grandchild never matches its
-         grandparent. Nothing lightens as it descends.
-
-         Each tone carries its own seam, so a surface takes a fill and a border together.
-         Read that off the design's depth ladder rather than derived: a level 2 panel
-         draws #3d4045 and a level 3 panel #43464e, whatever they sit on.
-
-         Only an element that says it nests is painted. Level is inherited, so every
-         control in the subtree can read the tone it stands on, and painting on that alone
-         would flood every button in a panel with the panel's own fill.
-
-         Controls are off the ramp and none of them reads any of this. A button stays on
-         SurfaceNest2 and an input well on SurfaceWell at every level, so a field reads as
-         a field wherever it lands and only the container moves.
-
-         Two things about the shape below are forced rather than chosen. The level styles
-         are nested inside the nests style because two property selectors cannot be
-         chained in one string: the XAML compiler rejects [a=x][b=y] outright. And there
-         are two families because Background and BorderBrush are separate properties on
-         TemplatedControl and on Border, and a region is often a plain Border. -->
+    <!-- The depth ramp, and the only place a tone is paired with its seam. -->
 
     <Style Selector=":is(TemplatedControl)[(ui|Surface.Nests)=True]">
         <Style Selector="^[(ui|Surface.Level)=1]">
@@ -61,12 +38,7 @@
         </Style>
     </Style>
 
-    <!-- A hairline drawn as a fill rather than as an edge, for a rule that runs across a
-         row. It takes the seam of the tone it is standing on, so it stays legible at
-         depth where a fixed LineSeam would nearly vanish on SurfaceNest3.
-
-         The size is the view's, since a seam can run either way. Level 1 falls through to
-         the base, and so does the root. -->
+    <!-- A hairline drawn as a fill rather than as an edge, for a rule that runs across a row. -->
     <Style Selector="Border.seam">
         <Setter Property="Background" Value="{DynamicResource LineSeam}" />
 

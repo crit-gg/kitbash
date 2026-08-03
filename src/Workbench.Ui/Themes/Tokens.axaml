@@ -1,27 +1,10 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- The Slate palette. Every colour in Workbench and in every tool comes from here,
-         and nothing below this file writes a hex value.
+    <!-- The Slate palette. Every colour in Workbench and in every tool comes from here, and
+         nothing below this file writes a hex value. -->
 
-         Names say what a value is for, never what it looks like. Two names may share a
-         value when they are different roles, which is noted where it happens. What must
-         not appear is one role written twice. -->
-
-    <!-- Surfaces.
-
-         The root tone is unique and never appears again inside the window. Everything
-         nested below it cycles three tones and starts over, so a grandchild never
-         matches its grandparent. Nothing lightens progressively with depth.
-
-             root      SurfaceRoot
-               level 1 SurfaceNest1
-                 level 2 SurfaceNest2
-                   level 3 SurfaceNest3
-                     level 4 SurfaceNest1, back to the first
-
-         Controls do not ride this ramp. An input well is SurfaceWell and a button is
-         SurfaceNest2 however deep it sits. -->
+    <!-- Surfaces. The root tone is unique and never appears again inside the window. -->
     <SolidColorBrush x:Key="SurfaceRoot" Color="#1e1f22" />
     <SolidColorBrush x:Key="SurfaceNest1" Color="#25262a" />
     <SolidColorBrush x:Key="SurfaceNest2" Color="#2b2d31" />
@@ -30,23 +13,15 @@
     <SolidColorBrush x:Key="SurfaceRowAlt" Color="#212328" />
     <SolidColorBrush x:Key="SurfaceControlOff" Color="#232427" />
 
-    <!-- A well answers the pointer on its own ramp rather than on the control one, because
-         it is darker than everything around it and StateHover would lighten it past the
-         surface it sits on. Focus lightens it a step, which is what says the caret is in
-         it. -->
+    <!-- A well answers the pointer on its own ramp rather than on the control one, because it
+         is darker than everything around it and StateHover would lighten it past the surface
+         it sits on. -->
     <SolidColorBrush x:Key="SurfaceWellHover" Color="#26282c" />
     <SolidColorBrush x:Key="SurfaceWellPressed" Color="#2f3238" />
     <SolidColorBrush x:Key="SurfaceWellFocus" Color="#1a1b1e" />
 
-    <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill
-         and its border together: LineSeam with the root and level 1, LineControl with
-         level 2, LineControlDeep with level 3. Themes/Surfaces.axaml holds the pairs.
-
-         A control is off the ramp and always draws LineSeam, whatever it stands on.
-         Measured across the design's control inventory: every control on SurfaceNest2
-         draws #33353a, so these two names describe surfaces and not controls despite
-         what they are called. LineControl keeps its name because a popup edge is the
-         same value and that is a control's edge. -->
+    <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill and its
+         border together. -->
     <SolidColorBrush x:Key="LineSeam" Color="#33353a" />
     <SolidColorBrush x:Key="LineRow" Color="#2a2c30" />
     <SolidColorBrush x:Key="LineControl" Color="#3d4045" />
@@ -55,38 +30,23 @@
     <SolidColorBrush x:Key="LineWell" Color="#565d66" />
     <SolidColorBrush x:Key="LineControlOff" Color="#2c2e32" />
 
-    <!-- The well border under a pointer, and when it is switched off. LineWellOff carries
-         StateHover's value and is a different role: one is a fill every control uses and
-         the other is the edge of a checkbox nobody can click. A disabled well keeps a
-         lighter edge than a disabled control, because the well it draws is darker. -->
+    <!-- The well border under a pointer, and when it is switched off. -->
     <SolidColorBrush x:Key="LineWellHover" Color="#6b727b" />
     <SolidColorBrush x:Key="LineWellOff" Color="#34363c" />
 
-    <!-- States. StatePressed carries the same value as LineControl and is kept apart
-         because one is a fill and the other is a line. Every use of the first is a
-         surface and every use of the second is an edge, so a later change to either
-         would otherwise mean reading each one to find out which it was. -->
+    <!-- States. StatePressed carries the same value as LineControl and is kept apart because
+         one is a fill and the other is a line. -->
     <SolidColorBrush x:Key="StateHover" Color="#34363c" />
     <SolidColorBrush x:Key="StatePressed" Color="#3d4045" />
 
-    <!-- Selection is the tint alone. No left marker, and a row never carries a fill and
-         an outline at once. AccentTint is both the selection tint and any accent tinted
-         surface, because they are one idea.
-
-         The design brightened this from #14293f, and it moved every accent tinted fill
-         with it: rows, grid rows, the highlighted menu item, the badge, the status pill,
-         the chip, the day the calendar is on and the tool card that is open. Two places
-         keep the old value and both belong to docking in stage 11, where a drop target
-         that is available is quieter than the one under the cursor. -->
+    <!-- Selection is the tint alone. No left marker, and a row never carries a fill and an
+         outline at once. -->
     <SolidColorBrush x:Key="AccentTint" Color="#1b3a58" />
     <SolidColorBrush x:Key="AccentTintLine" Color="#2b4a6b" />
     <SolidColorBrush x:Key="AccentTintInk" Color="#8fbef5" />
     <SolidColorBrush x:Key="SelectionInk" Color="#cfe2fb" />
 
-    <!-- An accent tinted thing under the pointer. Derived rather than read: the design
-         draws no hovered accent tint anywhere, and the step here is the one its old pair
-         had, carried onto the new tint. Without it a hover on the rail's open page, on a
-         selected row or on a combo box's chosen line does nothing at all. -->
+    <!-- An accent tinted thing under the pointer. Derived rather than read. -->
     <SolidColorBrush x:Key="AccentTintStrong" Color="#244b71" />
 
     <!-- Accent. The one accent, used as a line and a mark rather than a flood. There are
@@ -99,27 +59,16 @@
     <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
     <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
 
-    <!-- The second lead. A grey flood for the action a view repeats across many cards or
-         rows, where nine accent buttons would fight each other and the accent would stop
-         meaning selection and focus.
-
-         NeutralPressed carries the same value as StatePressed and NeutralInk the same as
-         InkCaption, and both are kept apart for the reason StatePressed and LineControl
-         are: these two belong to a flood that moves as one, where the others are a hover
-         ramp step and a title bar ink. Changing this family must not reach either.
-
-         NeutralLine holds through every live state, unlike the accent and destructive
-         borders which track their fill. -->
+    <!-- The second lead. A grey flood for the action a view repeats across many cards or rows,
+         where nine accent buttons would fight each other and the accent would stop meaning
+         selection and focus. -->
     <SolidColorBrush x:Key="Neutral" Color="#464a52" />
     <SolidColorBrush x:Key="NeutralHover" Color="#50555e" />
     <SolidColorBrush x:Key="NeutralPressed" Color="#3d4045" />
     <SolidColorBrush x:Key="NeutralLine" Color="#4f545c" />
     <SolidColorBrush x:Key="NeutralInk" Color="#eef1f4" />
 
-    <!-- Focus is a soft halo hugging the control, outside its border, never replacing
-         one. It is a colour and a thickness together, so both live here. The halo sits
-         outside the control, so its radius is the control's plus its thickness, which
-         is what keeps the two curves concentric. -->
+    <!-- Focus is a soft halo hugging the control, outside its border, never replacing one. -->
     <SolidColorBrush x:Key="FocusHalo" Color="#569eff" Opacity="0.3" />
     <Thickness x:Key="FocusHaloThickness">2</Thickness>
     <Thickness x:Key="FocusHaloReach">-2</Thickness>
@@ -162,10 +111,7 @@
          Disabled never uses opacity, so the flood needs a tone of its own. -->
     <SolidColorBrush x:Key="FillOff" Color="#3a3d43" />
 
-    <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text.
-         The mark and the text are separate because a 5px mark needs saturation where
-         11px text needs contrast. Status always reads as colour plus icon plus label,
-         so a mark on its own is never enough. -->
+    <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text. -->
     <SolidColorBrush x:Key="Ok" Color="#4ec98a" />
     <SolidColorBrush x:Key="OkSurface" Color="#1a2b22" />
     <SolidColorBrush x:Key="OkLine" Color="#2b4a38" />
@@ -195,10 +141,8 @@
     <SolidColorBrush x:Key="DataSurface" Color="#1b2c28" />
     <SolidColorBrush x:Key="DataLine" Color="#2f4a44" />
 
-    <!-- Text on a warn flood. The Ink of a semantic role is its text on the tinted
-         surface, so a flood needs its own, the way AccentInk sits against Accent. Only
-         warn has one, because only warn is ever flooded without being destructive, and
-         it is the reason Warn carries a hover and a pressed tone as well. -->
+    <!-- Text on a warn flood. The Ink of a semantic role is its text on the tinted surface, so
+         a flood needs its own, the way AccentInk sits against Accent. -->
     <SolidColorBrush x:Key="WarnFillInk" Color="#241802" />
 
     <!-- Destructive is a solid fill, the one exception to the no flood rule. -->
@@ -213,10 +157,7 @@
     <SolidColorBrush x:Key="CloseHover" Color="#d9494f" />
     <SolidColorBrush x:Key="ClosePressed" Color="#b53c42" />
 
-    <!-- Graph pin colours by type, for the tool that draws graphs. PinFloat carries the
-         same value as Data on purpose: a float pin is data, and if the data colour moves
-         the pin should move with it. They are named apart so a graph can be retinted
-         without touching status colours. -->
+    <!-- Graph pin colours by type, for the tool that draws graphs. -->
     <SolidColorBrush x:Key="PinFloat" Color="#5bc8a8" />
     <SolidColorBrush x:Key="PinInt" Color="#6ea8e8" />
     <SolidColorBrush x:Key="PinBool" Color="#d97b7b" />
@@ -239,31 +180,14 @@
          the mark radius and the control radius, because the box is between those sizes. -->
     <CornerRadius x:Key="RadiusBox">3</CornerRadius>
 
-    <!-- The scrim behind a popup that covers a page. Not behind a dialog: a dialog is a
-         real window and the window manager owns modality, so the parent stays legible
-         rather than being dimmed. Avalonia's own light dismiss layer is internal, so a
-         scrim is an element the page draws rather than something the framework supplies. -->
+    <!-- The scrim behind a popup that covers a page. Not behind a dialog. -->
     <SolidColorBrush x:Key="Scrim" Color="#090a0b" Opacity="0.62" />
 
-    <!-- The gap between a control and the menu it opens. The design has the two touching
-         and this deviates from it on purpose, because a menu that touches its trigger
-         reads as part of the control rather than as something over it.
-
-         It is a margin on the menu's own root rather than an offset on the flyout,
-         because a flyout is not a control and cannot be themed. Top and bottom both, so
-         a menu placed above a control is spaced the same as one placed below. -->
+    <!-- The gap between a control and the menu it opens. -->
     <Thickness x:Key="OverlayGap">0,4</Thickness>
 
-    <!-- A popup window is sized to what it holds, and a box shadow draws outside that, so
-         a shadow with no room is clipped square by the window it is in. Measured: a
-         dropdown's popup came back exactly as wide as its content, leaving nothing at all
-         for a 28px blur.
-
-         So the content carries transparent room for the shadow to fall into, and the popup
-         is pulled back by the same amount so it still lands where it did. ShadowPopup is
-         0 10 28, which reaches 28 to each side, 18 above and 38 below.
-
-         Change the shadow and change all three of these. -->
+    <!-- A popup window is sized to what it holds, and a box shadow draws outside that, so a
+         shadow with no room is clipped square by the window it is in. -->
     <Thickness x:Key="OverlayRoom">28,22,28,38</Thickness>
     <x:Double x:Key="OverlayRoomX">-28</x:Double>
     <x:Double x:Key="OverlayRoomY">-18</x:Double>
@@ -280,8 +204,7 @@
     <BoxShadows x:Key="ShadowOverlay">0 20 48 #99000000</BoxShadows>
     <BoxShadows x:Key="ShadowWindow">0 26 64 #b3000000, 0 2 6 #80000000</BoxShadows>
 
-    <!-- Density. This system is dense on purpose, so these are as much a part of the
-         theme as the palette. -->
+    <!-- Density. As much a part of the theme as the palette. -->
     <x:Double x:Key="HeightTitleBar">32</x:Double>
     <x:Double x:Key="HeightCaptionButton">32</x:Double>
     <x:Double x:Key="HeightControl">26</x:Double>
@@ -303,15 +226,8 @@
     <x:Double x:Key="SizeRailItem">32</x:Double>
     <x:Double x:Key="HeightTab">28</x:Double>
 
-    <!-- A tree indents 14 per level, which is what the design's prose says and what its
-         markup draws once the leading slot is taken out of it: rows step 21 while a child
-         swaps a 22 wide caret slot for a 15 wide mark, and 21 less 7 is the 14 a person
-         sees between one label and the next. Every row here reserves the caret slot, so a
-         branch and a leaf that are siblings line up, and the step is 14 outright.
-
-         The guide falls where the parent's caret starts rather than through its middle,
-         which is what keeps it in the band between two rows instead of inside the lower
-         one. -->
+    <!-- A tree indents 14 per level, which is what the design's prose says and what its markup
+         draws once the leading slot is taken out of it. -->
     <x:Double x:Key="IndentTree">14</x:Double>
     <x:Double x:Key="IndentTreeGuide">8</x:Double>
 
@@ -325,10 +241,7 @@
     <Thickness x:Key="PaddingListRow">9,0</Thickness>
     <Thickness x:Key="PaddingTab">11,0</Thickness>
 
-    <!-- A tree row pads its right side alone. The left belongs to the caret, which pads
-         itself instead, so everything in front of the name is one hit area rather than a
-         14px glyph with dead space either side of it. The two together are the 8 in front
-         and the 7 after that every other row has. -->
+    <!-- A tree row pads its right side alone. -->
     <Thickness x:Key="PaddingTreeRow">0,0,8,0</Thickness>
     <Thickness x:Key="PaddingCaret">8,0,7,0</Thickness>
 
@@ -340,13 +253,8 @@
          a tint. -->
     <x:Double x:Key="SizeTabMarker">2</x:Double>
 
-    <!-- A toast. One width for every region, so a card reads the same wherever it lands
-         and a stack never changes shape as its cards come and go. The compact form is the
-         one exception and is only as wide as its words.
-
-         The padding is a pixel wider on the left than the design's other cards, which is
-         the design's own value: the status mark is a filled square and needs the extra
-         pixel to sit level with the text under it. -->
+    <!-- A toast. One width for every region, so a card reads the same wherever it lands and a
+         stack never changes shape as its cards come and go. -->
     <x:Double x:Key="WidthToast">352</x:Double>
     <Thickness x:Key="PaddingToast">11,10,10,10</Thickness>
     <x:Double x:Key="HeightToastCompact">30</x:Double>
@@ -368,41 +276,16 @@
          that is not part of the deck, so it is the only thing with a gap. -->
     <Thickness x:Key="MarginToast">0,2</Thickness>
 
-    <!-- How much of the card behind shows. Toasts stack as a deck rather than as a column,
-         so only the newest is whole and the rest show a strip of their top edge. The
-         design draws 26 behind the newest and 20 behind that, and one value is taken for
-         both, since a peek that changes with depth is a difference nobody reads.
-
-         31 rather than either, because it is the card's own 10 of padding and its 21 of
-         status mark, so a card behind shows a whole row: the mark, the title and the count
-         beside it. At the design's 26 the mark is cut through the middle, which reads as a
-         card that has been trimmed rather than one that carries on underneath. -->
+    <!-- How much of the card behind shows. Toasts stack as a deck rather than as a column, so
+         only the newest is whole and the rest show a strip of their top edge. -->
     <x:Double x:Key="PeekToast">31</x:Double>
 
     <!-- A card behind the front one is cut off rather than closed off, so it runs into
-         whatever is in front of it instead of ending against it. A rounded foot sitting on
-         the next card's head reads as a card that has been squashed, which is the one
-         thing a deck must not do.
-
-         Which end is cut depends on which way the deck grows, because the cut is always
-         the end facing the front card. A region that grows up stacks its older cards above
-         the newest and cuts their feet. One that grows down stacks them below and cuts
-         their heads, so each one reads as sliding out from under the card above it. -->
+         whatever is in front of it instead of ending against it. -->
     <CornerRadius x:Key="RadiusSurfaceCutFoot">8,8,0,0</CornerRadius>
     <CornerRadius x:Key="RadiusSurfaceCutHead">0,0,8,8</CornerRadius>
 
-    <!-- How far a card behind runs on under the one in front of it. It is the surface
-         radius, because the thing it has to reach past is that card's corner: a strip that
-         stops level with the front card's edge leaves its two corner curves showing the
-         page through them, and a deck with daylight in its corners is not a deck.
-
-         The tuck is frame and not content. A card behind is faded, so anything of its own
-         left under the card in front reads through as a second line of text across the
-         deck. Measured, and it did. So the body is held back by the same amount and the
-         tuck is fill alone.
-
-         Two names for one number, because a deck takes a double and a body takes a
-         thickness. Change one and change the other. -->
+    <!-- How far a card behind runs on under the one in front of it. -->
     <x:Double x:Key="TuckToast">8</x:Double>
     <Thickness x:Key="MarginToastTuck">0,0,0,8</Thickness>
 
@@ -412,11 +295,7 @@
     <x:Double x:Key="OpacityToastDepth2">0.5</x:Double>
 
     <!-- An alert. The block wraps and pads like a card, the strip is one line on the row
-         height, and the inline form has no surface at all so it needs neither.
-
-         HeightAlertStrip carries HeightGridRow's value on purpose rather than by
-         coincidence: the design puts a strip on the row height so it lines up with the
-         rows under it. -->
+         height, and the inline form has no surface at all so it needs neither. -->
     <Thickness x:Key="PaddingAlert">11,9,10,9</Thickness>
     <Thickness x:Key="PaddingAlertStrip">10,0</Thickness>
     <x:Double x:Key="HeightAlertStrip">31</x:Double>
@@ -446,10 +325,7 @@
          which is what the travel below is measured from. -->
     <x:Double x:Key="SizeCheck">14</x:Double>
 
-    <!-- The stroke a well draws around a checkbox, a radio or a toggle. Heavier than a
-         control border, because a 14px box with a hairline round it disappears. Written
-         twice because Avalonia needs a Thickness for a border and a double for the bar the
-         mixed state draws, and one value cannot be both. -->
+    <!-- The stroke a well draws around a checkbox, a radio or a toggle. -->
     <Thickness x:Key="ThicknessCheck">1.5</Thickness>
     <x:Double x:Key="SizeCheckStroke">1.5</x:Double>
     <x:Double x:Key="WidthToggle">30</x:Double>
@@ -473,10 +349,7 @@
     <x:Double x:Key="HeightProgress">6</x:Double>
 
     <!-- Icons are 16 in tables, trees and inline chips, and 20 in the activity rail, tool
-         cards and empty states. The compact size is for the chip and the status pill, which
-         are shorter than a row, so 16 does not fit in one. The status size is for the
-         readouts along a status bar, where an icon sits beside 11px text and 16 would tower
-         over it. -->
+         cards and empty states. -->
     <!-- A tree's disclosure caret. Smaller than the small icon, because the design draws
          it at 14 and a 16 caret next to 12px text reads as a control rather than as a
          hint. It carries IconSizeField's value and is a different role. -->
@@ -487,13 +360,7 @@
     <x:Double x:Key="IconSizeCompact">12</x:Double>
     <x:Double x:Key="IconSizeStatus">13</x:Double>
 
-    <!-- An alert's mark, and the cross that closes a toast or an alert. Two names, one
-         value, because one is a semantic mark on a tinted surface and the other is a
-         control's glyph inside a 24px hit area.
-
-         The design draws an alert's mark at 15 in a block and 14 in a strip. One size
-         across both was preferred to a 1px difference nobody can see, which is the same
-         call the status bar made. -->
+    <!-- An alert's mark, and the cross that closes a toast or an alert. -->
     <x:Double x:Key="IconSizeAlert">15</x:Double>
     <x:Double x:Key="IconSizeDismiss">15</x:Double>
 

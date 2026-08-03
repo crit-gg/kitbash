@@ -36,16 +36,6 @@ public sealed class ApplicationPaths
     /// directory rather than the cache, since an engine is a large download and losing it
     /// is not free.
     /// </summary>
-    /// <remarks>
-    /// This is the first real user data the app keeps, and it is the case
-    /// <see cref="State"/> was put in the data directory for, so the two share a folder
-    /// rather than taking a fourth one.
-    ///
-    /// It reads oddly on Windows, where <see cref="IUserDirectories.StateFor"/> appends
-    /// State and this lands in <c>%LOCALAPPDATA%\Workbench\State\engines</c>. That was
-    /// right while the folder held only state. Moving it means a fourth user directory,
-    /// which is a decision of its own.
-    /// </remarks>
     public string Engines => Path.Combine(State, EnginesDirectoryName);
 
     /// <summary>The settings file backing one scope. The file need not exist.</summary>

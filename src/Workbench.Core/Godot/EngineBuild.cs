@@ -7,25 +7,6 @@ namespace Workbench.Core.Godot;
 /// One downloadable editor file: which release, which platform, which processor, and
 /// whether it is the .NET build.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **A build is read from a release manifest, never invented.** The manifest states which
-/// files a release holds, so <see cref="TryRead"/> classifies a published name and there
-/// is no way to make a build out of thin air. Deriving a name costs a version boundary per
-/// change Godot has made to its naming, and the sweep of all 183 Godot 4 releases on
-/// 2 August 2026 found at least five, every one of them at pre release granularity.
-/// </para>
-/// <para>
-/// The nineteen shapes below are the whole of it and are recorded in
-/// <c>.claude/godot-engines.md</c> with the release each first and last appears in.
-/// A name that is not one of them is not a desktop editor, which covers the export
-/// templates, the five Android editors, the web editor, the Android libraries, the debug
-/// symbols and the source tarball.
-/// </para>
-/// <para>
-/// Godot 3 and below are out of scope, so their spellings are absent.
-/// </para>
-/// </remarks>
 /// <param name="Id">The install this file would produce. Several builds share one.</param>
 /// <param name="Platform">The platform this file runs on. Always the host's, in practice.</param>
 /// <param name="Architecture">The processor this file runs on.</param>
@@ -40,9 +21,8 @@ public sealed record EngineBuild(
 {
     private const string Downloads = "https://github.com/godotengine/godot-builds/releases/download";
 
-    // Every desktop editor Godot 4 has published, measured across all 183 releases. Two
-    // Linux spellings and one macOS spelling are here only for the 4.0 alphas, which used
-    // them before the current names settled at alpha15 and alpha13.
+    // Every desktop editor Godot 4 has published. Two Linux spellings and one macOS
+    // spelling are here only for the 4.0 alphas, before the current names settled.
     private static readonly string[] Order = ["Windows", "Linux", "macOS", "Web", "Android"];
 
     private static readonly Dictionary<string, (EnginePlatform Platform, EngineArchitecture Architecture, bool Mono)> Shapes =
@@ -109,9 +89,8 @@ public sealed record EngineBuild(
     }
 
     /// <summary>
-    /// Every target a release published for, named as a person reads them, in a fixed
-    /// order. **This deliberately includes targets Workbench cannot install**, since the
-    /// only caller is the line on an absent release card saying where it did ship.
+    /// Every target a release published for, named for display, in a fixed order. Includes
+    /// targets Workbench cannot install, since the caller reports where a release shipped.
     /// </summary>
     public static IReadOnlyList<string> PublishedTargets(EngineTag tag, IEnumerable<string> fileNames)
     {

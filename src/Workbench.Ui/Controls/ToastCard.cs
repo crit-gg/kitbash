@@ -10,17 +10,6 @@ namespace Workbench.Ui.Controls;
 /// One toast, drawn. A card is told which <see cref="Toasts.Toast"/> it is showing and
 /// nothing else, and everything about how it looks comes from that.
 /// </summary>
-/// <remarks>
-/// The toast is a model that changes while the card is up, so the card follows it rather
-/// than reading it once: a download rewrites its body and its progress hundreds of times
-/// on the same card.
-/// <para>
-/// What the theme selects on is a class. The tier, the form, the depth in the stack and
-/// the anchored edge all become classes here, so no selector reaches into a model and no
-/// converter stands between the two. That is the shape <see cref="StatusPill"/> and
-/// <see cref="WindowTitleBar"/> already have.
-/// </para>
-/// </remarks>
 public class ToastCard : TemplatedControl
 {
     /// <summary>What this card is showing. A stack binds it and nothing else does.</summary>
@@ -65,9 +54,8 @@ public class ToastCard : TemplatedControl
 
         Close = new TemplateCommand(_ => Toast?.Dismiss());
 
-        // Bottom right is the default anchor, so a card in that region is never told a
-        // new one and would otherwise wear no anchor classes at all. Measured: its stack
-        // stretched to fill the cell and its cards drew from the top of it.
+        // Bottom right is the default anchor, so a card there is never told a new one and
+        // would otherwise carry no anchor class.
         ApplyAnchor(Anchor);
     }
 
@@ -129,10 +117,8 @@ public class ToastCard : TemplatedControl
     }
 
     /// <summary>
-    /// A toast can outlive the card that drew it, which is what makes this necessary
-    /// rather than tidy. Whatever raised a long running toast holds it, and a card
-    /// pushed out of a region while that toast is still running would be kept alive by
-    /// its own handler for as long as the work lasts.
+    /// Detaches the handler. A toast can outlive the card that drew it, so a card left
+    /// subscribed is held alive by the toast for as long as the work runs.
     /// </summary>
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {

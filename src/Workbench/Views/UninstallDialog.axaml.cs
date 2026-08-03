@@ -17,15 +17,9 @@ public partial class UninstallDialog : DialogWindow
     }
 
     /// <summary>
-    /// **The consequence line has two forms, and which one shows is the whole point.** An
-    /// engine Workbench installed is deleted. One a person pointed at is forgotten and its
-    /// files are left alone, since Workbench did not put them there.
+    /// The consequence line, which differs by kind. An engine Workbench installed is
+    /// deleted. An imported one is forgotten and its files are left alone.
     /// </summary>
-    /// <remarks>
-    /// **The path is shown whole here**, which is the one exception to writing a path for
-    /// the width it is shown in. This is the evidence for a question about deleting a
-    /// folder, so it wraps and the dialog grows rather than the path being elided.
-    /// </remarks>
     public static UninstallDialog For(InstalledEngine engine)
     {
         ArgumentNullException.ThrowIfNull(engine);

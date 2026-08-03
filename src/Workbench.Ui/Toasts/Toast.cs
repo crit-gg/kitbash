@@ -6,17 +6,6 @@ namespace Workbench.Ui.Toasts;
 /// One toast, live. What <see cref="IToastService.Show"/> hands back, so whatever raised
 /// it can keep it up to date and take it away again.
 /// </summary>
-/// <remarks>
-/// The parts that describe what happened are settable, because long work reports on the
-/// same card rather than replacing it: a download changes its body and its progress a
-/// hundred times and stays one toast.
-/// <para>
-/// Every member here is safe to call from any thread. Writes land on the toast thread
-/// through <see cref="IToastScheduler.Run"/>, which means a read taken from another
-/// thread is a snapshot and may not yet show a write made from that same thread. Read on
-/// the toast thread when the exact value matters.
-/// </para>
-/// </remarks>
 public sealed class Toast : INotifyPropertyChanged
 {
     private readonly IToastScheduler _scheduler;
@@ -186,10 +175,6 @@ public sealed class Toast : INotifyPropertyChanged
     }
 
     /// <summary>The same toast has fired again, so this one counts it instead.</summary>
-    /// <remarks>
-    /// The newer body wins and the timer starts over, which is what makes a repeat read
-    /// as the latest one rather than as the first one refusing to leave.
-    /// </remarks>
     internal void Repeat(ToastRequest request)
     {
         Set(ref _body, request.Body, nameof(Body), nameof(HasBody));

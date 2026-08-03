@@ -3,15 +3,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// What one release actually published, read from its manifest in <c>godot-builds</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This is the answer to what a release holds, and nothing else is. Names are never
-/// derived, for the reasons in <c>.claude/godot-engines.md</c> under The landscape.
-/// </para>
-/// <para>
-/// A manifest is fixed once a tag is cut, so this is cached without an expiry.
-/// </para>
-/// </remarks>
 /// <param name="Tag">The release this describes.</param>
 /// <param name="Builds">Every desktop editor in it, for every platform, in a stable order.</param>
 /// <param name="Checksums">SHA 512 by file name, lower case hex, as the project publishes it.</param>

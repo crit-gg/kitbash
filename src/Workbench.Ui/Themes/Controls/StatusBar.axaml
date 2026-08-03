@@ -4,10 +4,8 @@
 
     <Styles.Resources>
 
-    <!-- The status bar is 32px including its seam, so nothing in it can be the 26px a
-         control is everywhere else. These are keyed rather than classed for the reason the
-         caption buttons are: a class on the shared Button theme inherits every height,
-         padding and fill that theme ever gains, and this row has no room for them. -->
+    <!-- The status bar is 32px including its seam, so nothing in it can be the 26px a control
+         is everywhere else. -->
 
     <!-- A readout that does something. The update action, and anything else the row gains.
          Quiet at rest, so the row reads as one strip rather than a line of buttons, and it
@@ -79,13 +77,7 @@
 
     </Styles.Resources>
 
-    <!-- The readouts along the row. Classes rather than a control, because each one is three
-         pieces of text and a glyph with no behaviour of its own, and a view says which kind
-         it is rather than how it looks.
-
-         A status reads as colour plus icon plus label, never colour alone, which is the same
-         rule StatusPill draws. Here the glyph says the kind, the word says it again, and the
-         colour only reinforces it, so the row survives greyscale and glare. -->
+    <!-- The readouts along the row. -->
     <Style Selector="StackPanel.countReadout">
         <Setter Property="Orientation" Value="Horizontal" />
         <Setter Property="Spacing" Value="6" />

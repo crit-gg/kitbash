@@ -22,9 +22,8 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     private const int Executable = 0b001_001_001;
 
     /// <summary>
-    /// The most an editor archive may say it unpacks to. Measured across the archives in
-    /// the sweep, the largest tree is about 220 MB, so this is roughly ten times the real
-    /// answer and still small enough to refuse something absurd.
+    /// The most an editor archive may say it unpacks to. Real archives are around 220 MB,
+    /// so this refuses an absurd declaration without bounding a genuine one.
     /// </summary>
     private const long MostUnpacked = 2L * 1024 * 1024 * 1024;
 
@@ -148,12 +147,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     /// The archive, from the cache when it is there and complete, otherwise fetched and
     /// verified.
     /// </summary>
-    /// <remarks>
-    /// **A marker file beside the archive is what makes it complete**, not the archive
-    /// being present. A half written one from a killed process would otherwise look
-    /// cached. The download goes to a part file and is only named as the archive after it
-    /// verifies, so the two guards agree.
-    /// </remarks>
     private async Task<string> FetchAsync(
         EngineBuild build,
         string checksum,
@@ -225,28 +218,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     /// <summary>
     /// Unpacks with the two guards and the prefix strip.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// **The prefix strip has an exception.** A single top level directory is stripped so
-    /// every install comes out the same shape, which is gdvm's idea and a good one, but a
-    /// name ending in <c>.app</c> is a macOS bundle and lifting its contents to the root
-    /// destroys it. Measured: Linux standard is one loose file, Windows standard is two,
-    /// both .NET archives wrap, and both macOS archives are a bundle.
-    /// </para>
-    /// <para>
-    /// **Two guards, and not the two gdvm has.** An entry whose path escapes the target
-    /// after the strip is refused, which is the same one. The second is a ceiling on what
-    /// the archive says it will unpack to, rather than gdvm's check that an entry produces
-    /// more bytes than it declared.
-    /// </para>
-    /// <para>
-    /// That second one was written first and it can never fire here. Measured: given an
-    /// entry declaring 16 bytes over a megabyte of real content, <c>ZipArchive</c> hands
-    /// back 16 bytes and stops, so the runtime already enforces the declared length and a
-    /// lying header is neutralised before this sees it. What the runtime does not bound is
-    /// an honest header declaring something enormous, so that is what is bounded here.
-    /// </para>
-    /// </remarks>
     private void Unpack(string archive, string directory, CancellationToken cancellationToken)
     {
         using var stream = _files.OpenRead(archive);
@@ -297,15 +268,10 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
                 Copy(source, into, entry.Length, Path.GetFileName(archive), cancellationToken);
             }
 
-            // **Unpacking by hand does not carry the mode across.** ZipFile.ExtractToDirectory
-            // does, which is what the research measured, but the prefix strip and the two
-            // guards mean entries are copied one at a time here. So the recorded mode is
-            // read back and the executable bit put on, or a Linux install comes out with a
-            // 0644 editor that nothing can find or run. Measured: without this the install
-            // succeeded and held no editor.
-            //
-            // A zip made on Windows records DOS attributes instead, which read as no mode
-            // at all, so nothing is marked and the guard costs nothing.
+            // Copying an entry by hand does not carry its Unix mode, so the executable
+            // bit is put back here. Without it a Linux install has a 0644 editor that
+            // cannot be run. A zip made on Windows records DOS attributes, which read as
+            // no mode, so nothing is marked.
             if ((entry.ExternalAttributes >> 16 & Executable) != 0)
             {
                 _files.MakeExecutableFile(target);
@@ -336,8 +302,8 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 
             written += read;
 
-            // Belt and braces. ZipArchive stops an entry at its declared length on its own,
-            // measured, so this is here for the day that changes rather than for today.
+            // ZipArchive already stops an entry at its declared length. This guards the
+            // day that changes.
             if (written > declared)
             {
                 throw new EngineInstallException(
@@ -368,11 +334,9 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 
             var head = entry.FullName[..(slash + 1)];
 
-            // A relative segment is not a wrapper folder, whatever it looks like. Taking
-            // one off would quietly turn an archive that tries to escape into a well
-            // behaved one, which reads as the guard working when it never ran. Measured:
-            // an entry named ../escaped.txt was stripped to escaped.txt and unpacked
-            // happily, and the path check below never saw it.
+            // A relative segment is not a wrapper folder. Stripping one would turn an
+            // escaping entry into a harmless looking name and the path check below would
+            // never see it.
             if (head is "./" or "../")
             {
                 return null;

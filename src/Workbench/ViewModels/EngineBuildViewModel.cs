@@ -7,12 +7,6 @@ namespace Workbench.ViewModels;
 /// <summary>
 /// One downloadable file inside an open release card.
 /// </summary>
-/// <remarks>
-/// The row has four right hand states and only one is ever on: an Install button, a queued
-/// label, a bar with a percentage and a cancel, or a muted Installed check. Installed is
-/// per version rather than per file, so once a version is here every build of it reads
-/// installed whichever processor that row is.
-/// </remarks>
 public sealed partial class EngineBuildViewModel : ViewModelBase
 {
     private readonly Func<EngineBuildViewModel, Task> _install;

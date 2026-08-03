@@ -25,12 +25,6 @@ public interface IDirectoryWatcher : IDisposable
     /// or that cannot be watched, is skipped rather than throwing, because a workspace can
     /// be on a share or a filesystem with no notifications and the app still has to run.
     /// </summary>
-    /// <remarks>
-    /// Subdirectories are excluded and there is no option to include them. A recursive watch
-    /// costs one kernel handle per directory underneath, which on Linux is drawn from a per
-    /// user pool that other applications share, and it turns one write of many files into
-    /// one notification per file. Name the few folders that matter and poll for the rest.
-    /// </remarks>
     void Watch(IReadOnlyList<string> directories);
 
     /// <summary>Stops watching. Safe to call when nothing is being watched.</summary>

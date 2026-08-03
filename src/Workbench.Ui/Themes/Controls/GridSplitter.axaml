@@ -1,25 +1,9 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- The draggable seam between two panes. At rest it is the hairline itself, so the
-         panes stay flush and nothing announces that the seam can be moved until a pointer
-         is over it. Hover turns that same line accent, and dragging widens it to a band
-         centred on the line, so nothing shifts under the pointer.
-
-         The hit area is the part that gets forgotten. A one pixel line cannot be grabbed,
-         so the control reaches seven and pulls itself back in:
-
-             MinWidth and MinHeight are the reach, and the margin is half of what that
-             adds. An auto sized row or column then measures one, because a negative
-             margin comes off the desired size, while the bounds stay seven.
-
-         Both axes carry it, because which one is the resize axis is decided by the grid
-         rather than by anything this theme can read. GridSplitter resolves Auto privately
-         and never writes the answer back. The cost is that the reach also runs three
-         pixels past each end of the seam, which is a corner nothing else claims.
-
-         Measured both ways: panes one pixel apart, bounds seven, and the line exactly as
-         long as the panes. -->
+    <!-- The draggable seam between two panes. At rest it is the hairline itself, so the panes
+         stay flush and nothing announces that the seam can be moved until a pointer is over
+         it. -->
 
     <ControlTheme x:Key="{x:Type GridSplitter}" TargetType="GridSplitter">
         <Setter Property="MinWidth" Value="{DynamicResource SizeSplitterReach}" />

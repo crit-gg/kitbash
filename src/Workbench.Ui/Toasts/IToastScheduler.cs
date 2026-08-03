@@ -4,17 +4,6 @@ namespace Workbench.Ui.Toasts;
 /// Time, and the one thread toasts are changed on. The whole seam between the toast
 /// service and a running application.
 /// </summary>
-/// <remarks>
-/// Everything that makes a toast behave the way it does is timing: how long it dwells,
-/// what a hovered region pauses, and how a repeat collapses. None of that is testable
-/// against a real clock, so the service asks for time here rather than reading it, and a
-/// test drives dwell without waiting for any of it.
-/// <para>
-/// It carries the thread as well because a toast is usually raised from work that is
-/// deliberately off the UI thread. A caller should not have to marshal a status message
-/// by hand, so <see cref="Run"/> does it and every mutation goes through it.
-/// </para>
-/// </remarks>
 public interface IToastScheduler
 {
     /// <summary>

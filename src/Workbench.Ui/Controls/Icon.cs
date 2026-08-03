@@ -9,11 +9,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// Draws one glyph from the Box Icons set at a given size.
 /// </summary>
-/// <remarks>
-/// The colour comes from <see cref="TemplatedControl.Foreground"/>, which is inherited,
-/// so an icon follows the row or button it sits in without the view wiring anything. Set
-/// a foreground here only when the icon carries its own meaning, such as a semantic mark.
-/// </remarks>
 public class Icon : TemplatedControl
 {
     /// <summary>Which glyph. The enum is generated beside the geometry, so it cannot name one that does not exist.</summary>

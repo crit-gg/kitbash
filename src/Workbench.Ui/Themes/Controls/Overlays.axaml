@@ -2,23 +2,9 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- Everything that floats, in one file, so a menu and a dropdown cannot drift apart.
+    <!-- Everything that floats, in one file, so a menu and a dropdown cannot drift apart. -->
 
-         The overlay surface is `SurfaceNest2` on a `LineControl` edge at `RadiusControl`,
-         with a real shadow. That is the whole rule, and it is written the same way in
-         every theme below rather than aliased, so a grep for SurfaceNest2 in this file
-         finds every floating thing at once.
-
-         The radius is the control radius, not a larger one. A popover reads as an
-         extension of the trigger that opened it rather than a separate card.
-
-         Shadow is `ShadowPopup` for a menu, a dropdown or a tooltip, and `ShadowOverlay`
-         for a popover, which is the only one large enough to need it. -->
-
-    <!-- The drop every overlay opens with. A translate and a fade over 110ms.
-         TranslateTransform.Y is animated against a real TranslateTransform instance. A
-         keyframe on RenderTransform throws at startup, and one against a
-         TransformOperations value does nothing at all. Both are in .claude/avalonia.md. -->
+    <!-- The drop every overlay opens with. A translate and a fade over 110ms. -->
     <ControlTheme x:Key="OverlayRoot" TargetType="Border">
         <!-- A wheel nothing inside wanted stops here rather than reaching the page. -->
         <Setter Property="(ui:Popups.KeepsWheel)" Value="True" />
@@ -131,10 +117,8 @@
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type MenuFlyoutPresenter}" TargetType="MenuFlyoutPresenter">
-        <!-- The flyout owns this popup's offsets and cannot be themed, so the presenter
-             reaches the popup through its own logical parent and pulls it back itself.
-             It also aligns the menu with the left of what opened it, where Avalonia
-             centres it, which matches the dropdown and every other overlay here. -->
+        <!-- The flyout owns this popup's offsets and cannot be themed, so the presenter reaches
+             the popup through its own logical parent and pulls it back itself. -->
         <Setter Property="(ui:Popups.InPopup)" Value="True" />
         <Setter Property="Template">
             <ControlTemplate>
@@ -151,10 +135,8 @@
         </Setter>
     </ControlTheme>
 
-    <!-- A context menu owns the offsets of the popup it opens in, so it can take the room
-         a shadow needs and pull itself back by the same amount. A flyout's presenter
-         cannot: the offsets live on the flyout, which is not a control and cannot be
-         themed, so a menu opened from a button still clips its shadow. -->
+    <!-- A context menu owns the offsets of the popup it opens in, so it can take the room a
+         shadow needs and pull itself back by the same amount. -->
     <ControlTheme x:Key="{x:Type ContextMenu}" TargetType="ContextMenu">
         <Setter Property="HorizontalOffset" Value="{DynamicResource OverlayRoomX}" />
         <Setter Property="VerticalOffset" Value="{DynamicResource OverlayRoomY}" />
@@ -165,12 +147,7 @@
                      margin on the menu. It is part of the popup window, it reaches back
                      over whatever opened it, and as a control it can answer the click. -->
                 <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
-                    <!-- No MatchesTarget here, unlike every other overlay in this file.
-                         The floor is the width of what opened the popup, and a button
-                         that opens a menu is a width worth matching where the thing a
-                         right click landed on is a row, a panel or a whole page. This
-                         template otherwise reads the same as the menu flyout's above,
-                         so the absence is deliberate rather than an omission. -->
+                    <!-- No MatchesTarget here, unlike every other overlay in this file. -->
                     <Border Theme="{StaticResource OverlayRoot}" Padding="5">
                         <ItemsPresenter Name="PART_ItemsPresenter" />
                     </Border>
@@ -185,10 +162,8 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- The gap under the trigger is padding on a wrapper rather than a margin
-                     on the card, for the reason a menu's shadow room is: it is part of the
-                     popup window, so it reaches back over the trigger and swallows the
-                     click that should have closed this. -->
+                <!-- The gap under the trigger is padding on a wrapper rather than a margin on the card,
+                     for the reason a menu's shadow room is. -->
                 <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayGap}">
                     <Border Name="PART_Root"
                             Theme="{StaticResource OverlayRoot}" Padding="{TemplateBinding Padding}"
@@ -238,13 +213,7 @@
     </ControlTheme>
 
     <!-- A popover: header, body, footer, all on the popover tone and separated only by
-         hairlines, which is the panel rule applied to something floating.
-
-         It differs from a menu in three ways the design states outright. Rows are full
-         bleed rather than inset pills, because they carry two lines and a badge. The
-         current row takes the selection tint rather than a check mark. The footer
-         actions are inset pills, because they behave like menu items rather than list
-         entries. Those are rules about the content, so the launcher supplies it. -->
+         hairlines, which is the panel rule applied to something floating. -->
     <ControlTheme x:Key="{x:Type ui:Popover}" TargetType="ui:Popover">
         <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
@@ -256,10 +225,7 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- Two borders: the outer draws the stroke and the shadow, the inner
-                     clips. A single border cannot do both, because clipping to bounds
-                     clips the stroke's own children to the outer rounded rectangle and
-                     leaves a corner artefact. Measured once in the launcher already. -->
+                <!-- Two borders: the outer draws the stroke and the shadow, the inner clips. -->
                 <Border Name="PART_Root"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"

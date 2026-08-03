@@ -8,12 +8,7 @@
          nothing else about their tone, so the ramp in Themes/Surfaces.axaml paints them
          and neither one counts its own depth. -->
 
-    <!-- A header over a body with a footer under it. One tone throughout: the header and
-         the footer sit on the body's fill and are told apart by a hairline alone, so a
-         fill change means a different panel and never a different part of this one.
-
-         The hairline is the panel's own border brush, which is the seam belonging to its
-         tone, so it deepens with the frame rather than staying put. -->
+    <!-- A header over a body with a footer under it. One tone throughout. -->
     <ControlTheme x:Key="{x:Type ui:SurfacePanel}" TargetType="ui:SurfacePanel">
         <Setter Property="(ui:Surface.Nests)" Value="True" />
         <Setter Property="BorderThickness" Value="1" />
@@ -30,14 +25,8 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <!-- Two borders rather than one: a clip on the border that draws the
-                     stroke would cut the corner into two colours.
-
-                     It is also what lets a body fill the panel corner to corner. A Border
-                     clips to its outer radius, so a child painting to the edge clears the
-                     stroke along a straight run and covers it at a corner. Inset by the
-                     border thickness, this one clears it everywhere. Measured with a tab
-                     strip, which is the case that shows it. -->
+                <!-- Two borders rather than one: a clip on the border that draws the stroke would cut the
+                     corner into two colours. -->
                 <Border Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
@@ -89,14 +78,7 @@
         </Setter>
     </ControlTheme>
 
-    <!-- The collapsible one. The design draws no specimen, so this is a SurfacePanel
-         whose header is the switch, and it takes every value from there rather than
-         inventing a second look for the same shape.
-
-         The header is a ToggleButton because the control itself handles no input at all,
-         which was measured rather than assumed: Expander in Avalonia 12 has no pointer
-         handling and no field for its header, so a template that only presents the
-         header can never be opened. -->
+    <!-- The collapsible one. -->
     <ControlTheme x:Key="{x:Type Expander}" TargetType="Expander">
         <Setter Property="(ui:Surface.Nests)" Value="True" />
         <Setter Property="BorderThickness" Value="1" />
@@ -209,13 +191,8 @@
         </Style>
     </ControlTheme>
 
-    <!-- The small capitalised label over a group, with a rule filling what is left of the
-         row and an optional note at the end. A header over content is what a
-         HeaderedContentControl already is, so the label is the header and the note is the
-         content, and nothing new is built for it.
-
-         Keyed, so a plain HeaderedContentControl keeps whatever look it is given
-         elsewhere and only a label asking for this one gets it. -->
+    <!-- The small capitalised label over a group, with a rule filling what is left of the row
+         and an optional note at the end. -->
     <ControlTheme x:Key="SectionLabel" TargetType="HeaderedContentControl">
         <Setter Property="Template">
             <ControlTemplate>
@@ -255,12 +232,8 @@
 
     </Styles.Resources>
 
-    <!-- A panel with nothing in it yet. Classes rather than a control, the way the status
-         bar readouts are: a mark, a line and one action, with no behaviour of its own.
-
-         The design draws a neutral square where the glyph belongs, the way it does
-         everywhere an icon goes, so the view names the glyph. Empty states take the
-         large icon size. -->
+    <!-- A panel with nothing in it yet. Classes rather than a control, the way the status bar
+         readouts are. -->
     <Style Selector="StackPanel.emptyState">
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />

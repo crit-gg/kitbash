@@ -23,11 +23,6 @@ public enum SettingOrigin
 }
 
 /// <summary>One file behind a page, and whether it can be read.</summary>
-/// <remarks>
-/// A file that will not parse reads as empty, so every setting on the page falls back to
-/// its default without saying so. <see cref="ParseError"/> is the only thing that tells
-/// the difference, and it is also what stops the file being written back.
-/// </remarks>
 public sealed record SettingsFileView(
     SettingsLayer? Layer,
     string Path,
@@ -41,9 +36,8 @@ public sealed record SettingsFileView(
 public sealed record SettingLayerValue(SettingsLayer? Layer, object? Raw, SettingCheck Check);
 
 /// <summary>
-/// One setting as it stands right now. <see cref="Layers"/> is what makes the origin
-/// worth drawing: it says which layer won, that a layer below also holds a value, and
-/// that a stored value could not be used.
+/// One setting as it stands right now. <see cref="Layers"/> says which layer won, whether
+/// a layer below also holds a value, and whether a stored value could not be used.
 /// </summary>
 public sealed record SettingValueView(
     ISettingDescriptor Row,

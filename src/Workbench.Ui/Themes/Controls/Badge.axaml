@@ -2,11 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- A word in a pill. Monospace, because a badge names a version, a runtime or an
-         access rather than saying a sentence.
-
-         The dot is an Ellipse rather than a rounded Border, so round is round at any
-         size and no radius token has to mean half of a width. -->
+    <!-- A word in a pill. Monospace, because a badge names a version, a runtime or an access
+         rather than saying a sentence. -->
     <ControlTheme x:Key="{x:Type ui:Badge}" TargetType="ui:Badge">
         <Setter Property="Height" Value="{DynamicResource HeightPill}" />
         <Setter Property="Padding" Value="7,0" />
@@ -41,8 +38,7 @@
             </ControlTemplate>
         </Setter>
 
-        <!-- Neutral is quieter than the status pill's neutral on purpose. A pill sits in
-             a row and has to hold its own, a badge sits beside a name and must not. -->
+        <!-- Quieter than the status pill's neutral. A badge sits beside a name. -->
         <Style Selector="^.neutral">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />

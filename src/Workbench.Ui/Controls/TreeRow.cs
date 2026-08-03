@@ -6,15 +6,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// One visible row of a tree, and the only thing a <see cref="Tree"/> is given.
 /// </summary>
-/// <remarks>
-/// Depth is a value here rather than a nesting level in the tree of controls, which is
-/// what lets a tree virtualise. <see cref="TreeRows"/> makes these and is the only thing
-/// that may change one.
-/// <para>
-/// <see cref="Item"/> is what a view binds to. A row is what is selected, so a
-/// <c>SelectedItem</c> comes back as one of these and the model is a step inside it.
-/// </para>
-/// </remarks>
 public sealed class TreeRow : INotifyPropertyChanged
 {
     private bool expanded;

@@ -9,24 +9,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// A tree that virtualises, built on the list that already does.
 /// </summary>
-/// <remarks>
-/// Its <c>ItemsSource</c> is a <see cref="TreeRows"/>, which is the tree flattened to the
-/// rows that can be seen. Anything else draws as a flat list and nothing opens, since
-/// there is no tree behind it to open.
-/// <code>
-/// tree.ItemsSource = new TreeRows(roots, item => ((Node)item).Children);
-/// </code>
-/// <para>
-/// <c>SelectedItem</c> is a <see cref="TreeRow"/> and the model is its <c>Item</c>. A
-/// view's item template binds to the model, because the container is handed that rather
-/// than the row.
-/// </para>
-/// <para>
-/// This exists because Avalonia has no virtualising tree. <c>ListBox</c> is the only items
-/// control that virtualises by default and <c>TreeView</c> is not themed here at all, so
-/// there is one tree in this library rather than two that behave differently.
-/// </para>
-/// </remarks>
 public class Tree : ListBox
 {
     public Tree()
@@ -118,9 +100,8 @@ public class Tree : ListBox
             }
         }
 
-        // Nothing below this is given the key once a tree has answered it. Measured: with
-        // base run anyway, a selection made here is put back to whatever the focused row
-        // was by the time the press returns, so left and right appeared to do nothing.
+        // Do not call base once this has answered the key. It restores the selection to
+        // the focused row by the time the press returns, which undoes left and right.
         if (e.Handled)
         {
             return;

@@ -4,11 +4,6 @@ namespace Workbench.Core.Godot;
 /// What Godot has published. Reads the version feed and the per release manifests, caches
 /// both, and never touches the GitHub API.
 /// </summary>
-/// <remarks>
-/// The API would answer all of this in one call and it is deliberately not used. Measured:
-/// unauthenticated requests are limited to 60 an hour per address, and that counts every
-/// process behind it, including the person's browser. gdvm hit that wall and moved off.
-/// </remarks>
 public interface IEngineCatalogue
 {
     /// <summary>
@@ -25,9 +20,7 @@ public interface IEngineCatalogue
     Task<EngineManifest> ReadManifestAsync(EngineTag tag, CancellationToken cancellationToken);
 
     /// <summary>
-    /// How large one build is is deliberately absent. The list does not show a size, so
-    /// nothing here fetches one. A size is a request per file and there are 350 of them
-    /// for one processor across every Godot 4 release, about 26 seconds cold, for a column
-    /// Godots does not draw either.
+    /// No build size is offered. Reading one costs a request per file, hundreds across
+    /// every Godot 4 release, and nothing draws it.
     /// </summary>
 }

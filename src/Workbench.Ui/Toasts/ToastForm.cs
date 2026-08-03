@@ -3,10 +3,6 @@ namespace Workbench.Ui.Toasts;
 /// <summary>
 /// How much of the anatomy a toast draws.
 /// </summary>
-/// <remarks>
-/// The grouped form is not here. It is not a shape a caller picks, it is what a card
-/// becomes when the same toast fires again, and it is any of these with a count on it.
-/// </remarks>
 public enum ToastForm
 {
     /// <summary>

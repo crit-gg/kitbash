@@ -3,10 +3,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// What Workbench reads out of a <c>project.godot</c>.
 /// </summary>
-/// <remarks>
-/// A small part of a large file, and read rather than written. Godot owns this file and
-/// rewrites it whole from the editor, so nothing here edits it.
-/// </remarks>
 public sealed record GodotProject
 {
     /// <summary>The <c>project.godot</c> itself.</summary>
@@ -27,11 +23,6 @@ public sealed record GodotProject
     /// <summary>
     /// The version from <c>config/features</c>, or null when it names none.
     /// </summary>
-    /// <remarks>
-    /// A hint rather than a pin. Godot writes the version that last opened the project,
-    /// so it says what the project has been used with rather than what it requires. A
-    /// workspace that means to require one says so in <c>.workbench</c>.
-    /// </remarks>
     public EngineVersionPattern? Version { get; init; }
 
     /// <summary>Whether this project needs a .NET engine.</summary>

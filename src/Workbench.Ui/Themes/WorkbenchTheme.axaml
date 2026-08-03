@@ -1,15 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- The one thing a consumer includes:
-
-             <StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
-
-         Workbench and every tool take this and nothing else, so a token added here
-         reaches all of them without any of them being edited.
-
-         Slate is one theme. There is no light variant and no ThemeVariant plumbing
-         until something asks for it. -->
+    <!-- The one thing a consumer includes. -->
 
     <Styles.Resources>
         <ResourceDictionary>

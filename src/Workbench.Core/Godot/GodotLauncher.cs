@@ -7,48 +7,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// Opens a project, building and importing first when either is needed.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The flags are read off <c>--help</c> on 4.7.1 rather than remembered.
-/// <c>--build-solutions</c> is "Build the scripting solutions (e.g. for C# projects).
-/// Implies --editor and requires a valid project to edit", and <c>--import</c> is "Starts
-/// the editor, waits for any resources to be imported, and then quits". Both start the
-/// editor, so both take <c>--headless</c> and neither puts a window on screen.
-/// </para>
-/// <para>
-/// **The build and the import are waited for and the last step is not.** The first two
-/// have to finish before the third is worth starting, and what starts is the thing a
-/// person is waiting for, so it is handed to
-/// <see cref="IPlatformServices.StartDetached"/> and outlives Workbench.
-///
-/// The last step is the only one that reads <see cref="GodotLaunchMode"/>. A project that
-/// will not build will not run either, and one that was never imported has no resources
-/// to run with, so editing and playing do exactly the same work up to that point.
-/// </para>
-/// <para>
-/// **A step that fails stops the whole thing, and nothing starts.** That is the
-/// point of building first. Opening anyway would put somebody in an editor whose
-/// assemblies are stale or missing, which is the failure the build is there to catch, and
-/// it would do it silently because the editor itself has no idea a build was attempted.
-/// So this throws and nothing further runs. Turning the build off is a setting and a
-/// deliberate act, not something a failure talks anybody into.
-/// </para>
-/// <para>
-/// <para>
-/// **A rebuild keeps the editor layout and throws away everything else.** Where a person
-/// put their docks lives at <c>.godot/editor/editor_layout.cfg</c>, among the files that
-/// are safe to delete, so a rebuild would quietly rearrange their editor. It is taken
-/// before the delete and written back after the import, in a finally, so a rebuild that
-/// failed does not take it as well.
-/// </para>
-/// <para>
-/// **The import runs before the editor rather than being left to it.** Godot imports on
-/// open by itself, so this is not work the editor would skip. Doing it here means the
-/// wait happens under a dialog that says what is happening and can be cancelled, instead
-/// of the editor sitting on a splash screen for minutes on a fresh clone. It is skipped
-/// outright when nothing needs importing, which is every open after the first.
-/// </para>
-/// </remarks>
 internal sealed class GodotLauncher : IGodotLauncher
 {
     private const string DotnetProgram = "dotnet";
@@ -205,17 +163,6 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// <summary>
     /// Deletes the import cache, so the import that follows makes all of it again.
     /// </summary>
-    /// <remarks>
-    /// **This throws away more than imported assets.** <c>.godot</c> also holds the uid
-    /// cache, the script class cache and the editor's own per project state, and a
-    /// rebuild is asked for precisely when one of those is the thing that is wrong. All
-    /// of it is Godot's to make again, and none of it is committed.
-    ///
-    /// The folder is the one beside this project's <c>project.godot</c> and is named
-    /// rather than searched for, so there is no case where this deletes something it
-    /// found. A folder that is not there is not a failure, since the result asked for is
-    /// that it is gone.
-    /// </remarks>
     /// <returns>The editor layout that was there, to be put back afterwards.</returns>
     private string? Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
     {
@@ -246,20 +193,6 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// <summary>
     /// Puts the editor layout back where the cache used to be.
     /// </summary>
-    /// <remarks>
-    /// **This is the one thing in the cache a person made rather than Godot.** It is
-    /// where they put their docks, and it lives under <c>.godot</c> with everything that
-    /// is safe to throw away, so a rebuild would quietly rearrange their editor. Nothing
-    /// else in there is worth keeping, which is why this is one named file and not a
-    /// backup of the folder.
-    ///
-    /// It is written after the import rather than before, so whatever the headless editor
-    /// did on its way past cannot win. Measured: a headless import writes no layout of
-    /// its own, so this is a guard rather than a fix.
-    ///
-    /// A failure here is swallowed. Losing a dock arrangement is a bad afternoon and
-    /// taking the rebuild down over it would be worse.
-    /// </remarks>
     private void Restore(GodotProject project, string layout)
     {
         var file = LayoutFile(project);
@@ -280,15 +213,6 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// <summary>
     /// The file's text, or null when there is nothing to keep.
     /// </summary>
-    /// <remarks>
-    /// **No layout file is the ordinary case, not a problem.** Godot writes it when a
-    /// person closes the editor, so a project that has only ever been imported has none,
-    /// and a fresh clone has none either. Null means nothing is put back afterwards,
-    /// which leaves the project exactly as it would have been.
-    ///
-    /// A file that exists and cannot be read reads the same way. It is a dock arrangement
-    /// and it is not worth failing a rebuild over.
-    /// </remarks>
     private string? Read(string file)
     {
         try
@@ -304,12 +228,6 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// <summary>
     /// Which program builds this project's C#, or null when nothing should.
     /// </summary>
-    /// <remarks>
-    /// **A plain engine never builds.** A project's C# only builds against the .NET build
-    /// of the engine, so asking a plain one to do it fails and asking dotnet to do it
-    /// produces assemblies that engine will not load. When the two disagree the strip has
-    /// already said so, and opening anyway means opening what is there.
-    /// </remarks>
     private GodotBuildTool? BuildToolFor(InstalledEngine engine, GodotProject project)
     {
         if (!project.UsesDotnet || !engine.IsMono)

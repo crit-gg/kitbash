@@ -2,18 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- The two halves of a split button. They carry no fill and no border of their own,
-         so the frame around them supplies both and the pair reads as one control. Each
-         half still takes its own hover, which is the point: the caret can darken without
-         the label moving with it.
-
-         Each half also carries its own focus halo, because each half is what actually
-         takes focus. Measured: a SplitButton is not focusable and its two parts are, so a
-         halo on the control itself would never appear.
-
-         The halo is why a half carries a radius rather than being clipped to the frame. A
-         clip on the frame would take the halo with it, so instead each half rounds its own
-         outer end and nothing clips. -->
+    <!-- The two halves of a split button. They carry no fill and no border of their own, so
+         the frame around them supplies both and the pair reads as one control. -->
     <ControlTheme x:Key="SplitButtonPart" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
@@ -28,10 +18,9 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
-                    <!-- The halo's radius is set by a style rather than here, because a
-                         value written in a template is a local value and a local value
-                         beats every style, so the two ends below could never override
-                         it. -->
+                    <!-- The halo's radius is set by a style rather than here, because a value written in a
+                         template is a local value and a local value beats every style, so the two ends below
+                         could never override it. -->
                     <Border Name="PART_Focus"
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
@@ -147,22 +136,13 @@
             </ControlTemplate>
         </Setter>
 
-        <!-- The caret answers the flyout it opens. RenderTransform is written as a
-             transform operation and moved by a transition, which is the pairing that
-             works. A keyframe animation against a TransformOperations value does nothing
-             at all and logs nothing, recorded in .claude/avalonia.md. -->
+        <!-- The caret answers the flyout it opens. RenderTransform is written as a transform
+             operation and moved by a transition, which is the pairing that works. -->
         <Style Selector="^:flyout-open /template/ ui|Icon#PART_Caret">
             <Setter Property="RenderTransform" Value="rotate(180deg)" />
         </Style>
 
-        <!-- The kinds. A kind colours the frame, and each half names the same tones the
-             plain button of that kind names, so a hover here and a hover on a Button are
-             the same colour rather than two ways of arriving near it.
-
-             A half covers its side of the frame completely when it fills, so no
-             translucency is involved anywhere. The seam between them is the kind's
-             pressed tone, which is the fill already darkened. Neutral is the one
-             exception and says why where it departs. -->
+        <!-- The kinds. -->
         <Style Selector="^.primary">
             <Setter Property="Background" Value="{DynamicResource Accent}" />
             <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
@@ -182,13 +162,8 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
         </Style>
 
-        <!-- The second lead. Derived rather than read, since the design's split button row
-             draws the accent kind alone.
-
-             The seam is the one departure from the rule above. It takes the border rather
-             than the pressed tone, because neutral is the only kind whose edge does not
-             track its fill: a darkened seam inside a lighter frame would read as two
-             different edges on one control. -->
+        <!-- The second lead. Derived rather than read, since the design's split button row draws
+             the accent kind alone. -->
         <Style Selector="^.neutral">
             <Setter Property="Background" Value="{DynamicResource Neutral}" />
             <Setter Property="BorderBrush" Value="{DynamicResource NeutralLine}" />

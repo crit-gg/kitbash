@@ -8,19 +8,6 @@ namespace Workbench.Views;
 /// <summary>
 /// Says a build or an import failed, and shows what the program wrote.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The design's Error kind. **The output is the whole point.** A C# build that fails is
-/// only useful with its compiler errors, and there is nowhere else a person could go and
-/// read them, since Workbench started the process and owns its pipes.
-/// </para>
-/// <para>
-/// **There is no Retry and no Open anyway.** A build that failed means the editor would
-/// open without the assemblies the project needs, so opening it is the one thing this
-/// dialog must not offer. The only ways on are fixing the code or turning the build off
-/// in settings, and both are deliberate acts elsewhere.
-/// </para>
-/// </remarks>
 public partial class LaunchFailedDialog : DialogWindow
 {
     /// <summary>How long the button says Copied before it goes back to its own word.</summary>
@@ -125,15 +112,6 @@ public partial class LaunchFailedDialog : DialogWindow
     /// <summary>
     /// Puts the whole log on the clipboard and says so on the button for a moment.
     /// </summary>
-    /// <remarks>
-    /// **The whole log, not what the well is showing.** The well shows the errors, and the
-    /// log is what somebody pastes into a message or a search, so the two are deliberately
-    /// different and only the button can say which one was taken.
-    ///
-    /// The confirmation is the button's own label rather than a toast. A toast belongs to
-    /// the window that raised it, and this is a modal in front of that window, so one
-    /// would appear behind the thing being read.
-    /// </remarks>
     private async Task CopyAsync(string log, string label)
     {
         if (_copying || TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
@@ -162,16 +140,6 @@ public partial class LaunchFailedDialog : DialogWindow
     /// <summary>
     /// The lines worth reading out of a program's output, or all of it when none stand out.
     /// </summary>
-    /// <remarks>
-    /// **A build log is not evidence, the errors in it are.** Measured on a two error
-    /// build: dotnet writes 13 lines, opens with restore chatter, and prints every error
-    /// twice, once where it happened and once in its summary. Showing that raw puts the
-    /// answer on line three and repeats it on line seven.
-    ///
-    /// Both formats are matched. MSBuild writes <c>path(3,28): error CS0103: ...</c> and
-    /// Godot writes lines beginning ERROR. Counting lines such as "2 Error(s)" are not
-    /// errors and do not match either.
-    /// </remarks>
     private static string Problems(string output)
     {
         var problems = new List<string>();

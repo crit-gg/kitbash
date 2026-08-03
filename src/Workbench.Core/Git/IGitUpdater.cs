@@ -35,11 +35,5 @@ public interface IGitUpdater
     /// <summary>
     /// Fetches, then takes the new commits when taking them cannot cost anything.
     /// </summary>
-    /// <remarks>
-    /// Never blocks waiting for a person, since this runs unattended and anything git would
-    /// stop and ask about comes back as <see cref="GitUpdateOutcome.NeedsCredentials"/>
-    /// instead. See <see cref="GitUpdater"/> for what "cannot cost anything" is allowed to
-    /// mean, which is the whole of why this is safe to put on a button.
-    /// </remarks>
     Task<GitUpdateResult> UpdateAsync(string root, CancellationToken cancellation = default);
 }

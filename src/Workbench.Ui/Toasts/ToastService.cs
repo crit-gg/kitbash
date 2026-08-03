@@ -103,14 +103,9 @@ public sealed class ToastService : IToastService, IDisposable
     }
 
     /// <summary>
-    /// How long a toast stays, in the order the design decides it: what the caller asked
-    /// for, then what the tier says, then whether there is anything to act on.
+    /// How long a toast stays. The caller's value wins, then the tier, then whether there
+    /// is an action to press.
     /// </summary>
-    /// <remarks>
-    /// Zero is indefinite, and a toast with no dwell draws no timer bar. An error and
-    /// anything still running both land there, which is what says they will not go away
-    /// by themselves.
-    /// </remarks>
     private TimeSpan DwellFor(ToastRequest request)
     {
         if (request.Dwell is { } asked)

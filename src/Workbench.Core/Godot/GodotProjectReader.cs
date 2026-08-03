@@ -6,21 +6,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// Reads a <c>project.godot</c> by line.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **It is not TOML and it is not quite INI.** Keys carry slashes, such as
-/// <c>config/features</c>, and values are written in Godot's own syntax, such as
-/// <c>PackedStringArray("4.7", "C#")</c> and <c>Color(0.1, 0.1, 0.1, 1)</c>. So it is
-/// read by line with the section tracked, and only the handful of keys that are wanted
-/// are understood. Everything else is skipped without being parsed at all, which is what
-/// keeps a value syntax nobody here models from mattering.
-/// </para>
-/// <para>
-/// Measured against the Slopworks project: <c>config_version=5</c> at the top level,
-/// <c>config/name</c> and <c>config/features=PackedStringArray("4.7", "C#")</c> under
-/// <c>[application]</c>, and a <c>[dotnet]</c> section.
-/// </para>
-/// </remarks>
 internal sealed partial class GodotProjectReader : IGodotProjectReader
 {
     public const string ProjectFileName = "project.godot";

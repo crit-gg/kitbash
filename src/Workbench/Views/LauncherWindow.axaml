@@ -31,10 +31,8 @@
             <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
         </Style>
 
-        <!-- The page and the cards on it ride the depth ramp rather than naming a tone,
-             so the page is one step below the window and a card one below the page. They
-             land on the same two pairs that were written here by hand, and now anything
-             dropped into the page is on the tone the page really is. -->
+        <!-- The page and the cards on it ride the depth ramp rather than naming a tone, so the
+             page is one step below the window and a card one below the page. -->
         <Style Selector="Border.page">
             <Setter Property="(ui:Surface.Nests)" Value="True" />
         </Style>
@@ -128,12 +126,8 @@
             <!-- The rail. Selection, keyboard navigation and the selected state all come
                  from ListBox. Only the workspace page exists, so the other two are here
                  and disabled rather than absent, which is what the design shows. -->
-            <!-- The rail. Selection, keyboard navigation and the selected state all come
-                 from ListBox, so what the library supplies is a look.
-
-                 Two groups rather than one, because the settings item sits at the foot and
-                 the items panel cannot be changed from a theme. Both groups draw the same
-                 ground and the same seam, so they read as one rail. -->
+            <!-- The rail. Selection, keyboard navigation and the selected state all come from ListBox,
+                 so what the library supplies is a look. -->
             <DockPanel Grid.Column="0">
                 <ListBox DockPanel.Dock="Bottom" Name="RailFoot"
                          Theme="{StaticResource ActivityRail}"
@@ -234,10 +228,8 @@
                                         </ScrollViewer>
 
                                         <ui:Popover.Footer>
-                                            <!-- A library button rather than a menu item.
-                                                 The row is one action, not a menu, and the
-                                                 ghost kind is what a button with no fill
-                                                 already looks like here. -->
+                                            <!-- A library button rather than a menu item. The row is one action, not a menu, and the
+                                                 ghost kind is what a button with no fill already looks like here. -->
                                             <Button Classes="ghost"
                                                     HorizontalAlignment="Stretch"
                                                     HorizontalContentAlignment="Left"
@@ -360,10 +352,7 @@
                                         <DataTemplate x:DataType="vm:ToolCardViewModel">
                                             <Border Classes="toolCard">
                                                 <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="15">
-                                                    <!-- The square holds the tool's icon. The
-                                                         design draws a letter there and that is
-                                                         a placeholder, so it stays empty until a
-                                                         tool supplies one. -->
+                                                    <!-- The square holds the tool's icon. Empty until a tool supplies one. -->
                                                     <Border Grid.Column="0" Classes="toolMark"
                                                             Width="48" Height="48"
                                                             VerticalAlignment="Center" />
@@ -410,10 +399,7 @@
                                        TextTrimming="CharacterEllipsis"
                                        IsVisible="{Binding !Git.IsRepository}" />
 
-                            <!-- Two groups, because they answer two questions. Left is
-                                 identity: which branch this is and what has changed in it.
-                                 Right is this branch against its remote, and the one action
-                                 the launcher offers. -->
+                            <!-- Two groups, because they answer two questions. -->
                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="14"
                                   IsVisible="{Binding Git.IsRepository}">
 
@@ -478,11 +464,7 @@
 
                                     <TextBlock Classes="updateAge" Text="{Binding Git.UpdateLabel}" />
 
-                                    <!-- The only action in the bar, and one word for both
-                                         of the things it does. It always fetches, and it
-                                         takes the new commits only when there is nothing
-                                         local that taking them could cost. Pushing and
-                                         resolving a conflict belong to a git client. -->
+                                    <!-- The only action in the bar, and one word for both of the things it does. -->
                                     <Button Theme="{StaticResource StatusBarButton}"
                                             Command="{Binding UpdateCommand}"
                                             ToolTip.Tip="Fetch, and pull when nothing has changed here">
@@ -540,11 +522,8 @@
                 <views:EnginesPage DataContext="{Binding Engines}" />
               </Panel>
 
-              <!-- The launcher's first toast host. It held none until now, because it had
-                   nothing transient to report: the one slow thing it did, updating from
-                   git, reports on itself in the status bar in place. Installing an engine
-                   finishes while a person is usually looking at another tab, which is what
-                   a toast is for. -->
+              <!-- The launcher's first toast host. It held none until now, because it had nothing
+                   transient to report. -->
               <ui:ToastHost Name="Toasts" />
             </Panel>
         </Grid>

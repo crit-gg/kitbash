@@ -3,13 +3,6 @@ namespace Workbench.Core.Settings.Schema;
 /// <summary>
 /// The Godot engine choices that belong to one person on one machine.
 /// </summary>
-/// <remarks>
-/// The install directory's default is the real folder rather than blank, worked out from
-/// <see cref="ApplicationPaths"/> when this is built. So a window shows where engines
-/// actually go rather than an empty box, and resetting the setting means that folder
-/// rather than meaning nothing. A path override that has no knowable default, such as a
-/// program found on PATH, cannot do this and uses blank instead.
-/// </remarks>
 public sealed class GodotSettingsSchema
 {
     public GodotSettingsSchema(ApplicationPaths paths)
@@ -88,9 +81,8 @@ public sealed class GodotSettingsSchema
     public SettingDescriptor<string> EngineDirectory { get; }
 
     /// <summary>
-    /// The install a project falls back to, by name. Blank is a real answer and means
-    /// there is none, which is the state uninstalling the default leaves the machine in.
-    /// Choosing the next one is a deliberate act and never automatic.
+    /// The install a project falls back to, by name. Blank is a real answer meaning there
+    /// is none, which is what uninstalling the default leaves behind. Never set here.
     /// </summary>
     public SettingDescriptor<string> DefaultEngine { get; }
 

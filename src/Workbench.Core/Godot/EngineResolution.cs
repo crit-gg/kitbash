@@ -29,7 +29,7 @@ public enum EngineMatch
 /// <param name="Match">How well the two agree.</param>
 /// <param name="IsDefault">
 /// True when <paramref name="Engine"/> is this machine's default rather than something
-/// the workspace named. Worth saying, since the two look the same on the row.
+/// the workspace named. The two are otherwise indistinguishable to a caller.
 /// </param>
 public sealed record EngineResolution(
     EngineRequirement Requirement,

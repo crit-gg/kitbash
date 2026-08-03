@@ -2,8 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Archivo for anything read as language. JetBrains Mono for identifiers, values,
-         counts, paths and shortcuts. That split is the most visible thing about this
-         theme, so a control picks a family deliberately rather than inheriting one. -->
+         counts, paths and shortcuts. A control names its family rather than inheriting. -->
     <FontFamily x:Key="FontFamilyUi">avares://Workbench.Ui/Assets/Fonts#Archivo</FontFamily>
     <FontFamily x:Key="FontFamilyMono">avares://Workbench.Ui/Assets/Fonts#JetBrains Mono</FontFamily>
 

@@ -3,11 +3,6 @@ using Workbench.Core.Workspaces;
 namespace Workbench.ViewModels;
 
 /// <summary>One workspace in the switcher. Everything shown is derived from the model.</summary>
-/// <remarks>
-/// This carries no brushes. It reports what is true and the view turns that into
-/// classes, so every colour comes from the theme and a workspace row can be restyled
-/// without touching a view model.
-/// </remarks>
 public sealed class WorkspaceViewModel
 {
     public WorkspaceViewModel(Workspace workspace, bool isCurrent, string displayPath)

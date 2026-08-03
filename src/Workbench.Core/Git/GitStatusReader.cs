@@ -6,29 +6,6 @@ namespace Workbench.Core.Git;
 /// <summary>
 /// Reads a repository by running git and parsing what it says.
 /// </summary>
-/// <remarks>
-/// One command answers everything except the fetch time:
-/// <c>git --no-optional-locks status --porcelain=v2 --branch --untracked-files=no</c>.
-/// Porcelain v2 is the format git promises not to change between versions, which is the only
-/// reason parsing output is defensible here. The ordinary output is for people and does
-/// change.
-/// <para>
-/// <c>--no-optional-locks</c> is not optional. Plain <c>git status</c> writes the index back
-/// to refresh its stat cache, measured here as a <c>Created index.lock</c>, a
-/// <c>Changed index.lock</c> and a <c>Renamed index</c> on every single run. Anything
-/// watching the git directory then sees its own read as a change and reads again, forever.
-/// This flag is git's own answer to that and it writes nothing at all.
-/// </para>
-/// <para>
-/// Untracked files are excluded deliberately. The strip reports what has changed, and a
-/// build directory nobody has ignored yet would otherwise swamp that.
-/// </para>
-/// <para>
-/// No library. Running git is portable in a way that binding to one is not: it works with
-/// whatever git the person already has, honours their config, their credential helper and
-/// their hooks, and cannot disagree with what they see in a terminal.
-/// </para>
-/// </remarks>
 public sealed class GitStatusReader : IGitStatusReader
 {
     private readonly IProcessRunner _processes;
@@ -95,10 +72,6 @@ public sealed class GitStatusReader : IGitStatusReader
     /// <summary>
     /// Asks git where it keeps this repository.
     /// </summary>
-    /// <remarks>
-    /// Cached for as long as the folder keeps answering, so this costs one extra git run
-    /// per repository rather than one per read.
-    /// </remarks>
     private async Task<GitPlaces?> PlacesAsync(string git, string root, CancellationToken cancellation)
     {
         if (_resolvedPlaces is { } cached && string.Equals(_resolvedRoot, root, StringComparison.Ordinal))

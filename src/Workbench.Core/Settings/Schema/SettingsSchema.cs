@@ -3,12 +3,6 @@ namespace Workbench.Core.Settings.Schema;
 /// <summary>
 /// Every page one app's settings window draws, and the one scope all of them write.
 /// </summary>
-/// <remarks>
-/// The scope belongs here rather than to a setting. Every page in the launcher's window
-/// writes <c>workbench.toml</c> and every page in a tool's window writes that tool's
-/// file, across every home. Fixing it once at composition means a tool cannot declare a
-/// global key by accident and write into the file the whole team shares.
-/// </remarks>
 public sealed class SettingsSchema
 {
     public SettingsSchema(SettingsScope scope, IReadOnlyList<SettingsPage> pages)

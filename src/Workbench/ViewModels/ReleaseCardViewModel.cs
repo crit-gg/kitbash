@@ -10,30 +10,14 @@ namespace Workbench.ViewModels;
 /// <summary>
 /// One release on the Available tab: the header always, and the builds once it is opened.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **A card fetches nothing until it is opened.** The feed says a release exists and says
-/// nothing about its files, so the manifest is read on the first expand and kept. Sizes are
-/// a second request per build, since neither the feed nor the manifest carries one, and
-/// they go out together rather than one after another.
-/// </para>
-/// <para>
-/// Three states, and the third is the one the design does not draw. Builds for this
-/// machine is the ordinary case. Nothing at all for this platform is spec 5.1. Builds for
-/// this platform but none for this processor is real on any ARM machine, since Linux ARM
-/// starts at 4.2-beta5 and Windows arm64 at 4.3-rc1.
-/// </para>
-/// </remarks>
 public sealed partial class ReleaseCardViewModel : ViewModelBase
 {
     private readonly EngineRelease _release;
     private readonly EnginesViewModel _page;
 
     /// <summary>
-    /// The rows this card has already made, by file name. **Kept rather than rebuilt.**
-    /// Regrouping happens whenever the architecture disclosure moves, and building fresh
-    /// rows threw away whatever they were doing: a running install lost its bar, its
-    /// percentage and the button that cancels it.
+    /// The rows this card has made, by file name. Reused across a regroup, so a running
+    /// install keeps its bar and its cancel button.
     /// </summary>
     private readonly Dictionary<string, EngineBuildViewModel> _rows = new(StringComparer.Ordinal);
 
@@ -42,10 +26,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isOpen;
 
-    /// <summary>
-    /// The subtitle is two parts rather than one string, since the design spaces them 18
-    /// apart and a joined string cannot be spaced.
-    /// </summary>
+    /// <summary>Half of the subtitle. Two parts, so the view can space them apart.</summary>
     [ObservableProperty]
     private string _released = string.Empty;
 
@@ -93,8 +74,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
         Channel = EngineRowViewModel.ChannelOf(release.Tag);
         Released = $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}";
 
-        // **Everything the card will ever show, worked out here.** Opening it does no
-        // reading and no fetching, so there is nothing to wait for and nothing to pop in.
+        // Everything the card will show is worked out here, so opening it reads nothing.
         _forHost = manifest is null
             ? []
             : [.. manifest.Builds.Where(build => build.Platform == page.HostPlatform)];
@@ -122,10 +102,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
     public bool HasChannel => Channel.Length > 0;
 
-    /// <summary>
-    /// The tint a channel pill takes. Stable carries no pill at all, which is why it has
-    /// no tier here.
-    /// </summary>
+    /// <summary>The tint a channel pill takes. Stable carries no pill.</summary>
     public BadgeTier ChannelTier => Tag.Channel switch
     {
         EngineChannel.Rc => BadgeTier.Modified,
@@ -194,7 +171,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
                 [.. group.Select(RowFor)]));
         }
 
-        // The design does not draw this one and it is the common case on an ARM machine.
+        // The common case on an ARM machine.
         HasNoNative = native.Count == 0 && !_page.ShowAllArchitectures;
         NoNativeNote = $"No {EngineBuild.TextFor(_page.HostArchitecture)} build in this release";
 

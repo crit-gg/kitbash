@@ -10,19 +10,6 @@ namespace Workbench.Core.Settings;
 /// <see cref="SettingsDocument"/> has, over Tomlyn's syntax tree instead of a model, so
 /// every comment, blank line and key order survives a write.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Trivia hangs off tokens rather than off value or key nodes. So replacing
-/// <see cref="KeyValueSyntax.Value"/> drops the inline comment that followed the old
-/// value, and removing a pair leaves the comment written above it behind, since that
-/// comment trails the token before the pair. Both are carried by hand here.
-/// </para>
-/// <para>
-/// A dotted key has five legal spellings and the search answers all of them. Missing one
-/// would write the key a second time somewhere else, and a file holding the same key
-/// twice is invalid TOML that no later read can open.
-/// </para>
-/// </remarks>
 internal sealed class TomlDocument
 {
     private readonly DocumentSyntax _document;
@@ -68,23 +55,6 @@ internal sealed class TomlDocument
     }
 
     /// <summary>Drops a dotted key. Reports whether anything was there.</summary>
-    /// <remarks>
-    /// <para>
-    /// **A comment above the key is left alone.** Nothing in the file says a comment
-    /// belongs to the line under it, and the scaffolded workspace file is the case that
-    /// settles it: every setting there sits under the paragraph that describes it and a
-    /// commented out sample of itself. Taking that with the key would mean resetting a
-    /// setting deletes its documentation. An orphaned note is untidy, deleted prose is
-    /// gone. The comment written after the value on the same line does go, since that one
-    /// is part of the line.
-    /// </para>
-    /// <para>
-    /// A table left with nothing in it keeps its header, for the same reason. An empty
-    /// table reads the same as one that is not there, so no value changes. This is where
-    /// the file and <see cref="SettingsDocument.RemoveValue"/> deliberately differ, since
-    /// that one prunes.
-    /// </para>
-    /// </remarks>
     public bool RemoveValue(string key)
     {
         var path = Split(key);

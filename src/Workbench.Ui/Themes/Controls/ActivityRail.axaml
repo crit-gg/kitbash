@@ -2,13 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- The rail down the left of a Workbench window, switching which page is shown.
-
-         A ListBox rather than a control of its own, so selection, keyboard navigation
-         and the selected state all come from Avalonia. What is written here is a look.
-
-         A tool wants the same rail, which is why this is in the library rather than in
-         the launcher. -->
+    <!-- The rail down the left of a Workbench window, switching which page is shown. -->
     <ControlTheme x:Key="ActivityRail" TargetType="ListBox">
         <Setter Property="Width" Value="{DynamicResource WidthActivityRail}" />
         <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
@@ -16,11 +10,7 @@
         <Setter Property="BorderThickness" Value="0,0,1,0" />
         <Setter Property="Padding" Value="0,8" />
 
-        <!-- Measured: an ItemsPanel setter does not take here. The presenter builds its
-             panel once and does not rebuild when ItemsPanel changes, so the rail keeps
-             the ordinary stack and a rail that wants something at its foot uses a second
-             group docked to the bottom. Both draw the same ground and the same seam, so
-             they read as one rail. -->
+        <!-- An ItemsPanel setter does not take here. -->
 
         <Setter Property="Template">
             <ControlTemplate>
@@ -71,10 +61,8 @@
             </ControlTemplate>
         </Setter>
 
-        <!-- Order is the whole of precedence here. Every selector below carries a pseudo
-             class, so they all bind at the same strength and the later one wins. Resting
-             look in the setters above, then unselected states, then selected and its
-             states, then focus, then disabled last. -->
+        <!-- Order is the whole of precedence here. Every selector below carries a pseudo class, so
+             they all bind at the same strength and the later one wins. -->
 
         <Style Selector="^:pointerover /template/ Border#PART_Root">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
@@ -113,10 +101,7 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
 
-        <!-- Last, so nothing above can put colour back into a page nobody can open. An item
-             at rest carries no fill, so disabled keeps none. A selected one carries the
-             accent tint, so disabled flattens it, which is what every other control here
-             does with a fill it has to give up. -->
+        <!-- Last, so nothing above can put colour back into a page nobody can open. -->
         <Style Selector="^:disabled">
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
         </Style>

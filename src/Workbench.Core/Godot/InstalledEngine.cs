@@ -7,13 +7,12 @@ namespace Workbench.Core.Godot;
 /// <param name="Directory">Where it lives.</param>
 /// <param name="Executable">The editor, as an absolute path.</param>
 /// <param name="SizeOnDisk">
-/// Bytes under the directory. Walked rather than remembered, since a person can delete
-/// things inside it. Measured: under a millisecond warm, so nothing caches it.
+/// Bytes under the directory. Walked on every read, since a person can change what is
+/// inside it. Nothing caches it.
 /// </param>
 /// <param name="IsMissing">The folder has gone. Kept in the list rather than dropped.</param>
 /// <param name="IsImported">
-/// A folder Workbench did not create. **Removing one forgets it and never deletes it**,
-/// which is the same rule a missing workspace follows.
+/// A folder Workbench did not create. Removing one forgets it and never deletes it.
 /// </param>
 public sealed record InstalledEngine(
     EngineRecord Record,

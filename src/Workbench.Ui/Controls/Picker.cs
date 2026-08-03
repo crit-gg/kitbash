@@ -9,19 +9,6 @@ namespace Workbench.Ui.Controls;
 /// The parts of a picker's popover that the controls do not provide. Attach it to the
 /// picker: <c>ui:Picker.Wires="True"</c>, which both picker themes do.
 /// </summary>
-/// <remarks>
-/// Three things, and none of them can live in a theme, because a theme cannot carry
-/// behaviour and neither control offers a command for any of it.
-/// <para>
-/// The calendar opens on the date the field holds, or on today when it holds none.
-/// Measured without this: the calendar opened on today whatever the field said, so a field
-/// reading July showed August and the day it names was not marked.
-/// </para>
-/// <para>
-/// Today, Now and Clear are buttons in the popover. They are heard rather than looked up,
-/// since a click bubbles and that works wherever the button actually sits.
-/// </para>
-/// </remarks>
 public class Picker
 {
     private const string TodayPart = "PART_Today";
@@ -33,12 +20,6 @@ public class Picker
     /// <summary>
     /// What an empty date field hints at, which is the shape the culture writes a date in.
     /// </summary>
-    /// <remarks>
-    /// Avalonia's own hint is that same pattern wrapped in angle brackets, which reads as
-    /// something the field is waiting to be told rather than as an example of what to
-    /// type. The pattern is taken from the culture here instead, so it is still the right
-    /// shape and still the culture's own.
-    /// </remarks>
     public static string DateHint =>
         System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
 

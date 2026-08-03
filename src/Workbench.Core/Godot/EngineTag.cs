@@ -7,24 +7,6 @@ namespace Workbench.Core.Godot;
 /// A Godot release tag, such as <c>4.7.1-stable</c> or <c>4.8-dev2</c>. Parsing is the
 /// only way to make one, so a value of this type has already been checked.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The tag is the version spelling that appears in download URLs, in the checksum files
-/// and in the version feed. It is not what a binary prints, which is
-/// <see cref="EngineBuildString"/>, and it is not what <c>Godot.NET.Sdk</c> takes.
-/// Confusing the three is where the other version managers spend their bug budget.
-/// </para>
-/// <para>
-/// Two rules the grammar carries. The patch is left out when it is zero, so
-/// <c>4.7</c> is right and <c>4.7.0</c> is not. Stable never carries a number and every
-/// other channel always does.
-/// </para>
-/// <para>
-/// Parsing is allowed to fail and the feed holds tags it refuses. Measured over all 356
-/// releases: exactly two are refused, <c>3.2-alpha0-unofficial</c> and the four component
-/// <c>2.0.4.1-stable</c>. Every Godot 4 tag parses.
-/// </para>
-/// </remarks>
 public readonly partial record struct EngineTag : IComparable<EngineTag>
 {
     private EngineTag(int major, int minor, int patch, EngineChannel channel, int number)

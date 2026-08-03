@@ -14,19 +14,6 @@ namespace Workbench.ViewModels;
 /// The Godot engines page. What is installed, what is available, and what the machine has
 /// to say about both.
 /// </summary>
-/// <remarks>
-/// <para>
-/// The same split the launcher page uses. Everything that touches a disk, a process or a
-/// network happens inside <c>Task.Run</c> and comes back as one value, and only that value
-/// reaches a bound property. Here the cost is real rather than theoretical: the release
-/// list is a network fetch, and reading the installs runs a process per engine whose record
-/// is missing.
-/// </para>
-/// <para>
-/// Filtering does not go back to disk. What was read is kept and projected again, so typing
-/// in the filter field never waits on anything.
-/// </para>
-/// </remarks>
 public sealed partial class EnginesViewModel : ViewModelBase
 {
     /// <summary>Roughly what fits the status bar beside the counts.</summary>
@@ -60,13 +47,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoading;
 
-    /// <summary>
-    /// **Installed is what opens, which the design does not do.** The page is opened far
-    /// more often to see what is here than to fetch something new, and the release list is
-    /// a network read, so the first thing on screen is the half that is already true. The
-    /// release list is still read, since the Available count and the update marker in the
-    /// status bar both need it.
-    /// </summary>
+    /// <summary>The tab that opens. Both halves are read either way.</summary>
     [ObservableProperty]
     private bool _onAvailable;
 
@@ -134,26 +115,21 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _engineFiles = engineFiles;
         _toasts = toasts;
 
-        // Not read in the constructor, unlike the workspace page. That one reads a config
-        // file and this one fetches over a network, so the window would wait on it.
+        // Not read here. It fetches over a network and the window would wait on it.
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
     }
 
     /// <summary>
-    /// Whether every processor is shown or only this machine's. **Global rather than per
-    /// card, and it resets on relaunch.** A machine either cross compiles or it does not,
-    /// so the answer holds while a person moves between releases. It is view state and
-    /// never a setting, which is why nothing writes it down.
+    /// Whether every processor is shown or only this machine's. View state, so it is
+    /// global to the page and resets on relaunch.
     /// </summary>
     [ObservableProperty]
     private bool _showAllArchitectures;
 
     /// <summary>
-    /// The rows on screen. **One collection, refilled in two notifications.** An
-    /// ObservableCollection raises one per item, so filtering 183 releases cost 184 rounds
-    /// of work, and replacing the whole ItemsSource instead made the list throw its
-    /// containers away and build them again. AvaloniaList adds a range in one go and the
-    /// list keeps its panel.
+    /// The rows on screen. AvaloniaList rather than ObservableCollection, so a refill is
+    /// two notifications instead of one per row. Keep it as one instance and clear it
+    /// rather than assigning a new ItemsSource, which would discard the containers.
     /// </summary>
     public AvaloniaList<EngineRowViewModel> Rows { get; } = [];
 
@@ -179,7 +155,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     public bool HasUpdate => UpdateVersion.Length > 0;
 
-    /// <summary>A zero is never drawn, which is the status bar's own rule.</summary>
+    /// <summary>Empty below one, so a zero is never drawn.</summary>
     public bool HasInstalled => InstalledCount > 0;
 
     public bool HasFailed => Failure.Length > 0;
@@ -189,15 +165,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>
     /// Raised after a read, so anything else showing what is installed can follow it.
     /// </summary>
-    /// <remarks>
-    /// **Every mutation on this page ends in a read**, which is why one event here covers
-    /// installing, uninstalling, importing and naming a default. It is the same reason
-    /// the git strip watches a repository: what a person does in one place has to show up
-    /// in the other, and the workspace page's engine strip is the other place.
-    ///
-    /// It fires on the first read as well. Refreshing a strip that was already right
-    /// costs a read nobody sees, where missing one leaves the strip wrong.
-    /// </remarks>
     public event EventHandler? InstallsChanged;
 
     /// <summary>Reads everything again. The Refresh button goes past the cache, a first open does not.</summary>
@@ -223,8 +190,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
             _loading.Release();
         }
 
-        // After the release, so a listener that reads engines cannot meet this page still
-        // holding its own load open.
+        // After the release, so a listener that reads engines does not meet a held lock.
         InstallsChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -237,25 +203,9 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>
     /// Installs the build that answers a requirement, and shows it happening.
     /// </summary>
-    /// <remarks>
-    /// **One press, and the page it lands on is the one already built to show an install.**
-    /// The row's own bar, its cancel and the toasts all belong to this page, so the strip
-    /// starts the install here rather than owning a second way of reporting one. The page
-    /// is filtered to the release and the card is opened, so what is running is on screen
-    /// rather than somewhere in 183 rows.
-    ///
-    /// The pattern picks the release the same way the resolver picks an install, so a
-    /// workspace asking for 4.7 gets the newest 4.7 stable rather than a candidate.
-    ///
-    /// **The filter is left alone.** Typing into somebody's search field on their behalf
-    /// hides everything else they might have wanted, and they did not ask for a filtered
-    /// list, they asked for an engine. The card is scrolled to instead, which shows the
-    /// install without taking the rest of the page away.
-    /// </remarks>
     public async Task InstallForAsync(EngineVersionPattern wanted, bool mono)
     {
-        // Nothing has been read if the page has not been opened yet, and the strip can
-        // send somebody here before that has happened.
+        // The page may never have been opened, so nothing has been read yet.
         if (_cards.Count == 0)
         {
             await LoadAsync().ConfigureAwait(true);
@@ -304,18 +254,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>
     /// Shows the engine directory in whatever file browser this desktop has.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// **The directory is created when it is not there.** It is Workbench's own folder and
-    /// the first install would create it anyway, so a person who clicks it before
-    /// installing anything sees where engines go rather than nothing happening. The
-    /// alternative was a link that does nothing until an engine exists.
-    /// </para>
-    /// <para>
-    /// Off the UI thread. On Linux, opening a folder searches PATH for a launcher before it
-    /// starts anything, and that reads a disk.
-    /// </para>
-    /// </remarks>
     [RelayCommand]
     private Task OpenEngineDirectoryAsync() => Task.Run(() =>
     {
@@ -332,8 +270,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
                                           or ArgumentException
                                           or ProcessStartException)
         {
-            // Nothing on this page can report yet. Step 7 brings the toast host, and this
-            // is the first thing that will use it.
+            // TODO no toast host on this page yet, so a failure here is silent.
         }
     });
 
@@ -372,8 +309,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     partial void OnShowAllArchitecturesChanged(bool value)
     {
-        // Every open card regroups. Nothing is fetched again, since what a release holds
-        // was read when it opened.
+        // Every open card regroups. Nothing is fetched again.
         foreach (var card in Cards)
         {
             card.Arrange();
@@ -401,8 +337,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            // A directory that cannot be read is an empty list rather than a dead page,
-            // since the release half may still have something to say.
+            // A directory that cannot be read is an empty list, not a failed load.
             installed = [];
         }
 
@@ -410,11 +345,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             var releases = await _catalogue.ReadReleasesAsync(refresh, CancellationToken.None).ConfigureAwait(false);
 
-            // **Every manifest, not one per card as it opens.** A card should hold
-            // everything it will ever show the moment it is made, so a release that cannot
-            // be read is a card that says so rather than one that finds out later.
-            // Measured: 183 of them in 1.8 seconds cold, and they are cached without an
-            // expiry, so every launch after the first reads them off a disk.
+            // Every manifest, so a card holds everything it will draw the moment it is
+            // made. Cached with no expiry, so only the first run pays for the fetch.
             var manifests = await Task.WhenAll(releases.Releases.Select(async release =>
             {
                 try
@@ -455,9 +387,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
             ? $"This list was read {Ago(loaded.ReadAt)} and could not be checked just now."
             : string.Empty;
 
-        // **A card per release, whatever tab is showing and whatever the filter is.** They
-        // hold everything they will ever draw, so making them is the point at which the
-        // page is complete, and filtering only decides which of them are listed.
+        // A card per release, whatever the tab and filter are. Filtering only decides
+        // which of them are listed.
         foreach (var release in _releases)
         {
             if (!_cards.ContainsKey(release.Tag))
@@ -491,8 +422,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         if (OnAvailable)
         {
-            // The cards are their own list. A card holds what it read when it opened, so
-            // it is kept across a filter rather than built again.
+            // Cards are kept across a filter, since each holds what it read when it opened.
             var cards = new List<ReleaseCardViewModel>();
 
             foreach (var release in _releases)
@@ -546,10 +476,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsEmpty));
     }
 
-    /// <summary>
-    /// The notes for a release, or null when the feed carried none. An imported engine of
-    /// a version nobody published has none either, which is why this is a lookup.
-    /// </summary>
+    /// <summary>The notes for a release, or null when the feed carried none.</summary>
     public WebAddress? NotesFor(EngineTag tag) =>
         _releases.FirstOrDefault(release => release.Tag == tag)?.Notes;
 
@@ -557,14 +484,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// Starts this engine's project manager, which is the window Godot opens when it is
     /// run outside a project.
     /// </summary>
-    /// <remarks>
-    /// The flag is <c>--project-manager</c>, read off <c>--help</c> on 4.7.1 rather than
-    /// remembered: "Start the project manager, even if a project is auto-detected."
-    ///
-    /// Detached rather than merely unwaited on. An engine is a person's next few hours of
-    /// work and Workbench is a launcher they may well close, so the two do not share a
-    /// fate. What that costs per platform is <see cref="IPlatformServices.StartDetached"/>.
-    /// </remarks>
     public void OpenProjectManager(InstalledEngine engine)
     {
         ArgumentNullException.ThrowIfNull(engine);
@@ -597,8 +516,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
                                           or ArgumentException
                                           or ProcessStartException)
         {
-            // Our own words with a path written for the card, rather than the operating
-            // system's, which puts the whole path in and runs off the edge.
+            // Our own words with an elided path. The platform message uses the full path
+            // and overflows the card.
             Post(ToastTier.Error, "Could not open the folder", Shorten(directory, ToastPathLength));
         }
     });
@@ -616,25 +535,19 @@ public sealed partial class EnginesViewModel : ViewModelBase
             return;
         }
 
-        // The whole path is copied and a shortened one is shown, since a toast is 352 wide
-        // and a path is not.
+        // The whole path is copied, and an elided one shown to fit the toast.
         await Copier(text).ConfigureAwait(true);
 
         Post(ToastTier.Ok, "Path copied", Shorten(text, ToastPathLength));
     }
 
     /// <summary>
-    /// A path written for a fixed width. **A path shown in a row, a bar or a toast comes
-    /// through here**, so the middle is elided and the end, which is the part that says
-    /// which folder it is, survives. The uninstall dialog is the one place that overrides
-    /// that and shows the whole thing, since it is evidence rather than a readout.
+    /// Elides the middle of a path to fit a width, keeping the end. Every path shown in a
+    /// row, a bar or a toast goes through here.
     /// </summary>
     public string Shorten(string path, int length) => _paths.Shorten(path, length);
 
-    /// <summary>
-    /// Names the machine default. **Nothing is chosen automatically**, here or when the
-    /// default is removed, which is what the spec asks for.
-    /// </summary>
+    /// <summary>Names the machine default. Nothing is ever chosen automatically.</summary>
     public void SetDefault(InstalledEngine engine)
     {
         ArgumentNullException.ThrowIfNull(engine);
@@ -645,8 +558,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Asks first, then removes. **Deletes only what Workbench installed**, and the dialog
-    /// says which of the two it is about to do before it is pressed.
+    /// Asks first, then removes. Deletes files only for an install Workbench made. An
+    /// imported engine is forgotten and left on disk.
     /// </summary>
     public async Task RemoveAsync(InstalledEngine engine)
     {
@@ -661,8 +574,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             await Task.Run(() => _store.RemoveAsync(engine, CancellationToken.None)).ConfigureAwait(true);
 
-            // Uninstalling the default leaves the machine without one. Choosing the next is
-            // a person's act and never this method's.
+            // Uninstalling the default leaves the machine without one. Nothing is promoted.
             if (_settings.DefaultEngine == engine.Id)
             {
                 _settings.SetDefaultEngine(null);
@@ -767,8 +679,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         }
         catch (OperationCanceledException)
         {
-            // Cancelling is a person's own doing and is already visible in place, so it
-            // says nothing.
+            // Cancelling reports nothing. It is already visible in place.
             row.Stopped(installed: false);
         }
         catch (Exception error) when (error is EngineInstallException or EngineCatalogueException)
@@ -795,10 +706,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// Toasts are posted rather than shown, since an install reports from wherever it ran.
-    /// An error stays until it is dismissed, which is the library's own dwell.
-    /// </summary>
+    /// <summary>Posted, not shown, since an install reports from any thread.</summary>
     private void Post(ToastTier tier, string title, string? body, ToastAction? action = null) =>
         _toasts.Post(new ToastRequest
         {
@@ -809,8 +717,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         });
 
     /// <summary>
-    /// The newest stable release that is newer than the newest stable installed. Empty when
-    /// there is nothing to say, which is the status bar's rule that a zero is never drawn.
+    /// The newest stable release that is newer than the newest stable installed. Empty
+    /// when there is none.
     /// </summary>
     private string Update()
     {

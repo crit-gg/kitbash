@@ -25,19 +25,6 @@ public enum EngineState
 /// The engine strip above the tool list. What this workspace asks for, what will open it,
 /// and how well those two agree.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Built whole from an <see cref="EngineResolution"/> and replaced rather than updated, so
-/// there is no half applied state and nothing to keep in step. Every rule about which
-/// engine answers a project lives in <see cref="IEngineResolver"/> and none of it is here.
-/// This turns one answer into words.
-/// </para>
-/// <para>
-/// **The version shown is the engine that would open the project, not what was asked
-/// for**, except when there is no engine to name and the request is all there is to show.
-/// A strip reading 4.7 while 4.6 is what opens would be worse than saying nothing.
-/// </para>
-/// </remarks>
 public sealed partial class EngineViewModel : ViewModelBase
 {
     /// <summary>Roughly what fits the strip's second line at the launcher's width.</summary>
@@ -91,9 +78,8 @@ public sealed partial class EngineViewModel : ViewModelBase
                 StateLabel = "mismatch";
                 Note = MismatchNote(requirement, engine, resolution.IsDefault, asked);
 
-                // **Installing what was asked for is the answer, and opening what is here
-                // is the workaround.** So the button is the answer and the workaround is
-                // in the menu. A mismatch is not a state to settle into.
+                // The button installs what was asked for. Opening what is here is the
+                // workaround, so it lives in the menu.
                 Action = requirement.Version is { } fix ? $"Install {NumberOf(fix)}" : "Install";
 
                 break;
@@ -158,11 +144,6 @@ public sealed partial class EngineViewModel : ViewModelBase
     /// The channel as a pill, such as <c>STABLE</c>. Empty only when nothing names one,
     /// which is a requirement like <c>4.7</c> with no engine behind it yet.
     /// </summary>
-    /// <remarks>
-    /// **Shown for stable too, unlike the engines page.** A row there sits among other
-    /// rows and a missing pill reads as stable by contrast. This is one line on its own,
-    /// so nothing is being contrasted with and the pill is the only thing that says it.
-    /// </remarks>
     public string Channel { get; private init; } = string.Empty;
 
     public BadgeTier ChannelTier { get; private init; } = BadgeTier.Neutral;
@@ -225,9 +206,8 @@ public sealed partial class EngineViewModel : ViewModelBase
             return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor);
         }
 
-        // **Anything else installs what was asked for, in one press.** A workspace that
-        // names a version has already said which engine it wants, so making somebody find
-        // it in a list of 183 is asking a question that is already answered.
+        // Installs what was asked for in one press, since the workspace has already
+        // named the version it wants.
         if (Resolution?.Requirement is { Version: { } wanted } requirement)
         {
             return _launcher.InstallEngineAsync(wanted, requirement.NeedsDotnet);

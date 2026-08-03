@@ -2,16 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
-    <!-- A number in a well with a stepper column inside it.
-
-         The adorner rule is the whole look of a value editor: a stepper, a calendar mark
-         or a colour swatch sits inside the well behind a hairline, never floating outside
-         it. Nothing new is built for that. A NumericUpDown already hosts a ButtonSpinner
-         which already hosts the field, so the frame is the spinner's and the field inside
-         it draws nothing of its own.
-
-         The value is mono, because the spec puts numbers, dates, counts and paths in
-         JetBrains Mono and a column of them has to line up. -->
+    <!-- A number in a well with a stepper column inside it. -->
 
     <!-- The field inside the spinner. No frame, no well and no focus halo of its own,
          since all three belong to the spinner around it. -->

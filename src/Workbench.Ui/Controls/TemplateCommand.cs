@@ -7,11 +7,6 @@ namespace Workbench.Ui.Controls;
 /// control theme has no code behind to give it a handler. This is that command and
 /// nothing more.
 /// </summary>
-/// <remarks>
-/// It is always able to run, and what it runs decides what to do about a thing that has
-/// already gone. Nothing here reports back, so there is nothing for
-/// <see cref="CanExecuteChanged"/> to say.
-/// </remarks>
 internal sealed class TemplateCommand : ICommand
 {
     private readonly Action<object?> _run;

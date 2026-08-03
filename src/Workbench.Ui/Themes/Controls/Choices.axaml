@@ -4,12 +4,8 @@
 
     <Styles.Resources>
 
-    <!-- The controls that answer yes or no. A checkbox and a radio are the same 14px box
-         with one of them rounded, and a toggle is a track with a knob in it.
-
-         All three draw a well rather than a control fill, so they answer the pointer on
-         the well ramp: SurfaceWellHover then SurfaceWellPressed, with the edge coming up
-         to LineWellHover. StateHover would lighten a well past the surface around it. -->
+    <!-- The controls that answer yes or no. A checkbox and a radio are the same 14px box with
+         one of them rounded, and a toggle is a track with a knob in it. -->
 
     <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
         <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
@@ -243,15 +239,8 @@
         </Style>
     </ControlTheme>
 
-    <!-- A track with a knob in it. The knob is moved by the control rather than by this
-         theme, which is why the parts below are the names and the types the control looks
-         for: a Panel for the knob and a Panel for the area it travels in. Give it a Border
-         for the knob and it stays where it is put, silently.
-
-         The travel is the track minus its border, minus the inset either side, minus the
-         knob. Keeping the border on both states rather than dropping it when the switch is
-         on is what keeps that arithmetic the same in both, and it costs nothing because an
-         accent border on an accent track cannot be seen. -->
+    <!-- A track with a knob in it. The knob is moved by the control rather than by this theme,
+         which is why the parts below are the names and the types the control looks for. -->
     <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
         <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
         <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
@@ -264,10 +253,7 @@
         <Setter Property="Cursor" Value="Arrow" />
         <Setter Property="ClipToBounds" Value="False" />
 
-        <!-- The design's 140ms on the design's own curve. This is a transition rather than
-             an animation on purpose: an animation would have to target a transform, and a
-             keyframe on RenderTransform throws while one on TransformOperations does
-             nothing at all. -->
+        <!-- The design's 140ms on the design's own curve. -->
         <Setter Property="KnobTransitions">
             <Transitions>
                 <DoubleTransition Property="Canvas.Left" Duration="0:0:0.14">
@@ -295,14 +281,7 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="{TemplateBinding CornerRadius}">
-                            <!-- The two parts read backwards and are not ours to rename.
-                                 PART_SwitchKnob is the area the knob travels in, and
-                                 PART_MovingKnobs is the thing that moves inside it. The
-                                 control puts a Canvas.Left on the second and reads the
-                                 first to know how far, so the travel is the track minus
-                                 this square: 30 less 17 is the 13 the design draws. Both
-                                 have to be a Panel, so a Border here moves nothing and
-                                 says nothing about it. -->
+                            <!-- The two parts read backwards and are not ours to rename. -->
                             <Canvas Name="PART_SwitchKnob"
                                     Width="{DynamicResource TravelKnob}"
                                     Height="{DynamicResource SizeKnob}"
@@ -390,17 +369,8 @@
         </Style>
     </ControlTheme>
 
-    <!-- One option in a segmented row. A radio in a group is what a segmented control
-         already is, so the only thing here is the look: options share one well and one
-         border and each rounds on its own.
-
-         An option carries no fill in any state. The thumb behind the row is the fill, and
-         it slides, so an option only ever changes its ink. That is the whole reason the
-         row is a control rather than a border.
-
-         The design haloes the whole group, which is what a browser does because the group
-         is the focusable thing. Here each option is focusable, so the halo goes on the
-         option that actually has focus. -->
+    <!-- One option in a segmented row. A radio in a group is what a segmented control already
+         is, so the only thing here is the look. -->
     <ControlTheme x:Key="SegmentedOption" TargetType="RadioButton">
         <Setter Property="Height" Value="20" />
         <Setter Property="Padding" Value="9,0" />
@@ -449,10 +419,8 @@
             </ControlTemplate>
         </Setter>
 
-        <!-- Ink and nothing else, which is the one place in this library where a control
-             answers the pointer without a fill. A fill here is a second raised surface
-             beside the thumb, saying the same thing in the same way, so the one that
-             moves stops being the thing being watched. -->
+        <!-- Ink and nothing else, which is the one place in this library where a control answers
+             the pointer without a fill. -->
         <Style Selector="^:pointerover">
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
         </Style>
@@ -481,15 +449,7 @@
         </Style>
     </ControlTheme>
 
-    <!-- The row the options sit in, and the thumb that says which one is chosen.
-
-         A border cannot hold the thumb, since it has one child and the thumb has to sit
-         behind the row rather than inside it. So this is a control, and the one thing it
-         does is put the thumb where the chosen option is.
-
-         Nothing about the arithmetic is written here. The control reads the option it is
-         standing on, so the padding, the gap and the row height below are the only places
-         those numbers exist. -->
+    <!-- The row the options sit in, and the thumb that says which one is chosen. -->
     <ControlTheme x:Key="{x:Type ui:Segmented}" TargetType="ui:Segmented">
         <Setter Property="Height" Value="{DynamicResource HeightControl}" />
         <Setter Property="Padding" Value="2" />
@@ -503,13 +463,7 @@
              outside its own. -->
         <Setter Property="ClipToBounds" Value="False" />
 
-        <!-- The design's 200ms on the toggle knob's curve. The knob crosses 13px and a
-             thumb crosses most of a row, so the two share a curve and not a duration.
-
-             A transition rather than an animation, for the reason the knob gives: a key
-             frame on RenderTransform throws and one on TransformOperations does nothing.
-             Both the position and the width move, because the options are different
-             widths. -->
+        <!-- The design's 200ms on the toggle knob's curve. -->
         <Setter Property="ThumbTransitions">
             <Transitions>
                 <DoubleTransition Property="Canvas.Left" Duration="0:0:0.2">

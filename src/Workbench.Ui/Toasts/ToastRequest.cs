@@ -37,11 +37,6 @@ public sealed class ToastRequest
     /// How long it stays. Null takes the default for the tier, which is four seconds,
     /// eight when there is an action, and indefinite for an error or anything busy.
     /// </summary>
-    /// <remarks>
-    /// Zero or less stays until it is dismissed, and a toast that stays draws no timer
-    /// bar. That is the rule rather than a decoration: a toast with no bar is a toast
-    /// that will not go away by itself, and it has to look like one.
-    /// </remarks>
     public TimeSpan? Dwell { get; init; }
 
     /// <summary>
@@ -52,9 +47,9 @@ public sealed class ToastRequest
     public double? Progress { get; init; }
 
     /// <summary>
-    /// What counts as the same toast firing again. Null derives one from the tier and
-    /// the title, which is what makes a repeat collapse without anyone arranging it.
-    /// Give two toasts different keys to keep them apart when their titles match.
+    /// What counts as the same toast firing again, so a repeat collapses onto it. Null
+    /// derives a key from the tier, the form and the title. Set it to keep two toasts
+    /// apart when their titles match.
     /// </summary>
     public string? GroupKey { get; init; }
 }

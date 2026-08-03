@@ -11,16 +11,6 @@ namespace Workbench.Ui.Controls;
 /// What the running culture says about telling the time, for the controls that have to
 /// ask rather than assume, and the one column that is a choice rather than a list.
 /// </summary>
-/// <remarks>
-/// A time field cannot be written down once. Whether it reads twelve hours or twenty four,
-/// where the period sits, and what the period is even called all come from the culture, and
-/// a data tool is used in more than one.
-/// <para>
-/// The readout goes through the culture's own short time pattern rather than a format
-/// written here, so the order of the parts is the culture's too. A pattern that puts the
-/// period first gets it first.
-/// </para>
-/// </remarks>
 public class Clock : IValueConverter
 {
     /// <summary>Formats a <see cref="TimeSpan"/> the way the culture writes a time.</summary>
@@ -29,13 +19,6 @@ public class Clock : IValueConverter
     /// <summary>
     /// This column holds two values, so a wheel turns it over rather than scrolling it.
     /// </summary>
-    /// <remarks>
-    /// A column of hours is a list and scrolls like one. A column of AM and PM is a choice
-    /// of two, and the panel has no third thing to show. Letting it loop instead fills the
-    /// column with the same two words over and over, and because the panel marks every row
-    /// holding the selected value, several rows read as chosen at once: measured at three
-    /// of the seven rows a looping period column realises.
-    /// </remarks>
     public static readonly AttachedProperty<bool> TurnsProperty =
         AvaloniaProperty.RegisterAttached<Clock, DateTimePickerPanel, bool>("Turns");
 

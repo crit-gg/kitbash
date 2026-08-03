@@ -7,28 +7,6 @@ namespace Workbench.Ui.Controls;
 /// <summary>
 /// A tree flattened to the rows that can be seen, so a tree can be virtualised.
 /// </summary>
-/// <remarks>
-/// Avalonia has no virtualising tree and no virtualising tree panel. <c>ListBox</c>
-/// overrides its panel to a virtualising one and gets that free, while <c>TreeView</c>
-/// inherits the plain stack panel and so does every node under it, which means a tree of
-/// ten thousand rows realises ten thousand controls.
-/// <para>
-/// So the standard answer: flatten the expanded nodes into a flat list, virtualise that,
-/// and let expanding and collapsing edit the list rather than the tree of controls.
-/// Depth becomes a value on a row, which is also what makes the indent and the guides a
-/// calculation rather than a nesting.
-/// </para>
-/// <para>
-/// Collapsing forgets. A subtree is dropped when it closes and built again when it opens,
-/// so the list only ever holds rows a person could see.
-/// </para>
-/// <para>
-/// This is a list of rows rather than a wrapper holding one, because that is what an
-/// <c>ItemsSource</c> has to be. It reads as a list and refuses to be written as one:
-/// rows arrive and leave through <see cref="Expand"/>, <see cref="Collapse"/> and
-/// <see cref="Reset"/>.
-/// </para>
-/// </remarks>
 public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionChanged
 {
     private readonly AvaloniaList<TreeRow> rows = new();

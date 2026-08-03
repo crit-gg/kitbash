@@ -6,11 +6,6 @@ namespace Workbench.Core.Settings;
 /// Reads and writes a workspace's settings. Loaded scopes are cached until a write or
 /// a call to <see cref="Reload"/>.
 /// </summary>
-/// <remarks>
-/// Synchronous because settings files are small and callers need them before they can
-/// start. Nothing watches the filesystem, so a write in one process is not seen by
-/// another until that process reloads.
-/// </remarks>
 internal sealed class WorkspaceSettingsService : ISettingsService
 {
     private readonly WorkspacePaths _paths;

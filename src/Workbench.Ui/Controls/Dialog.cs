@@ -19,15 +19,6 @@ public enum DialogRole
 /// <summary>
 /// Marks what a dialog's buttons are for, and which one is ready when it opens.
 /// </summary>
-/// <remarks>
-/// A role rather than a label, so a dialog can say Remove, Discard or Replace and still be
-/// answered with Enter, closed with Escape, and read as a yes or a no by whoever opened it.
-/// <see cref="DialogWindow"/> is what acts on these.
-/// <para>
-/// A button with no role is an ordinary button and the dialog leaves it alone, which is how
-/// a third answer such as Don't save is written.
-/// </para>
-/// </remarks>
 public class Dialog
 {
     public static readonly AttachedProperty<DialogRole> RoleProperty =
@@ -37,10 +28,6 @@ public class Dialog
     /// This is the control that is ready when the dialog opens. Without it the accepting
     /// button is, so a dialog that only confirms needs to say nothing.
     /// </summary>
-    /// <remarks>
-    /// Mark the cancelling button instead when accepting is the destructive answer, so a
-    /// held Enter or a stray space cannot delete anything.
-    /// </remarks>
     public static readonly AttachedProperty<bool> TakesFocusProperty =
         AvaloniaProperty.RegisterAttached<Dialog, Control, bool>("TakesFocus");
 

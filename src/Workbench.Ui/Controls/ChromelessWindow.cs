@@ -9,14 +9,6 @@ namespace Workbench.Ui.Controls;
 /// A window that draws its own title bar. The frame lives in
 /// Themes/Controls/WindowChrome.axaml, which supplies the resize grips wired up here.
 /// </summary>
-/// <remarks>
-/// The view also tags its title bar and caption buttons with
-/// WindowDecorationProperties.ElementRole, which is the platform hit testing route
-/// added in Avalonia 12. Those roles only take effect when
-/// ExtendClientAreaToDecorationsHint is honored, which on Linux needs an experimental
-/// option that is off by default, so moving and resizing are driven from here for
-/// now. See .claude/avalonia.md.
-/// </remarks>
 public class ChromelessWindow : Window
 {
     /// <summary>

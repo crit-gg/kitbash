@@ -38,10 +38,6 @@ public sealed record GodotLaunchStep(
     GodotLaunchStage Stage, string Detail = "", double? Fraction = null);
 
 /// <summary>A step of opening a project failed.</summary>
-/// <remarks>
-/// Carries what the program wrote, because a build failure is only useful with its
-/// output and there is nowhere else a person could go and read it.
-/// </remarks>
 public sealed class GodotLaunchException : Exception
 {
     public GodotLaunchException(GodotLaunchStage stage, string message, string output)

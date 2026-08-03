@@ -7,29 +7,6 @@ namespace Workbench.Core.Godot;
 /// A version a project asks for, which is looser than a tag. Every part after the major
 /// is optional and a part left out matches anything.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This exists because what a project names is not a release. <c>config/features</c>
-/// carries <c>4.7</c>, and the release that answers it could be <c>4.7-stable</c> or
-/// <c>4.7.1-stable</c>. An <see cref="EngineTag"/> cannot hold that, since a tag always
-/// knows its patch and its channel, so a requirement needs a type of its own.
-/// </para>
-/// <para>
-/// The version and the .NET flag are still different questions. The flag is a fact about
-/// the project and is read off it, and <see cref="NeedsDotnet"/> only ever adds to that:
-/// a pin ending <c>-mono</c> asks for the .NET build as well, and one that does not ends
-/// asks for nothing either way. So the grammar here is the one an install is named by,
-/// and a person can paste what the engines page calls a build.
-/// </para>
-/// <para>
-/// **A pattern cannot spell one exact release the way a tag does, and it is not meant
-/// to.** A tag writes a zero patch as nothing, so <c>4.7-stable</c> means patch zero,
-/// while here a missing patch means any patch and only <c>4.7.0-stable</c> pins it to
-/// zero. The two spellings cannot be reconciled, so anything that means one specific
-/// release holds an <see cref="EngineTag"/> instead. This type is for the loose case,
-/// which is the only case a project file produces.
-/// </para>
-/// </remarks>
 public readonly partial record struct EngineVersionPattern
 {
     private EngineVersionPattern(
@@ -57,13 +34,6 @@ public readonly partial record struct EngineVersionPattern
     /// <summary>
     /// True when the pattern ended in <c>-mono</c>, which asks for the .NET build.
     /// </summary>
-    /// <remarks>
-    /// **Asymmetric on purpose.** Writing <c>-mono</c> requires the .NET build, and
-    /// leaving it off requires nothing, because that is how an engine's own name is
-    /// spelled: a plain build carries no suffix, so a missing one cannot mean "not .NET"
-    /// without making <c>4.7</c> mean it too. What a project needs is a fact about the
-    /// project and is read off it, and this only ever adds to that.
-    /// </remarks>
     public bool NeedsDotnet { get; }
 
     /// <summary>The same scope rule <see cref="EngineTag.IsSupported"/> states.</summary>
@@ -145,15 +115,6 @@ public readonly partial record struct EngineVersionPattern
     /// <summary>
     /// The best release in a list for this pattern, or null when none answers it.
     /// </summary>
-    /// <remarks>
-    /// **A pattern that names no channel prefers a stable release over any prerelease**,
-    /// whatever the version numbers say, and only then takes the highest. So <c>4.7</c>
-    /// with 4.7.1-stable and 4.7.2-rc1 installed opens the stable one. Taking the highest
-    /// outright is the obvious rule and it is wrong here: a candidate is not an upgrade
-    /// from a release, and somebody who wants one names it.
-    ///
-    /// A pattern that does name a channel has already said so, so the highest wins.
-    /// </remarks>
     public EngineTag? BestMatch(IEnumerable<EngineTag> tags)
     {
         ArgumentNullException.ThrowIfNull(tags);
@@ -218,11 +179,8 @@ public readonly partial record struct EngineVersionPattern
     };
 
     // A patch cannot appear without a minor, which the nesting enforces. Unlike the tag
-    // grammar a zero patch is allowed, since this is what a person writes rather than
-    // what Godot published, and 4.7.0 plainly means 4.7.
-    //
-    // The -mono tail makes this the same grammar an install is named by, so a person can
-    // paste what the engines page calls a build and have it mean that build.
+    // grammar a zero patch is allowed here, since a person writes this. The -mono tail
+    // makes it the same grammar an install is named by.
     [GeneratedRegex(@"^(\d+)(?:\.(\d+)(?:\.(\d+))?)?(?:-(stable|dev|alpha|beta|rc)(\d+)?)?(-mono)?$")]
     private static partial Regex Grammar();
 }

@@ -47,25 +47,6 @@ public partial class LauncherWindow : ChromelessWindow
     /// <summary>
     /// Builds the workspace list once, before anyone asks for it.
     /// </summary>
-    /// <remarks>
-    /// A flyout is a window of its own, and the first one a process opens costs far more
-    /// than the rest. Measured on this window with a 4ms heartbeat on the UI thread: the
-    /// first open held the thread for 78ms and later opens for 5 to 18. Roughly 60 of that
-    /// 78 is machinery any popup would pay for, and the rest is this one's rows, its badge
-    /// and its icons being built for the first time.
-    /// <para>
-    /// So it is paid here instead, where the window is up and nobody is waiting on it. The
-    /// same window measured both ways, first open: 70.6ms of ShowAt and a 75.7ms gap without
-    /// this, 14.8ms and 37.3ms with it. What is left is the new window's first composite,
-    /// which cannot be paid in advance because the warmed one was closed again.
-    /// </para>
-    /// <para>
-    /// The presenter is held at zero opacity while this happens. Showing and hiding inside
-    /// one dispatcher frame probably never reaches the screen, but probably is not good
-    /// enough for something that would read as a flicker at every launch, and layout is what
-    /// costs the time rather than the paint.
-    /// </para>
-    /// </remarks>
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);

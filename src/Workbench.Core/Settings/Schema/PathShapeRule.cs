@@ -15,16 +15,6 @@ public enum PathKind
 /// The string has to look like a path. Shape only. Whether anything is there is an
 /// <see cref="ISettingProbe"/>, since the answer changes after the value is written.
 /// </summary>
-/// <remarks>
-/// Judged by the rules of the OS this is running on, deliberately. A path setting names
-/// a place on this machine, so a Windows path read on Linux is wrong there whatever it
-/// meant where it was written. That is also why a path is a poor team shared setting,
-/// and no rule here can rescue one.
-///
-/// <see cref="PathKind"/> is mostly for the editor and the summary. A string cannot say
-/// whether it names a file or a folder, so the only thing it adds to the check is that
-/// a file needs a final segment.
-/// </remarks>
 public sealed class PathShapeRule : ISettingRule<string>
 {
     /// <param name="allowEmpty">

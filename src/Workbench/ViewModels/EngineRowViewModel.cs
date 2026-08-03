@@ -9,11 +9,6 @@ namespace Workbench.ViewModels;
 /// <summary>
 /// One engine on the Installed tab.
 /// </summary>
-/// <remarks>
-/// The subtitle is parts rather than a joined string, since the design spaces them and a
-/// string cannot be spaced. The processor earns its place among them: other architectures
-/// are installable, so this row is the only thing that says which one was taken.
-/// </remarks>
 public sealed partial class EngineRowViewModel : ViewModelBase
 {
     /// <summary>Roughly what fits a row's subtitle beside the size and the processor.</summary>
@@ -77,7 +72,7 @@ public sealed partial class EngineRowViewModel : ViewModelBase
 
     public IReadOnlyList<string> Parts { get; }
 
-    /// <summary>Hidden on the row that already is the default, which is the design's rule.</summary>
+    /// <summary>Hidden on the row that already is the default.</summary>
     public bool CanSetDefault => !IsDefault && !Engine.IsMissing;
 
     public bool HasNotes => _page.NotesFor(Engine.Tag) is not null;
@@ -133,10 +128,6 @@ public sealed partial class EngineRowViewModel : ViewModelBase
     }
 
     /// <summary>The version alone, such as <c>4.7.1</c>.</summary>
-    /// <remarks>
-    /// How a tag reads on screen lives here rather than on <see cref="EngineTag"/>, which
-    /// spells a tag the way Godot's own files do and should keep doing so.
-    /// </remarks>
     public static string VersionOf(EngineTag tag) =>
         tag.Patch > 0 ? $"{tag.Major}.{tag.Minor}.{tag.Patch}" : $"{tag.Major}.{tag.Minor}";
 

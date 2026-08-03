@@ -22,8 +22,8 @@ internal sealed class GodotSettings : IGodotSettings
         {
             var stored = _schema.EngineDirectory.Read(_settings.Global);
 
-            // The rule refuses blank, so a stored blank never reaches here. A file edited
-            // by hand can still hold one, and the default is the honest answer to it.
+            // The rule refuses blank, but a hand edited file can still hold one, so it
+            // falls back to the default.
             return string.IsNullOrWhiteSpace(stored) ? _schema.EngineDirectory.Default : stored;
         }
     }

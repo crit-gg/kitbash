@@ -12,11 +12,6 @@ public interface IWebContent
     /// <summary>
     /// How large the file at an address is, or null when the server will not say.
     /// </summary>
-    /// <remarks>
-    /// **Read the length off the final response, not the first.** Measured on 2 August
-    /// 2026: a Godot download URL is a 302 to a signed URL and the 302 itself reports a
-    /// length of zero. Redirects are followed, so the length here is the one that counts.
-    /// </remarks>
     Task<long?> MeasureAsync(WebAddress address, CancellationToken cancellationToken);
 
     /// <summary>

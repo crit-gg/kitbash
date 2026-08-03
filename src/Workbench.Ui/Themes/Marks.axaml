@@ -1,19 +1,7 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!--
-        Brand marks, drawn in their own colours.
-
-        Not the icon set. Themes/Icons.axaml holds the mono glyphs, where a shape carries
-        no fill and takes its colour from the control it sits in, and generate.py refuses
-        anything else. A logo owns its colours, so it cannot go through that reader and it
-        is not an ui:Icon. It is a DrawingImage, drawn with an Image.
-
-        Converted from tools/icons/local/godot_colored.svg. Every path keeps its own data
-        and its own matrix, so nothing was flattened, scaled or simplified and the mark
-        cannot have drifted in the crossing. Avalonia takes an SVG matrix in the order it
-        is written, so a transform is copied across as it stands.
-    -->
+    <!-- Brand marks, drawn in their own colours. Not the icon set. -->
     <DrawingImage x:Key="GodotMark">
         <DrawingImage.Drawing>
             <DrawingGroup>

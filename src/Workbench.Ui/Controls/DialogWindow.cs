@@ -9,33 +9,6 @@ namespace Workbench.Ui.Controls;
 /// A dialog is a real window rather than an overlay, with the same frame and the same
 /// title bar as any other. There is no scrim behind it.
 /// </summary>
-/// <remarks>
-/// It differs from a main window in three ways only. It cannot be resized or
-/// minimised, so the title bar keeps its close button alone. It centres on the window
-/// that opened it. It stays out of the task bar, because it belongs to that window
-/// rather than standing on its own.
-/// <para>
-/// A dialog lays out its own content. <see cref="DialogFooter"/> is the row its
-/// actions sit in. Size is left to the caller, so a dialog can be measured or fixed.
-/// </para>
-/// <para>
-/// Its buttons carry a <see cref="DialogRole"/> rather than a handler. A roled button
-/// closes the dialog and answers for it, so
-/// <c>await dialog.ShowDialog&lt;bool&gt;(owner)</c> says which was pressed and the caller
-/// wires nothing. Closing any other way, including the title bar's close button, is a no.
-/// </para>
-/// <para>
-/// Enter and Escape are Avalonia's own, not ours. A role sets <c>IsDefault</c> or
-/// <c>IsCancel</c> on the button and the framework does the rest, which was measured
-/// rather than assumed: Enter presses the accepting button while focus sits in a text
-/// field, and Escape presses the cancelling one.
-/// </para>
-/// <para>
-/// Marking the cancelling button with <see cref="Dialog.TakesFocusProperty"/> takes Enter
-/// off the accepting one. Measured before that: a dialog that opened with Cancel ready
-/// still accepted on Enter, which is the opposite of what marking it was asking for.
-/// </para>
-/// </remarks>
 public class DialogWindow : ChromelessWindow
 {
     public DialogWindow()

@@ -13,27 +13,6 @@ namespace Workbench.Ui.Controls;
 /// Places a control's popup under it, left aligned, whatever the control asked for.
 /// Attach it to the control: <c>ui:Popups.Under="True"</c>.
 /// </summary>
-/// <remarks>
-/// For a control that configures its own popup in code and gets it wrong.
-/// <para>
-/// Measured on 12.1.1, three popups opened against fields 66px apart in one window. A
-/// combo box and a date picker both place with <c>BottomEdgeAlignedLeft</c> against
-/// themselves and land 4px under their field, which is the gap the theme asks for. A time
-/// picker sets <c>AnchorAndGravity</c> with an anchor and a gravity of Bottom, targets its
-/// own flyout button, and lands 445px above the field at the very top of the screen.
-/// </para>
-/// <para>
-/// The placement cannot be fixed from a theme. The control writes it as a local value in
-/// <c>OnApplyTemplate</c>, and a style setter binds below that however the selector is
-/// written, so the only way to win is to write it later. <c>TemplateApplied</c> is raised
-/// after the control's own override has run, which is what this waits for.
-/// </para>
-/// <para>
-/// The offset is the part that actually moved it. Measured: the time picker sets a
-/// vertical offset of negative infinity, which pushes the popup off the top of the screen
-/// and leaves it clamped there. Placement alone does not undo that, so both are put back.
-/// </para>
-/// </remarks>
 public class Popups
 {
     private const string PopupPart = "PART_Popup";
@@ -65,30 +44,6 @@ public class Popups
     /// This element is the transparent room a popup's shadow falls into, and a press on it
     /// closes the popup.
     /// </summary>
-    /// <remarks>
-    /// A popup is a window of its own, and a window is only ever the size of what it
-    /// holds, so the room a shadow needs is part of that window. The window is transparent
-    /// there but it is still a window, and the platform hands it every click that lands
-    /// inside its rectangle.
-    /// <para>
-    /// That rectangle reaches 18px above the visible overlay, which is more than half the
-    /// height of the 26px control it opened from. So a click on the control that opened
-    /// the popup lands on the popup instead, light dismiss never sees it, and the popup
-    /// will not close.
-    /// </para>
-    /// <para>
-    /// Verified against the backend rather than assumed: Avalonia's X11 popup is an
-    /// override redirect window with no input shape and no pointer grab, so nothing makes
-    /// the transparent part of it click through.
-    /// </para>
-    /// <para>
-    /// So the room answers for itself. It takes a transparent fill, which is what makes it
-    /// hit tested at all, and a press that lands on it rather than on the overlay inside
-    /// it closes the popup and stops there. That is what a press outside a popup already
-    /// does, and this is outside it in every way except the one the window manager can
-    /// see.
-    /// </para>
-    /// </remarks>
     public static readonly AttachedProperty<bool> RoomProperty =
         AvaloniaProperty.RegisterAttached<Popups, Control, bool>("Room");
 
@@ -175,20 +130,6 @@ public class Popups
     /// <summary>
     /// This overlay is at least as wide as whatever it opened from.
     /// </summary>
-    /// <remarks>
-    /// A menu or a popover narrower than the button that opened it reads as a mistake, and
-    /// the width a person expects is the one they just clicked. It is a floor rather than a
-    /// width, so an overlay with more to say is still as wide as it needs to be.
-    /// <para>
-    /// Set on the element that draws the overlay rather than on the presenter, since the
-    /// room a shadow needs sits outside that and should not count towards the width.
-    /// </para>
-    /// <para>
-    /// It is written with SetCurrentValue, so a view that sets a minimum width of its own
-    /// keeps it. A context menu does not take this: it belongs to whatever it was opened
-    /// on, which may be a whole page.
-    /// </para>
-    /// </remarks>
     public static readonly AttachedProperty<bool> MatchesTargetProperty =
         AvaloniaProperty.RegisterAttached<Popups, Control, bool>("MatchesTarget");
 
@@ -201,21 +142,6 @@ public class Popups
     /// A wheel that nothing inside this overlay wanted stops here rather than reaching the
     /// page behind it.
     /// </summary>
-    /// <remarks>
-    /// A popup is its own window, but its child's logical parent is the popup itself,
-    /// which lives in the parent window's tree. So an unhandled wheel routes out of the
-    /// popup and into the page behind it.
-    /// <para>
-    /// Measured: a wheel raised inside the time popover scrolled the page 150px and left
-    /// the popover where it was. The same wheel inside a dropdown or a calendar did
-    /// nothing, because a scroll viewer in those had already taken it. Nothing was
-    /// protecting the page, one popover simply had somewhere for the wheel to land.
-    /// </para>
-    /// <para>
-    /// Bubbling does the deciding. A handled event never reaches this, so anything inside
-    /// that wanted the wheel still gets it.
-    /// </para>
-    /// </remarks>
     public static readonly AttachedProperty<bool> KeepsWheelProperty =
         AvaloniaProperty.RegisterAttached<Popups, Control, bool>("KeepsWheel");
 
@@ -296,11 +222,9 @@ public class Popups
         popup.SetValue(WantedProperty, new Point(popup.HorizontalOffset, popup.VerticalOffset));
         Place(popup);
 
-        // The control writes its placement again every time it opens the popup, so once
-        // at template time is not enough, and putting it back after the popup is open is
-        // too late: measured, the popup does not move once it has been positioned.
-        //
-        // So it is put back the moment it is written, which is before the open.
+        // The control rewrites its placement on every open, so setting this once at
+        // template time is not enough. After the open is too late, since a popup does not
+        // move once positioned, so it is restored the moment the control writes it.
         popup.PropertyChanged -= OnPopupChanged;
         popup.PropertyChanged += OnPopupChanged;
     }

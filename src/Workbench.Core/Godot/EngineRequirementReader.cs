@@ -6,26 +6,6 @@ namespace Workbench.Core.Godot;
 /// <summary>
 /// Reads the engine a workspace asks for.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **The workspace's own config wins over the project file, and only when it is set.**
-/// The two say different things. <c>config/features</c> is written by Godot and records
-/// the version that last opened the project, so it drifts every time somebody opens it
-/// in something newer. The <c>.workbench</c> key is written by a person and means this
-/// is the version we use. So the deliberate answer beats the incidental one, and a blank
-/// key is not an answer at all and falls through.
-/// </para>
-/// <para>
-/// The .NET flag is read off the project every time, since whether a project has C# in
-/// it is a fact rather than a choice. A pin ending in <c>-mono</c> can add to it, so a
-/// workspace can require the .NET build of a version, but nothing can take it away.
-/// </para>
-/// <para>
-/// Both layers of the config are read, personal over team shared, which is the same
-/// order <see cref="ISettingsService"/> uses. A file that will not parse is passed over
-/// rather than thrown, since this runs behind a status strip that has to draw something.
-/// </para>
-/// </remarks>
 internal sealed class EngineRequirementReader : IEngineRequirementReader
 {
     private readonly IGodotProjectReader _projects;

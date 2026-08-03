@@ -8,31 +8,6 @@ namespace Workbench.Core.Workspaces;
 /// <summary>
 /// Writes the workspace's team config file the first time it is missing.
 /// </summary>
-/// <remarks>
-/// <para>
-/// **Every setting in it is commented out, so nothing is set and nothing is overridden by
-/// it existing.** It is there to be read and edited, since until a settings window lands
-/// hand editing is the only way to set any of this, and an empty file answers no
-/// questions.
-/// </para>
-/// <para>
-/// **The table headers are live and only the keys are commented.** Uncommenting one line
-/// then puts the key in the table it belongs to, where a commented header would have left
-/// somebody writing a root key by the same name. An empty table sets nothing, so the file
-/// still changes no value.
-/// </para>
-/// <para>
-/// **Every setting in it is written from its descriptor**, so a key added to a workspace
-/// schema appears here without anybody remembering to add it. Only <c>workspace.name</c>
-/// is written by hand, because it has no descriptor and lives as a constant on
-/// <see cref="WorkspaceNameResolver"/>.
-/// </para>
-/// <para>
-/// **A write keeps all of this.** Saving a value edits the file in place, so it lands
-/// inside the table it belongs to, under the comment that describes it, and the rest of
-/// the file is untouched.
-/// </para>
-/// </remarks>
 internal sealed class WorkspaceScaffold : IWorkspaceScaffold
 {
     /// <summary>Where a comment line is wrapped, chosen to sit inside 80 with its hash.</summary>

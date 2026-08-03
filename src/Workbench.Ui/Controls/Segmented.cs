@@ -10,29 +10,6 @@ namespace Workbench.Ui.Controls;
 /// A row of options with one of them chosen, and a thumb that slides to whichever it is.
 /// The options are radios, so grouping, clicking and the keyboard are the framework's.
 /// </summary>
-/// <remarks>
-/// A radio in a group is what a segmented control already is, so the only thing this type
-/// adds is the thumb. It is here because the thumb has to outlive the choice: a fill on
-/// the chosen option would appear and disappear, and a thing that slides has to be one
-/// thing that moves.
-/// <para>
-/// The thumb reads the chosen option rather than working its place out from tokens, so
-/// the padding, the gap between options and the row height are written once in the theme
-/// and never restated here. Options are different widths, so both the position and the
-/// width move.
-/// </para>
-/// <para>
-/// The motion belongs to the theme, through <see cref="ThumbTransitions"/>. That is the
-/// shape <c>ToggleSwitch.KnobTransitions</c> already has, and for the same reason: a
-/// duration and a curve are look rather than behaviour.
-/// </para>
-/// <para>
-/// Only a change of answer slides. The first placement, a resize and coming back into a
-/// tree are all written with the transitions off, so a row is drawn correct rather than
-/// sliding in from its left edge, and a thumb never trails the row it belongs to while a
-/// window is being dragged.
-/// </para>
-/// </remarks>
 [TemplatePart(ThumbPart, typeof(Border))]
 [TemplatePart(TravelPart, typeof(Canvas))]
 public class Segmented : ItemsControl
@@ -131,11 +108,6 @@ public class Segmented : ItemsControl
         Choose(sliding: false);
     }
 
-    /// <remarks>
-    /// Bounds are read from here rather than from an observable, because an observable
-    /// answers with the current value the moment it is subscribed to, which would snap
-    /// the thumb onto the option that was just picked and take the slide away.
-    /// </remarks>
     private void OnOptionChanged(object? sender, AvaloniaPropertyChangedEventArgs change)
     {
         if (change.Property == ToggleButton.IsCheckedProperty)

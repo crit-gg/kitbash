@@ -4,18 +4,7 @@
 
     <Styles.Resources>
 
-    <!-- The date and time fields, and the two popovers they open.
-
-         Both fields are a well with an adorner inside it, the same rule every value editor
-         follows, and both values read in mono so a column of dates lines up.
-
-         Avalonia ships two date families and these take one from each. CalendarDatePicker
-         opens a month grid and TimePicker opens snapping columns, which is what the design
-         draws. Taking one family for both would mean fighting whichever one lost.
-
-         Nothing here writes a day name, a month name or a field order. Those come from the
-         culture the app is running under, which is why the design's Mo Tu We is one locale
-         rather than a specification. -->
+    <!-- The date and time fields, and the two popovers they open. -->
 
     <!-- A day in the month grid. Six states and no two of them say the same thing: a day
          from a neighbouring month is dimmed, today carries a ring and no fill, and the
@@ -221,10 +210,7 @@
                         </Button>
                     </Grid>
 
-                    <!-- The control fills these by row and column, so the cells have to
-                         exist before it can. Seven days across and six weeks down, plus a
-                         row for the day names, and four across by three down for the
-                         months and the years the header opens. -->
+                    <!-- The control fills these by row and column, so the cells have to exist before it can. -->
                     <Grid Name="PART_MonthView"
                           IsVisible="False"
                           ColumnSpacing="2" RowSpacing="2"
@@ -403,10 +389,7 @@
                                         </DockPanel>
                                     </Border>
 
-                                    <!-- Nothing bound to it. The control owns this part and
-                                         fills it when the popup opens, and a two way binding
-                                         here pushed the fresh calendar's empty selection back
-                                         into the field, wiping the date on the way in. -->
+                                    <!-- Nothing bound to it. -->
                                     <Calendar Name="PART_Calendar" Margin="11" />
                                 </DockPanel>
                               </Border>
@@ -504,9 +487,8 @@
                                    Foreground="{DynamicResource InkMuted}" />
                     </Border>
 
-                    <!-- The design draws a Now button alone, because its popover is a
-                         picture. A working presenter only writes the time when it is
-                         accepted, so the two that do that are here as well. -->
+                    <!-- A presenter only writes the time when it is accepted, so accept and
+                         cancel are here beside Now. -->
                     <Border DockPanel.Dock="Bottom"
                             Padding="11,9"
                             Background="{DynamicResource SurfaceRoot}"
@@ -533,15 +515,7 @@
                         </DockPanel>
                     </Border>
 
-                    <!-- Six columns, because the control decides which of them exist.
-                         Seconds and the period are its to show or hide from UseSeconds and
-                         ClockIdentifier, and every one of these parts has to be here even
-                         under a clock that will never draw it: the build refuses a template
-                         that leaves a required part out.
-
-                         A heading sits inside the column it names rather than in a row of
-                         its own, so a column the control hides takes its label with it.
-                         Otherwise SS ends up over the period. -->
+                    <!-- Six columns, because the control decides which of them exist. -->
                     <Grid Name="PART_PickerContainer"
                           Margin="11"
                           ColumnDefinitions="*,Auto,*,Auto,*,Auto">
@@ -618,9 +592,8 @@
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
 
-        <!-- The culture decides whether this is twelve hours or twenty four. Avalonia
-             defaults to twelve whatever the culture says, so it is asked rather than left
-             alone. The design draws twenty four because the design is one locale. -->
+        <!-- The culture decides twelve or twenty four hours. Avalonia defaults to twelve
+             whatever the culture says, so the culture is asked here. -->
         <Setter Property="ClockIdentifier" Value="{x:Static ui:Clock.Identifier}" />
         <Setter Property="ClipToBounds" Value="False" />
 
@@ -650,25 +623,12 @@
                                      VerticalAlignment="Center" />
 
                             <Panel>
-                                <!-- One string, through the culture's own short time
-                                     pattern. Reading the hour and the minute out of the
-                                     control's parts and joining them with a colon would
-                                     drop the period on a twelve hour culture and would
-                                     fix an order that is not ours to fix. -->
+                                <!-- One string, through the culture's own short time pattern. -->
                                 <TextBlock Classes="clockRead"
                                            VerticalAlignment="Center"
                                            Text="{Binding $parent[TimePicker].SelectedTime, Converter={x:Static ui:Clock.Reads}}" />
 
-                                <!-- The control's own readout, which it fills in and lays
-                                     out itself. It is here because the build refuses a
-                                     template that leaves a required part out, and hidden
-                                     because it is a segmented row of numbers between
-                                     rules where the design is one string.
-
-                                     Nothing is lost by that. The only thing the control's
-                                     layout carries that a format string does not is where
-                                     a locale puts the period, and this clock is pinned to
-                                     24 hour so there is never one. -->
+                                <!-- The control's own readout, which it fills in and lays out itself. -->
                                 <Grid Name="PART_FlyoutButtonContentGrid"
                                       IsVisible="False"
                                       ColumnDefinitions="*,Auto,*,Auto,*,Auto,*">

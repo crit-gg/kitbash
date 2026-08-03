@@ -150,13 +150,6 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
     /// <summary>
     /// Whether the file opens with a UTF-8 byte order mark.
     /// </summary>
-    /// <remarks>
-    /// Notepad and older Visual Studio write one, so a workspace edited on Windows often
-    /// has it, and <c>File.ReadAllText</c> takes it off the text it hands back. Writing
-    /// that text straight out would drop the mark, which is a change to a file the edit
-    /// never named, in a file that is committed and shared. Every collaborator would see
-    /// the encoding change with the setting.
-    /// </remarks>
     private bool StartsWithByteOrderMark(string path)
     {
         try

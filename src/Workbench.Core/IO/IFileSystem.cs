@@ -16,14 +16,6 @@ public interface IFileSystem
     /// <summary>
     /// Makes a file runnable, where that means anything.
     /// </summary>
-    /// <remarks>
-    /// Nothing on Windows decides whether a file runs, so this does nothing there. On Unix
-    /// it is not a rare guard. <c>ZipFile.ExtractToDirectory</c> carries an archive's mode
-    /// across, but unpacking entry by entry does not, and the prefix strip and the two
-    /// extraction guards mean this app unpacks by hand. So the installer calls this for
-    /// every entry the archive recorded as executable. Measured: without it, an install
-    /// completes and holds an editor at 0644 that nothing can find or run.
-    /// </remarks>
     void MakeExecutableFile(string path);
 
     void CreateDirectory(string path);

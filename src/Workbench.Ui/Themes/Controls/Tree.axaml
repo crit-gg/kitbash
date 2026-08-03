@@ -3,17 +3,7 @@
                     xmlns:ui="clr-namespace:Workbench.Ui.Controls">
 
     <!-- A tree is a list of rows that know their depth, so almost all of this is the list
-         theme and only the leading edge of a row is new.
-
-         Both themes are keyed off ListBoxItem's, because a control theme is found by the
-         exact type and never falls back to a base one. Basing them on it is what keeps one
-         row look rather than two that drift.
-
-         Depth is drawn in three parts. The frame is pushed in by the indent, so a fill
-         starts where the row starts. The caret sits at the front of the frame and holds
-         its width whether it is drawn or not, so a branch and a leaf that are siblings
-         line up. The guides are rendered by the row itself, since one element per level
-         would be built and discarded on every scroll. -->
+         theme and only the leading edge of a row is new. -->
 
     <ControlTheme x:Key="{x:Type ui:Tree}" TargetType="ui:Tree" BasedOn="{StaticResource {x:Type ListBox}}" />
 
@@ -54,14 +44,8 @@
                                 CornerRadius="{TemplateBinding CornerRadius}"
                                 Padding="{TemplateBinding Padding}">
                             <DockPanel LastChildFill="True">
-                                <!-- The caret's hit area, which is the whole strip in front
-                                     of the name rather than the glyph alone. It pads itself
-                                     on both sides, which is why the row pads only its right:
-                                     a 14px target is a small thing to hit twice in a row.
-
-                                     Transparent rather than nothing, since a control with no
-                                     background is not hit tested and the click could never
-                                     be reached. -->
+                                <!-- The caret's hit area, which is the whole strip in front of the name rather than the
+                                     glyph alone. -->
                                 <Border Name="PART_Caret"
                                         DockPanel.Dock="Left"
                                         Padding="{DynamicResource PaddingCaret}"
@@ -111,14 +95,8 @@
             <Setter Property="Glyph" Value="ChevronDown" />
         </Style>
 
-        <!-- The guide follows the tone it stands on, the way Border.seam does, and stays
-             one step quieter than that tone's seam. The design draws a tree on the root
-             tone, where the seam is LineSeam and the guide is LineRow, and this keeps that
-             gap at every depth.
-
-             Measured, and the reason this is here rather than one brush: LineRow on
-             SurfaceNest2 is a difference of one in each channel, so a guide named once
-             disappears the moment a tree is put inside two panels. -->
+        <!-- The guide follows the tone it stands on, the way Border.seam does, and stays one step
+             quieter than that tone's seam. -->
         <Style Selector="^[(ui|Surface.Level)=2]">
             <Setter Property="GuideBrush" Value="{DynamicResource LineSeam}" />
         </Style>

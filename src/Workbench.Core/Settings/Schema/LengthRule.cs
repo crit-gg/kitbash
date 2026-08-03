@@ -3,12 +3,6 @@ namespace Workbench.Core.Settings.Schema;
 /// <summary>
 /// How long a string may be, counted in characters. Either end may be left out.
 /// </summary>
-/// <remarks>
-/// The count is <see cref="string.Length"/>, which is UTF-16 units rather than what a
-/// person would call a character. An emoji counts as two. That is what every text box
-/// counts as well, so the two agree, and no bound here is close enough for the
-/// difference to matter.
-/// </remarks>
 public sealed class LengthRule : ISettingRule<string>
 {
     public LengthRule(int? minimum = null, int? maximum = null)

@@ -11,8 +11,7 @@ internal sealed class EngineCatalogue : IEngineCatalogue
     private const string Feed = "https://godotengine.org/versions.json";
     private const string Manifests = "https://raw.githubusercontent.com/godotengine/godot-builds/main/releases";
     private const string FeedCacheName = "godot-versions.json";
-    // gdvm's number, and the feed is a static file on a website rather than a CDN edge.
-    // Measured: 0.63 seconds for 48 KB, with 0.40 of it waiting on the first byte.
+    // The feed is a static file on a website, not a CDN edge, so it is slow to answer.
     private static readonly TimeSpan FeedLife = TimeSpan.FromHours(48);
 
     private readonly IWebContent _web;
@@ -105,9 +104,8 @@ internal sealed class EngineCatalogue : IEngineCatalogue
     }
 
     /// <summary>
-    /// The feed is an array of version entries, each holding releases. Measured over all
-    /// 356 of them: two tags do not parse and both are older than Godot 4, one release
-    /// carries an empty notes URL, and every date reads as an invariant day month year.
+    /// Reads the feed, which is an array of version entries each holding releases. A tag
+    /// that does not parse is skipped. Dates are invariant day month year.
     /// </summary>
     private static IReadOnlyList<EngineRelease> ReadReleases(string text)
     {
@@ -133,10 +131,8 @@ internal sealed class EngineCatalogue : IEngineCatalogue
             }
         }
 
-        // **By date, not by version.** The spec asks for it and the two really differ: a
-        // patch of an older line ships after a newer minor, so 4.5.2 in March 2026 belongs
-        // above 4.6 from January. Version order breaks the tie, since a release date is a
-        // day and several land on one.
+        // By date, not by version. A patch of an older line can ship after a newer minor.
+        // Version order breaks the tie, since a date is a day and several land on one.
         releases.Sort((left, right) =>
         {
             var by = right.Released.CompareTo(left.Released);

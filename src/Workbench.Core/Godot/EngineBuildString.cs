@@ -6,24 +6,6 @@ namespace Workbench.Core.Godot;
 /// What a Godot binary prints for <c>--version</c>, such as
 /// <c>4.7.1.stable.mono.official.a13da4feb</c>.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This is the authority on an engine that is already on disk. It says the version, the
-/// channel, whether it is the .NET build, whether it is an official build or someone's
-/// own, and the commit. A file name says none of that and can be renamed.
-/// </para>
-/// <para>
-/// The shape is <c>number.status[.moduleConfig].build.commit</c>. The number carries its
-/// own dots and the module config may be absent, so it is read from both ends: the last
-/// two parts are the build and the commit, the leading numeric parts are the version, the
-/// part after them is the status, and anything left in the middle is the module config.
-/// </para>
-/// <para>
-/// Dropping the build and the commit gives <c>GODOT_VERSION_FULL_CONFIG</c>, which is the
-/// export template folder name exactly. Do not build that name out of a release tag by
-/// string surgery.
-/// </para>
-/// </remarks>
 public readonly record struct EngineBuildString
 {
     private EngineBuildString(string number, string status, string moduleConfig, string build, string commit)
@@ -122,13 +104,6 @@ public readonly record struct EngineBuildString
     /// The name this install goes by. False for the same reason as
     /// <see cref="TryGetTag"/>, and such an install is known by its path instead.
     /// </summary>
-    /// <remarks>
-    /// **A build string says nothing about the processor**, and it does not need to, since
-    /// an install is named by its tag and .NET flag alone. Measured across the four engines
-    /// on this machine: it names the version, the channel, the module config, the builder
-    /// and the commit, and stops. The processor is worth showing, so it is written into the
-    /// install's own record at install time rather than worked out again later.
-    /// </remarks>
     public bool TryGetId(out EngineId id)
     {
         if (!TryGetTag(out var tag))
