@@ -10,6 +10,7 @@ internal sealed class WorkspaceRegistry : IWorkspaceRegistry
 
     private readonly IApplicationState _state;
     private readonly IWorkspaceNameResolver _names;
+    private readonly IWorkspaceScaffold _scaffold;
     private readonly IFileSystem _fileSystem;
     private readonly IPathRules _paths;
     private readonly Lock _gate = new();
@@ -20,16 +21,19 @@ internal sealed class WorkspaceRegistry : IWorkspaceRegistry
     public WorkspaceRegistry(
         IApplicationState state,
         IWorkspaceNameResolver names,
+        IWorkspaceScaffold scaffold,
         IFileSystem fileSystem,
         IPathRules paths)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(names);
+        ArgumentNullException.ThrowIfNull(scaffold);
         ArgumentNullException.ThrowIfNull(fileSystem);
         ArgumentNullException.ThrowIfNull(paths);
 
         _state = state;
         _names = names;
+        _scaffold = scaffold;
         _fileSystem = fileSystem;
         _paths = paths;
 
@@ -151,6 +155,11 @@ internal sealed class WorkspaceRegistry : IWorkspaceRegistry
             // A missing folder keeps the last thing we can still say about it.
             return new Workspace(root, Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar)), false, false);
         }
+
+        // Every workspace gets the config file, not only the ones added from here. A
+        // folder cloned with a .workbench already in it, or one added before this
+        // existed, is otherwise a workspace with nothing to read or edit.
+        _scaffold.Ensure(root);
 
         return new Workspace(root, _names.Resolve(root), true, HasRepository(root));
     }

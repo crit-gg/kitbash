@@ -186,6 +186,7 @@ public static class WorkbenchCoreServices
         services.AddWorkbenchApplicationStorage();
         services.AddWorkbenchGodotProjects();
         services.TryAddSingleton<IWorkspaceNameResolver, WorkspaceNameResolver>();
+        services.TryAddSingleton<IWorkspaceScaffold, WorkspaceScaffold>();
         services.TryAddSingleton<IWorkspaceRegistry, WorkspaceRegistry>();
 
         return services;

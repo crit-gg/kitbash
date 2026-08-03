@@ -28,7 +28,7 @@ public sealed class WorkspaceGodotSettingsSchema
             Description =
                 "Which Godot version this workspace needs. Any part may be left off, so "
                 + "4.7 means any 4.7 release and 4.7.1-stable means exactly that one. "
-                + "Blank means the version the project itself names is used.",
+                + "Blank uses the version the project itself names in project.godot.",
             Default = string.Empty,
             Rules =
             [

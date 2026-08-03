@@ -923,6 +923,22 @@ A workspace is any directory containing `.workbench`. `WorkspacePaths.Discover`
 walks up to find it the way git finds `.git`, so a tool launched from a
 subdirectory resolves the same settings the launcher does.
 
+**Every workspace gets `config/workbench.toml` written the first time it is missing.**
+`IWorkspaceScaffold` does it, from `WorkspaceRegistry.Resolve`, so it reaches a folder
+cloned with a `.workbench` already in it and one added before this existed, not only a
+folder added from here. A folder it cannot write to is survived rather than reported,
+since a workspace works without the file.
+
+**The file is entirely comments, so it parses as an empty document** and nothing is set
+or overridden by it existing. It is there to be read and edited, because until a settings
+window lands hand editing is the only way to set any of this and an empty file answers no
+questions. **Every setting in it is written from its descriptor**, so a key added to a
+workspace schema appears there without anybody remembering. Only `workspace.name` is
+written by hand, since it has no descriptor.
+
+A write does not keep those comments. Settings are written back from the model, which is
+the existing rule rather than something this adds.
+
 Merging is per key, not per file. A user file holding one override does not hide
 the rest of the shared config. Keys are dotted paths onto nested TOML tables, such
 as `editor.font.size`. A value that exists but will not convert to the requested
