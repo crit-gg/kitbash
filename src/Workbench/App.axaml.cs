@@ -76,6 +76,7 @@ public partial class App : Application
                 provider.GetRequiredService<IEngineStore>(),
                 provider.GetRequiredService<IEngineResolver>(),
                 provider.GetRequiredService<IGodotSettings>(),
+                provider.GetRequiredService<IGodotLauncher>(),
                 provider.GetRequiredService<IPlatformServices>(),
                 provider.GetRequiredService<EnginesViewModel>()))
             .BuildServiceProvider();

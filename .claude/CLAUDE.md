@@ -1022,15 +1022,17 @@ can only write what it drew.
 
 ### The schemas that exist
 
-Three, all Core's, all in the `Application` home. That home is per user per machine and
+Four, all Core's, three in the `Application` home. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
-other**, so none of these can be shared through a workspace's team config by accident.
+other**, so none of those can be shared through a workspace's team config by accident.
+`godot.engine` is the one that is genuinely a team fact, so it is the one that layers.
 
 | Schema | Keys |
 |---|---|
 | `WindowSettingsSchema` | `window.nativeChrome` |
 | `ExternalToolsSettingsSchema` | `tools.git.path`, `tools.dotnet.path` |
-| `GodotSettingsSchema` | `godot.engines.directory` |
+| `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
+| `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
 
 **A blank override means the app decides.** `tools.git.path` and `tools.dotnet.path`
 default to blank, and blank is an answer rather than a gap, so `PathShapeRule` takes
@@ -1055,7 +1057,8 @@ its answer is not known until something searches, which is why those two use bla
 ends in `State`, so engines land in `%LOCALAPPDATA%\Workbench\State\engines`. Moving it
 means a fourth user directory and is a decision of its own.
 
-Nothing runs dotnet yet. `IExternalTools.Dotnet` resolves and no caller uses it.
+`IExternalTools.Dotnet` is what `godot.build` set to Automatic resolves through, so a
+machine with dotnet builds a project's C# with it and one without uses the editor.
 
 `IExternalTools` resolves once and holds, so a change applies at the next launch, which
 is what each description says and what the app already asked of someone installing git.
@@ -1313,8 +1316,52 @@ so it has its own async refresh and the strip says it is reading until that land
 runs one at a time and **waits its turn rather than giving up**, since dropping the
 second would leave the strip describing the workspace that was open a moment ago.
 
-Opening a project is `--path <folder> --editor`, through
-`IPlatformServices.StartDetached`.
+### Opening a project
+
+`IGodotLauncher` does three things in order, and reports each one so a dialog can say
+which is running. The flags are read off `--help` on 4.7.1 rather than remembered.
+
+1. **Build the C#**, when the project has C# in it and the engine is the .NET build.
+2. **Import the assets**, when anything a sidecar declares is not on disk.
+3. **Start the editor**, `--path <folder> --editor`, through `StartDetached`.
+
+**The first two are waited for and the third is not.** Both have to finish before the
+third is worth starting, and the editor is the thing a person is waiting for.
+
+**A plain engine never builds.** A project's C# only builds against the .NET build, so
+asking a plain one fails and asking dotnet produces assemblies that engine will not load.
+When the two disagree the strip has already said so, and opening anyway opens what is
+there.
+
+`godot.build` picks the program. Automatic takes dotnet when this machine has one, which
+is what `IExternalTools.Dotnet` was resolving for and nothing used, and the editor
+otherwise through `--build-solutions --quit --quiet --no-header --headless`. `--quit` is
+what makes it exit, since `--build-solutions` implies `--editor`. dotnet builds the
+solution, or the project file when there is no solution, and no solution at all is not a
+failure.
+
+**The import is not left to the editor, which is a departure from every launcher read.**
+Godot imports on open by itself, so this is not work being saved. Doing it first means the
+wait happens under a dialog that says what is running and can be cancelled, instead of the
+editor sitting on a splash screen for minutes on a fresh clone. It is skipped outright
+when nothing needs importing, which is every open after the first.
+
+**Whether an import is needed comes from the sidecars, never from the cache folder.**
+`IGodotImports` walks for `.import` files and checks that every generated file each one
+declares is on disk. The sidecars are committed and the generated files are not, so a
+fresh clone has all of one and none of the other. The folder can also be present while
+its contents were cleared. Only the generated paths count, under `.godot/imported` for
+Godot 4 or `.import` for Godot 3, since a sidecar also names its source file and its uid
+and neither says whether an import has run. Measured on Slopworks: 399 sidecars among
+6560 files, answered in 20ms.
+
+`LaunchDialog` is the design's Progress kind and `LaunchFailedDialog` its Error kind.
+Two departures on the first, both because there is no number: the bar is indeterminate
+and the mono line carries a value rather than a count, since neither a build nor an
+import reports how far through it is. Its close glyph stays live where the design flattens
+it to disabled, because closing and Cancel do the same thing here and a dead glyph would
+refuse a gesture the dialog already honours. The second has no Retry, since after a failed
+build the next thing to do is fix the code.
 
 ## Git
 

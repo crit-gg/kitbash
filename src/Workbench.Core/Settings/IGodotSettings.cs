@@ -27,4 +27,10 @@ public interface IGodotSettings
 
     /// <summary>Writes the default. Null clears it, which is what uninstalling it does.</summary>
     void SetDefaultEngine(Workbench.Core.Godot.EngineId? value);
+
+    /// <summary>
+    /// What builds a project's C# before the editor opens.
+    /// <see cref="Workbench.Core.Godot.GodotBuildTool.Auto"/> unless a person said.
+    /// </summary>
+    Workbench.Core.Godot.GodotBuildTool BuildTool { get; }
 }

@@ -45,14 +45,44 @@ public sealed class GodotSettingsSchema
             ],
         };
 
+        BuildTool = new SettingDescriptor<string>
+        {
+            Key = "godot.build",
+            Name = "Build C# before opening",
+            Description =
+                "What builds a project's C# when it is opened from Workbench. Automatic "
+                + "uses dotnet when this machine has one and the Godot editor otherwise. "
+                + "A project with no C# never builds, and neither does one opened in an "
+                + "engine that has no C# support.",
+            Default = AutoTool,
+            Rules =
+            [
+                new ChoiceRule<string>(
+                    [
+                        new SettingChoice<string>(AutoTool, "Automatic", "dotnet when it is installed"),
+                        new SettingChoice<string>("dotnet", "dotnet", "Faster, and says more when a build fails"),
+                        new SettingChoice<string>("editor", "Godot editor", "Needs nothing else installed"),
+                        new SettingChoice<string>("off", "Do not build", "Open with whatever is already built"),
+                    ],
+                    StringComparer.OrdinalIgnoreCase),
+            ],
+        };
+
         Page = new SettingsPage
         {
             Id = "godotEngines",
             Title = "Godot engines",
             Home = SettingsHome.Application,
-            Sections = [new SettingsSection("Installs", [EngineDirectory, DefaultEngine])],
+            Sections =
+            [
+                new SettingsSection("Installs", [EngineDirectory, DefaultEngine]),
+                new SettingsSection("Opening a project", [BuildTool]),
+            ],
         };
     }
+
+    /// <summary>The value that means work it out from what is installed.</summary>
+    public const string AutoTool = "auto";
 
     /// <summary>Never blank. Defaults to the engines folder under the data directory.</summary>
     public SettingDescriptor<string> EngineDirectory { get; }
@@ -63,6 +93,12 @@ public sealed class GodotSettingsSchema
     /// Choosing the next one is a deliberate act and never automatic.
     /// </summary>
     public SettingDescriptor<string> DefaultEngine { get; }
+
+    /// <summary>
+    /// Which program builds C# before a project opens. A closed set, so a value outside
+    /// it is refused and the layer below decides.
+    /// </summary>
+    public SettingDescriptor<string> BuildTool { get; }
 
     public SettingsPage Page { get; }
 }

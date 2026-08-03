@@ -128,6 +128,8 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
         services.TryAddSingleton<IEngineStore, EngineStore>();
         services.TryAddSingleton<IEngineInstaller, EngineInstaller>();
+        services.AddWorkbenchExternalTools();
+        services.TryAddSingleton<IGodotLauncher, GodotLauncher>();
         services.AddWorkbenchGodotProjects();
         services.AddEngineFiles();
 
@@ -147,6 +149,7 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
         services.TryAddSingleton<WorkspaceGodotSettingsSchema>();
         services.TryAddSingleton<IGodotProjectReader, GodotProjectReader>();
+        services.TryAddSingleton<IGodotImports, GodotImports>();
         services.TryAddSingleton<IEngineRequirementReader, EngineRequirementReader>();
         services.TryAddSingleton<IEngineResolver, EngineResolver>();
 

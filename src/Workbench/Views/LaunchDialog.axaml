@@ -1,0 +1,49 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+                 x:Class="Workbench.Views.LaunchDialog"
+                 Title="Opening project"
+                 Width="420" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding $parent[Window].Title}" />
+
+        <!-- The design's progress modal: a line saying what is happening, a mono line
+             under it, the bar, then what cancelling costs. No icon column, since this
+             reports rather than asking. -->
+        <StackPanel Grid.Row="1" Margin="16,16,16,15">
+            <TextBlock Name="Stage"
+                       FontSize="{DynamicResource FontSizeControl}"
+                       FontWeight="{DynamicResource FontWeightMedium}"
+                       Foreground="{DynamicResource InkPrimary}"
+                       TextWrapping="Wrap" />
+
+            <!-- Its room is held whether or not it says anything, so the window does not
+                 change height as the steps go by. -->
+            <TextBlock Name="Detail" Margin="0,7,0,0" MinHeight="15"
+                       FontFamily="{DynamicResource FontFamilyMono}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource InkMuted}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <!-- Indeterminate, which departs from the design's bar and count. Neither a
+                 C# build nor a Godot import reports how far through it is, and a bar
+                 that fills at its own pace would be inventing the number. -->
+            <ProgressBar Name="Meter" Margin="0,11,0,0" IsIndeterminate="True" />
+
+            <TextBlock Margin="0,10,0,0"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       LineHeight="17"
+                       Foreground="{DynamicResource InkMuted}"
+                       TextWrapping="Wrap"
+                       Text="Cancelling stops the step that is running. Anything already built or imported stays." />
+        </StackPanel>
+
+        <!-- No primary while work runs, which is the design's rule for this kind. -->
+        <ui:DialogFooter Grid.Row="2">
+            <Button Name="CancelButton" Content="Cancel" ui:Dialog.Role="Cancel" />
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

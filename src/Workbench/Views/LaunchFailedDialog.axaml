@@ -1,0 +1,64 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+                 x:Class="Workbench.Views.LaunchFailedDialog"
+                 Title="Could not open the project"
+                 Width="560" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <!-- The design's Error kind. The sentence says what failed and what happens to the
+         work, the program's own output sits in a mono well under it, and the utility
+         action is hard left away from the decision. -->
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding $parent[Window].Title}" />
+
+        <StackPanel Grid.Row="1" Margin="16,16,16,15">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="11">
+                <ui:Icon Grid.Column="0" Glyph="AlertCircle" Size="20"
+                         Foreground="{DynamicResource Error}"
+                         VerticalAlignment="Top" />
+
+                <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Name="Heading"
+                               FontSize="{DynamicResource FontSizeSubhead}"
+                               FontWeight="{DynamicResource FontWeightStrong}"
+                               Foreground="{DynamicResource InkPrimary}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Name="Body"
+                               FontSize="{DynamicResource FontSizeControl}"
+                               LineHeight="19"
+                               Foreground="{DynamicResource InkSecondary}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <!-- The output is data rather than prose, so it takes the input well and the
+                 mono family. It is the only thing in a dialog allowed to scroll. -->
+            <Border Name="OutputWell" Margin="31,12,0,0" Padding="10,8"
+                    Background="{DynamicResource SurfaceWell}"
+                    BorderBrush="{DynamicResource LineSeam}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource RadiusControl}">
+                <ScrollViewer MaxHeight="220" HorizontalScrollBarVisibility="Disabled">
+                    <SelectableTextBlock Name="Output"
+                                         FontFamily="{DynamicResource FontFamilyMono}"
+                                         FontSize="{DynamicResource FontSizeSmall}"
+                                         LineHeight="17"
+                                         Foreground="{DynamicResource InkSecondary}"
+                                         TextWrapping="Wrap" />
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+
+        <ui:DialogFooter Grid.Row="2">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Name="Copy" Classes="ghost" Content="Copy details" />
+
+                <Button Grid.Column="2" Content="Dismiss"
+                        ui:Dialog.Role="Cancel" ui:Dialog.TakesFocus="True" />
+            </Grid>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

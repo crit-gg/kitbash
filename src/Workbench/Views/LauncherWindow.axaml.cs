@@ -25,7 +25,18 @@ public partial class LauncherWindow : ChromelessWindow
         // The host draws whatever service it is handed, and the service belongs to whoever
         // raised the toast. The window's own comes with the view model rather than being
         // resolved here, since the window is built without a container.
-        DataContextChanged += (_, _) => Toasts.Service = Model?.Engines.Toasts;
+        // A dialog belongs to a window and a view model has none, so the two things the
+        // strip cannot do for itself are handed over here. Same shape as the engines page.
+        DataContextChanged += (_, _) =>
+        {
+            Toasts.Service = Model?.Engines.Toasts;
+
+            if (Model is { } model)
+            {
+                model.Launching ??= (project, work) => LaunchDialog.RunAsync(this, project, work);
+                model.Failed ??= failure => LaunchFailedDialog.Show(this, failure);
+            }
+        };
     }
 
     private LauncherViewModel? Model => DataContext as LauncherViewModel;

@@ -41,6 +41,17 @@ internal sealed class GodotSettings : IGodotSettings
     public void SetDefaultEngine(Workbench.Core.Godot.EngineId? value) =>
         _settings.Set(SettingsScope.Global, _schema.DefaultEngine.Key, value?.ToString() ?? string.Empty);
 
+    public Workbench.Core.Godot.GodotBuildTool BuildTool =>
+        _schema.BuildTool.Read(_settings.Global) switch
+        {
+            "dotnet" => Workbench.Core.Godot.GodotBuildTool.Dotnet,
+            "editor" => Workbench.Core.Godot.GodotBuildTool.Editor,
+            "off" => Workbench.Core.Godot.GodotBuildTool.None,
+
+            // The rule refuses anything else, so this is the default arriving as itself.
+            _ => Workbench.Core.Godot.GodotBuildTool.Auto,
+        };
+
     public void SetEngineDirectory(string value)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(value);

@@ -170,21 +170,21 @@ public sealed partial class EngineViewModel : ViewModelBase
     /// with. One button, and what it does follows what the strip says.
     /// </summary>
     [RelayCommand]
-    private void Run()
+    private Task Run()
     {
         if (_launcher is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         if (Resolution is { Engine: { } engine } && Project is { } project)
         {
-            _launcher.OpenInGodot(engine, project);
-
-            return;
+            return _launcher.OpenInGodot(engine, project);
         }
 
         ShowEngines();
+
+        return Task.CompletedTask;
     }
 
     [RelayCommand]

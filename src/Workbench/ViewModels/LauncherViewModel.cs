@@ -26,6 +26,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IEngineStore _engines;
     private readonly IEngineResolver _resolver;
     private readonly IGodotSettings _godot;
+    private readonly IGodotLauncher _godotLauncher;
     private readonly IPlatformServices _platform;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
@@ -68,6 +69,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IEngineStore engineStore,
         IEngineResolver resolver,
         IGodotSettings godot,
+        IGodotLauncher godotLauncher,
         IPlatformServices platform,
         EnginesViewModel engines)
     {
@@ -81,6 +83,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(engineStore);
         ArgumentNullException.ThrowIfNull(resolver);
         ArgumentNullException.ThrowIfNull(godot);
+        ArgumentNullException.ThrowIfNull(godotLauncher);
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(engines);
 
@@ -93,6 +96,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _engines = engineStore;
         _resolver = resolver;
         _godot = godot;
+        _godotLauncher = godotLauncher;
         _platform = platform;
 
         Engines = engines;
@@ -366,29 +370,56 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>Opens a project in an engine, as a process that outlives Workbench.</summary>
+    /// <summary>
+    /// Shows the progress dialog while a project opens. Set by the window, since a dialog
+    /// belongs to one and a view model has none.
+    /// </summary>
+    public Func<GodotProject, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task>? Launching { get; set; }
+
+    /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
+    public Func<GodotLaunchException, Task>? Failed { get; set; }
+
+    /// <summary>
+    /// Opens a project in an engine, building its C# and importing its assets first when
+    /// either is needed.
+    /// </summary>
     /// <remarks>
-    /// The flags are <c>--path</c> and <c>--editor</c>, which is how Godot is told to open
-    /// a project for editing rather than to run it.
+    /// **The wait is the reason there is a dialog.** A first open on a fresh clone imports
+    /// every asset, which is minutes, and a C# build is not instant either. Neither is
+    /// something to do behind a button that has already sprung back.
+    ///
+    /// Without a window to show one in, the same work still runs and only the reporting is
+    /// missing. That is the case a rendering harness composes.
     /// </remarks>
-    public void OpenInGodot(InstalledEngine engine, GodotProject project)
+    public async Task OpenInGodot(InstalledEngine engine, GodotProject project)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(project);
 
-        Task.Run(() =>
+        Task Work(IProgress<GodotLaunchStep> progress, CancellationToken cancellation) =>
+            Task.Run(
+                () => _godotLauncher.OpenAsync(
+                    engine, project, new ShortenedDetail(progress, _paths), cancellation),
+                cancellation);
+
+        try
         {
-            try
+            if (Launching is { } show)
             {
-                _platform.StartDetached(ProcessRequest.Command(
-                    engine.Executable, "--path", project.Directory, "--editor"));
+                await show(project, Work);
             }
-            catch (ProcessStartException)
+            else
             {
-                // Nothing to report it in yet. The launcher raises no toasts, which is
-                // recorded in the project notes as deliberate.
+                await Work(new Progress<GodotLaunchStep>(), CancellationToken.None);
             }
-        });
+        }
+        catch (GodotLaunchException exception)
+        {
+            if (Failed is { } report)
+            {
+                await report(exception);
+            }
+        }
     }
 
     /// <summary>Shows a folder in the file browser. Off the UI thread, like every open is.</summary>
@@ -406,6 +437,34 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     /// <summary>Opens the engines page, which is the rail's second item.</summary>
     public void ShowEngines() => Page = 1;
+
+    /// <summary>
+    /// Writes a path in a step's detail line for the width it is shown in.
+    /// </summary>
+    /// <remarks>
+    /// A path is shortened wherever one is shown, and the launcher reports one while it
+    /// imports. It cannot do this itself, since how wide a line is belongs to whatever
+    /// draws it. Only a rooted path is touched, which is the only kind it ever reports.
+    /// </remarks>
+    private sealed class ShortenedDetail : IProgress<GodotLaunchStep>
+    {
+        /// <summary>Roughly what fits the dialog's mono line at 420 wide.</summary>
+        private const int DetailLength = 46;
+
+        private readonly IProgress<GodotLaunchStep> _inner;
+        private readonly IPathShortener _paths;
+
+        public ShortenedDetail(IProgress<GodotLaunchStep> inner, IPathShortener paths)
+        {
+            _inner = inner;
+            _paths = paths;
+        }
+
+        public void Report(GodotLaunchStep value) =>
+            _inner.Report(Path.IsPathRooted(value.Detail)
+                ? value with { Detail = _paths.Shorten(value.Detail, DetailLength) }
+                : value);
+    }
 
     /// <summary>Everything one load read off disk, ready to be put on screen.</summary>
     private sealed record Loaded(
