@@ -165,8 +165,13 @@
                      margin on the menu. It is part of the popup window, it reaches back
                      over whatever opened it, and as a control it can answer the click. -->
                 <Border ui:Popups.Room="True" Padding="{DynamicResource OverlayRoom}">
-                    <Border Theme="{StaticResource OverlayRoot}" Padding="5"
-                            ui:Popups.MatchesTarget="True">
+                    <!-- No MatchesTarget here, unlike every other overlay in this file.
+                         The floor is the width of what opened the popup, and a button
+                         that opens a menu is a width worth matching where the thing a
+                         right click landed on is a row, a panel or a whole page. This
+                         template otherwise reads the same as the menu flyout's above,
+                         so the absence is deliberate rather than an omission. -->
+                    <Border Theme="{StaticResource OverlayRoot}" Padding="5">
                         <ItemsPresenter Name="PART_ItemsPresenter" />
                     </Border>
                 </Border>
