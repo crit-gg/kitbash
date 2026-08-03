@@ -21,9 +21,15 @@ public enum GodotLaunchStage
 
 /// <param name="Stage">What is happening.</param>
 /// <param name="Detail">
-/// A line under it, such as which program is building. Empty when the stage says enough.
+/// A line under it, such as which program is building or how far through a count is.
+/// Empty when the stage says enough.
 /// </param>
-public sealed record GodotLaunchStep(GodotLaunchStage Stage, string Detail = "");
+/// <param name="Fraction">
+/// How far through, from 0 to 1, when the step knows. Null means it does not, and the
+/// bar stays indeterminate rather than inventing a number.
+/// </param>
+public sealed record GodotLaunchStep(
+    GodotLaunchStage Stage, string Detail = "", double? Fraction = null);
 
 /// <summary>A step of opening a project failed.</summary>
 /// <remarks>

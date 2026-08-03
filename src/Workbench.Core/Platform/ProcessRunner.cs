@@ -21,7 +21,19 @@ public sealed class ProcessRunner : IProcessRunner
         }
     }
 
-    public async Task<ProcessOutput> ReadAsync(ProcessRequest request, CancellationToken cancellation = default)
+    public Task<ProcessOutput> ReadAsync(ProcessRequest request, CancellationToken cancellation = default) =>
+        ReadCoreAsync(request, onLine: null, cancellation);
+
+    public Task<ProcessOutput> ReadLinesAsync(
+        ProcessRequest request, Action<string> onLine, CancellationToken cancellation = default)
+    {
+        ArgumentNullException.ThrowIfNull(onLine);
+
+        return ReadCoreAsync(request, onLine, cancellation);
+    }
+
+    private async Task<ProcessOutput> ReadCoreAsync(
+        ProcessRequest request, Action<string>? onLine, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -56,7 +68,10 @@ public sealed class ProcessRunner : IProcessRunner
             {
                 // Both pipes are read before waiting. A program that fills one while nobody
                 // reads it blocks, and then so does the wait.
-                var output = process.StandardOutput.ReadToEndAsync(cancellation);
+                var output = onLine is null
+                    ? process.StandardOutput.ReadToEndAsync(cancellation)
+                    : ReadLinesCoreAsync(process.StandardOutput, onLine, cancellation);
+
                 var error = process.StandardError.ReadToEndAsync(cancellation);
 
                 await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
@@ -76,6 +91,36 @@ public sealed class ProcessRunner : IProcessRunner
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// Reads to the end a line at a time, handing each one over on the way past.
+    /// </summary>
+    /// <remarks>
+    /// The whole output is still returned, so this costs a caller nothing over reading to
+    /// the end. A line the callback throws on would otherwise leave the pipe unread and
+    /// the program blocked on a full buffer, so it is swallowed rather than let out.
+    /// </remarks>
+    private static async Task<string> ReadLinesCoreAsync(
+        StreamReader reader, Action<string> onLine, CancellationToken cancellation)
+    {
+        var all = new System.Text.StringBuilder();
+
+        while (await reader.ReadLineAsync(cancellation).ConfigureAwait(false) is { } line)
+        {
+            all.AppendLine(line);
+
+            try
+            {
+                onLine(line);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                // Reading the pipe matters more than what a reader of it wanted to do.
+            }
+        }
+
+        return all.ToString();
     }
 
     private static void Stop(Process process)

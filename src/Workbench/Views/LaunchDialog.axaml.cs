@@ -189,6 +189,15 @@ public partial class LaunchDialog : DialogWindow
 
         Detail.Text = step.Detail;
 
+        // A real number when the work reports one, and a spinner when it does not. Godot
+        // reports its own import progress and neither a build nor a start reports any.
+        Meter.IsIndeterminate = step.Fraction is null;
+
+        if (step.Fraction is { } part)
+        {
+            Meter.Value = Math.Clamp(part, 0, 1) * 100;
+        }
+
         // Nothing can be cancelled once it has been handed to the desktop.
         CancelButton.IsEnabled = step.Stage != GodotLaunchStage.Starting;
     }

@@ -109,9 +109,12 @@ internal sealed class GodotLauncher : IGodotLauncher
         // asking whether one is needed would be asking a question with a known answer.
         if (mode == GodotLaunchMode.Rebuild || _imports.NeedsImport(project))
         {
-            // The detail line is mono, so it carries a value and never a sentence. An
-            // import has no count to report, so it carries the folder being read.
-            progress.Report(new GodotLaunchStep(GodotLaunchStage.Importing, project.Directory));
+            progress.Report(new GodotLaunchStep(GodotLaunchStage.Importing));
+
+            // Godot reports its own progress while it works, so the bar is real rather
+            // than a spinner. A line that cannot be read reports nothing and the bar goes
+            // back to indeterminate, which is what an older engine would give throughout.
+            var reader = new GodotProgressReader();
 
             await RunAsync(
                 GodotLaunchStage.Importing,
@@ -120,7 +123,16 @@ internal sealed class GodotLauncher : IGodotLauncher
                     project.Directory,
                     engine.Executable,
                     "--path", project.Directory, "--import", "--headless"),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                line =>
+                {
+                    if (reader.Read(line) is { } step)
+                    {
+                        progress.Report(step);
+                    }
+                }).ConfigureAwait(false);
+
+            progress.Report(reader.Finished());
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -294,13 +306,16 @@ internal sealed class GodotLauncher : IGodotLauncher
         GodotLaunchStage stage,
         string message,
         ProcessRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action<string>? onLine = null)
     {
         ProcessOutput output;
 
         try
         {
-            output = await _processes.ReadAsync(request, cancellationToken).ConfigureAwait(false);
+            output = onLine is null
+                ? await _processes.ReadAsync(request, cancellationToken).ConfigureAwait(false)
+                : await _processes.ReadLinesAsync(request, onLine, cancellationToken).ConfigureAwait(false);
         }
         catch (ProcessStartException exception)
         {

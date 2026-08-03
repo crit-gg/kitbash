@@ -1452,10 +1452,27 @@ The button takes the whole log and says which log it took, since the well is sho
 something shorter. It confirms on itself rather than through a toast, because a toast
 belongs to the window behind the modal.
 
+**The import reports real progress, because Godot prints its own.** Every step goes to
+standard output as `[  45% ] reimport | big_395.png`, with a `Started ... (520 steps)`
+line ahead of each phase, and it arrives while the work runs rather than at the end.
+Measured with timestamps on a 460 asset import: the lines came out across the run, and
+196 of a captured 208 carry progress. `GodotProgressReader` reads them and
+`IProcessRunner.ReadLinesAsync` is what delivers them a line at a time.
+
+Two things that reading has to correct for, both measured rather than guessed. **Short
+phases either side of the work are ignored**, since opening the project and loading the
+editor declare five steps each and would sweep the bar again at both ends. The test is a
+step count rather than a phase name, because a name is Godot's own identifier and the
+real question is whether a phase is the work or the startup around it. **The finish is
+reported by the launcher**, since Godot's last phase declares the whole count and then
+takes one step, which left a full bar reading almost nothing.
+
+A line it cannot read is skipped and nothing fails. An older engine that prints none of
+this leaves the bar indeterminate, which is what it was before.
+
 `LaunchDialog` is the design's Progress kind and `LaunchFailedDialog` its Error kind.
-Two departures on the first, both because there is no number: the bar is indeterminate
-and the mono line carries a value rather than a count, since neither a build nor an
-import reports how far through it is. Its close glyph stays live where the design flattens
+The bar is indeterminate for a build and for anything that reports no fraction, since
+neither a C# build nor a start says how far through it is. Its close glyph stays live where the design flattens
 it to disabled, because closing and Cancel do the same thing here and a dead glyph would
 refuse a gesture the dialog already honours. The second has no Retry, since after a failed
 build the next thing to do is fix the code.
