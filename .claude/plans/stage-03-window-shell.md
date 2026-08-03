@@ -1,6 +1,6 @@
 # Stage 3: window shell
 
-Move `ChromelessWindow` and the frame into `Workbench.Ui` and restyle it to Slate, so
+Move `ChromelessWindow` and the frame into `Kitbash.Ui` and restyle it to Slate, so
 every tool gets the same window without copying anything.
 
 ## Goal
@@ -19,7 +19,7 @@ them are ordinary `Button` controls with a keyed theme.
 ## Build
 
 **Move.** `Views/ChromelessWindow.cs`, `Views/WindowTitleBar.cs` and
-`Themes/WindowChrome.axaml` go to `Workbench.Ui`. The icon `ChromelessWindow` loads is
+`Themes/WindowChrome.axaml` go to `Kitbash.Ui`. The icon `ChromelessWindow` loads is
 launcher specific, so the base class takes the icon rather than reaching for a fixed
 `avares://` path. That is the one real change to its behaviour.
 
@@ -30,8 +30,8 @@ markup in every window. It mirrors its window onto itself as the classes
 `nativeChrome`, `maximized` and `fixedSize`, so no selector reaches across the window
 into a template. Keep that, and add new state the same way.
 
-`IWindowSettings` moves nowhere. It already lives in `Workbench.Core/Settings` and is
-already registered by `AddWorkbenchApplicationStorage`, so a tool that composes core
+`IWindowSettings` moves nowhere. It already lives in `Kitbash.Core/Settings` and is
+already registered by `AddKitbashApplicationStorage`, so a tool that composes core
 services gets it without doing anything.
 
 **Two frames, not one.** The window already supports both, and the Slate restyle has to
@@ -44,12 +44,12 @@ keep that working rather than assume the drawn frame.
 
 | Class | Frame | Caption buttons | Drag | Double click |
 |---|---|---|---|---|
-| `chromeless` | drawn by Workbench, `WindowDecorations="None"` | shown | moves the window | toggles maximise |
+| `chromeless` | drawn by Kitbash, `WindowDecorations="None"` | shown | moves the window | toggles maximise |
 | `nativeChrome` | drawn by the desktop, `WindowDecorations="Full"` | hidden | nothing | nothing |
 
 So every value in the table below applies to the `chromeless` case. Under
 `nativeChrome` the desktop owns the outer edge, the corner radius and the shadow, and
-Workbench must not draw its own. The title bar row itself stays either way, because it
+Kitbash must not draw its own. The title bar row itself stays either way, because it
 carries the icon and the title, and because the launcher hangs its own content off it.
 
 Under `nativeChrome` the row is ordinary content rather than a title bar, so both of
@@ -161,7 +161,7 @@ Two things follow that are easy to get wrong.
 
 The spec says dialogs are real windows with their own title bar and a deep shadow, and
 that there is no scrim. That is a departure from the usual Avalonia modal, so build a
-`DialogWindow` in `Workbench.Ui` now rather than discovering it in stage 5. It differs
+`DialogWindow` in `Kitbash.Ui` now rather than discovering it in stage 5. It differs
 from the main window in that it is not resizable, has only a close button, and its
 footer sits on `SurfaceRoot`.
 
@@ -172,10 +172,10 @@ footer sits on `SurfaceRoot`.
 - Clicking anywhere inside a caption button works, verified with `InputHitTest` after
   layout rather than at `Opened`.
 - Activating and deactivating the window moves the whole chrome between tiers.
-- A second window created from `Workbench.Ui` alone, with no launcher code, looks the
+- A second window created from `Kitbash.Ui` alone, with no launcher code, looks the
   same.
 - Both frames still work. With `window.nativeChrome` on, the desktop draws the frame,
-  the caption buttons are gone, the title bar double click does nothing, and Workbench
+  the caption buttons are gone, the title bar double click does nothing, and Kitbash
   draws no edge, radius or shadow of its own. Verify by running, not by reading. A
   dispatcher pump will not do it, since the window manager's state notification only
   arrives when the platform event loop runs, so use a `DispatcherTimer` and let the
@@ -184,10 +184,10 @@ footer sits on `SurfaceRoot`.
 ## As built
 
 `ChromelessWindow`, `WindowTitleBar`, `DialogWindow` and `DialogFooter` live in
-`Workbench.Ui/Controls`, in the one namespace `Workbench.Ui.Controls`, so a consumer
+`Kitbash.Ui/Controls`, in the one namespace `Kitbash.Ui.Controls`, so a consumer
 declares a single xmlns for the window shell and the icons together.
 `Themes/Controls/WindowChrome.axaml` carries the frame and the bar and is pulled in by
-`WorkbenchTheme.axaml`, so the launcher includes nothing of its own.
+`KitbashTheme.axaml`, so the launcher includes nothing of its own.
 
 The base class no longer loads the app icon. `Window.Icon` takes an `avares://` string
 in XAML, so the launcher names its own icon and a tool names its own.
@@ -214,7 +214,7 @@ under the seam. At 150 percent scaling that measures 30.67, since layout rounds 
 1px seam up to 2 device pixels. The button is not a fixed 32 by 32 square, and forcing
 it to be one would overflow the seam.
 
-Verified by running, in a probe built from `Workbench.Ui` alone with no launcher code,
+Verified by running, in a probe built from `Kitbash.Ui` alone with no launcher code,
 which is also what proves a tool gets the same window. 79 checks: the metrics and every
 token above, all three caption buttons hit tested at four corners and the centre,
 maximise dropping the gutter, the radius, the edge and the grips, and the three title

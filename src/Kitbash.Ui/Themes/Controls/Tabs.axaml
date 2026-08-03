@@ -1,0 +1,145 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <!-- Tabs. Top placement only. -->
+
+    <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
+        <Setter Property="Height" Value="{DynamicResource HeightTab}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingTab}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Focus"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Root" Background="{TemplateBinding Background}">
+                        <Panel>
+                            <Border Name="PART_Marker"
+                                    Height="{DynamicResource SizeTabMarker}"
+                                    VerticalAlignment="Top"
+                                    Background="Transparent" />
+
+                            <DockPanel LastChildFill="True" Margin="{TemplateBinding Padding}">
+                                <ContentPresenter Name="PART_Icon"
+                                                  DockPanel.Dock="Left"
+                                                  Margin="{DynamicResource MarginRowLead}"
+                                                  VerticalAlignment="Center"
+                                                  Content="{TemplateBinding Icon}"
+                                                  ContentTemplate="{TemplateBinding IconTemplate}"
+                                                  IsVisible="{Binding $parent[TabItem].Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                                <!-- Round, where a row's is square. A tab is the one place
+                                     the design draws it that way, and the two are never
+                                     seen beside each other. -->
+                                <Ellipse Name="PART_Modified"
+                                         DockPanel.Dock="Right"
+                                         Width="{DynamicResource SizeMarkModified}"
+                                         Height="{DynamicResource SizeMarkModified}"
+                                         Margin="8,0,0,0"
+                                         VerticalAlignment="Center"
+                                         Fill="{DynamicResource Warn}"
+                                         IsVisible="False" />
+
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  Content="{TemplateBinding Header}"
+                                                  ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </DockPanel>
+                        </Panel>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:selected">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:selected /template/ Border#PART_Marker">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <!-- The open tab keeps its own fill under the pointer. It already reads as the
+             one that is open, and lightening it would say something changed. -->
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^.modified /template/ Ellipse#PART_Modified">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Marker">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Ellipse#PART_Modified">
+            <Setter Property="Fill" Value="{DynamicResource MarkOff}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The strip sits on the root tone, since it is chrome rather than a surface a tool is
+         built from, and the page below it is the level the tabs open onto. -->
+    <ControlTheme x:Key="{x:Type TabControl}" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <DockPanel LastChildFill="True">
+                        <Border DockPanel.Dock="Top"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineSeam}"
+                                BorderThickness="0,0,0,1">
+                            <ItemsPresenter Name="PART_ItemsPresenter"
+                                            ItemsPanel="{TemplateBinding ItemsPanel}" />
+                        </Border>
+
+                        <ContentPresenter Name="PART_SelectedContentHost"
+                                          Content="{TemplateBinding SelectedContent}"
+                                          ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>

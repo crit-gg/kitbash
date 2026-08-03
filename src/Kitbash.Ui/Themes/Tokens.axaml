@@ -1,0 +1,409 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The Slate palette. Every colour in Kitbash and in every tool comes from here, and
+         nothing below this file writes a hex value. -->
+
+    <!-- Surfaces. The root tone is unique and never appears again inside the window. -->
+    <SolidColorBrush x:Key="SurfaceRoot" Color="#1e1f22" />
+    <SolidColorBrush x:Key="SurfaceNest1" Color="#25262a" />
+    <SolidColorBrush x:Key="SurfaceNest2" Color="#2b2d31" />
+    <SolidColorBrush x:Key="SurfaceNest3" Color="#31343a" />
+    <SolidColorBrush x:Key="SurfaceWell" Color="#161719" />
+    <SolidColorBrush x:Key="SurfaceRowAlt" Color="#212328" />
+    <SolidColorBrush x:Key="SurfaceControlOff" Color="#232427" />
+
+    <!-- A well answers the pointer on its own ramp rather than on the control one, because it
+         is darker than everything around it and StateHover would lighten it past the surface
+         it sits on. -->
+    <SolidColorBrush x:Key="SurfaceWellHover" Color="#26282c" />
+    <SolidColorBrush x:Key="SurfaceWellPressed" Color="#2f3238" />
+    <SolidColorBrush x:Key="SurfaceWellFocus" Color="#1a1b1e" />
+
+    <!-- A well nothing can be typed into. It carries SurfaceRoot's value and is a different
+         role, so a field that takes no caret reads as chrome instead of as a well. -->
+    <SolidColorBrush x:Key="SurfaceWellOff" Color="#1e1f22" />
+
+    <!-- A well with something acceptable being dragged over it. -->
+    <SolidColorBrush x:Key="SurfaceDrop" Color="#14293f" />
+
+    <!-- Lines. Each tone on the ramp carries its own seam, so a surface takes its fill and its
+         border together. -->
+    <SolidColorBrush x:Key="LineSeam" Color="#33353a" />
+    <SolidColorBrush x:Key="LineRow" Color="#2a2c30" />
+    <SolidColorBrush x:Key="LineControl" Color="#3d4045" />
+    <SolidColorBrush x:Key="LineControlDeep" Color="#43464e" />
+    <SolidColorBrush x:Key="LineWindow" Color="#4a4e55" />
+    <SolidColorBrush x:Key="LineWell" Color="#565d66" />
+    <SolidColorBrush x:Key="LineControlOff" Color="#2c2e32" />
+
+    <!-- The well border under a pointer, and when it is switched off. -->
+    <SolidColorBrush x:Key="LineWellHover" Color="#6b727b" />
+    <SolidColorBrush x:Key="LineWellOff" Color="#34363c" />
+
+    <!-- States. StatePressed carries the same value as LineControl and is kept apart because
+         one is a fill and the other is a line. -->
+    <SolidColorBrush x:Key="StateHover" Color="#34363c" />
+    <SolidColorBrush x:Key="StatePressed" Color="#3d4045" />
+
+    <!-- Selection is the tint alone. No left marker, and a row never carries a fill and an
+         outline at once. -->
+    <SolidColorBrush x:Key="AccentTint" Color="#1b3a58" />
+    <SolidColorBrush x:Key="AccentTintLine" Color="#2b4a6b" />
+    <SolidColorBrush x:Key="AccentTintInk" Color="#8fbef5" />
+    <SolidColorBrush x:Key="SelectionInk" Color="#cfe2fb" />
+
+    <!-- An accent tinted thing under the pointer. Derived rather than read. -->
+    <SolidColorBrush x:Key="AccentTintStrong" Color="#244b71" />
+
+    <!-- Accent. The one accent, used as a line and a mark rather than a flood. There are
+         three fills in the system and each leads at its own reach: the accent primary
+         leads a screen, the neutral primary leads a card, and the destructive warns. -->
+    <SolidColorBrush x:Key="Accent" Color="#569eff" />
+    <SolidColorBrush x:Key="AccentHover" Color="#6fadff" />
+    <SolidColorBrush x:Key="AccentPressed" Color="#3f86e0" />
+    <SolidColorBrush x:Key="AccentInk" Color="#0d1a29" />
+    <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
+    <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
+
+    <!-- The second lead. A grey flood for the action a view repeats across many cards or rows,
+         where nine accent buttons would fight each other and the accent would stop meaning
+         selection and focus. -->
+    <SolidColorBrush x:Key="Neutral" Color="#464a52" />
+    <SolidColorBrush x:Key="NeutralHover" Color="#50555e" />
+    <SolidColorBrush x:Key="NeutralPressed" Color="#3d4045" />
+    <SolidColorBrush x:Key="NeutralLine" Color="#4f545c" />
+    <SolidColorBrush x:Key="NeutralInk" Color="#eef1f4" />
+
+    <!-- Focus is a soft halo hugging the control, outside its border, never replacing one. -->
+    <SolidColorBrush x:Key="FocusHalo" Color="#569eff" Opacity="0.3" />
+
+    <!-- Focus for a row with no room outside it. A grid row is flush against the rows above
+         and below and against the frame, so the halo would fall on its neighbours. This is
+         drawn inside the row instead, and it is stronger because it sits on the tint. -->
+    <SolidColorBrush x:Key="FocusLine" Color="#569eff" Opacity="0.6" />
+    <Thickness x:Key="FocusHaloThickness">2</Thickness>
+    <Thickness x:Key="FocusHaloReach">-2</Thickness>
+    <CornerRadius x:Key="RadiusControlHalo">7</CornerRadius>
+
+    <!-- One end of a control that is built from segments, such as a split button or a
+         segmented control. The parts cannot be clipped to the frame, because a clip
+         would take the focus halo with them, so each end carries its own radius. -->
+    <CornerRadius x:Key="RadiusControlLeft">5,0,0,5</CornerRadius>
+    <CornerRadius x:Key="RadiusControlRight">0,5,5,0</CornerRadius>
+    <CornerRadius x:Key="RadiusControlHaloLeft">7,0,0,7</CornerRadius>
+    <CornerRadius x:Key="RadiusControlHaloRight">0,7,7,0</CornerRadius>
+
+    <!-- Text. Disabled keeps its shape and flattens its fill, never its opacity. -->
+    <SolidColorBrush x:Key="InkTitle" Color="#e6ebf2" />
+    <SolidColorBrush x:Key="InkPrimary" Color="#e3e5e9" />
+    <SolidColorBrush x:Key="InkSecondary" Color="#a9aeb6" />
+    <SolidColorBrush x:Key="InkMuted" Color="#7b8089" />
+    <SolidColorBrush x:Key="InkDisabled" Color="#5c6169" />
+    <SolidColorBrush x:Key="InkCaption" Color="#eef1f4" />
+    <SolidColorBrush x:Key="InkChip" Color="#c9ced6" />
+
+    <!-- The activity rail's resting icon. Between InkSecondary and InkMuted, and a value
+         the rest of the palette does not have, because the rail sits on the root tone
+         where a muted icon disappears and a secondary one shouts. -->
+    <SolidColorBrush x:Key="InkRail" Color="#9ba6b0" />
+
+    <!-- The brightest ink in the system, and the only pure white. It belongs to a knob
+         being dragged and to nothing else: a slider knob goes InkChip, InkPrimary, then
+         this, so the thing under the finger is always the brightest thing on the row. -->
+    <SolidColorBrush x:Key="InkKnobPressed" Color="#ffffff" />
+
+    <!-- Disabled comes in two weights. InkDisabled is text. MarkOff is a glyph or a knob,
+         a step darker, because a solid 7px shape at InkDisabled reads louder than a word
+         does. It carries LineWindow's value and is a different role. -->
+    <SolidColorBrush x:Key="MarkOff" Color="#4a4e55" />
+
+    <!-- What a flood flattens to. A checked box, a toggle track and a slider fill are all
+         Accent when they are on, and all of them take this when they are not available.
+         Disabled never uses opacity, so the flood needs a tone of its own. -->
+    <SolidColorBrush x:Key="FillOff" Color="#3a3d43" />
+
+    <!-- Semantic. Each role carries a mark, a tinted surface, its border and its text. -->
+    <SolidColorBrush x:Key="Ok" Color="#4ec98a" />
+    <SolidColorBrush x:Key="OkSurface" Color="#1a2b22" />
+    <SolidColorBrush x:Key="OkLine" Color="#2b4a38" />
+    <SolidColorBrush x:Key="OkInk" Color="#7cd6ad" />
+
+    <SolidColorBrush x:Key="Warn" Color="#e0a94a" />
+    <SolidColorBrush x:Key="WarnHover" Color="#ecb85f" />
+    <SolidColorBrush x:Key="WarnPressed" Color="#c8933b" />
+    <SolidColorBrush x:Key="WarnSurface" Color="#2d2416" />
+    <SolidColorBrush x:Key="WarnLine" Color="#4d3d1c" />
+    <SolidColorBrush x:Key="WarnInk" Color="#e8bd72" />
+
+    <SolidColorBrush x:Key="Error" Color="#ef6a6e" />
+    <SolidColorBrush x:Key="ErrorSurface" Color="#2f1e20" />
+    <SolidColorBrush x:Key="ErrorLine" Color="#573034" />
+    <SolidColorBrush x:Key="ErrorInk" Color="#f4878a" />
+
+    <SolidColorBrush x:Key="Graph" Color="#a78bfa" />
+    <SolidColorBrush x:Key="Data" Color="#5bc8a8" />
+    <!-- The purple tint. The colour existed as Graph and had no surface, line and ink to
+         go with it, which every other semantic here has. A pre release channel needs one:
+         the design gives beta its own pill and none of the other tints is it. -->
+    <SolidColorBrush x:Key="GraphSurface" Color="#231d33" />
+    <SolidColorBrush x:Key="GraphLine" Color="#3c3357" />
+    <SolidColorBrush x:Key="GraphInk" Color="#bda6ff" />
+
+    <SolidColorBrush x:Key="DataSurface" Color="#1b2c28" />
+    <SolidColorBrush x:Key="DataLine" Color="#2f4a44" />
+
+    <!-- Text on a warn flood. The Ink of a semantic role is its text on the tinted surface, so
+         a flood needs its own, the way AccentInk sits against Accent. -->
+    <SolidColorBrush x:Key="WarnFillInk" Color="#241802" />
+
+    <!-- Destructive is a solid fill, the one exception to the no flood rule. -->
+    <SolidColorBrush x:Key="Destructive" Color="#b0454a" />
+    <SolidColorBrush x:Key="DestructiveHover" Color="#c25055" />
+    <SolidColorBrush x:Key="DestructivePressed" Color="#973b40" />
+    <SolidColorBrush x:Key="DestructiveInk" Color="#fff1f1" />
+    <SolidColorBrush x:Key="DestructiveInkPressed" Color="#ffe8e8" />
+
+    <!-- The close button belongs to the window rather than to a control, and it is the
+         only red that is not a destructive action. Both tones come from the design. -->
+    <SolidColorBrush x:Key="CloseHover" Color="#d9494f" />
+    <SolidColorBrush x:Key="ClosePressed" Color="#b53c42" />
+
+    <!-- Graph pin colours by type, for the tool that draws graphs. -->
+    <SolidColorBrush x:Key="PinFloat" Color="#5bc8a8" />
+    <SolidColorBrush x:Key="PinInt" Color="#6ea8e8" />
+    <SolidColorBrush x:Key="PinBool" Color="#d97b7b" />
+    <SolidColorBrush x:Key="PinEnum" Color="#a78bfa" />
+    <SolidColorBrush x:Key="PinStruct" Color="#dde3ea" />
+
+    <!-- Shape. Every control is 5px and every pill, card, panel and window shell is 8px.
+         Nothing is square cornered. The 8px name is Surface rather than Pill because a
+         window shell takes it too, and a window has no business reading a pill. -->
+    <CornerRadius x:Key="RadiusControl">5</CornerRadius>
+
+    <!-- The control radius again as a number. A Border takes a CornerRadius and a Rectangle
+         takes two doubles, and one value cannot be both, so the drop target outline needs
+         this. Written twice for the reason ThicknessCheck and SizeCheckStroke are. -->
+    <x:Double x:Key="SizeRadiusControl">5</x:Double>
+    <CornerRadius x:Key="RadiusSurface">8</CornerRadius>
+    <CornerRadius x:Key="RadiusMark">2</CornerRadius>
+
+    <!-- The one round mark in the system. It says where a setting's value came from, and
+         it is round so it is never read as the square mark a chip and a row carry. -->
+    <CornerRadius x:Key="RadiusDot">2.5</CornerRadius>
+
+    <!-- The 14px box a checkbox draws, and the colour swatch that is the same box. Between
+         the mark radius and the control radius, because the box is between those sizes. -->
+    <CornerRadius x:Key="RadiusBox">3</CornerRadius>
+
+    <!-- The scrim behind a popup that covers a page. Not behind a dialog. -->
+    <SolidColorBrush x:Key="Scrim" Color="#090a0b" Opacity="0.62" />
+
+    <!-- The gap between a control and the menu it opens. -->
+    <Thickness x:Key="OverlayGap">0,4</Thickness>
+
+    <!-- A popup window is sized to what it holds, and a box shadow draws outside that, so a
+         shadow with no room is clipped square by the window it is in. -->
+    <Thickness x:Key="OverlayRoom">28,22,28,38</Thickness>
+    <x:Double x:Key="OverlayRoomX">-28</x:Double>
+    <x:Double x:Key="OverlayRoomY">-18</x:Double>
+
+    <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these
+         stay soft and are never stacked. Overlays are the one place the theme uses
+         elevation rather than a seam, because a popup has no panel to belong to. -->
+    <!-- No shadow. A Setter cannot clear a BoxShadow with an empty value, it throws at
+         layout, so a control that gives up its shadow takes a zero one that is also
+         transparent. -->
+    <BoxShadows x:Key="ShadowNone">0 0 0 #00000000</BoxShadows>
+    <BoxShadows x:Key="ShadowFloating">0 6 18 #80000000</BoxShadows>
+    <BoxShadows x:Key="ShadowPopup">0 10 28 #8c000000</BoxShadows>
+    <BoxShadows x:Key="ShadowOverlay">0 20 48 #99000000</BoxShadows>
+    <BoxShadows x:Key="ShadowWindow">0 26 64 #b3000000, 0 2 6 #80000000</BoxShadows>
+
+    <!-- Density. As much a part of the theme as the palette. -->
+    <x:Double x:Key="HeightTitleBar">32</x:Double>
+    <x:Double x:Key="HeightCaptionButton">32</x:Double>
+    <x:Double x:Key="HeightControl">26</x:Double>
+    <x:Double x:Key="HeightControlTall">27</x:Double>
+
+    <!-- The short button, for a control that sits inside another piece of chrome rather
+         than in a form. A toast and an alert both use it, since both are read in passing
+         and a 26px row of buttons inside a 20px tall card reads as a dialog. -->
+    <x:Double x:Key="HeightControlSmall">24</x:Double>
+    <Thickness x:Key="PaddingControlSmall">11,0</Thickness>
+
+    <x:Double x:Key="HeightTreeRow">25</x:Double>
+    <x:Double x:Key="HeightGridRow">31</x:Double>
+
+    <!-- A grid's own chrome. The header is shorter than a row because it is a label rather
+         than data, and the group heading is shorter again. -->
+    <x:Double x:Key="HeightGridHeader">28</x:Double>
+    <x:Double x:Key="HeightGridToolbar">33</x:Double>
+    <x:Double x:Key="HeightGridFooter">29</x:Double>
+    <x:Double x:Key="HeightGridGroup">26</x:Double>
+    <x:Double x:Key="HeightChip">21</x:Double>
+    <x:Double x:Key="HeightPill">17</x:Double>
+    <x:Double x:Key="HeightTooltip">22</x:Double>
+    <x:Double x:Key="SizeIconButton">24</x:Double>
+    <x:Double x:Key="WidthActivityRail">48</x:Double>
+    <x:Double x:Key="SizeRailItem">32</x:Double>
+    <x:Double x:Key="HeightTab">28</x:Double>
+
+    <!-- A tree indents 14 per level, which is what the design's prose says and what its markup
+         draws once the leading slot is taken out of it. -->
+    <x:Double x:Key="IndentTree">14</x:Double>
+    <x:Double x:Key="IndentTreeGuide">8</x:Double>
+
+    <!-- The gap under a row. A Thickness rather than a spacing, because rows are laid out
+         by a virtualising panel that spaces nothing, so each row carries its own. -->
+    <Thickness x:Key="MarginRow">0,0,0,2</Thickness>
+
+    <!-- What a list, a tree and a row are padded by. A row's is horizontal only, since
+         its height is fixed and centring does the rest. -->
+    <Thickness x:Key="PaddingList">5</Thickness>
+    <Thickness x:Key="PaddingListRow">9,0</Thickness>
+    <Thickness x:Key="PaddingTab">11,0</Thickness>
+
+    <!-- A grid cell and the bars above and below the rows all pad the same, so a title, a
+         value and the search field over them line up. -->
+    <Thickness x:Key="PaddingGridCell">10,0</Thickness>
+
+    <!-- A cell being edited. The well inside it is shorter than the row, so the cell gives
+         the room back rather than the well overflowing. -->
+    <Thickness x:Key="PaddingGridEdit">6,2</Thickness>
+
+    <Thickness x:Key="PaddingGridPager">11,9</Thickness>
+
+    <!-- A tree row pads its right side alone. -->
+    <Thickness x:Key="PaddingTreeRow">0,0,8,0</Thickness>
+    <Thickness x:Key="PaddingCaret">8,0,7,0</Thickness>
+
+    <!-- The gap after a tree's caret, which is the same gap after a row's leading mark. -->
+    <Thickness x:Key="MarginRowLead">0,0,7,0</Thickness>
+
+    <!-- The accent bar along the top of the open tab. It is the only marker in the system
+         that says which of several things is current, since selection everywhere else is
+         a tint. -->
+    <x:Double x:Key="SizeTabMarker">2</x:Double>
+
+    <!-- A toast. One width for every region, so a card reads the same wherever it lands and a
+         stack never changes shape as its cards come and go. -->
+    <x:Double x:Key="WidthToast">352</x:Double>
+    <Thickness x:Key="PaddingToast">11,10,10,10</Thickness>
+    <x:Double x:Key="HeightToastCompact">30</x:Double>
+    <x:Double x:Key="HeightToastUndo">36</x:Double>
+
+    <!-- The status mark on a toast. Larger than the chip mark and larger than an icon,
+         because it is a tinted square with a glyph inside it rather than either one. -->
+    <x:Double x:Key="SizeToastMark">20</x:Double>
+
+    <!-- The bar along the foot of a toast. Two pixels, and it says one of two things:
+         time left when a toast is counting down, work done when it is reporting
+         progress. A toast with no bar is a toast that will not go away by itself. -->
+    <x:Double x:Key="HeightToastMeter">2</x:Double>
+
+    <!-- What a region stands clear of the edge it is anchored to. -->
+    <Thickness x:Key="PaddingToastRegion">8</Thickness>
+
+    <!-- The gap around the count of what is held back. It is the one thing in a region
+         that is not part of the deck, so it is the only thing with a gap. -->
+    <Thickness x:Key="MarginToast">0,2</Thickness>
+
+    <!-- How much of the card behind shows. Toasts stack as a deck rather than as a column, so
+         only the newest is whole and the rest show a strip of their top edge. -->
+    <x:Double x:Key="PeekToast">31</x:Double>
+
+    <!-- A card behind the front one is cut off rather than closed off, so it runs into
+         whatever is in front of it instead of ending against it. -->
+    <CornerRadius x:Key="RadiusSurfaceCutFoot">8,8,0,0</CornerRadius>
+    <CornerRadius x:Key="RadiusSurfaceCutHead">0,0,8,8</CornerRadius>
+
+    <!-- How far a card behind runs on under the one in front of it. -->
+    <x:Double x:Key="TuckToast">8</x:Double>
+    <Thickness x:Key="MarginToastTuck">0,0,0,8</Thickness>
+
+    <!-- How far back a card falls once another lands on top of it. Three tiers, because
+         a region shows three, and the newest is always the one at full strength. -->
+    <x:Double x:Key="OpacityToastDepth1">0.78</x:Double>
+    <x:Double x:Key="OpacityToastDepth2">0.5</x:Double>
+
+    <!-- An alert. The block wraps and pads like a card, the strip is one line on the row
+         height, and the inline form has no surface at all so it needs neither. -->
+    <Thickness x:Key="PaddingAlert">11,9,10,9</Thickness>
+    <Thickness x:Key="PaddingAlertStrip">10,0</Thickness>
+    <x:Double x:Key="HeightAlertStrip">31</x:Double>
+
+    <!-- A panel's header and footer. Both are 26 including the hairline that separates
+         them from the body, since the body is the only part that grows. -->
+    <x:Double x:Key="HeightPanelHeader">26</x:Double>
+    <x:Double x:Key="HeightPanelFooter">26</x:Double>
+
+    <!-- The splitter. The line is what a person sees and the reach is what they can
+         grab, so the second is much the larger. Dragging widens the line to the band
+         without moving it, which is why the band is odd and centred on the line. -->
+    <x:Double x:Key="SizeSplitterLine">1</x:Double>
+    <x:Double x:Key="SizeSplitterBand">3</x:Double>
+    <x:Double x:Key="SizeSplitterReach">7</x:Double>
+
+    <!-- The square mark a chip and a status pill carry. It takes RadiusMark. -->
+    <x:Double x:Key="SizeMark">5</x:Double>
+
+    <!-- The mark on a row or a tab that has unsaved changes. A step larger than the chip
+         mark, because it sits alone at the end of a row with nothing beside it to be read
+         against. -->
+    <x:Double x:Key="SizeMarkModified">6</x:Double>
+
+    <!-- The choice controls. A checkbox and a radio are the same box, one round. The
+         toggle is a 30 by 17 track with an 11px knob, and the knob sits 3 from each end,
+         which is what the travel below is measured from. -->
+    <x:Double x:Key="SizeCheck">14</x:Double>
+
+    <!-- The stroke a well draws around a checkbox, a radio or a toggle. -->
+    <Thickness x:Key="ThicknessCheck">1.5</Thickness>
+    <x:Double x:Key="SizeCheckStroke">1.5</x:Double>
+    <x:Double x:Key="WidthToggle">30</x:Double>
+    <x:Double x:Key="HeightToggle">17</x:Double>
+    <x:Double x:Key="SizeKnob">11</x:Double>
+    <x:Double x:Key="TravelKnob">13</x:Double>
+
+    <!-- A slider. The knob grows while it is being pointed at or dragged, so a value can
+         be read while a finger is on it. The tick is drawn behind the track and stands
+         3 clear of it either side. -->
+    <x:Double x:Key="HeightTrack">3</x:Double>
+    <x:Double x:Key="SizeKnobActive">13</x:Double>
+    <x:Double x:Key="HeightTick">9</x:Double>
+
+    <!-- The stepper column inside a well, and the well's own inset. -->
+    <x:Double x:Key="WidthSpinner">18</x:Double>
+    <x:Double x:Key="PaddingWell">9</x:Double>
+
+    <!-- The design does not record a bar height, so this is chosen. It is the shortest
+         bar that still reads as a bar at the mark radius. -->
+    <x:Double x:Key="HeightProgress">6</x:Double>
+
+    <!-- Icons are 16 in tables, trees and inline chips, and 20 in the activity rail, tool
+         cards and empty states. -->
+    <!-- A tree's disclosure caret. Smaller than the small icon, because the design draws
+         it at 14 and a 16 caret next to 12px text reads as a control rather than as a
+         hint. It carries IconSizeField's value and is a different role. -->
+    <x:Double x:Key="IconSizeCaret">14</x:Double>
+
+    <x:Double x:Key="IconSizeSmall">16</x:Double>
+    <x:Double x:Key="IconSizeLarge">20</x:Double>
+    <x:Double x:Key="IconSizeCompact">12</x:Double>
+    <x:Double x:Key="IconSizeStatus">13</x:Double>
+
+    <!-- An alert's mark, and the cross that closes a toast or an alert. -->
+    <x:Double x:Key="IconSizeAlert">15</x:Double>
+    <x:Double x:Key="IconSizeDismiss">15</x:Double>
+
+    <!-- An adorner inside a 26px well. The design states 14 for the calendar and the clock
+         marks, and the search field's mark is a placeholder circle rather than a glyph, so
+         it takes this too rather than a size of its own. -->
+    <x:Double x:Key="IconSizeField">14</x:Double>
+
+    <!-- The check inside a 14px box. It fills the box almost entirely, which is what makes
+         a ticked box read as ticked at a glance rather than as a box with something in it. -->
+    <x:Double x:Key="IconSizeCheck">11</x:Double>
+
+</ResourceDictionary>

@@ -35,8 +35,8 @@ coverage*.xml
 .claude/settings.local.json
 *.local.json
 
-# Personal Workbench settings for any workspace inside the repo
-.workbench/user/
+# Personal Kitbash settings for any workspace inside the repo
+.kitbash/user/
 
 # Partial writes left behind by an interrupted save
 *.tmp

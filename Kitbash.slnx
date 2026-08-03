@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kitbash.Core/Kitbash.Core.csproj" />
+    <Project Path="src/Kitbash.Ui/Kitbash.Ui.csproj" />
+    <Project Path="src/Kitbash.Gallery/Kitbash.Gallery.csproj" />
+    <Project Path="src/Kitbash/Kitbash.csproj" />
+  </Folder>
+  <Folder Name="/src/tools/" />
+</Solution>

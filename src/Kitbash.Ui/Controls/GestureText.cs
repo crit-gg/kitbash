@@ -1,0 +1,48 @@
+using System.Globalization;
+using Avalonia.Data.Converters;
+using Avalonia.Input;
+
+namespace Kitbash.Ui.Controls;
+
+/// <summary>
+/// Writes a <see cref="KeyGesture"/> as the hint beside a menu item.
+/// </summary>
+public class GestureText : IValueConverter
+{
+    public static readonly GestureText Instance = new();
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is KeyGesture gesture ? Spell(gesture) : null;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException("A gesture hint is read only.");
+
+    private static string Spell(KeyGesture gesture)
+    {
+        var parts = new List<string>();
+
+        // Named in the order a person says them, which is also the order every desktop
+        // prints them, rather than the order the enum happens to declare.
+        if (gesture.KeyModifiers.HasFlag(KeyModifiers.Control)) { parts.Add("Ctrl"); }
+        if (gesture.KeyModifiers.HasFlag(KeyModifiers.Shift)) { parts.Add("Shift"); }
+        if (gesture.KeyModifiers.HasFlag(KeyModifiers.Alt)) { parts.Add("Alt"); }
+        if (gesture.KeyModifiers.HasFlag(KeyModifiers.Meta)) { parts.Add("Super"); }
+
+        parts.Add(Name(gesture.Key));
+
+        return string.Join(" ", parts);
+    }
+
+    /// <summary>
+    /// The word a keyboard prints, where the enum member is not it. Key.Enter is declared
+    /// as Return and Key.PageUp as Prior, so both spell themselves wrong.
+    /// </summary>
+    private static string Name(Key key) => key switch
+    {
+        Key.Return => "Enter",
+        Key.Prior => "PageUp",
+        Key.Next => "PageDown",
+        Key.Back => "Backspace",
+        _ => key.ToString(),
+    };
+}

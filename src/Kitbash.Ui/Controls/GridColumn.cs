@@ -1,0 +1,166 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Layout;
+
+namespace Kitbash.Ui.Controls;
+
+/// <summary>
+/// One column, shared by the flat grid and the tree grid. It says how wide the column is
+/// and what a cell in it looks like, and nothing about which grid is drawing it.
+/// </summary>
+public class GridColumn : AvaloniaObject
+{
+    public static readonly StyledProperty<object?> HeaderProperty =
+        AvaloniaProperty.Register<GridColumn, object?>(nameof(Header));
+
+    /// <summary>
+    /// Pixel or star. Auto is refused: it would have to measure every row, and a width
+    /// that only works while the whole set is realised is the one thing a virtualised
+    /// grid cannot have.
+    /// </summary>
+    public static readonly StyledProperty<GridLength> WidthProperty =
+        AvaloniaProperty.Register<GridColumn, GridLength>(
+            nameof(Width),
+            new GridLength(1, GridUnitType.Star),
+            validate: width => !width.IsAuto);
+
+    public static readonly StyledProperty<double> MinWidthProperty =
+        AvaloniaProperty.Register<GridColumn, double>(nameof(MinWidth), 40d);
+
+    public static readonly StyledProperty<double> MaxWidthProperty =
+        AvaloniaProperty.Register<GridColumn, double>(nameof(MaxWidth), double.PositiveInfinity);
+
+    public static readonly StyledProperty<bool> CanResizeProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(CanResize), true);
+
+    public static readonly StyledProperty<bool> IsVisibleProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(IsVisible), true);
+
+    public static readonly StyledProperty<IDataTemplate?> CellTemplateProperty =
+        AvaloniaProperty.Register<GridColumn, IDataTemplate?>(nameof(CellTemplate));
+
+    /// <summary>What a cell turns into while it is being edited. No template, no edit.</summary>
+    public static readonly StyledProperty<IDataTemplate?> EditTemplateProperty =
+        AvaloniaProperty.Register<GridColumn, IDataTemplate?>(nameof(EditTemplate));
+
+    public static readonly StyledProperty<HorizontalAlignment> AlignmentProperty =
+        AvaloniaProperty.Register<GridColumn, HorizontalAlignment>(nameof(Alignment), HorizontalAlignment.Stretch);
+
+    /// <summary>
+    /// Whether this column holds values rather than language. Identifiers, counts, paths
+    /// and numbers are mono, names and labels are not.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsMonoProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(IsMono));
+
+    /// <summary>
+    /// Whether this column says which row it is rather than something about it. An
+    /// identifier and a name lead, and everything beside them rests a step quieter.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsStrongProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(IsStrong));
+
+    public static readonly StyledProperty<GridSortDirection> SortDirectionProperty =
+        AvaloniaProperty.Register<GridColumn, GridSortDirection>(nameof(SortDirection));
+
+    static GridColumn()
+    {
+        WidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
+        MinWidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
+        MaxWidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
+        IsVisibleProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
+    }
+
+    /// <summary>Raised when something that decides the column's width has moved.</summary>
+    internal event EventHandler? LayoutChanged;
+
+    public object? Header
+    {
+        get => GetValue(HeaderProperty);
+        set => SetValue(HeaderProperty, value);
+    }
+
+    public GridLength Width
+    {
+        get => GetValue(WidthProperty);
+        set => SetValue(WidthProperty, value);
+    }
+
+    public double MinWidth
+    {
+        get => GetValue(MinWidthProperty);
+        set => SetValue(MinWidthProperty, value);
+    }
+
+    public double MaxWidth
+    {
+        get => GetValue(MaxWidthProperty);
+        set => SetValue(MaxWidthProperty, value);
+    }
+
+    public bool CanResize
+    {
+        get => GetValue(CanResizeProperty);
+        set => SetValue(CanResizeProperty, value);
+    }
+
+    public bool IsVisible
+    {
+        get => GetValue(IsVisibleProperty);
+        set => SetValue(IsVisibleProperty, value);
+    }
+
+    public IDataTemplate? CellTemplate
+    {
+        get => GetValue(CellTemplateProperty);
+        set => SetValue(CellTemplateProperty, value);
+    }
+
+    public IDataTemplate? EditTemplate
+    {
+        get => GetValue(EditTemplateProperty);
+        set => SetValue(EditTemplateProperty, value);
+    }
+
+    public HorizontalAlignment Alignment
+    {
+        get => GetValue(AlignmentProperty);
+        set => SetValue(AlignmentProperty, value);
+    }
+
+    public bool IsMono
+    {
+        get => GetValue(IsMonoProperty);
+        set => SetValue(IsMonoProperty, value);
+    }
+
+    public bool IsStrong
+    {
+        get => GetValue(IsStrongProperty);
+        set => SetValue(IsStrongProperty, value);
+    }
+
+    public GridSortDirection SortDirection
+    {
+        get => GetValue(SortDirectionProperty);
+        set => SetValue(SortDirectionProperty, value);
+    }
+
+    /// <summary>
+    /// What to sort a row by. Null means the column cannot be sorted, so its header does
+    /// nothing when it is clicked and draws no indicator.
+    /// </summary>
+    public Func<object, object?>? SortKey { get; set; }
+
+    /// <summary>Whether a header click does anything.</summary>
+    public bool CanSort => SortKey is not null;
+
+    /// <summary>How wide the column came out. Written by <see cref="GridColumns"/> alone.</summary>
+    public double ActualWidth { get; internal set; }
+
+    /// <summary>How far in the column starts. Written by <see cref="GridColumns"/> alone.</summary>
+    public double Offset { get; internal set; }
+
+    private void RaiseLayoutChanged() => LayoutChanged?.Invoke(this, EventArgs.Empty);
+}

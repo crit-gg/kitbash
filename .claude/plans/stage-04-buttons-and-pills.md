@@ -1,6 +1,6 @@
 # Stage 4: buttons and pills
 
-The first real control themes. Everything here is a `ControlTheme` in `Workbench.Ui`
+The first real control themes. Everything here is a `ControlTheme` in `Kitbash.Ui`
 over a built in Avalonia type. Only the chip and the status pill are ours, because
 Avalonia has no type for either.
 
@@ -112,7 +112,7 @@ Two consequences for this stage.
 
 ## As built
 
-One control theme per stock type, in `Workbench.Ui/Themes/Controls`. `Button` carries
+One control theme per stock type, in `Kitbash.Ui/Themes/Controls`. `Button` carries
 all five kinds, since they differ only in their brushes. Secondary is what a button is
 when it is told nothing, and `primary`, `ghost`, `danger` and `icon` are classes.
 
@@ -188,7 +188,7 @@ The status pill's five tiers are Ok, Modified and Error from the semantic table,
 Accent and Neutral. The design shows five pills naming five states of a file, which is
 content rather than library, so the pill takes the tier and the caller supplies the word.
 
-Verified in a harness built from `Workbench.Ui` alone: every kind in every state side by
+Verified in a harness built from `Kitbash.Ui` alone: every kind in every state side by
 side, 199 checks covering each kind's three brushes at rest, hovered, pressed and
 disabled, the shape and type of each, the halo appearing on tab focus and not on pointer
 focus while leaving the border alone, both carets turning and coming back, every pill

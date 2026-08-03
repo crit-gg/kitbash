@@ -1,6 +1,6 @@
 # Stage 11: data grid
 
-**Built.** See Grids in `.claude/skills/workbench-surfaces` for what the library holds and
+**Built.** See Grids in `.claude/skills/kitbash-surfaces` for what the library holds and
 "Where this departed from the plan" at the foot of this file for what the design said that
 this did not.
 

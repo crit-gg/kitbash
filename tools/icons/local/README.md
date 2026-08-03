@@ -50,7 +50,7 @@ It is committed here because this is where a mark we supply belongs, beside the 
 a row of rail icons all answer the same selection state and have to tint together, and a
 page header names one product and should look like it.
 
-What consumes it is `Workbench.Ui/Themes/Marks.axaml`, a `DrawingImage` drawn with an
+What consumes it is `Kitbash.Ui/Themes/Marks.axaml`, a `DrawingImage` drawn with an
 `Image` rather than an `ui:Icon`. **Nothing was normalised in the crossing.** Each of the
 eight paths keeps its own data and its own matrix, because Avalonia reads an SVG matrix in
 the order it is written and a `DrawingGroup` takes a transform. So there was no flatten, no

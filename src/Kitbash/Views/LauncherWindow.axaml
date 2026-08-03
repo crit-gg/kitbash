@@ -1,0 +1,718 @@
+<ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Kitbash.ViewModels"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+        xmlns:views="clr-namespace:Kitbash.Views"
+        xmlns:sys="using:System"
+        x:Class="Kitbash.Views.LauncherWindow"
+        x:DataType="vm:LauncherViewModel"
+        Title="Kitbash"
+        Icon="avares://Kitbash/Assets/Icons/icon_256x256.png"
+        Width="964" Height="724"
+        MinWidth="844" MinHeight="584"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="{StaticResource FontFamilyUi}"
+        FontSize="{StaticResource FontSizeBody}">
+
+    <!-- The size is 24 more than the design's 940 by 700 on each axis, because the window
+         carries a 12px transparent gutter on every side for its shadow to fall into. The
+         visible frame is the design size. -->
+
+    <Window.Styles>
+        <!-- Launcher layout only. Every control look comes from Kitbash.Ui, so nothing
+             here sets a brush, a radius or a size that belongs to a control. -->
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        </Style>
+
+        <!-- The bands. SurfaceRoot at top and bottom brackets the SurfaceNest1 middle,
+             which is the depth rule doing its job rather than a decision. -->
+        <Style Selector="Border.band">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        </Style>
+
+        <!-- The page and the cards on it ride the depth ramp rather than naming a tone, so the
+             page is one step below the window and a card one below the page. -->
+        <Style Selector="Border.page">
+            <Setter Property="(ui:Surface.Nests)" Value="True" />
+        </Style>
+
+        <!-- A tool card. A card is a surface rather than a control, so it is styled
+             here and its contents are library controls. -->
+        <Style Selector="Border.toolCard">
+            <Setter Property="(ui:Surface.Nests)" Value="True" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+
+        <Style Selector="Border.toolMark">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        </Style>
+
+        <!-- A tool that is not on this machine drops the tile and the name to the muted
+             tier, so the solid Launch column belongs to the installed list alone. -->
+        <Style Selector="Border.toolMark > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="Border.toolMark.available">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        </Style>
+
+        <Style Selector="Border.toolMark.available > TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="TextBlock.toolName">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="TextBlock.toolName.available">
+            <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
+        </Style>
+
+
+        <!-- A row in the workspace list. Full bleed rather than an inset pill, because it
+             carries two lines and a badge, which is the rule stage 5 recorded. -->
+        <Style Selector="Border.workspaceRow">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="13,10" />
+        </Style>
+
+        <Style Selector="Border.workspaceRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <Style Selector="Border.workspaceRow.current">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        </Style>
+
+        <!-- The open row hovers too. Both selectors bind at the same precedence, so the
+             later one wins and without this the current row would be the one row in the
+             list that does not answer the pointer. -->
+        <Style Selector="Border.workspaceRow.current:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <!-- The state square beside a workspace, and the one in the selector. -->
+        <Style Selector="Border.stateMark">
+            <Setter Property="Width" Value="9" />
+            <Setter Property="Height" Value="9" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource Ok}" />
+        </Style>
+
+        <Style Selector="Border.stateMark.local">
+            <Setter Property="Background" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="Border.stateMark.missing">
+            <Setter Property="Background" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="TextBlock.rowAction">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.rowAction.inert">
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <!-- The list being built at launch so the first real open is not the slow one. See
+             LauncherWindow.OnOpened. Nothing is drawn while that happens. -->
+        <Style Selector="FlyoutPresenter.warming">
+            <Setter Property="Opacity" Value="0" />
+        </Style>
+
+        <!-- The status bar readouts, the count classes and the conflict chip all come from
+             Kitbash.Ui, so a tool's status bar reads the same as this one. -->
+    </Window.Styles>
+
+    <!-- the frame, the shadow and the resize grips come from Kitbash.Ui -->
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- The launcher adds nothing of its own to the chrome, so this row disappears
+             entirely when the desktop draws the frame. -->
+        <!-- The version is set in code behind, since the window is built without a
+             container. It is not part of Title, so the task bar still reads Kitbash. -->
+        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar" Title="Kitbash"
+                           Icon="avares://Kitbash/Assets/Icons/icon_64x64.png" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+
+            <!-- The rail. Selection, keyboard navigation and the selected state all come
+                 from ListBox. Only the workspace page exists, so the other two are here
+                 and disabled rather than absent, which is what the design shows. -->
+            <!-- The rail. Selection, keyboard navigation and the selected state all come from ListBox,
+                 so what the library supplies is a look. -->
+            <DockPanel Grid.Column="0">
+                <!-- Settings opens a window rather than a page, since every app owns its
+                     own and a tool's is not reachable from here. The rail item is a way
+                     in rather than a place, so it never stays selected. -->
+                <ListBox DockPanel.Dock="Bottom" Name="RailFoot"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,0,0,8"
+                         SelectedIndex="-1"
+                         SelectionChanged="OnSettingsSelected">
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Settings" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Settings">
+                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+                </ListBox>
+
+                <ListBox DockPanel.Dock="Top" Name="Rail"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,8,0,0"
+                         VerticalAlignment="Stretch"
+                         SelectedIndex="{Binding Page, Mode=TwoWay}">
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Workspace" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Workspace">
+                        <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Godot engines">
+                        <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+                </ListBox>
+            </DockPanel>
+
+            <!-- The pages the rail opens. Both are built and only one is shown, so
+                 switching costs nothing and neither page reloads on the way back. The
+                 settings page is its own piece of work and its rail item stays disabled. -->
+            <Panel Grid.Column="1">
+              <Panel IsVisible="{Binding OnWorkspacePage}">
+                <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,Auto,*,Auto">
+
+                    <!-- workspace bar -->
+                    <Border Grid.Row="0" Classes="band" BorderThickness="0,0,0,1"
+                            Padding="20,14,20,13">
+                        <DropDownButton Name="WorkspaceSelector"
+                                        HorizontalAlignment="Left"
+                                        MinWidth="266" Height="40"
+                                        HorizontalContentAlignment="Stretch">
+                            <DropDownButton.Flyout>
+                                <!-- The list covers the page, so the page is put aside
+                                     rather than merely overlapped. -->
+                                <Flyout Placement="BottomEdgeAlignedLeft"
+                                        FlyoutPresenterClasses="popover"
+                                        ui:Dimmer.Dims="True">
+                                    <ui:Popover Width="436" Header="WORKSPACES">
+                                        <ScrollViewer MaxHeight="296"
+                                                      HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding Workspaces}" Margin="0,5">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:WorkspaceViewModel">
+                                                        <Border Classes="workspaceRow"
+                                                                Classes.current="{Binding IsCurrent}"
+                                                                Tapped="OnWorkspaceTapped">
+                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="11">
+                                                                <Border Grid.Column="0" Classes="stateMark"
+                                                                        Classes.local="{Binding IsLocal}"
+                                                                        Classes.missing="{Binding IsMissing}" />
+
+                                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                        <TextBlock Text="{Binding Name}"
+                                                                                   FontSize="{DynamicResource FontSizeTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                   Foreground="{DynamicResource InkPrimary}"
+                                                                                   VerticalAlignment="Center" />
+                                                                        <ui:Badge Content="{Binding Badge}"
+                                                                                  IsVisible="{Binding HasBadge}" />
+                                                                    </StackPanel>
+                                                                    <TextBlock Classes="mono" Text="{Binding Path}"
+                                                                               Margin="0,4,0,0"
+                                                                               FontSize="{DynamicResource FontSizeBody}"
+                                                                               Foreground="{DynamicResource InkSecondary}"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+
+                                                                <TextBlock Grid.Column="2" Classes="rowAction"
+                                                                           Classes.inert="{Binding !CanSwitch}"
+                                                                           Text="{Binding Action}" />
+
+                                                                <Button Grid.Column="3" Classes="icon"
+                                                                        ToolTip.Tip="More"
+                                                                        AutomationProperties.Name="More"
+                                                                        Click="OnWorkspaceMenuClick">
+                                                                    <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                </Button>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+
+                                        <ui:Popover.Footer>
+                                            <!-- Library buttons rather than menu items. Each row is one action, not a menu, and the
+                                                 ghost kind is what a button with no fill already looks like here. -->
+                                            <StackPanel Spacing="2">
+                                                <Button Classes="ghost"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left"
+                                                        Click="OnAddWorkspaceClick">
+                                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                                        <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Add workspace from folder"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <Button Classes="ghost"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left"
+                                                        Click="OnCloneWorkspaceClick">
+                                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                                        <ui:Icon Glyph="GitBranch" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Clone workspace from git"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
+                                        </ui:Popover.Footer>
+                                    </ui:Popover>
+                                </Flyout>
+                            </DropDownButton.Flyout>
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border Grid.Column="0" Classes="stateMark" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding WorkspaceName}"
+                                               FontSize="{DynamicResource FontSizeSubhead}"
+                                               FontWeight="{DynamicResource FontWeightStrong}"
+                                               Foreground="{DynamicResource InkPrimary}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                               Margin="0,3,0,0"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource InkSecondary}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DropDownButton>
+                    </Border>
+
+                    <!-- The engine strip. What this workspace asks for and what would
+                         open it. The rules are IEngineResolver's and the words are
+                         EngineViewModel's, so nothing here decides anything. -->
+                    <Border Grid.Row="1" Classes="page" BorderThickness="0,0,0,1"
+                            Height="56" Padding="20,0">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="11">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding Engine.Version}"
+                                               FontSize="{DynamicResource FontSizeTitle}"
+                                               FontWeight="{DynamicResource FontWeightStrong}"
+                                               Foreground="{DynamicResource InkPrimary}"
+                                               VerticalAlignment="Center" />
+
+                                    <!-- What the engine is, then how things are with it.
+                                         The channel shows even for stable, since this is
+                                         one line with nothing beside it to contrast with. -->
+                                    <ui:Badge Tier="{Binding Engine.ChannelTier}"
+                                              Content="{Binding Engine.Channel}"
+                                              IsVisible="{Binding Engine.HasChannel}" />
+
+                                    <!-- A runtime is a fact rather than a status, which is
+                                         why it is the data tier and carries a dot. -->
+                                    <ui:Badge Tier="Data" HasDot="True"
+                                              Content="{Binding Engine.Runtime}"
+                                              IsVisible="{Binding Engine.HasRuntime}" />
+
+                                    <ui:Badge Tier="{Binding Engine.StateTier}"
+                                              Content="{Binding Engine.StateLabel}"
+                                              IsVisible="{Binding Engine.HasState}" />
+                                </StackPanel>
+
+                                <TextBlock Classes="mono" Text="{Binding Engine.Note}"
+                                           Margin="0,4,0,0"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           Foreground="{DynamicResource InkSecondary}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <SplitButton Grid.Column="1"
+                                         Classes.primary="{Binding Engine.IsMatched}"
+                                         Classes.warn="{Binding Engine.IsMismatch}"
+                                         Classes.danger="{Binding Engine.IsMissing}"
+                                         Content="{Binding Engine.Action}"
+                                         Command="{Binding Engine.RunCommand}"
+                                         IsVisible="{Binding Engine.HasAction}"
+                                         VerticalAlignment="Center">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <!-- The same work as the button, and only the last
+                                             step differs. Running is what Godot does with
+                                             no flag, so editing is the one that adds one. -->
+                                        <!-- Only on a mismatch, where the button offers
+                                             the fix and this offers the workaround. -->
+                                        <MenuItem Header="Open anyway"
+                                                  Command="{Binding Engine.OpenAnywayCommand}"
+                                                  IsVisible="{Binding Engine.CanOpenAnyway}" />
+                                        <MenuItem Header="Play"
+                                                  Command="{Binding Engine.PlayCommand}"
+                                                  IsEnabled="{Binding Engine.CanLaunch}" />
+                                        <MenuItem Header="Clean rebuild"
+                                                  Command="{Binding Engine.CleanRebuildCommand}"
+                                                  IsEnabled="{Binding Engine.CanLaunch}" />
+                                        <MenuItem Header="Open project folder"
+                                                  Command="{Binding Engine.OpenProjectFolderCommand}"
+                                                  IsEnabled="{Binding Engine.CanOpenProject}" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+                        </Grid>
+                    </Border>
+
+                    <!-- tools -->
+                    <Border Grid.Row="2" Classes="page" BorderThickness="0">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding ToolGroups}" Margin="20,16,20,18">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="20" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ToolGroupViewModel">
+                                        <StackPanel>
+                                            <!-- Update all appears only while something is pending and
+                                                 carries the count, so an up to date group is quiet. -->
+                                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                                    Header="{Binding Label}"
+                                                                    Margin="0,0,0,11">
+                                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                                    <Button Theme="{StaticResource CompactButton}"
+                                                            IsVisible="{Binding ShowsUpdateAll}"
+                                                            Command="{Binding UpdateAllCommand}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <ui:Icon Glyph="ArrowBigDownLine"
+                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                     Foreground="{DynamicResource Warn}"
+                                                                     VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding UpdateAllLabel}"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
+
+                                                    <Button Theme="{StaticResource CompactButton}" Classes="link"
+                                                            IsVisible="{Binding ShowsCheck}"
+                                                            Content="{Binding CheckLabel}"
+                                                            Command="{Binding CheckCommand}" />
+                                                </StackPanel>
+                                            </HeaderedContentControl>
+
+                                            <!-- Three across, and the negative margin takes back the
+                                                 gutter the last column and the last row would leave. -->
+                                            <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-9,-9">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="3" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ToolCardViewModel">
+                                                        <Border Classes="toolCard" MinHeight="226" Margin="0,0,9,9">
+                                                            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="11">
+                                                                <Grid Grid.Row="0" ColumnDefinitions="40,*,Auto"
+                                                                      ColumnSpacing="12">
+                                                                    <!-- The tile holds the tool's icon. A letter
+                                                                         until a tool supplies one. -->
+                                                                    <Border Grid.Column="0" Classes="toolMark"
+                                                                            Classes.available="{Binding !IsInstalled}"
+                                                                            Width="40" Height="40">
+                                                                        <TextBlock Text="{Binding Mark}"
+                                                                                   HorizontalAlignment="Center"
+                                                                                   VerticalAlignment="Center"
+                                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}" />
+                                                                    </Border>
+
+                                                                    <StackPanel Grid.Column="1" Margin="0,2,0,0">
+                                                                        <TextBlock Classes="toolName"
+                                                                                   Classes.available="{Binding !IsInstalled}"
+                                                                                   Text="{Binding Name}"
+                                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Classes="mono" Text="{Binding Version}"
+                                                                                   Margin="0,6,0,0"
+                                                                                   FontSize="{DynamicResource FontSizeBody}"
+                                                                                   Foreground="{DynamicResource InkMuted}" />
+                                                                    </StackPanel>
+
+                                                                    <!-- A plain menu rather than a split button, so
+                                                                         the primary has one target and one meaning. -->
+                                                                    <Button Grid.Column="2" Classes="icon"
+                                                                            VerticalAlignment="Top"
+                                                                            ToolTip.Tip="More"
+                                                                            AutomationProperties.Name="More"
+                                                                            Click="OnToolMenuClick">
+                                                                        <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                    </Button>
+                                                                </Grid>
+
+                                                                <!-- The floor keeps every card in a row ending its
+                                                                     actions on the same line. -->
+                                                                <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                                                           MinHeight="69"
+                                                                           VerticalAlignment="Top"
+                                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                                           LineHeight="17.4"
+                                                                           TextWrapping="Wrap"
+                                                                           Foreground="{DynamicResource InkSecondary}" />
+
+                                                                <StackPanel Grid.Row="2" Spacing="7">
+                                                                    <!-- Margins rather than ColumnSpacing, since a
+                                                                         hidden column would still take the gap. -->
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                            <ColumnDefinition Width="{Binding BarColumn}" />
+                                                                            <ColumnDefinition Width="*" />
+                                                                        </Grid.ColumnDefinitions>
+
+                                                                        <Button Grid.Column="0" Margin="0,0,7,0"
+                                                                                IsVisible="{Binding ShowUpdate}"
+                                                                                Command="{Binding UpdateCommand}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                                <ui:Icon Glyph="ArrowBigDownLine"
+                                                                                         Size="{DynamicResource IconSizeField}"
+                                                                                         Foreground="{DynamicResource Warn}"
+                                                                                         VerticalAlignment="Center" />
+                                                                                <TextBlock Text="Update"
+                                                                                           VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+
+                                                                        <Grid Grid.Column="1" Margin="0,0,7,0"
+                                                                              ColumnDefinitions="*,Auto" ColumnSpacing="9"
+                                                                              VerticalAlignment="Center"
+                                                                              IsVisible="{Binding IsUpdating}">
+                                                                            <ProgressBar Grid.Column="0"
+                                                                                         Value="{Binding Progress}"
+                                                                                         Foreground="{DynamicResource Warn}" />
+                                                                            <TextBlock Grid.Column="1" Classes="mono"
+                                                                                       Text="{Binding PercentLabel}"
+                                                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                                                       Foreground="{DynamicResource InkSecondary}" />
+                                                                        </Grid>
+
+                                                                        <Button Grid.Column="2" Classes="neutral"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                Content="Launch"
+                                                                                IsVisible="{Binding ShowLaunch}"
+                                                                                Click="OnLaunchToolClick" />
+
+                                                                        <Button Grid.Column="2"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                Content="Install"
+                                                                                IsVisible="{Binding ShowInstall}" />
+
+                                                                        <!-- One button is its own explanation, so a
+                                                                             blocked card greys nothing out. -->
+                                                                        <Button Grid.Column="2" Classes="neutral"
+                                                                                HorizontalAlignment="Stretch"
+                                                                                IsVisible="{Binding ShowUpdateLead}"
+                                                                                Command="{Binding UpdateCommand}">
+                                                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                                                <ui:Icon Glyph="ArrowBigDownLine"
+                                                                                         Size="{DynamicResource IconSizeField}"
+                                                                                         Foreground="{DynamicResource Warn}"
+                                                                                         VerticalAlignment="Center" />
+                                                                                <TextBlock Text="Update"
+                                                                                           VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+                                                                    </Grid>
+
+                                                                    <ItemsControl ItemsSource="{Binding Extras}"
+                                                                                  IsVisible="{Binding HasExtras}"
+                                                                                  Margin="0,0,-7,0">
+                                                                        <ItemsControl.ItemsPanel>
+                                                                            <ItemsPanelTemplate>
+                                                                                <UniformGrid Rows="1" />
+                                                                            </ItemsPanelTemplate>
+                                                                        </ItemsControl.ItemsPanel>
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate x:DataType="sys:String">
+                                                                                <Button Content="{Binding}"
+                                                                                        Margin="0,0,7,0"
+                                                                                        HorizontalAlignment="Stretch" />
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- The status bar. Two of them, one row, and which one shows is
+                         whether the workspace is a repository. Everything in the git one is
+                         read from the repository and kept current by the monitor. -->
+                    <!-- Less room on the right, because the button there brings its own. -->
+                    <Border Grid.Row="3" Classes="band" BorderThickness="0,1,0,0"
+                            Height="{DynamicResource HeightTitleBar}" Padding="16,0,12,0">
+                        <Panel>
+                            <!-- Not a repository, so there is no branch and no history to
+                                 report. The path is all there is to say. -->
+                            <TextBlock Classes="mono" Text="{Binding WorkspaceSubtitle}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding !Git.IsRepository}" />
+
+                            <!-- Two groups, because they answer two questions. -->
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="14"
+                                  IsVisible="{Binding Git.IsRepository}">
+
+                                <!-- A readout and nothing more. No border, no chevron and no
+                                     hover, because switching branches belongs to a git tool
+                                     and this only says where you are. -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center">
+                                    <ui:Icon Glyph="GitBranch" Size="{DynamicResource IconSizeStatus}"
+                                             Foreground="{DynamicResource InkSecondary}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Classes="branch" Text="{Binding Git.Branch}"
+                                               MaxWidth="260" />
+                                </StackPanel>
+
+                                <!-- What has changed here. Each count carries its own glyph,
+                                     so none of them says its meaning in colour alone. -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasModified}">
+                                        <ui:Icon Classes="countMark" Glyph="Save"
+                                                 Foreground="{DynamicResource Warn}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Modified}" />
+                                        <TextBlock Classes="countLabel" Text="modified" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasStaged}">
+                                        <ui:Icon Classes="countMark" Glyph="Check"
+                                                 Foreground="{DynamicResource Ok}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Staged}" />
+                                        <TextBlock Classes="countLabel" Text="staged" />
+                                    </StackPanel>
+
+                                    <!-- A conflict blocks work where everything else here is
+                                         only worth knowing, so it leaves the row of counts
+                                         and takes a tinted chip. Still a readout. -->
+                                    <Border Classes="conflictChip" IsVisible="{Binding Git.HasConflicted}">
+                                        <StackPanel Classes="countReadout">
+                                            <ui:Icon Classes="countMark" Glyph="AlertTriangle"
+                                                     Foreground="{DynamicResource Error}" />
+                                            <TextBlock Classes="count" Text="{Binding Git.Conflicted}" />
+                                            <TextBlock Classes="countLabel" Text="{Binding Git.ConflictWord}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasAhead}">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronUp"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Ahead}" />
+                                        <TextBlock Classes="countLabel" Text="ahead" />
+                                    </StackPanel>
+
+                                    <StackPanel Classes="countReadout" IsVisible="{Binding Git.HasBehind}">
+                                        <ui:Icon Classes="countMark" Glyph="ChevronDown"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Classes="count" Text="{Binding Git.Behind}" />
+                                        <TextBlock Classes="countLabel" Text="behind" />
+                                    </StackPanel>
+
+                                    <TextBlock Classes="updateAge" Text="{Binding Git.UpdateLabel}" />
+
+                                    <!-- The only action in the bar, and one word for both of the things it does. -->
+                                    <Button Theme="{StaticResource StatusBarButton}"
+                                            Command="{Binding UpdateCommand}"
+                                            ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                                     Classes.spin="{Binding Git.IsUpdating}"
+                                                     Foreground="{DynamicResource InkSecondary}"
+                                                     VerticalAlignment="Center" />
+                                            <TextBlock Text="Update"
+                                                       Foreground="{DynamicResource InkPrimary}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Panel>
+                    </Border>
+                </Grid>
+
+                <!-- Nothing above makes sense without a workspace, so the whole page is
+                     replaced rather than emptied. Derived rather than designed: the
+                     design shows a launcher that always has one. -->
+                <Border Classes="page" BorderThickness="0"
+                        IsVisible="{Binding !HasWorkspaces}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                MaxWidth="400">
+                        <Border Classes="toolMark" Width="52" Height="52"
+                                HorizontalAlignment="Center">
+                            <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeLarge}"
+                                     Foreground="{DynamicResource Accent}" />
+                        </Border>
+
+                        <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
+                                   FontSize="{DynamicResource FontSizeDialogTitle}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   Foreground="{DynamicResource InkPrimary}"
+                                   HorizontalAlignment="Center" />
+
+                        <TextBlock Margin="0,8,0,0"
+                                   FontSize="{DynamicResource FontSizeControl}"
+                                   LineHeight="18"
+                                   TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{DynamicResource InkSecondary}"
+                                   Text="A workspace is a project folder. Tools and settings follow the one you have open." />
+
+                        <Button Classes="primary" Content="Choose a folder"
+                                Margin="0,22,0,0"
+                                HorizontalAlignment="Center"
+                                Click="OnChooseFolderClick" />
+                    </StackPanel>
+                </Border>
+              </Panel>
+
+              <Panel IsVisible="{Binding OnEnginesPage}">
+                <views:EnginesPage DataContext="{Binding Engines}" />
+              </Panel>
+
+              <!-- The launcher's first toast host. It held none until now, because it had nothing
+                   transient to report. -->
+              <ui:ToastHost Name="Toasts" />
+            </Panel>
+        </Grid>
+    </Grid>
+</ui:ChromelessWindow>

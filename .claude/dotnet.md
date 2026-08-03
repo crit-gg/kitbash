@@ -1,6 +1,6 @@
 # .NET, found and installed
 
-Research only. Nothing here is built. This is what a `Workbench.Core/DotNet` would have
+Research only. Nothing here is built. This is what a `Kitbash.Core/DotNet` would have
 to know, written the way `avalonia.md` is: what was measured, where the traps are, and
 what the answer should be when someone builds it.
 
@@ -9,20 +9,20 @@ package `dotnet-host-bin`. Everything Windows in here comes from Microsoft's own
 documentation and could not be run, which is called out where it matters.
 
 Two things are wanted. A way to install or update .NET for a person on any platform, and
-an integration that runs `dotnet` the way `Workbench.Core/Git` runs git. They are the same
+an integration that runs `dotnet` the way `Kitbash.Core/Git` runs git. They are the same
 piece of work, because the thing that installs has to find what is already there first,
 and finding is most of what the integration does.
 
 ## Before anything, what needs it
 
-Workbench is a .NET app. If it ships framework dependent it cannot be the thing that
+Kitbash is a .NET app. If it ships framework dependent it cannot be the thing that
 installs the runtime it needs in order to start, so the launcher publishes self contained
 or this feature is unreachable on a machine with no .NET. `Directory.Build.props` already
 names both runtime identifiers and the publish commands in `CLAUDE.md` already pass
 `--self-contained`. Keep it that way and the launcher runs on a machine that has never
 seen .NET.
 
-So the SDK being installed is never the one Workbench runs on. It is the one a **workspace**
+So the SDK being installed is never the one Kitbash runs on. It is the one a **workspace**
 needs, to build the Godot project's C# assembly. That changes the question from "is .NET
 up to date" to "does this workspace build", and those have different answers. See
 What version, below.
@@ -266,24 +266,24 @@ Everything the script does that is worth having is thirty lines of managed code 
 `HttpClient`, `System.Formats.Tar` and `ZipFile`, and doing it ourselves gets the hash check
 the script skips.
 
-## What Workbench should do
+## What Kitbash should do
 
 Two lanes. Only one of them ever writes to the machine.
 
 ### Lane one, the one that runs: a private install
 
 Resolve a version from the metadata, download the explicit URL, check the SHA-512 that came
-with it, extract into a directory Workbench owns, and never touch PATH, root, the package
+with it, extract into a directory Kitbash owns, and never touch PATH, root, the package
 manager or anything outside that directory.
 
 Where it goes is `IUserDirectories`. Not the state directory, because this is neither
 configuration nor something the app remembers, and deleting state is documented as
-resetting Workbench without taking anything a person chose. An SDK is a large acquired
+resetting Kitbash without taking anything a person chose. An SDK is a large acquired
 artifact, so either the cache directory or a fourth kind. That is a decision, and
 `ApplicationPaths` is where it lands.
 
 Do **not** install into `~/.dotnet`. That is the install script's default and a person may
-well have used it. Sharing that folder means Workbench and a person's own script writing
+well have used it. Sharing that folder means Kitbash and a person's own script writing
 the same unversioned `dotnet` binary at each other.
 
 What this buys, against every one of the project's three questions:
@@ -307,7 +307,7 @@ and it is worth knowing about:
 ```json
 { "sdk": { "version": "10.0.100",
            "paths": [ ".dotnet", "$host$" ],
-           "errorMessage": "Run Workbench to install the SDK this workspace needs." } }
+           "errorMessage": "Run Kitbash to install the SDK this workspace needs." } }
 ```
 
 That makes a private install satisfy a person's own terminal too, not just ours. It only
@@ -317,7 +317,7 @@ offer and never a side effect.
 
 ### Lane two, the one that only talks: the person's own package manager
 
-When .NET is already on the machine and a package manager owns it, Workbench should say so
+When .NET is already on the machine and a package manager owns it, Kitbash should say so
 and say what the command would be, and stop there.
 
 Running it means root. On Linux that is `pkexec` if polkit is there and `sudo` in a terminal
@@ -485,7 +485,7 @@ Ask PATH first, the way `IExecutableFinder` already does for git, and remember t
 
 | | Linux | Windows |
 |---|---|---|
-| Ours | the Workbench directory | the same |
+| Ours | the Kitbash directory | the same |
 | Environment | `$DOTNET_ROOT` | `%DOTNET_ROOT%`, `%DOTNET_ROOT_X64%` |
 | Distribution feed | `/usr/lib/dotnet` | |
 | Microsoft feed or upstream | `/usr/share/dotnet` | `C:\Program Files\dotnet` |
@@ -495,7 +495,7 @@ Ask PATH first, the way `IExecutableFinder` already does for git, and remember t
 
 That is a candidate list, first one present wins, and a message that names what was tried
 when none are. Same shape as `DesktopLauncherResolver`, and it belongs behind an interface
-with one implementation per OS, chosen in `WorkbenchCoreServices`, because it is a
+with one implementation per OS, chosen in `KitbashCoreServices`, because it is a
 directory layout and that is the rule.
 
 `DOTNET_ROOT` was set to `/usr/share/dotnet` on this machine by the Arch package, so it is a
@@ -503,14 +503,14 @@ real signal and not a rarity. Note the documented subtlety: it is consulted **on
 generated executables resolving a runtime, not by the muxer picking an SDK, so it says where
 an install is and not which one `dotnet` will use.
 
-`DOTNET_HOST_PATH` is set by the SDK for child processes it starts. Workbench is not one of
+`DOTNET_HOST_PATH` is set by the SDK for child processes it starts. Kitbash is not one of
 those, so it will not be set for us. If it ever is, honour it, since it means we are running
 inside somebody's build.
 
 ## The integration
 
-`Workbench.Core/DotNet`, registered by `AddWorkbenchDotNet`, mirroring
-`Workbench.Core/Git`. Same reasoning as the git reader, and the same sentence applies word
+`Kitbash.Core/DotNet`, registered by `AddKitbashDotNet`, mirroring
+`Kitbash.Core/Git`. Same reasoning as the git reader, and the same sentence applies word
 for word: no library, running the tool works with whatever the person has, honours their
 config, and cannot disagree with what they see in a terminal.
 
@@ -643,7 +643,7 @@ anything is written against it.
 Not tested on Linux either, and worth a look before lane two ships:
 
 - `pkexec` against `sudo` in a real desktop session, and what happens with polkit absent.
-- Whether a Flatpak or Snap packaged Workbench can see the host's `dotnet` at all. Neither
+- Whether a Flatpak or Snap packaged Kitbash can see the host's `dotnet` at all. Neither
   marker was present here, `/.flatpak-info` is absent and `$SNAP` is empty, so the sandbox
   case is entirely untested. Given that a sandbox moves every user directory, lane one's
   private install is probably the only lane that works there, which is another point in its
@@ -656,13 +656,13 @@ Do not assume any of these.
 - Where a private SDK lives. Cache, or a fourth kind of application directory beside
   configuration, state and cache. It is large, it is acquired rather than authored, and
   deleting it should cost a download and nothing else.
-- Whether Workbench ever writes `global.json` into a workspace. It is the mechanism that
+- Whether Kitbash ever writes `global.json` into a workspace. It is the mechanism that
   makes a private install work for a person's own terminal, and it is a file a team shares.
 - Whether an update is ever offered for a system install, or whether lane two stays purely
   informational forever.
 - What actually needs the SDK. The schema reading in `CLAUDE.md` reads
   `.godot/mono/temp/bin/Debug/Slopworks.dll` through `MetadataLoadContext`, and that file is
-  a build output. If Workbench is meant to produce it rather than wait for it, the SDK is a
+  a build output. If Kitbash is meant to produce it rather than wait for it, the SDK is a
   hard requirement and this becomes load bearing. If a committed schema manifest is used
   instead, as `CLAUDE.md` prefers, then none of this is on the critical path and it is a
   convenience.

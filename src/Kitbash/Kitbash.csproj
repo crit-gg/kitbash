@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <!-- Gives the executable its icon in Explorer and on the Windows task bar.
+         Ignored on Linux, where the desktop reads the icon from a .desktop entry
+         at packaging time instead. -->
+    <ApplicationIcon>../../icons/icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- Core rather than the meta package. The meta package carries a satellite assembly
+         per language and nothing here is translated. -->
+    <PackageReference Include="Humanizer.Core" Version="3.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
+    <!-- The launcher installs and updates itself. Neither library takes this, since a
+         tool never checks for its own update. -->
+    <PackageReference Include="Velopack" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Linked rather than copied, so icons/ stays the one source for the app mark
+         and for packaging later. -->
+    <AvaloniaResource Include="../../icons/icon_*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kitbash.Core\Kitbash.Core.csproj" />
+    <ProjectReference Include="..\Kitbash.Ui\Kitbash.Ui.csproj" />
+  </ItemGroup>
+
+</Project>

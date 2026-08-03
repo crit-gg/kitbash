@@ -308,7 +308,7 @@ editor, the Android libraries, native debug symbols and the source tarball.
 | `_macos.universal.zip` | macOS | universal | | 4.0-alpha13 | current |
 | `_mono_macos.universal.zip` | macOS | universal | yes | 4.0-alpha17 | current |
 
-Everything else a manifest holds, and none of it is an editor Workbench can install:
+Everything else a manifest holds, and none of it is an editor Kitbash can install:
 `_export_templates.tpz`, `_mono_export_templates.tpz`, `_web_editor.zip`,
 `_android_editor.apk`, `_android_editor.aab`, `_android_editor_meta.apk`,
 `_android_editor_horizonos.apk`, `_android_editor_picoos.apk`,
@@ -530,7 +530,7 @@ configuration, so it belongs under the data directory.
 
 ### Symlinks, shortcuts and PATH
 
-Only relevant if we ever want an engine reachable from outside Workbench. Reading it is
+Only relevant if we ever want an engine reachable from outside Kitbash. Reading it is
 worthwhile anyway, because it is a catalogue of what each platform charges.
 
 **Windows symlinks need a privilege.** GodotEnv creates every symlink by running
@@ -698,7 +698,7 @@ The rest are each tool's own file, and none of them interoperate:
 GodotEnv walks ancestor directories collecting all of them and takes the first that
 parses, preferring `global.json`, then `.csproj`, then `.godotrc`.
 
-For Workbench the answer is our own settings. A `workspace.engine` key in the team shared
+For Kitbash the answer is our own settings. A `workspace.engine` key in the team shared
 layer is the same idea with a file that already exists, and it can hold what
 `project.godot` cannot, such as pinning a specific patch release. Read `project.godot`
 when the key is absent.
@@ -721,7 +721,7 @@ have it appear beside the official ones.
 The manifest is the better shape for a team, and the directory pick is the better shape
 for one person. They are not exclusive.
 
-## What this means for Workbench
+## What this means for Kitbash
 
 Mapping the above onto the rules this repository already has.
 
@@ -751,7 +751,7 @@ needs real progress reporting and real cancellation.
 
 The per OS parts are small and known: the file name suffix, the path to the executable
 inside the archive, the executable bit on Unix, and the console variant on Windows. That
-is a factory in `WorkbenchCoreServices` and one implementation per OS, the same shape
+is a factory in `KitbashCoreServices` and one implementation per OS, the same shape
 `IPathShortener` already has. Nothing else needs to know which platform it is on.
 
 **Install under the data directory, through `IUserDirectories`.** An engine is data the
@@ -775,7 +775,7 @@ out to `unzip` would add a dependency our own rules forbid assuming.
 **Identify with `--version`, never with the file name.** It is 20 ms, it is authoritative,
 and it gives the export template folder name for free.
 
-**Leave the person's shell, PATH and desktop alone unless asked.** Workbench launches the
+**Leave the person's shell, PATH and desktop alone unless asked.** Kitbash launches the
 engine itself, so it needs a path and nothing more. Everything GodotEnv does with
 `.bashrc`, the `GODOT` variable and the Start Menu is for a tool that has to be reachable
 from a terminal. Offering a desktop entry later is fine. Editing three shell files at
@@ -914,7 +914,7 @@ so it saves nothing worth having, and asking for it lets a server answer a HEAD 
 compressed length or with none, which would put a wrong size on screen.
 
 `IHttpClientFactory` solves the first two of these and is not used, since it lives in
-`Microsoft.Extensions.Http` and `Workbench.Core` takes Tomlyn and the DI abstractions and
+`Microsoft.Extensions.Http` and `Kitbash.Core` takes Tomlyn and the DI abstractions and
 nothing else.
 
 ### Not measured here

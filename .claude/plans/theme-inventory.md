@@ -177,7 +177,7 @@ later: Float `#5bc8a8`, Int `#6ea8e8`, Bool `#d97b7b`, Enum `#a78bfa`, Struct an
 Archivo for anything read as language. JetBrains Mono for identifiers, values, counts,
 paths and shortcuts. Weights 400, 500 and 600 only. The type floor is 11px.
 
-Both families are already embedded under `src/Workbench/Assets/Fonts` and every file
+Both families are already embedded under `src/Kitbash/Assets/Fonts` and every file
 reports the same family name, so weight selection works. Archivo Bold is present and
 unused, since the spec stops at 600.
 

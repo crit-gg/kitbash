@@ -1,0 +1,29 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Kitbash.Ui.Controls">
+
+    <!-- The Canvas holds the 24 by 24 view box the glyphs are drawn on, and the Viewbox scales
+         that box rather than the glyph's own ink. -->
+    <ControlTheme x:Key="{x:Type controls:Icon}" TargetType="controls:Icon">
+        <Setter Property="Background" Value="Transparent" />
+
+        <!-- An icon is its size and no more, so it centres in whatever space it is
+             given rather than pinning to a corner of it. -->
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Viewbox Width="{TemplateBinding Size}"
+                         Height="{TemplateBinding Size}"
+                         Stretch="Uniform">
+                    <Canvas Width="24" Height="24">
+                        <Path Fill="{TemplateBinding Foreground}"
+                              Data="{TemplateBinding Data}" />
+                    </Canvas>
+                </Viewbox>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>

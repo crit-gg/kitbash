@@ -1,0 +1,650 @@
+<ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls"
+        xmlns:s="clr-namespace:Kitbash.Ui.Settings"
+        xmlns:schema="clr-namespace:Kitbash.Core.Settings.Schema;assembly=Kitbash.Core"
+        x:Class="Kitbash.Ui.Controls.SettingsWindow"
+        x:DataType="s:SettingsWindowViewModel"
+        x:CompileBindings="True"
+        Title="{Binding Title}"
+        Width="924" Height="684"
+        MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="{StaticResource FontFamilyUi}"
+        FontSize="{StaticResource FontSizeBody}">
+
+    <Window.Styles>
+        <!-- Layout only. Every control look comes from the theme, so nothing here sets a
+             brush, a radius or a size that belongs to a control. -->
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        </Style>
+
+        <Style Selector="TextBlock.rowName">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style Selector="TextBlock.rowNote">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            <Setter Property="LineHeight" Value="16.7" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <!-- A row lights under the pointer the way a list row does, so the label, the
+             gutter and the editor read as one thing. -->
+        <Style Selector="Border.settingRow">
+            <Setter Property="Padding" Value="9,8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        </Style>
+
+        <Style Selector="Border.settingRow:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        </Style>
+
+        <!-- The origin dot. Round rather than the square mark a chip carries, because it
+             says where a value came from rather than counting anything. -->
+        <Style Selector="Border.origin">
+            <Setter Property="Width" Value="{DynamicResource SizeMark}" />
+            <Setter Property="Height" Value="{DynamicResource SizeMark}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusDot}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <Style Selector="Border.origin.user">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="Border.origin.pending">
+            <Setter Property="Background" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <Style Selector="Border.origin.invalid">
+            <Setter Property="Background" Value="{DynamicResource Error}" />
+        </Style>
+
+        <!-- The square beside a backing file, which is the chip mark rather than the dot. -->
+        <Style Selector="Border.fileMark">
+            <Setter Property="Width" Value="{DynamicResource SizeMarkModified}" />
+            <Setter Property="Height" Value="{DynamicResource SizeMarkModified}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource Ok}" />
+        </Style>
+
+        <Style Selector="Border.fileMark.missing">
+            <Setter Property="Background" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="Border.fileMark.unreadable">
+            <Setter Property="Background" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="TextBlock.fileStatus">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+            <Setter Property="Foreground" Value="{DynamicResource OkInk}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.fileStatus.missing">
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.fileStatus.unreadable">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+        </Style>
+
+        <Style Selector="TextBlock.restartNote">
+            <Setter Property="Margin" Value="66,0,0,0" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+
+        <Style Selector="TextBlock.restartNote.pending">
+            <Setter Property="Foreground" Value="{DynamicResource WarnInk}" />
+        </Style>
+
+        <!-- The mark beside the unsaved count. Same square a modified row carries. -->
+        <Style Selector="Border.dirtyMark">
+            <Setter Property="Width" Value="{DynamicResource SizeMarkModified}" />
+            <Setter Property="Height" Value="{DynamicResource SizeMarkModified}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <!-- The mark on each end of the layer picker. Personal takes the accent and team
+             takes the warn tone the banner beside it carries. -->
+        <Style Selector="Border.layerMark">
+            <Setter Property="Width" Value="{DynamicResource SizeMark}" />
+            <Setter Property="Height" Value="{DynamicResource SizeMark}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="Border.layerMark.team">
+            <Setter Property="Background" Value="{DynamicResource Warn}" />
+        </Style>
+
+        <Style Selector="Border.layerMark.off">
+            <Setter Property="Background" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <!-- A well holding lines a person reads and cannot edit. -->
+        <Style Selector="Border.lines">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRowAlt}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="Padding" Value="6" />
+        </Style>
+
+        <!-- A store reads as a heading. A place under one is a thing with a name, so it
+             reads the way a page does. -->
+        <Style Selector="TextBlock.node">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        </Style>
+
+        <Style Selector="TextBlock.node.store">
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+    </Window.Styles>
+
+    <Window.Resources>
+        <!-- One line of a read only list, whether the list came from an array in a file
+             or from a row the app supplied for itself. -->
+        <DataTemplate x:Key="SettingLine" x:DataType="schema:SettingsListEntry">
+            <!-- A horizontal StackPanel measures against infinite width, so a path in one
+                 never trims and runs past the well it is in. -->
+            <!-- Transparent rather than no background, or the line is not hit tested and
+                 the right click never reaches it. -->
+            <DockPanel Height="22" Margin="7,0" Background="Transparent">
+                <DockPanel.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuItem Header="Copy" Click="OnCopyLine" />
+                    </MenuFlyout>
+                </DockPanel.ContextFlyout>
+
+                <Border DockPanel.Dock="Left" Classes="fileMark"
+                        Classes.missing="{Binding !IsCurrent}" Margin="0,0,8,0" />
+                <TextBlock Classes="mono" Text="{Binding Text}"
+                           FontSize="{DynamicResource FontSizeSmall}"
+                           Foreground="{DynamicResource InkSecondary}"
+                           VerticalAlignment="Center"
+                           TextTrimming="PathSegmentEllipsis" />
+            </DockPanel>
+        </DataTemplate>
+
+        <!-- One row, drawn once, whichever editor it turns out to need. The editors sit
+             on top of each other and the row shows the one its descriptor asked for. -->
+        <DataTemplate x:Key="SettingRow" DataType="s:SettingValueRowViewModel">
+            <Border Classes="settingRow">
+                <!-- The editor takes two thirds and the name and its note take one, and
+                     both columns are shares, so the split holds at any width. -->
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                        <TextBlock Classes="rowName" Text="{Binding Name}" />
+                        <TextBlock Classes="rowNote" Text="{Binding Description}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="7">
+                        <Grid ColumnDefinitions="57,*" ColumnSpacing="9">
+                            <!-- Discard, reset and where the value came from, in a column
+                                 the same width on every row so the editors line up. The
+                                 height is the icon button's whether one is there or not,
+                                 since a row that grew when a button appeared would move
+                                 the editor beside it. -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6"
+                                        Height="{DynamicResource SizeIconButton}"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button Classes="icon"
+                                        ToolTip.Tip="Discard this change"
+                                        AutomationProperties.Name="Discard this change"
+                                        IsVisible="{Binding CanDiscard}"
+                                        Command="{Binding DiscardCommand}">
+                                    <ui:Icon Glyph="X" Size="{DynamicResource IconSizeCompact}"
+                                             Foreground="{DynamicResource Warn}" />
+                                </Button>
+
+                                <Button Classes="icon"
+                                        ToolTip.Tip="Reset to default"
+                                        AutomationProperties.Name="Reset to default"
+                                        IsVisible="{Binding CanReset}"
+                                        Command="{Binding ResetCommand}">
+                                    <ui:Icon Glyph="Undo" Size="{DynamicResource IconSizeStatus}" />
+                                </Button>
+
+                                <Border Classes="origin"
+                                        Classes.user="{Binding OriginIsUser}"
+                                        Classes.pending="{Binding IsPending}"
+                                        Classes.invalid="{Binding OriginIsInvalid}"
+                                        IsVisible="{Binding ShowOrigin}"
+                                        ToolTip.Tip="{Binding OriginTip}" />
+                            </StackPanel>
+
+                            <Panel Grid.Column="1">
+                                <StackPanel Orientation="Horizontal" Spacing="9"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding IsToggle}">
+                                    <ToggleSwitch IsChecked="{Binding BoolValue, Mode=TwoWay}"
+                                                  IsEnabled="{Binding IsEditable}" />
+                                    <TextBlock Classes="mono" Text="{Binding StateLabel}"
+                                               Foreground="{DynamicResource InkSecondary}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <ComboBox MinWidth="212" HorizontalAlignment="Left"
+                                          IsVisible="{Binding IsSelect}"
+                                          IsEnabled="{Binding IsEditable}"
+                                          ItemsSource="{Binding Options}"
+                                          SelectedItem="{Binding ChosenOption, Mode=TwoWay}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="s:SettingOptionViewModel">
+                                            <TextBlock Text="{Binding Label}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <ui:Segmented HorizontalAlignment="Left"
+                                              IsVisible="{Binding IsSegment}"
+                                              IsEnabled="{Binding IsEditable}"
+                                              ItemsSource="{Binding Options}">
+                                    <!-- The row reads which radio is checked, so the option
+                                         and its container answer each other rather than the
+                                         row being told twice. -->
+                                    <ui:Segmented.Styles>
+                                        <Style Selector="RadioButton">
+                                            <Setter Property="IsChecked"
+                                                    Value="{ReflectionBinding IsChosen, Mode=TwoWay}" />
+                                        </Style>
+                                    </ui:Segmented.Styles>
+                                    <ui:Segmented.ItemTemplate>
+                                        <DataTemplate x:DataType="s:SettingOptionViewModel">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ui:Segmented.ItemTemplate>
+                                </ui:Segmented>
+
+                                <StackPanel Orientation="Horizontal" Spacing="9"
+                                            IsVisible="{Binding IsNumber}">
+                                    <NumericUpDown Width="132"
+                                                   Value="{Binding NumberValue, Mode=TwoWay}"
+                                                   Minimum="{Binding Minimum}"
+                                                   Maximum="{Binding Maximum}"
+                                                   IsEnabled="{Binding IsEditable}" />
+                                    <TextBlock Classes="mono" Text="{Binding Unit}"
+                                               IsVisible="{Binding HasUnit}"
+                                               Foreground="{DynamicResource InkMuted}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <TextBox MinWidth="180"
+                                         HorizontalAlignment="Stretch"
+                                         IsVisible="{Binding IsText}"
+                                         IsEnabled="{Binding IsEditable}"
+                                         FontFamily="{DynamicResource FontFamilyMono}"
+                                         Text="{Binding TextValue, Mode=TwoWay}" />
+
+                                <!-- No filters: a setting's rule says the shape of a path
+                                     and never the extensions, and the one kind of file
+                                     these point at is a program, which has an extension on
+                                     Windows and none here. -->
+                                <ui:PathField MinWidth="180"
+                                              IsVisible="{Binding IsPath}"
+                                              IsEnabled="{Binding IsEditable}"
+                                              Target="{Binding PathTarget}"
+                                              Path="{Binding TextValue, Mode=TwoWay}" />
+
+                                <Border Classes="lines" IsVisible="{Binding IsList}">
+                                    <ItemsControl ItemsSource="{Binding Lines}"
+                                                  ItemTemplate="{StaticResource SettingLine}" />
+                                </Border>
+                            </Panel>
+                        </Grid>
+
+                        <!-- A setting nothing rereads says so wherever it stands, and
+                             turns warn once there is a change waiting on the restart. -->
+                        <TextBlock Classes="restartNote"
+                                   Classes.pending="{Binding IsRestartStaged}"
+                                   Text="Takes effect after a restart."
+                                   IsVisible="{Binding NeedsRestart}" />
+
+                        <!-- Under the control and clear of the gutter, so it reads as
+                             belonging to the value rather than to the name. -->
+                        <DockPanel Margin="66,0,0,0" IsVisible="{Binding HasMessage}">
+                            <ui:Icon DockPanel.Dock="Left" Glyph="AlertCircle"
+                                     Size="{DynamicResource IconSizeStatus}"
+                                     Foreground="{DynamicResource Error}"
+                                     Margin="0,2,7,0" VerticalAlignment="Top" />
+                            <TextBlock Text="{Binding Message}"
+                                       FontSize="{DynamicResource FontSizeBody}"
+                                       LineHeight="16.7"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource ErrorInk}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- A row the app supplied for itself. Same two columns, and it reads rather
+             than edits, so it carries no gutter. -->
+        <!-- One line of a value readout. No mark and no well: it is a fact, not a set,
+             so there is nothing for it to stand out from and nothing to be bounded by. -->
+        <DataTemplate x:Key="ReadoutValue" x:DataType="schema:SettingsListEntry">
+            <TextBlock Classes="mono" Text="{Binding Text}"
+                       MinHeight="{DynamicResource SizeIconButton}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource InkSecondary}"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
+                       Background="Transparent">
+                <TextBlock.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuItem Header="Copy" Click="OnCopyLine" />
+                    </MenuFlyout>
+                </TextBlock.ContextFlyout>
+            </TextBlock>
+        </DataTemplate>
+
+        <!-- A row that reads rather than edits. The two presentations sit on top of each
+             other and the row shows the one its schema asked for, the same way a setting
+             row holds every editor and shows one. -->
+        <DataTemplate x:Key="ReadoutRow" DataType="s:SettingsReadoutRowViewModel">
+            <Border Classes="settingRow">
+                <!-- The editor takes two thirds and the name and its note take one, and
+                     both columns are shares, so the split holds at any width. -->
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                        <TextBlock Classes="rowName" Text="{Binding Name}" />
+
+                        <!-- Left out entirely rather than left empty, since an empty one
+                             still takes its line height and pushes the row taller. -->
+                        <TextBlock Classes="rowNote" Text="{Binding Description}"
+                                   IsVisible="{Binding HasDescription}" />
+                    </StackPanel>
+
+                    <Panel Grid.Column="1" Margin="66,0,0,0">
+                        <ItemsControl IsVisible="{Binding !IsList}"
+                                      ItemsSource="{Binding Entries}"
+                                      ItemTemplate="{StaticResource ReadoutValue}" />
+
+                        <Border Classes="lines" IsVisible="{Binding IsList}">
+                            <ItemsControl ItemsSource="{Binding Entries}"
+                                          ItemTemplate="{StaticResource SettingLine}" />
+                        </Border>
+                    </Panel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid RowDefinitions="Auto,*">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding Title}" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="230,Auto,*">
+
+            <!-- The tree. Its roots are the stores, since that is the question that
+                 decides which file a change lands in. -->
+            <DockPanel Grid.Column="0" Background="{DynamicResource SurfaceRoot}">
+                <Border DockPanel.Dock="Top" Padding="9,9,9,8">
+                    <ui:SearchBox PlaceholderText="Search settings"
+                                  Text="{Binding Search, Mode=TwoWay}" />
+                </Border>
+
+                <ui:Tree Name="Pages" Padding="5,0,5,9"
+                         ItemsSource="{Binding Rows}"
+                         SelectionChanged="OnPageSelected">
+                    <ui:Tree.ItemTemplate>
+                        <DataTemplate x:DataType="s:SettingsTreeNode">
+                            <TextBlock Classes="node" Classes.store="{Binding IsStore}"
+                                       Text="{Binding Title}" />
+                        </DataTemplate>
+                    </ui:Tree.ItemTemplate>
+                </ui:Tree>
+            </DockPanel>
+
+            <Border Grid.Column="1" Width="1" Background="{DynamicResource LineSeam}" />
+
+            <Border Grid.Column="2" ui:Surface.Nests="True" BorderThickness="0">
+                <Grid RowDefinitions="*,Auto">
+                    <ContentControl Grid.Row="0" Content="{Binding Page}">
+                        <ContentControl.ContentTemplate>
+                            <DataTemplate x:DataType="s:SettingsPageViewModel">
+                                <Grid RowDefinitions="Auto,*">
+
+                                    <!-- What this page is, where it writes, and anything
+                                         wrong with the files behind it. -->
+                                    <Border Grid.Row="0" BorderThickness="0,0,0,1"
+                                            BorderBrush="{DynamicResource LineSeam}"
+                                            Padding="20,14,20,12">
+                                        <StackPanel Spacing="11">
+                                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="{DynamicResource FontSizeDialogTitle}"
+                                                           FontWeight="{DynamicResource FontWeightStrong}"
+                                                           Foreground="{DynamicResource InkTitle}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Classes="mono" Text="{Binding ScopeLine}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           FontWeight="{DynamicResource FontWeightMedium}"
+                                                           Foreground="{DynamicResource InkMuted}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="10"
+                                                  IsVisible="{Binding ShowsLayerPicker}">
+                                                <TextBlock Grid.Column="0" Text="Writing to"
+                                                           FontSize="{DynamicResource FontSizeBody}"
+                                                           FontWeight="{DynamicResource FontWeightMedium}"
+                                                           Foreground="{DynamicResource InkMuted}"
+                                                           VerticalAlignment="Center" />
+
+                                                <ui:Segmented Grid.Column="1">
+                                                    <RadioButton IsChecked="{Binding IsUser, Mode=TwoWay}"
+                                                                 IsEnabled="{Binding CanUseUser}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <Border Classes="layerMark"
+                                                                    Classes.off="{Binding !IsUser}" />
+                                                            <TextBlock Text="Personal" />
+                                                        </StackPanel>
+                                                    </RadioButton>
+
+                                                    <RadioButton IsChecked="{Binding IsTeam, Mode=TwoWay}"
+                                                                 IsEnabled="{Binding CanUseTeam}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <Border Classes="layerMark team"
+                                                                    Classes.off="{Binding !IsTeam}" />
+                                                            <TextBlock Text="Team shared" />
+                                                        </StackPanel>
+                                                    </RadioButton>
+                                                </ui:Segmented>
+
+                                                <TextBlock Grid.Column="2" Classes="mono"
+                                                           Text="{Binding LayerFile}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           Foreground="{DynamicResource InkMuted}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="PathSegmentEllipsis" />
+                                            </Grid>
+
+                                            <ui:Alert Tier="Error"
+                                                      IsVisible="{Binding HasParseError}"
+                                                      Title="{Binding ParseErrorMessage}"
+                                                      Description="{Binding ParseErrorFiles}" />
+
+                                            <ui:Alert Tier="Warn"
+                                                      IsVisible="{Binding ShowsTeamWarning}"
+                                                      Title="Team shared is committed to git. Changes here apply to everyone." />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel Margin="20,16,20,20" Spacing="20">
+
+                                            <!-- A Border cannot draw a dashed edge, so the
+                                                 outline is a Rectangle behind the content. -->
+                                            <Panel IsVisible="{Binding !IsAvailable}">
+                                                <Rectangle Stroke="{DynamicResource LineControl}"
+                                                           StrokeThickness="1"
+                                                           StrokeDashArray="3,2"
+                                                           RadiusX="{DynamicResource SizeRadiusControl}"
+                                                           RadiusY="{DynamicResource SizeRadiusControl}" />
+                                                <StackPanel Margin="30,44" Spacing="11"
+                                                            HorizontalAlignment="Center">
+                                                    <ui:Icon Glyph="FolderOpen"
+                                                             Size="{DynamicResource IconSizeLarge}"
+                                                             Foreground="{DynamicResource InkDisabled}"
+                                                             HorizontalAlignment="Center" />
+                                                    <TextBlock Text="{Binding EmptyMessage}"
+                                                               MaxWidth="420"
+                                                               FontSize="{DynamicResource FontSizeTitle}"
+                                                               TextWrapping="Wrap"
+                                                               TextAlignment="Center"
+                                                               Foreground="{DynamicResource InkSecondary}" />
+                                                </StackPanel>
+                                            </Panel>
+
+                                            <ItemsControl ItemsSource="{Binding Sections}"
+                                                          IsVisible="{Binding IsAvailable}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Spacing="20" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="s:SettingsSectionViewModel">
+                                                        <StackPanel>
+                                                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                                                    Header="{Binding Title}"
+                                                                                    Margin="0,0,0,9" />
+                                                            <ItemsControl ItemsSource="{Binding Rows}">
+                                                                <ItemsControl.DataTemplates>
+                                                                    <StaticResource ResourceKey="SettingRow" />
+                                                                    <StaticResource ResourceKey="ReadoutRow" />
+                                                                </ItemsControl.DataTemplates>
+                                                            </ItemsControl>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- Which files stand behind the page, and
+                                                 whether each is there and readable. -->
+                                            <StackPanel IsVisible="{Binding IsAvailable}">
+                                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                                        Header="BACKING FILES"
+                                                                        Margin="0,0,0,9" />
+                                                <Border BorderThickness="1"
+                                                        BorderBrush="{DynamicResource LineSeam}"
+                                                        CornerRadius="{DynamicResource RadiusSurface}">
+                                                    <Border CornerRadius="{DynamicResource RadiusSurface}"
+                                                            ClipToBounds="True">
+                                                        <ItemsControl ItemsSource="{Binding Files}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="s:SettingsFileViewModel">
+                                                                    <Border Height="{DynamicResource HeightGridRow}"
+                                                                            Background="{DynamicResource SurfaceNest2}"
+                                                                            BorderThickness="0,0,0,1"
+                                                                            BorderBrush="{DynamicResource LineRow}"
+                                                                            Padding="11,0">
+                                                                        <Grid ColumnDefinitions="96,*,Auto" ColumnSpacing="12">
+                                                                            <TextBlock Grid.Column="0" Text="{Binding Layer}"
+                                                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                                                       FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                       LetterSpacing="{DynamicResource LetterSpacingPill}"
+                                                                                       Foreground="{DynamicResource InkMuted}"
+                                                                                       VerticalAlignment="Center" />
+
+                                                                            <TextBlock Grid.Column="1" Classes="mono"
+                                                                                       Text="{Binding Path}"
+                                                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                                                       Foreground="{DynamicResource InkPrimary}"
+                                                                                       VerticalAlignment="Center"
+                                                                                       TextTrimming="PathSegmentEllipsis" />
+
+                                                                            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                                                                                        Spacing="7" VerticalAlignment="Center">
+                                                                                <Border Classes="fileMark"
+                                                                                        Classes.missing="{Binding IsMissing}"
+                                                                                        Classes.unreadable="{Binding IsUnreadable}" />
+                                                                                <TextBlock Classes="fileStatus"
+                                                                                           Classes.missing="{Binding IsMissing}"
+                                                                                           Classes.unreadable="{Binding IsUnreadable}"
+                                                                                           Text="{Binding Status}" />
+                                                                            </StackPanel>
+                                                                        </Grid>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Border>
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Grid>
+                            </DataTemplate>
+                        </ContentControl.ContentTemplate>
+                    </ContentControl>
+
+                    <!-- The count is this window's alone, and Save writes only this app's
+                         files, which is what makes the button describable. -->
+                    <Border Grid.Row="1" Height="44"
+                            Background="{DynamicResource SurfaceRoot}"
+                            BorderThickness="0,1,0,0"
+                            BorderBrush="{DynamicResource LineSeam}"
+                            Padding="20,0">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="7"
+                                        VerticalAlignment="Center">
+                                <Border Classes="dirtyMark" IsVisible="{Binding IsDirty}" />
+                                <TextBlock Text="{Binding DirtyLabel}"
+                                           IsVisible="{Binding IsDirty}"
+                                           FontSize="{DynamicResource FontSizeBody}"
+                                           FontWeight="{DynamicResource FontWeightMedium}"
+                                           Foreground="{DynamicResource Warn}"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Problem}"
+                                           IsVisible="{Binding HasProblem}"
+                                           FontSize="{DynamicResource FontSizeBody}"
+                                           Foreground="{DynamicResource ErrorInk}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="9">
+                                <Button Content="Discard"
+                                        IsEnabled="{Binding CanDiscard}"
+                                        Command="{Binding DiscardCommand}" />
+
+                                <!-- Only while something here is waiting on a fresh start,
+                                     which is the only time it would mean anything. -->
+                                <Button Content="{Binding RestartLabel}"
+                                        IsVisible="{Binding NeedsRestart}"
+                                        IsEnabled="{Binding CanRestart}"
+                                        Command="{Binding RestartCommand}" />
+                                <Button Classes="primary" Content="Save changes"
+                                        IsEnabled="{Binding CanSave}"
+                                        Command="{Binding SaveCommand}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:ChromelessWindow>

@@ -169,6 +169,6 @@ forcing `ShouldUseOverlayLayer` on every popup throws `Unable to create IPopupIm
 overlay layer is found`, which is the same missing layer reported from the other end, and
 an unnamed manager looks right in the tree and does nothing.
 
-This was a stage 3 defect, not a stage 5 one. Every Workbench window had no overlay layer
+This was a stage 3 defect, not a stage 5 one. Every Kitbash window had no overlay layer
 at all, so adorners and tooltips had nowhere to attach either. `stage-03`'s probe now
 asserts the named part exists.

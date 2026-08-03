@@ -1,0 +1,51 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The one thing a consumer includes. -->
+
+    <Styles.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Tokens.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Typography.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Icons.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Marks.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Icon.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/DialogFooter.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Button.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/SplitButton.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/DropDownButton.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Chip.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Badge.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/StatusPill.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/ProgressBar.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Overlays.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/ActivityRail.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/ComboBox.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Slider.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/NumericUpDown.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/GridSplitter.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/SplitView.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/List.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tree.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tabs.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Toast.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Alert.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- Control themes go in the resources above. A control whose look is a set of
+         styles rather than one theme, such as the window frame, is included here. -->
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/WindowChrome.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/StatusBar.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Panel.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/TextBox.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Choices.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Pickers.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Grid.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Surfaces.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Focus.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Motion.axaml" />
+
+</Styles>

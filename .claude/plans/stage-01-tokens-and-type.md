@@ -1,6 +1,6 @@
 # Stage 1: tokens and type
 
-Create `Workbench.Ui` and put the Slate token set in it. Nothing looks different when
+Create `Kitbash.Ui` and put the Slate token set in it. Nothing looks different when
 this stage lands, because nothing consumes the tokens yet. That is the point. It is a
 pure substitution with a known blast radius.
 
@@ -13,20 +13,20 @@ One place that answers what colour, what size, what radius, and no answer given 
 **The project.**
 
 ```
-src/Workbench.Ui/Workbench.Ui.csproj      Avalonia, Workbench.Core
-src/Workbench.Ui/Themes/Tokens.axaml      brushes and scalar values
-src/Workbench.Ui/Themes/Typography.axaml  families, sizes, weights
-src/Workbench.Ui/Themes/WorkbenchTheme.axaml  the one entry point a consumer includes
-src/Workbench.Ui/Assets/Fonts/            moved from src/Workbench
+src/Kitbash.Ui/Kitbash.Ui.csproj      Avalonia, Kitbash.Core
+src/Kitbash.Ui/Themes/Tokens.axaml      brushes and scalar values
+src/Kitbash.Ui/Themes/Typography.axaml  families, sizes, weights
+src/Kitbash.Ui/Themes/KitbashTheme.axaml  the one entry point a consumer includes
+src/Kitbash.Ui/Assets/Fonts/            moved from src/Kitbash
 ```
 
-Add it to `Workbench.slnx`. `src/Workbench` references it. `Workbench.Core` does not,
+Add it to `Kitbash.slnx`. `src/Kitbash` references it. `Kitbash.Core` does not,
 and must not, so the contract stays free of a UI framework.
 
 A consumer includes one thing:
 
 ```xml
-<StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
 ```
 
 **The tokens.** Take the table in `theme-inventory.md` verbatim. Apply its findings on
@@ -48,7 +48,7 @@ become resources too. The density table is as much a part of the theme as the pa
 
 ## Replaces
 
-`src/Workbench/Themes/Tokens.axaml` goes away. Its 40 brushes were named for how they
+`src/Kitbash/Themes/Tokens.axaml` goes away. Its 40 brushes were named for how they
 look and carry six near identical grounds, which is the duplication the new set exists
 to avoid. Nothing may reference the old keys after this stage.
 
@@ -69,7 +69,7 @@ coloured text, `#6fabe8`. In Slate it is the text drawn on an accent fill, `#0d1
 Merging the two dictionaries would have resolved those keys to whichever loaded last and
 silently restyled the launcher, with every build still green.
 
-So `src/Workbench/Themes/LegacyTokens.axaml` holds the 47 old brushes at their old
+So `src/Kitbash/Themes/LegacyTokens.axaml` holds the 47 old brushes at their old
 values under `Legacy` prefixed names, and 83 references across `LauncherWindow.axaml`
 and `WindowChrome.axaml` were rewritten to match. The prefix is the point: new work
 cannot reach an old value by accident, and a grep for `Legacy` lists exactly what stage 6 has to replace.
@@ -90,10 +90,10 @@ assembly they live in, so the launcher moved straight to `FontFamilyUi` and
 
 ## Done when
 
-- `Workbench.Ui` builds for `linux-x64` and `win-x64`.
+- `Kitbash.Ui` builds for `linux-x64` and `win-x64`.
 - Every value in the inventory table exists exactly once.
 - The launcher still runs and looks unchanged, on the prefixed old palette.
-- A grep for a hex literal outside `Tokens.axaml` returns nothing in `Workbench.Ui`.
+- A grep for a hex literal outside `Tokens.axaml` returns nothing in `Kitbash.Ui`.
 
 Resolve every key at runtime rather than trusting the build. A token whose type will not
 parse, or a font whose `avares://` path is wrong, both build clean and fail silently, the

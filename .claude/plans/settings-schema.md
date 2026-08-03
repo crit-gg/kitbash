@@ -17,7 +17,7 @@ After this, a descriptor is the one place a setting is defined, the reader takes
 default from it, and the window draws every app's settings from the same layout.
 
 ```
-dotnet run --project src/Workbench      then open Settings
+dotnet run --project src/Kitbash      then open Settings
 dotnet run --project src/tools/<tool>   then open Settings, same window, its own tree
 ```
 
@@ -37,7 +37,7 @@ decide code:
    the launcher, so no schema ever crosses a process boundary.
 2. **One layout, two instances.** A third tool costs a schema and no new UI.
 3. **The top of the tree is the store, not the app.** Application, Workspace, State.
-4. **Each window writes only to its own files.** The launcher writes `workbench.toml`,
+4. **Each window writes only to its own files.** The launcher writes `kitbash.toml`,
    a tool writes `tools/<id>.toml`. The layer picker still chooses team or personal.
 5. **Unsaved changes are per window.** The footer counts this app's edits and Save writes
    only this app's files.
@@ -86,7 +86,7 @@ public sealed class SettingDescriptor<T> : ISettingsRow where T : notnull
 ```
 
 **The scope belongs to the schema, not to a setting.** Every page in the launcher's
-window writes `workbench.toml` and every page in a tool's writes that tool's file, across
+window writes `kitbash.toml` and every page in a tool's writes that tool's file, across
 both homes. Fixing it once at composition means a tool cannot declare a global key by
 accident and write into the file the whole team shares.
 
@@ -244,22 +244,22 @@ front, the way `IGitStatusMonitor` is driven from `Activated`.
 through the `Read` then `Apply` shape from `LauncherViewModel`.
 
 **Paths are displayed through `IPathShortener`.** The design writes
-`%APPDATA%/Workbench/workbench.toml`, which is the Windows form of one of three per OS
+`%APPDATA%/Kitbash/kitbash.toml`, which is the Windows form of one of three per OS
 layouts. The backing table shows whatever that OS calls the place.
 
 **Two rows in the design are not settings.** The state page draws the known workspace list
-with the open one marked, and a red Reset Workbench button. Neither has a default or a
+with the open one marked, and a red Reset Kitbash button. Neither has a default or a
 rule, so `ISettingsRow` has a second implementation the app supplies with its own content.
 One escape hatch, used twice, so the schema never grows a way to describe a button.
 
 ## Where it lives
 
 ```
-src/Workbench.Core/Settings/Schema/     descriptors, pages, rules, choices, probes
-src/Workbench.Core/Settings/            the inspector, the writer, the read side gaps
-src/Workbench.Ui/Controls/              SettingsWindow, the window that draws any schema
-src/Workbench.Ui/Settings/              its view models and the way an app opens it
-src/Workbench/Settings/                 the launcher's own schema
+src/Kitbash.Core/Settings/Schema/     descriptors, pages, rules, choices, probes
+src/Kitbash.Core/Settings/            the inspector, the writer, the read side gaps
+src/Kitbash.Ui/Controls/              SettingsWindow, the window that draws any schema
+src/Kitbash.Ui/Settings/              its view models and the way an app opens it
+src/Kitbash/Settings/                 the launcher's own schema
 ```
 
 Core gains no dependency. The window takes a `SettingsSchema` plus the inspector and the
@@ -297,7 +297,7 @@ Each step leaves the app working.
 2. **The read and write gaps.** Per layer reads, remove, batched write, file existence,
    parse state as a value, and the write refusal that goes with it.
 3. **The inspector and the page view.**
-4. **The window in `Workbench.Ui`**. Done. Editors: toggle, select, segment, number with
+4. **The window in `Kitbash.Ui`**. Done. Editors: toggle, select, segment, number with
    unit, text, read only list, and the app supplied row. No gallery page in the end, since
    the window is a window rather than a control and the launcher exercises it over a real
    schema.
@@ -306,5 +306,5 @@ Each step leaves the app working.
 6. **Probes**, last. Every page is useful before any of them exist. Not started.
 
 Added after the fact, on the same shape: `NeedsRestart` on a descriptor and the Save and
-restart button that goes with it, through `IApplicationRestart` in `Workbench.Ui`, and
+restart button that goes with it, through `IApplicationRestart` in `Kitbash.Ui`, and
 `SettingsPlace` so the Workspace store lists every workspace rather than the open one.

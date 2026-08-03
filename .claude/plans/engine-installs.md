@@ -5,10 +5,10 @@ machine: what is installed, what is available, installing one, importing one tha
 already here, and removing one.
 
 Not a Slate stage. It sits beside the thirteen and needs nothing above stage 10, so it
-can be built now. Every control it draws already exists in `Workbench.Ui`.
+can be built now. Every control it draws already exists in `Kitbash.Ui`.
 
 ```
-dotnet run --project src/Workbench      then pick the Godot item in the rail
+dotnet run --project src/Kitbash      then pick the Godot item in the rail
 ```
 
 ## Source of truth
@@ -70,13 +70,13 @@ the same classes, so nothing in `Themes/Controls/StatusBar.axaml` changes.
 **The launcher gains a toast host.** It has held none on purpose, because it had nothing
 transient to report. Installing an engine is transient, it finishes while the person is
 usually looking at another tab, and it is exactly what the library's rule sends to a
-toast. So `App.BuildServices` calls `AddWorkbenchToasts` and `LauncherWindow` puts a
+toast. So `App.BuildServices` calls `AddKitbashToasts` and `LauncherWindow` puts a
 `ui:ToastHost` over the page area. The note in `CLAUDE.md` saying the launcher raises no
 toasts is amended rather than left to rot.
 
 ## The model
 
-New folder `Workbench.Core/Godot`, beside `Git`. Value objects first, since three of them
+New folder `Kitbash.Core/Godot`, beside `Git`. Value objects first, since three of them
 close bugs the surveyed tools still have.
 
 **`EngineTag`** is a release tag, `4.7.1-stable` or `4.8-dev2`. Parsing is the only way to
@@ -141,7 +141,7 @@ release names at most two installs.
 Which processor an install actually is gets recorded against the install, since it is worth
 showing and nothing needs to name it. **A build string does not carry it.** Measured across
 the four engines here: `--version` gives the version, the channel, the module config, the
-builder and the commit and stops. For an install Workbench made, the build it came from
+builder and the commit and stops. For an install Kitbash made, the build it came from
 says so. For an imported one it is the ELF machine field or the PE COFF one.
 
 The suffix parses without ambiguity even though the tag already holds a hyphen, because a
@@ -154,13 +154,13 @@ called everywhere Godot names it, including the file this install came from.
 under it.
 
 **`InstalledEngine`** is a build string, a directory, the path to the executable, the size
-on disk, whether Workbench installed it or a person imported it, and the notes URL when
+on disk, whether Kitbash installed it or a person imported it, and the notes URL when
 the catalogue knows one.
 
 ## What Core owes
 
-Four services, one of them per OS. All registered by a new `AddWorkbenchEngines` in
-`WorkbenchCoreServices`, with `TryAdd`, the way every other group is.
+Four services, one of them per OS. All registered by a new `AddKitbashEngines` in
+`KitbashCoreServices`, with `TryAdd`, the way every other group is.
 
 **`IEngineCatalogue`** answers what exists, in two steps. `versions.json` gives the release
 list, cached under `ApplicationPaths.CacheFileFor` with a 48 hour life. The per release
@@ -172,7 +172,7 @@ and say it is stale rather than failing the page.
 
 ### The install record
 
-**Every install Workbench makes carries a hidden file naming itself.** One TOML file in the
+**Every install Kitbash makes carries a hidden file naming itself.** One TOML file in the
 install directory, through `ISettingsDocumentStore`, so the format lives where every other
 format in this app lives and nothing here parses anything by hand.
 
@@ -200,7 +200,7 @@ probing and rewrite it. Nothing refuses to list an install because its record is
 on Windows, which needs the hidden attribute set instead. So the name carries the dot and
 Windows also sets the attribute, which is one more thing `IEngineFiles` answers.
 
-**An imported engine gets no record at all.** Workbench did not create that directory, and
+**An imported engine gets no record at all.** Kitbash did not create that directory, and
 writing into a folder someone else owns is the same overstep as deleting it, which uninstall
 already refuses. It turned out to need nothing: the path list in application state is the
 whole of it, and everything else is probed on each refresh. Measured at 61 ms for two
@@ -240,11 +240,11 @@ this one is not. What is left is finding the editor in an extracted tree and the
 bit. On Unix the editor is the file carrying that bit which is not under `GodotSharp/`, on
 Windows it is the `.exe` that is not the console one, and `--version` confirms the choice,
 which it runs anyway to identify the install. Chosen by the factory in
-`WorkbenchCoreServices` beside `AddPlatformIO`, which is the shape `IPathShortener` has.
+`KitbashCoreServices` beside `AddPlatformIO`, which is the shape `IPathShortener` has.
 
 **`IWebContent`** is the seam over `HttpClient`, with three members: read text, measure a
 URL, download to a file with progress and cancellation. Nothing above it names a network
-type, and `Workbench.Core` takes no new package for it since `System.Net.Http` is in the
+type, and `Kitbash.Core` takes no new package for it since `System.Net.Http` is in the
 framework. One client, registered once, with a user agent set.
 
 ## The page
@@ -322,7 +322,7 @@ Avalonia's and the caller wires nothing. The path and the size sit in a `Surface
 border as evidence. The consequence line changes with use, naming the workspaces that
 reference the install when any do.
 
-**An imported engine is forgotten, never deleted.** Workbench did not put those files
+**An imported engine is forgotten, never deleted.** Kitbash did not put those files
 there and they sit outside the engine directory, so removing one takes it out of the list
 and leaves the disk alone. The dialog says so, which means the design's line about files
 being deleted is one of two lines rather than the only one. This is the one rule in the
@@ -398,7 +398,7 @@ architecture the host platform publishes stays installable. It is simply not the
 thing on screen, because for almost everyone it is noise. Cross compiling is a real reason
 to want one, so nothing is taken away.
 
-Read the processor from the operating system rather than from this process, since Workbench
+Read the processor from the operating system rather than from this process, since Kitbash
 ships as x64 only and a Windows machine on arm64 runs it under emulation while still
 wanting the native arm64 editor. `RuntimeInformation.OSArchitecture` answers that and
 `ProcessArchitecture` does not. `IEngineFiles` reports both, so nothing else asks.
@@ -514,7 +514,7 @@ it as a bug in this page.
 
 **Export templates are 1.9 GB per version and are not counted.** They live in Godot's own
 data directory rather than ours, and uninstalling an engine here does not touch them. The
-status bar's number is what Workbench installed and what Uninstall would delete. Saying
+status bar's number is what Kitbash installed and what Uninstall would delete. Saying
 otherwise would put a number on screen that no action in the page can change.
 
 ## Cross platform
@@ -531,7 +531,7 @@ Answered per the three questions in the root `CLAUDE.md`, and only the first col
 Nothing else tests the running OS, and no call site tests it at all.
 
 **Not done here, deliberately.** No symlink, no PATH entry, no shell file, no desktop
-entry and no Start Menu shortcut. Workbench launches the engine itself, so it needs a path
+entry and no Start Menu shortcut. Kitbash launches the engine itself, so it needs a path
 and nothing more. GodotEnv edits three shell files at install time and its own message
 admits it misses fish.
 
@@ -573,7 +573,7 @@ Eight steps, all done. Each one is checkable on its own and the numbers are the 
    under a millisecond, five channels exist, and every Godot 4 tag in the feed parses.
 2. ~~**The value objects.**~~ **Done, 2 August 2026.** `EngineTag`, `EngineId`,
    `EngineBuildString`, `EngineBuild`, `EngineRelease` and the two enums, in
-   `Workbench.Core/Godot`. Checked by a probe: 5783 assertions, the whole 356 release feed
+   `Kitbash.Core/Godot`. Checked by a probe: 5783 assertions, the whole 356 release feed
    round tripping, all 183 Godot 4 manifests classified, and the build strings read off
    the four engines on this machine.
 3. ~~**`IEngineCatalogue`** and `IWebContent`.~~ **Done, 2 August 2026.** `IWebContent` in
@@ -631,14 +631,14 @@ Eight steps, all done. Each one is checkable on its own and the numbers are the 
 8. ~~**Wire the workspace page's engine strip.**~~ **Done, 2 August 2026.**
    `EngineViewModel.Placeholder` is gone and nothing in the app is invented any more.
 
-   It took four new pieces in Core, all under `AddWorkbenchGodotProjects`, and the root
+   It took four new pieces in Core, all under `AddKitbashGodotProjects`, and the root
    `CLAUDE.md` has the rules under The engine a workspace needs.
 
    - `EngineVersionPattern`, because what a project asks for is looser than a tag.
      `4.7` answers to `4.7-stable` and `4.7.1-stable` alike.
    - `IGodotProjectReader`, which reads `project.godot` by line. The four level search
      moved here out of `WorkspaceNameResolver`, so it exists once and both callers use it.
-   - `IEngineRequirementReader`, which reads the `.workbench` pin first and the project
+   - `IEngineRequirementReader`, which reads the `.kitbash` pin first and the project
      file second.
    - `IEngineResolver`, which is pure and matches a requirement against the installs.
 
@@ -667,11 +667,11 @@ Eight steps, all done. Each one is checkable on its own and the numbers are the 
 - An install refused on a checksum that does not match, with the row back on Install.
 - Four downloads started together, three running and one queued, one of them cancelled
   without disturbing the others, and the queued one starting when a slot frees.
-- An engine imported from a folder Workbench did not write, uninstalled, and the files
+- An engine imported from a folder Kitbash did not write, uninstalled, and the files
   still on disk afterwards, with nothing of ours left in the folder.
 - An install whose record is deleted, listing correctly from a probe and writing the record
   back, and one whose record names an executable that is gone, doing the same.
-- An engine Workbench installed, uninstalled, and the directory gone.
+- An engine Kitbash installed, uninstalled, and the directory gone.
 - The default uninstalled, leaving no default and nothing chosen automatically.
 - The tag grammar over its awkward cases: `4.7`, `4.7.1-stable`, `4.8-dev2` and `4.8-rc1`
   parsing, sorting and round tripping, with `4.7` never becoming `4.7.0`.

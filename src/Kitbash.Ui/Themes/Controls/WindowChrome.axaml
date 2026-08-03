@@ -1,0 +1,310 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <Styles.Resources>
+        <!-- The window is larger than its visible frame by this much on every side, and the extra
+             is transparent so the shadow has somewhere to fall. -->
+        <Thickness x:Key="WindowShadowGutter">12</Thickness>
+
+        <!-- Caption glyphs, drawn as strokes on a 10 by 10 box. -->
+        <StreamGeometry x:Key="GlyphMinimize">M 0,5 H 10</StreamGeometry>
+        <StreamGeometry x:Key="GlyphMaximize">M 0.5,0.5 H 9.5 V 9.5 H 0.5 Z</StreamGeometry>
+        <StreamGeometry x:Key="GlyphRestore">M 2.5,2.5 V 0.5 H 9.5 V 7.5 H 7.5 M 0.5,2.5 H 7.5 V 9.5 H 0.5 Z</StreamGeometry>
+        <StreamGeometry x:Key="GlyphClose">M 0,0 L 9,9 M 9,0 L 0,9</StreamGeometry>
+
+        <!-- Caption buttons are real buttons so they take focus, answer the keyboard and report
+             themselves to assistive technology, the way a system title bar does. -->
+        <ControlTheme x:Key="CaptionButton" TargetType="Button">
+            <Setter Property="Width" Value="{DynamicResource HeightCaptionButton}" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Root" Background="{TemplateBinding Background}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+
+            <!-- Minimize and maximize only. Close declares its own flood after these. -->
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            </Style>
+
+            <Style Selector="^:pressed">
+                <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+            </Style>
+
+            <!-- Close floods red the way every system close button does. It is declared
+                 after the shared pressed state so the flood wins while the button is
+                 held. -->
+            <Style Selector="^.captionClose:pointerover">
+                <Setter Property="Background" Value="{DynamicResource CloseHover}" />
+            </Style>
+
+            <Style Selector="^.captionClose:pressed">
+                <Setter Property="Background" Value="{DynamicResource ClosePressed}" />
+            </Style>
+        </ControlTheme>
+    </Styles.Resources>
+
+    <!-- The glyph is the button's content, so it belongs to the title bar's template
+         rather than to the button's, and the bar styles it. -->
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkCaption}" />
+        <Setter Property="StrokeThickness" Value="1" />
+    </Style>
+
+    <!-- Maximized swaps the glyph and the tooltip, the way a system button does. -->
+    <Style Selector="ui|WindowTitleBar.maximized /template/ Button.captionMaximize Path">
+        <Setter Property="Data" Value="{StaticResource GlyphRestore}" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.maximized /template/ Button.captionMaximize">
+        <Setter Property="ToolTip.Tip" Value="Restore" />
+    </Style>
+
+    <!-- A window that cannot resize has no maximize button, and a dialog has no
+         minimize button either. -->
+    <Style Selector="ui|WindowTitleBar.fixedSize /template/ Button.captionMaximize">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.noMinimize /template/ Button.captionMinimize">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The title bar row. It owns the icon, the title and the caption buttons, so a
+         window supplies only what it wants to add. WindowTitleBar hides the whole row
+         when the desktop draws the frame and the window added nothing. -->
+    <Style Selector="ui|WindowTitleBar">
+        <Setter Property="Height" Value="{DynamicResource HeightTitleBar}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Background is on the border rather than the control, so the whole
+                     row is hit tested and a drag can start anywhere on it. -->
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        WindowDecorationProperties.ElementRole="TitleBar">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="11,0,0,0">
+                        <!-- The leading slot is an icon or nothing. There is no
+                             lettermark: the design's square is a placeholder for an icon,
+                             not a thing to build. -->
+                        <Image Grid.Column="0" Name="PART_Icon" Width="16" Height="16"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding $parent[ui:WindowTitleBar].Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               RenderOptions.BitmapInterpolationMode="HighQuality"
+                               Source="{TemplateBinding Icon}" />
+
+                        <TextBlock Grid.Column="1" Name="PART_Title"
+                                   Text="{TemplateBinding Title}"
+                                   Margin="8,0,0,0"
+                                   FontSize="{DynamicResource FontSizeTitle}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   LetterSpacing="{DynamicResource LetterSpacingTitle}"
+                                   Foreground="{DynamicResource InkTitle}"
+                                   VerticalAlignment="Center" />
+
+                        <!-- A readout rather than part of the name, so it is mono and a
+                             tier quieter. Blank collapses it, which is every window that
+                             does not set one. -->
+                        <TextBlock Grid.Column="2" Name="PART_Version"
+                                   Text="{TemplateBinding Version}"
+                                   IsVisible="{Binding $parent[ui:WindowTitleBar].Version, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Margin="7,0,0,0"
+                                   FontFamily="{DynamicResource FontFamilyMono}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   VerticalAlignment="Center" />
+
+                        <ContentPresenter Grid.Column="3"
+                                          Margin="10,0,0,0"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Stretch"
+                                          HorizontalAlignment="Stretch" />
+
+                        <StackPanel Grid.Column="4" Name="PART_CaptionButtons"
+                                    Orientation="Horizontal">
+                            <Button Classes="caption captionMinimize" Theme="{StaticResource CaptionButton}" Name="PART_MinimizeButton"
+                                    ToolTip.Tip="Minimize"
+                                    AutomationProperties.Name="Minimize"
+                                    WindowDecorationProperties.ElementRole="MinimizeButton">
+                                <Path Data="{StaticResource GlyphMinimize}" />
+                            </Button>
+                            <Button Classes="caption captionMaximize" Theme="{StaticResource CaptionButton}" Name="PART_MaximizeButton"
+                                    ToolTip.Tip="Maximize"
+                                    AutomationProperties.Name="Maximize"
+                                    WindowDecorationProperties.ElementRole="MaximizeButton">
+                                <Path Data="{StaticResource GlyphMaximize}" />
+                            </Button>
+                            <Button Classes="caption captionClose" Theme="{StaticResource CaptionButton}" Name="PART_CloseButton"
+                                    ToolTip.Tip="Close"
+                                    AutomationProperties.Name="Close"
+                                    WindowDecorationProperties.ElementRole="CloseButton">
+                                <Path Data="{StaticResource GlyphClose}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- The desktop draws the frame, so it supplies the caption buttons and ours go.
+         A row that still carries content keeps everything else. -->
+    <Style Selector="ui|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- An inactive window drops its whole chrome one tier. -->
+    <Style Selector="ui|WindowTitleBar.inactive /template/ TextBlock#PART_Title">
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.inactive /template/ Image#PART_Icon">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <!-- The title lands on InkMuted when inactive, which is where the version already
+         sits, so this one gives up its tier through opacity the way the icon does. -->
+    <Style Selector="ui|WindowTitleBar.inactive /template/ TextBlock#PART_Version">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <Style Selector="ui|WindowTitleBar.inactive /template/ Button.caption Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkSecondary}" />
+    </Style>
+
+    <!-- A hovered caption button comes back to full strength, so the close glyph is
+         never dim on its red flood. Declared last so it wins over the tier drop above
+         while the pointer is on the button. -->
+    <Style Selector="ui|WindowTitleBar /template/ Button.caption:pointerover Path">
+        <Setter Property="Stroke" Value="{DynamicResource InkCaption}" />
+    </Style>
+
+    <!-- The frame for windows that draw their own title bar. -->
+
+    <Style Selector="Window.chromeless">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TransparencyLevelHint" Value="Transparent" />
+        <Setter Property="WindowDecorations" Value="None" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="{StaticResource WindowShadowGutter}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <!-- The shadow is an effect on the wrapper rather than a BoxShadow on
+                         the frame, so it blurs what is actually drawn and has no shape
+                         edge of its own to show through. -->
+                    <Grid Margin="{TemplateBinding Padding}"
+                          Effect="drop-shadow(0 0 12 #60000000)">
+                        <Border x:Name="PART_ContentRoot"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineWindow}"
+                                BorderThickness="1"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                                <!-- The name is the whole thing. TopLevel finds this part by name and installs the overlay
+                                     and adorner layers into it, so a manager without the name gets neither and nothing
+                                     complains. -->
+                                <VisualLayerManager Name="PART_VisualLayerManager">
+                                    <ContentPresenter Name="PART_ContentPresenter"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      Content="{TemplateBinding Content}"
+                                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                </VisualLayerManager>
+                            </Border>
+                        </Border>
+                    </Grid>
+
+                    <!-- Grips cover the shadow gutter exactly, so the whole soft edge
+                         around the frame is the resize target. -->
+                    <Border x:Name="PART_ResizeTopLeft" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Cursor="TopLeftCorner" Tag="{x:Static WindowEdge.NorthWest}" />
+
+                    <Border x:Name="PART_ResizeTop" Classes="resizeGrip"
+                            Height="12" Margin="12,0" Background="Transparent"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                            Cursor="TopSide" Tag="{x:Static WindowEdge.North}" />
+
+                    <Border x:Name="PART_ResizeTopRight" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Cursor="TopRightCorner" Tag="{x:Static WindowEdge.NorthEast}" />
+
+                    <Border x:Name="PART_ResizeLeft" Classes="resizeGrip"
+                            Width="12" Margin="0,12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                            Cursor="LeftSide" Tag="{x:Static WindowEdge.West}" />
+
+                    <Border x:Name="PART_ResizeRight" Classes="resizeGrip"
+                            Width="12" Margin="0,12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                            Cursor="RightSide" Tag="{x:Static WindowEdge.East}" />
+
+                    <Border x:Name="PART_ResizeBottomLeft" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                            Cursor="BottomLeftCorner" Tag="{x:Static WindowEdge.SouthWest}" />
+
+                    <Border x:Name="PART_ResizeBottom" Classes="resizeGrip"
+                            Height="12" Margin="12,0" Background="Transparent"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                            Cursor="BottomSide" Tag="{x:Static WindowEdge.South}" />
+
+                    <Border x:Name="PART_ResizeBottomRight" Classes="resizeGrip"
+                            Width="12" Height="12" Background="Transparent"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Cursor="BottomRightCorner" Tag="{x:Static WindowEdge.SouthEast}" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- The outer edge is a step lighter than any line inside the window, because the
+         desktop sits behind it. Inactive drops it to the seam tone, which is the same
+         tier drop the title bar takes. -->
+    <Style Selector="Window.chromeless.inactive /template/ Border#PART_ContentRoot">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+    </Style>
+
+    <!-- Maximized fills the work area, so the rounding, the border, the grips, the
+         shadow and the gutter it falls into all go. A shadow here would only darken the
+         edge of the screen, and the gutter would leave a transparent strip. -->
+    <Style Selector="Window.chromeless[WindowState=Maximized]">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border#PART_ContentRoot">
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border.resizeGrip">
+        <Setter Property="IsVisible" Value="False" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <Style Selector="Window.chromeless[CanResize=False] /template/ Border.resizeGrip">
+        <Setter Property="IsVisible" Value="False" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+</Styles>

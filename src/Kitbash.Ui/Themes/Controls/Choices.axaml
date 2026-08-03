@@ -1,0 +1,553 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <Styles.Resources>
+
+    <!-- The controls that answer yes or no. A checkbox and a radio are the same 14px box with
+         one of them rounded, and a toggle is a track with a knob in it. -->
+
+    <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
+        <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ThicknessCheck}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusBox}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Arrow" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Transparent, so the whole row including the label is a hit target. -->
+                <DockPanel Background="Transparent" LastChildFill="True">
+                    <Panel DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <Border Name="PART_Halo"
+                                Margin="{DynamicResource FocusHaloReach}"
+                                BorderThickness="{DynamicResource FocusHaloThickness}"
+                                BorderBrush="Transparent"
+                                CornerRadius="{DynamicResource RadiusControlHalo}" />
+
+                        <Border Name="PART_Box"
+                                Width="{DynamicResource SizeCheck}"
+                                Height="{DynamicResource SizeCheck}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <Panel>
+                                <ui:Icon Name="PART_Check"
+                                         Glyph="Check"
+                                         Size="{DynamicResource IconSizeCheck}"
+                                         Foreground="{DynamicResource AccentInk}"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         IsVisible="False" />
+
+                                <!-- Mixed draws a bar rather than a check, so the three
+                                     states are told apart by shape and not by fill alone. -->
+                                <Border Name="PART_Bar"
+                                        Width="7"
+                                        Height="{DynamicResource SizeCheckStroke}"
+                                        Background="{DynamicResource AccentInk}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsVisible="False" />
+                            </Panel>
+                        </Border>
+                    </Panel>
+
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Margin="8,0,0,0"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      IsVisible="{Binding $parent[CheckBox].Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <!-- On floods, so the border goes with it rather than drawing an edge inside the
+             accent. Order matters: these come after the pointer states so a ticked box
+             under a pointer is the accent hover rather than the well hover. -->
+        <Style Selector="^:checked, ^:indeterminate">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:checked /template/ ui|Icon#PART_Check">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:indeterminate /template/ Border#PART_Bar">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover, ^:indeterminate:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed, ^:indeterminate:pressed">
+            <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed /template/ ui|Icon#PART_Check">
+            <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled:checked, ^:disabled:indeterminate">
+            <Setter Property="Background" Value="{DynamicResource FillOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource FillOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ ui|Icon#PART_Check">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Bar">
+            <Setter Property="Background" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The same box, round, and on rather than filled: a ring with a dot in it. A radio
+         says one of several where a checkbox says yes or no, and the shape is the only
+         thing carrying that. -->
+    <ControlTheme x:Key="{x:Type RadioButton}" TargetType="RadioButton">
+        <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ThicknessCheck}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Arrow" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel Background="Transparent" LastChildFill="True">
+                    <Panel DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <Border Name="PART_Halo"
+                                Margin="{DynamicResource FocusHaloReach}"
+                                BorderThickness="{DynamicResource FocusHaloThickness}"
+                                BorderBrush="Transparent"
+                                CornerRadius="9" />
+
+                        <Border Name="PART_Box"
+                                Width="{DynamicResource SizeCheck}"
+                                Height="{DynamicResource SizeCheck}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7">
+                            <Ellipse Name="PART_Dot"
+                                     Width="7"
+                                     Height="7"
+                                     Fill="{DynamicResource Accent}"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"
+                                     IsVisible="False" />
+                        </Border>
+                    </Panel>
+
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Margin="8,0,0,0"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      IsVisible="{Binding $parent[RadioButton].Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <!-- Checked keeps the well and takes an accent ring, which is what tells it apart
+             from a checkbox at the same size. -->
+        <Style Selector="^:checked">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:checked /template/ Ellipse#PART_Dot">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover /template/ Ellipse#PART_Dot">
+            <Setter Property="Fill" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed /template/ Ellipse#PART_Dot">
+            <Setter Property="Fill" Value="{DynamicResource AccentPressed}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled:checked">
+            <Setter Property="BorderBrush" Value="{DynamicResource FillOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Ellipse#PART_Dot">
+            <Setter Property="Fill" Value="{DynamicResource FillOff}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- A track with a knob in it. The knob is moved by the control rather than by this theme,
+         which is why the parts below are the names and the types the control looks for. -->
+    <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch">
+        <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Arrow" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <!-- The design's 140ms on the design's own curve. -->
+        <Setter Property="KnobTransitions">
+            <Transitions>
+                <DoubleTransition Property="Canvas.Left" Duration="0:0:0.14">
+                    <DoubleTransition.Easing>
+                        <SplineEasing X1="0.32" Y1="0.72" X2="0" Y2="1" />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+            </Transitions>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel Background="Transparent" LastChildFill="True">
+                    <Panel DockPanel.Dock="Left" VerticalAlignment="Center">
+                        <Border Name="PART_Halo"
+                                Margin="{DynamicResource FocusHaloReach}"
+                                BorderThickness="{DynamicResource FocusHaloThickness}"
+                                BorderBrush="Transparent"
+                                CornerRadius="10" />
+
+                        <Border Name="PART_Track"
+                                Width="{DynamicResource WidthToggle}"
+                                Height="{DynamicResource HeightToggle}"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <!-- The two parts read backwards and are not ours to rename. -->
+                            <Canvas Name="PART_SwitchKnob"
+                                    Width="{DynamicResource TravelKnob}"
+                                    Height="{DynamicResource SizeKnob}"
+                                    Margin="2"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    ClipToBounds="False">
+                                <Grid Name="PART_MovingKnobs"
+                                      Width="{DynamicResource SizeKnob}"
+                                      Height="{DynamicResource SizeKnob}">
+                                    <Ellipse Name="PART_Knob" Fill="{DynamicResource InkMuted}" />
+                                </Grid>
+                            </Canvas>
+                        </Border>
+                    </Panel>
+
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Margin="8,0,0,0"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      IsVisible="{Binding $parent[ToggleSwitch].Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ Ellipse#PART_Knob">
+            <Setter Property="Fill" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellHover}" />
+        </Style>
+
+        <Style Selector="^:checked">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:checked /template/ Ellipse#PART_Knob">
+            <Setter Property="Fill" Value="{DynamicResource AccentInk}" />
+        </Style>
+
+        <Style Selector="^:checked:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentHover}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed">
+            <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}" />
+        </Style>
+
+        <Style Selector="^:checked:pressed /template/ Ellipse#PART_Knob">
+            <Setter Property="Fill" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Ellipse#PART_Knob">
+            <Setter Property="Fill" Value="{DynamicResource MarkOff}" />
+        </Style>
+
+        <Style Selector="^:disabled:checked">
+            <Setter Property="Background" Value="{DynamicResource FillOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource FillOff}" />
+        </Style>
+
+        <Style Selector="^:disabled:checked /template/ Ellipse#PART_Knob">
+            <Setter Property="Fill" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- One option in a segmented row. A radio in a group is what a segmented control already
+         is, so the only thing here is the look. -->
+    <ControlTheme x:Key="SegmentedOption" TargetType="RadioButton">
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Padding" Value="9,0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Arrow" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <!-- The ink follows the thumb rather than switching under it, which is the
+             design's 140ms on its own ease. -->
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Foreground" Duration="0:0:0.14">
+                    <BrushTransition.Easing>
+                        <SplineEasing X1="0.25" Y1="0.1" X2="0.25" Y2="1" />
+                    </BrushTransition.Easing>
+                </BrushTransition>
+            </Transitions>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Halo"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- Ink and nothing else, which is the one place in this library where a control answers
+             the pointer without a fill. -->
+        <Style Selector="^:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- The chosen option reads forward by ink alone here. The raised surface under it
+             is the thumb, which the row owns because it slides between the options. -->
+        <Style Selector="^:checked">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource MarkOff}" />
+        </Style>
+
+        <Style Selector="^:disabled:checked">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The row the options sit in, and the thumb that says which one is chosen. -->
+    <ControlTheme x:Key="{x:Type ui:Segmented}" TargetType="ui:Segmented">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="Padding" Value="2" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+
+        <!-- An ItemsControl clips to its bounds, and every option draws its focus halo
+             outside its own. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <!-- The design's 200ms on the toggle knob's curve. -->
+        <Setter Property="ThumbTransitions">
+            <Transitions>
+                <DoubleTransition Property="Canvas.Left" Duration="0:0:0.2">
+                    <DoubleTransition.Easing>
+                        <SplineEasing X1="0.32" Y1="0.72" X2="0" Y2="1" />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+                <DoubleTransition Property="Width" Duration="0:0:0.2">
+                    <DoubleTransition.Easing>
+                        <SplineEasing X1="0.32" Y1="0.72" X2="0" Y2="1" />
+                    </DoubleTransition.Easing>
+                </DoubleTransition>
+            </Transitions>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <Panel>
+                        <!-- The thumb is under the options and takes no clicks, so a press
+                             still lands on the option it is standing behind. -->
+                        <Canvas Name="PART_Travel" IsHitTestVisible="False" ClipToBounds="False">
+                            <Border Name="PART_Thumb"
+                                    Background="{DynamicResource SurfaceNest2}"
+                                    CornerRadius="{DynamicResource RadiusControl}"
+                                    IsVisible="False" />
+                        </Canvas>
+
+                        <!-- The panel is written on the presenter rather than bound to
+                             ItemsPanel, since a presenter builds its panel once and a
+                             segmented row is a row either way. -->
+                        <ItemsPresenter Name="PART_ItemsPresenter" ClipToBounds="False">
+                            <ItemsPresenter.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsPresenter.ItemsPanel>
+                        </ItemsPresenter>
+                    </Panel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource LineRow}" />
+        </Style>
+    </ControlTheme>
+
+    </Styles.Resources>
+
+    <!-- An option is a radio the row did not have to be told about. A plain style rather
+         than a container theme, since the options are written into the row by hand and a
+         control that is already a container keeps whatever theme it was given. -->
+    <Style Selector="ui|Segmented RadioButton">
+        <Setter Property="Theme" Value="{StaticResource SegmentedOption}" />
+    </Style>
+
+    <!-- The clock's column headings and the time a field reads back. Classes rather than
+         inline values, because both sit inside a control template that a theme cannot
+         reach with a descendant selector. -->
+    <Style Selector="TextBlock.clockHead">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingLabel}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+
+    <Style Selector="TextBlock.clockRead">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+</Styles>

@@ -819,7 +819,7 @@ A title bar handles exactly three configurable gestures, each mapped to an actio
 | Right click | `menu` |
 
 So middle click doing nothing is correct. Right click normally opens a window menu,
-which GTK asks the compositor for and otherwise builds itself. **Workbench leaves
+which GTK asks the compositor for and otherwise builds itself. **Kitbash leaves
 right click unhandled on purpose**, so do not add a window menu back as a fix.
 
 A primary press starts a move drag, and a press with more than one click cancels that

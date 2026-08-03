@@ -51,7 +51,7 @@ understood and accepted, and how it is written is a question for when this stage
 reached rather than now. Do not treat it as an open decision blocking anything earlier.
 
 What is already known, so the work starts from it: Avalonia has no screen capture API, so
-it needs an interface with one implementation per OS chosen in `WorkbenchCoreServices`,
+it needs an interface with one implementation per OS chosen in `KitbashCoreServices`,
 the way every other platform difference in this project is handled. On Linux it goes
 through the desktop portal rather than X11 directly, because Wayland refuses raw screen
 reads.

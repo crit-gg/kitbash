@@ -1,0 +1,311 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Kitbash.Core.Git;
+using Kitbash.Core.Godot;
+using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
+using Kitbash.Core.Platform.Linux;
+using Kitbash.Core.Platform.Windows;
+using Kitbash.Core.Settings;
+using Kitbash.Core.Settings.Schema;
+using Kitbash.Core.Workspaces;
+
+namespace Kitbash.Core;
+
+/// <summary>
+/// Service registration for Core. Each executable calls the pieces it needs and builds
+/// its own provider. Static because the language requires a container for extension
+/// methods.
+/// </summary>
+public static class KitbashCoreServices
+{
+    /// <summary>Filesystem and environment access. Everything else builds on these.</summary>
+    public static IServiceCollection AddKitbashIO(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IFileSystem, FileSystem>();
+        services.TryAddSingleton<IEnvironment, SystemEnvironment>();
+        services.AddPlatformIO();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The IO services that differ per OS. One test, so a new one of these never adds
+    /// another place where the running OS is asked about.
+    /// </summary>
+    private static IServiceCollection AddPlatformIO(this IServiceCollection services)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            services.TryAddSingleton<IUserDirectories, WindowsUserDirectories>();
+            services.TryAddSingleton<IPathShortener, WindowsPathShortener>();
+            services.TryAddSingleton<IPathRules, WindowsPathRules>();
+
+            // Setup.exe writes the shortcut and the uninstall entry, and there is no
+            // bundle to correct for, so both of these have nothing to do here.
+            services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
+            services.TryAddSingleton<IDesktopIntegration, WindowsDesktopIntegration>();
+
+            return services;
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            services.TryAddSingleton<IUserDirectories, LinuxUserDirectories>();
+            services.TryAddSingleton<IPathShortener, LinuxPathShortener>();
+            services.TryAddSingleton<IPathRules, LinuxPathRules>();
+            services.TryAddSingleton<IBundleEnvironment, AppImageEnvironment>();
+            services.TryAddSingleton<IDesktopIntegration, LinuxDesktopIntegration>();
+
+            return services;
+        }
+
+        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+    }
+
+    public static IServiceCollection AddKitbashPlatform(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton<IProcessRunner, ProcessRunner>();
+        services.TryAddSingleton<IExecutableFinder, ExecutableFinder>();
+        services.TryAddSingleton<IDesktopLauncherResolver, DesktopLauncherResolver>();
+        services.TryAddSingleton(CreatePlatform);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Where the programs Kitbash runs are on this machine. A person's override first
+    /// and PATH behind it, so this is the only registration that makes the platform
+    /// services depend on application settings, and only because where git is became a
+    /// choice a person can make.
+    /// </summary>
+    public static IServiceCollection AddKitbashExternalTools(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashPlatform();
+        services.AddKitbashApplicationStorage();
+        services.TryAddSingleton<ExternalToolsSettingsSchema>();
+        services.TryAddSingleton<IExternalTools, ExternalTools>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Reading a repository, following one so it stays current, and bringing one up to
+    /// date. Needs the platform services, since all of it comes from running git.
+    /// </summary>
+    public static IServiceCollection AddKitbashGit(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashExternalTools();
+        services.TryAddTransient<IDirectoryWatcher, DirectoryWatcher>();
+        services.TryAddSingleton<GitEnvironment>();
+        services.TryAddSingleton<IGitStatusReader, GitStatusReader>();
+        services.TryAddSingleton<IGitUpdater, GitUpdater>();
+        services.TryAddSingleton<IGitCloner, GitCloner>();
+        services.TryAddSingleton<IGitStatusMonitor, GitStatusMonitor>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The list of workspaces this person has added, and which one is open. Builds on
+    /// application state, since the list follows the user rather than a workspace.
+    /// </summary>
+    /// <summary>
+    /// Reading what Godot has published. Takes <see cref="ApplicationPaths"/>, so
+    /// <see cref="AddKitbashApplicationStorage"/> goes in first.
+    /// </summary>
+    public static IServiceCollection AddKitbashEngines(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.TryAddSingleton<IWebContent, WebContent>();
+        services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
+        services.TryAddSingleton<IEngineStore, EngineStore>();
+        services.TryAddSingleton<IEngineInstaller, EngineInstaller>();
+        services.AddKitbashExternalTools();
+        services.TryAddSingleton<IGodotLauncher, GodotLauncher>();
+        services.AddKitbashGodotProjects();
+        services.AddEngineFiles();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Reading a Godot project and working out which installed engine answers it. Needed
+    /// by the engines page and by workspace naming, which both read the same file.
+    /// </summary>
+    public static IServiceCollection AddKitbashGodotProjects(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
+        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<WorkspaceGodotSettingsSchema>();
+        services.TryAddSingleton<IGodotProjectReader, GodotProjectReader>();
+        services.TryAddSingleton<IGodotImports, GodotImports>();
+        services.TryAddSingleton<IEngineRequirementReader, EngineRequirementReader>();
+        services.TryAddSingleton<IEngineResolver, EngineResolver>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The one part of engine handling that differs per OS. A third place in this file that
+    /// tests the running OS, and the file is still the only one allowed to.
+    /// </summary>
+    private static IServiceCollection AddEngineFiles(this IServiceCollection services)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            services.TryAddSingleton<IEngineFiles, WindowsEngineFiles>();
+
+            return services;
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            services.TryAddSingleton<IEngineFiles, UnixEngineFiles>();
+
+            return services;
+        }
+
+        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+    }
+
+    public static IServiceCollection AddKitbashWorkspaces(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashApplicationStorage();
+        services.AddKitbashGodotProjects();
+        services.TryAddSingleton<IWorkspaceNameResolver, WorkspaceNameResolver>();
+        services.TryAddSingleton<IWorkspaceScaffold, WorkspaceScaffold>();
+        services.TryAddSingleton<IWorkspaceRegistry, WorkspaceRegistry>();
+
+        return services;
+    }
+
+    /// <summary>Workspace discovery, for callers that do not yet know which workspace they are in.</summary>
+    public static IServiceCollection AddKitbashWorkspace(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton<IWorkspaceLocator, WorkspaceLocator>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// What this user's Kitbash keeps on this machine. Settings, state and the cache
+    /// directory. Available without a workspace, so all of it can be read at startup.
+    /// </summary>
+    public static IServiceCollection AddKitbashApplicationStorage(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton<ApplicationPaths>();
+        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
+        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<IApplicationSettings, ApplicationSettings>();
+        services.TryAddSingleton<IApplicationState, ApplicationState>();
+        services.TryAddSingleton<WindowSettingsSchema>();
+        services.TryAddSingleton<IWindowSettings, WindowSettings>();
+
+        // The schema alone, so a settings window can draw the page without the lookup
+        // behind it. AddKitbashExternalTools is what puts IExternalTools over it.
+        services.TryAddSingleton<ExternalToolsSettingsSchema>();
+        services.TryAddSingleton<GodotSettingsSchema>();
+        services.TryAddSingleton<IGodotSettings, GodotSettings>();
+        services.TryAddSingleton<WorkspacesSettingsSchema>();
+        services.TryAddSingleton<IWorkspacesSettings, WorkspacesSettings>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// What a settings window is built over: the stores a page can stand on, the read
+    /// that names its layer, and the write that saves a page at once.
+    /// </summary>
+    public static IServiceCollection AddKitbashSettingsSchema(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashApplicationStorage();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, ApplicationSettingsHome>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, ApplicationStateHome>());
+        services.TryAddSingleton<ISettingsInspector, SettingsInspector>();
+        services.TryAddSingleton<ISettingsWriter, SettingsWriter>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The workspace half of a settings window for an app that holds a list of them,
+    /// which is the launcher. Every workspace a person has added becomes a place, so the
+    /// window lists them all rather than following whichever one is open. An app that
+    /// opens one workspace and keeps it calls <see cref="AddKitbashSettings"/> instead.
+    /// </summary>
+    public static IServiceCollection AddKitbashKnownWorkspaceSettings(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashWorkspaces();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, KnownWorkspacesSettingsHome>());
+
+        return services;
+    }
+
+    /// <summary>Settings for one workspace. Find it first with <see cref="IWorkspaceLocator"/>.</summary>
+    public static IServiceCollection AddKitbashSettings(this IServiceCollection services, WorkspacePaths paths)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(paths);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton(paths);
+        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
+        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<ISettingsService, WorkspaceSettingsService>();
+
+        // Contributed whether or not a schema is in use, since an unresolved home costs
+        // nothing and this is the only place that knows a workspace is known.
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, WorkspaceSettingsHome>());
+
+        return services;
+    }
+
+    private static IPlatformServices CreatePlatform(IServiceProvider provider)
+    {
+        var fileSystem = provider.GetRequiredService<IFileSystem>();
+        var processes = provider.GetRequiredService<IProcessRunner>();
+
+        if (OperatingSystem.IsWindows())
+        {
+            return new WindowsPlatform(fileSystem, processes);
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            return new LinuxPlatform(
+                fileSystem,
+                processes,
+                provider.GetRequiredService<IDesktopLauncherResolver>(),
+                provider.GetRequiredService<IExecutableFinder>());
+        }
+
+        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+    }
+}

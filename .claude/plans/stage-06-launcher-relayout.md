@@ -8,7 +8,7 @@ this plan was first written, and the shape below is the current one.
 
 ## Goal
 
-561 lines of one off markup replaced by composition of `Workbench.Ui` controls, with
+561 lines of one off markup replaced by composition of `Kitbash.Ui` controls, with
 only launcher specific layout left behind.
 
 ## What changed in the design
@@ -34,7 +34,7 @@ launcher a shell that holds pages rather than a single page.
 
 Every piece below already exists as a themed control. The launcher composes them and adds
 layout. If this stage finds itself writing a control, that control belongs in
-`Workbench.Ui` and probably belongs to an earlier stage.
+`Kitbash.Ui` and probably belongs to an earlier stage.
 
 | Launcher piece | What it is |
 |---|---|
@@ -51,7 +51,7 @@ layout. If this stage finds itself writing a control, that control belongs in
 | section label | a text style from stage 7, not a control |
 | git strip readouts | plain text, not controls |
 
-The two exceptions, both of which belong in `Workbench.Ui` rather than the launcher,
+The two exceptions, both of which belong in `Kitbash.Ui` rather than the launcher,
 because a tool will want the same shell:
 
 - **The activity rail.** A `ListBox` turned vertical with a themed 32px item. Selection,
@@ -235,10 +235,10 @@ form and the rule violation goes away on its own.
 
 ## Delete
 
-- `src/Workbench/Themes/LegacyTokens.axaml`, the temporary old palette from stage 1, and
+- `src/Kitbash/Themes/LegacyTokens.axaml`, the temporary old palette from stage 1, and
   with it every `Legacy` prefixed key. Grep the prefix to find them. At the end of stage
   1 there were 83 references across `LauncherWindow.axaml` and `WindowChrome.axaml`, and
-  the second file moved to `Workbench.Ui` and off the legacy palette in stage 3, so only
+  the second file moved to `Kitbash.Ui` and off the legacy palette in stage 3, so only
   the launcher's should remain. A grep returning nothing is the check that this is
   finished.
 - The `Button.action` style in `LauncherWindow.axaml`. It is a `Style`, so it beats the
@@ -265,7 +265,7 @@ All eight the design names are already generated: `window`, `cube`,
 ## As built
 
 The launcher is a shell now: a title bar over a rail and a page. `ActivityRail` and
-`ActivityRailItem` are keyed themes in `Workbench.Ui` over `ListBox` and `ListBoxItem`,
+`ActivityRailItem` are keyed themes in `Kitbash.Ui` over `ListBox` and `ListBoxItem`,
 so selection, keyboard navigation and the selected state are the control's own and what
 was written is a look. A tool will want the same rail, which is why it is in the library.
 

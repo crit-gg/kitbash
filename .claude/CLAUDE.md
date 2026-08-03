@@ -1,4 +1,4 @@
-# Workbench
+# Kitbash
 
 Cross platform desktop app hosting designer facing tools for the Slopworks Godot
 project at `/home/jason/Projects/godot/slopworks/godot`.
@@ -18,7 +18,7 @@ process, a window or a user visible directory, answer three questions:
 
 1. **What does the other OS do here?** If the answer differs, it goes behind an
    interface with one implementation per OS, chosen by a factory in
-   `WorkbenchCoreServices`. That file is the only place allowed to test the running
+   `KitbashCoreServices`. That file is the only place allowed to test the running
    OS. Never branch on the OS at a call site, and never assume a separator, a
    directory layout, a case sensitive filesystem or a shell.
 2. **What does the other distribution do here?** Assume no particular distribution,
@@ -112,7 +112,7 @@ menu items, headings, placeholders, status text, error messages, dialogs.
 No static classes, so collaborators stay replaceable. Two exceptions:
 
 - A container for extension methods must be static. There are two, one per library:
-  `WorkbenchCoreServices` and `WorkbenchUiServices`.
+  `KitbashCoreServices` and `KitbashUiServices`.
 - Static factory methods on an instance type are fine, such as `WebAddress.Parse`
   and `ToolActivationResult.Failure`.
 
@@ -127,24 +127,24 @@ and builds one provider at startup. `App.BuildServices` is the launcher's.
 
 Core exposes registration methods rather than a container of its own:
 
-- `AddWorkbenchIO` filesystem, environment, user directories, path display
-- `AddWorkbenchPlatform` the services that differ per OS
-- `AddWorkbenchApplicationStorage` settings, state and the cache for this machine
-- `AddWorkbenchWorkspaces` the list of workspaces a person has added
-- `AddWorkbenchWorkspace` workspace discovery
-- `AddWorkbenchSettings(paths)` settings for one workspace
+- `AddKitbashIO` filesystem, environment, user directories, path display
+- `AddKitbashPlatform` the services that differ per OS
+- `AddKitbashApplicationStorage` settings, state and the cache for this machine
+- `AddKitbashWorkspaces` the list of workspaces a person has added
+- `AddKitbashWorkspace` workspace discovery
+- `AddKitbashSettings(paths)` settings for one workspace
 
-`Workbench.Ui` exposes one of its own, `WorkbenchUiServices`:
+`Kitbash.Ui` exposes one of its own, `KitbashUiServices`:
 
-- `AddWorkbenchToasts` the toast service, its clock and its settings
-- `AddWorkbenchSettingsWindow` the settings window, over whatever schema is registered
+- `AddKitbashToasts` the toast service, its clock and its settings
+- `AddKitbashSettingsWindow` the settings window, over whatever schema is registered
 
 They use `TryAdd`, so calling several is safe and a caller can substitute any service
 by registering its own first.
 
-`Workbench.Ui` takes `Microsoft.Extensions.DependencyInjection.Abstractions` for that, so
+`Kitbash.Ui` takes `Microsoft.Extensions.DependencyInjection.Abstractions` for that, so
 the library asks for the contract and the application still picks the container.
-`Workbench.Core` already takes the same package. It also takes `CommunityToolkit.Mvvm`,
+`Kitbash.Core` already takes the same package. It also takes `CommunityToolkit.Mvvm`,
 which the settings window's view models are the only user of.
 
 ## Commits
@@ -155,24 +155,24 @@ agent as an author.
 ## Layout
 
 ```
-Workbench.slnx
-src/Workbench.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
-src/Workbench.Ui/      the look: tokens, type, control themes, fonts, the window shell
-src/Workbench.Gallery/ every control, live, for building and checking the library
-src/Workbench/         the launcher app, Avalonia 12
-src/tools/             one project per tool, empty until the first tool is named
+Kitbash.slnx
+src/Kitbash.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
+src/Kitbash.Ui/      the look: tokens, type, control themes, fonts, the window shell
+src/Kitbash.Gallery/ every control, live, for building and checking the library
+src/Kitbash/         the launcher app, Avalonia 12
+src/tools/           one project per tool, empty until the first tool is named
 ```
 
-**Workbench** is the launcher and is its own executable. `Workbench` is also the
+**Kitbash** is the launcher and is its own executable. `Kitbash` is also the
 project name prefix for anything above the tool level. Tools are separately named
 products and are not prefixed.
 
-**`Workbench.Ui`** is the look, shared by the launcher and every tool. It references
-Avalonia and `Workbench.Core`, and the reference only ever points that way, so the
+**`Kitbash.Ui`** is the look, shared by the launcher and every tool. It references
+Avalonia and `Kitbash.Core`, and the reference only ever points that way, so the
 contract stays free of a UI framework. A consumer takes one line:
 
 ```xml
-<StyleInclude Source="avares://Workbench.Ui/Themes/WorkbenchTheme.axaml" />
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
 ```
 
 That brings the tokens, the type scale, the icons and the window shell. Nothing outside
@@ -180,11 +180,11 @@ That brings the tokens, the type scale, the icons and the window shell. Nothing 
 rather than what it looks like, and two names may share a value when they are genuinely
 different roles, which is noted in the file where it happens.
 
-Everything a consumer names lives in one namespace, `Workbench.Ui.Controls`, so a view
+Everything a consumer names lives in one namespace, `Kitbash.Ui.Controls`, so a view
 declares one xmlns:
 
 ```xml
-xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
 ```
 
 ## Where the rest of the rules are
@@ -198,14 +198,14 @@ part of the app, and each is the only place those rules are written.
 
 | Skill | Read it before |
 |---|---|
-| `workbench-controls` | any `ControlTheme`, button, input, icon or the status bar |
-| `workbench-surfaces` | panels, the depth ramp, lists, trees, tabs, overlays |
-| `workbench-toasts` | raising a toast or drawing an alert |
-| `workbench-windows` | a window or dialog, or work that touches a disk on the UI thread |
-| `workbench-settings` | a setting, a schema, the settings window, or per user storage |
-| `workbench-platform` | the filesystem, the environment, a path or a process |
-| `workbench-godot` | engine matching or launching a project |
-| `workbench-git` | anything that runs git |
+| `kitbash-controls` | any `ControlTheme`, button, input, icon or the status bar |
+| `kitbash-surfaces` | panels, the depth ramp, lists, trees, tabs, overlays |
+| `kitbash-toasts` | raising a toast or drawing an alert |
+| `kitbash-windows` | a window or dialog, or work that touches a disk on the UI thread |
+| `kitbash-settings` | a setting, a schema, the settings window, or per user storage |
+| `kitbash-platform` | the filesystem, the environment, a path or a process |
+| `kitbash-godot` | engine matching or launching a project |
+| `kitbash-git` | anything that runs git |
 
 Deeper reference, read when a skill sends you there or when the framework itself is
 the problem:
@@ -223,14 +223,14 @@ skill rather than a section here.
 
 ```
 dotnet build
-dotnet run --project src/Workbench
+dotnet run --project src/Kitbash
 ```
 
 A runtime identifier cannot be passed to the solution, only to a project.
 
 ```
-dotnet publish src/Workbench/Workbench.csproj -r win-x64 --self-contained
-dotnet publish src/Workbench/Workbench.csproj -r linux-x64 --self-contained
+dotnet publish src/Kitbash/Kitbash.csproj -r win-x64 --self-contained
+dotnet publish src/Kitbash/Kitbash.csproj -r linux-x64 --self-contained
 ```
 
 Releasing is `build/release.sh <feed directory> [linux|win]`, which does both of those and
@@ -255,7 +255,7 @@ Set `updates.feed` to that directory to watch a real update happen. A copy start
 - Humanizer writes the English a person reads: plurals that agree with a count, and a
   timestamp as how long ago it was. **It is `Humanizer.Core`, not `Humanizer`.** The meta
   package carries a satellite assembly per language, and nothing here is translated.
-  `Workbench.Core` does not reference it, so it goes in each executable that needs it and
+  `Kitbash.Core` does not reference it, so it goes in each executable that needs it and
   the contract stays on Tomlyn alone.
 
 ## Status
@@ -271,8 +271,8 @@ All of that is built and measured. **`UpdateSettingsSchema.IsEnabled` is false**
 there is nowhere to publish to yet, so nothing checks and the settings window offers no
 feed. Releases will go to Backblaze B2 from a GitHub workflow that versions them itself.
 
-The pack id is `Slopworks.Workbench` and it must stay namespaced, because Velopack's
-uninstaller deletes all of `%LocalAppData%\{packId}` and `Workbench` alone would put a
+The pack id is `Slopworks.Kitbash` and it must stay namespaced, because Velopack's
+uninstaller deletes all of `%LocalAppData%\{packId}` and `Kitbash` alone would put a
 person's state and engines inside it. `.claude/plans/distribution-and-updates.md` has the
 rules and records five things it originally got wrong. **Tool distribution is not built**,
 so `ITool` and the registry are unchanged.
@@ -281,7 +281,7 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 11 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
+Stages 1 to 11 are done. `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -302,7 +302,7 @@ setting carrying a `PathShapeRule`. The clone dialog uses it too.
 `ui:TreeDataGrid` is a `ui:Tree`, so neither writes virtualisation, selection or the row
 states again. Sorting, grouping, inline edit, column resizing and the sideways header are all
 real, and paging is `ui:GridPager`, a separate control, so a grid that never pages carries
-none of it. The `workbench-surfaces` skill has the rules.
+none of it. The `kitbash-surfaces` skill has the rules.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, carrying the workspace page, the
@@ -320,19 +320,19 @@ The git strip and the engine strip are both real and both read the open workspac
 renames it and takes it off the list, and the footer adds a workspace from a folder or
 clones one from git. The clone dialog runs `IGitCloner` and stays open until git has
 finished, so what it hands back is a folder that is really there. Renaming and cloning are
-covered by the `workbench-platform` and `workbench-git` skills.
+covered by the `kitbash-platform` and `kitbash-git` skills.
 
 **The tools section is drawn and its data is invented.** The set of tools is the registry's,
 and every version, update, install state and blocked state on a card comes from
-`Workbench/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
+`Kitbash/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
 and download nothing. That stands until there is an answer to where a tool comes from, which
 is an open decision below. Delete the mock when there is.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
 `.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in
-`Workbench.Ui` and draws whatever `SettingsSchema` it is handed, so a tool writes a schema
+`Kitbash.Ui` and draws whatever `SettingsSchema` it is handed, so a tool writes a schema
 class and one line to open it. The launcher's schema is
-`Workbench/Settings/LauncherSettingsSchema`, its tree is Application, Workspace and State,
+`Kitbash/Settings/LauncherSettingsSchema`, its tree is Application, Workspace and State,
 and the rail's cog opens it. The Workspace store lists every workspace by name with its own
 settings under it, so any of them can be changed without switching to it first. Nothing has to be hand edited any more: every setting Core
 declares is drawn, `workspaces.directory` included. A setting nothing rereads carries

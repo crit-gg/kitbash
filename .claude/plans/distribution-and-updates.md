@@ -1,6 +1,6 @@
 # Distribution and updates
 
-How Workbench and its tools reach a machine, and how they stay current, on Windows
+How Kitbash and its tools reach a machine, and how they stay current, on Windows
 and on any Linux distribution.
 
 This was the research and the recommendation, written before the first tool existed,
@@ -85,7 +85,7 @@ What it does:
 | | Windows | Linux |
 |---|---|---|
 | Output | `Setup.exe`, plus an MSI when asked | one `.AppImage`, no installer |
-| Install location | `%LocalAppData%\Workbench`, no elevation | wherever the person put the file |
+| Install location | `%LocalAppData%\Kitbash`, no elevation | wherever the person put the file |
 | Update feed | `releases.win.json` over static HTTP | `releases.linux.json`, same |
 | Update method | swaps the whole `current` folder | replaces the AppImage in one rename |
 | Deltas | yes, zstd binary patches per file | yes, after the first update |
@@ -115,13 +115,13 @@ artifact made here has not been run anywhere.
 **Added after the fact, and it is the worst thing this page nearly missed.**
 
 Velopack installs to `%LocalAppData%\{packId}` and its uninstaller **removes that whole
-directory**. `WindowsUserDirectories` already puts state at `%LOCALAPPDATA%\Workbench\State`
-and cache at `%LOCALAPPDATA%\Workbench\Cache`. So a pack id of `Workbench` would make the
+directory**. `WindowsUserDirectories` already puts state at `%LOCALAPPDATA%\Kitbash\State`
+and cache at `%LOCALAPPDATA%\Kitbash\Cache`. So a pack id of `Kitbash` would make the
 install root their parent, and uninstalling would take the workspace list, every setting
 the app wrote, and every installed Godot engine under `State\engines`, which is gigabytes
 a person chose to download.
 
-**The pack id is `Slopworks.Workbench`.** It installs to `%LocalAppData%\Slopworks.Workbench`,
+**The pack id is `Slopworks.Kitbash`.** It installs to `%LocalAppData%\Slopworks.Kitbash`,
 which shares nothing with the three user directories, so all three sit outside the install
 root and survive. Velopack's own guidance is to namespace a pack id, and this is why.
 
@@ -255,7 +255,7 @@ probes its own directory for native libraries rather than going through the load
 So the two reports linked below do not describe what happens here.
 
 The `PATH` leak is real: `$APPDIR/usr/bin` goes on the front and holds the whole
-published output, 229 files. Only two of them, `Workbench` and `UpdateNix`, could shadow
+published output, 229 files. Only two of them, `Kitbash` and `UpdateNix`, could shadow
 a program at all, and neither collides with `git`, `dotnet`, `setsid` or an opener, so
 this is a fix rather than an emergency.
 
@@ -275,7 +275,7 @@ other applications. Two recent ones are worth reading, because both are this exa
 GitHub's Copilot CLI AppImage broke `git` over HTTPS through a bundled `libnghttp2`, and
 Buzz broke system `git`, `curl` and `python3` the same way.
 
-**Workbench runs `git` on a beat and hands folders and URLs to the desktop opener.** So
+**Kitbash runs `git` on a beat and hands folders and URLs to the desktop opener.** So
 this app is squarely in the failure mode, on Linux, in the two places it talks to the
 outside world.
 
@@ -298,14 +298,14 @@ The usual answers have both gone quiet. AppImageLauncher development has largely
 since late 2025, and neither it nor `appimaged` is in the main repositories of Debian,
 Ubuntu, Mint or Arch, so telling people to install one is telling them to go and find one.
 
-**So Workbench integrates itself on first run.** Write a `.desktop` file into
+**So Kitbash integrates itself on first run.** Write a `.desktop` file into
 `$XDG_DATA_HOME/applications` with `Exec` pointing at `$APPIMAGE`, and the icon into the
 hicolor theme under the same root. The file is a freedesktop specification we can read
 rather than a guess.
 
 `IDesktopIntegration` is that, and it is rewritten whenever `$APPIMAGE` does not match,
 so moving the file fixes the entry at the next launch. Two details it turned out to need:
-the root it wants is the data root itself rather than the folder Workbench keeps its own
+the root it wants is the data root itself rather than the folder Kitbash keeps its own
 files in, so it reads `XDG_DATA_HOME` rather than going through `IUserDirectories`, and
 the icon it copies is `$APPDIR/.DirIcon`, which is the specification's own name for it
 whatever `--icon` was called.
@@ -401,7 +401,7 @@ and it is not closing: deb and rpm support is Velopack issue 370, open since Nov
 with no plan attached.
 
 **So the honest replacement was ours to write**: a tar.gz into
-`$XDG_DATA_HOME/workbench/app/<version>/` with a `current` symlink, the desktop entry we
+`$XDG_DATA_HOME/kitbash/app/<version>/` with a `current` symlink, the desktop entry we
 already write, and an apply that extracts to `<version>.incoming`, renames, then renames a
 new symlink over `current`, which is atomic on POSIX. A running file is never overwritten,
 so the problem Velopack exists to solve does not arise on this side. **This is the same
@@ -493,7 +493,7 @@ Velopack earns its place on the launcher for exactly the problem that is absent 
 <data directory>/tools/<id>/<version>/
 ```
 
-Which is `$XDG_DATA_HOME/workbench/tools/` on Linux and `%LocalAppData%\Workbench\tools\`
+Which is `$XDG_DATA_HOME/kitbash/tools/` on Linux and `%LocalAppData%\Kitbash\tools\`
 on Windows, both already resolved by `IUserDirectories`. `ApplicationPaths` needs a name
 for it.
 
@@ -546,11 +546,11 @@ Two things, and resisting a third is the discipline:
   the working directory it starts in.
 
 That is the whole of it. Settings, workspace discovery and how a tool draws a window are
-not in the contract. A .NET tool takes `Workbench.Core` and `Workbench.Ui` and gets all of
+not in the contract. A .NET tool takes `Kitbash.Core` and `Kitbash.Ui` and gets all of
 that for free, which is why they exist. Anything else reads a path from its arguments and
 does whatever it likes. **The launcher never needs to know which.**
 
-`Workbench.Core` is therefore a library that makes writing a .NET tool easy, rather than
+`Kitbash.Core` is therefore a library that makes writing a .NET tool easy, rather than
 the contract every tool obeys. That is a smaller claim than it currently makes, and a
 truer one.
 
@@ -558,7 +558,7 @@ truer one.
 an installed tool. Nothing in the launcher may assume a tool is managed code.
 
 **This contradicts what `.claude/CLAUDE.md` currently says**, in two places: that
-`Workbench.Core` is the contract shared by every tool, and that tools are registered
+`Kitbash.Core` is the contract shared by every tool, and that tools are registered
 explicitly in `App.BuildRegistry`. Both need amending when this is built.
 
 ### Versioning the manifest
@@ -809,7 +809,7 @@ later put something in that directory on the assumption that nobody will find it
 - **The launcher ships no list of tools.** The data directory and the server's catalogue
   are the only two sources.
 - **The contract is the manifest and how the executable is started.** Nothing else.
-  `Workbench.Core` is a library for writing .NET tools, not the contract.
+  `Kitbash.Core` is a library for writing .NET tools, not the contract.
 - **Semantic versions everywhere**, launcher and tools alike.
 - **One launcher at a time**, in a release build only.
 - **Our own server, unlisted, over HTTPS.** No GitHub Releases, no Velopack Flow.
@@ -827,7 +827,7 @@ Do not build on an assumption for any of these.
   removed at uninstall, pointing into a versioned directory that moves on every update.
   That is a real piece of work and it is easy to miss when planning this.
 - **What happens to a tool's settings when it is uninstalled?** Workspace settings under
-  `.workbench/` belong to the workspace and should survive. Application state for that
+  `.kitbash/` belong to the workspace and should survive. Application state for that
   tool probably should not. Decide before the first uninstall exists.
 - **Does the launcher offer a tool it has no payload for?** A tool with a Linux build and
   no Windows one will exist. Showing it and refusing it is friendlier than hiding it, and
@@ -863,7 +863,7 @@ Two more that could not be run here. Running `git` from inside the AppImage agai
 workspace needs somebody at the window, and cancelling the modal part way through needs a
 download slow enough to interrupt, which a local folder is not.
 
-5. **Put a shell script in `$XDG_DATA_HOME/workbench/tools/hello/1.0.0/` with a manifest
+5. **Put a shell script in `$XDG_DATA_HOME/kitbash/tools/hello/1.0.0/` with a manifest
    beside it**, and have the launcher find it, list it and start it. No feed, no download,
    no installer, and deliberately not a .NET program. If the launcher can run a shell
    script it can run anything, and if it cannot then something in the design assumed
@@ -891,8 +891,8 @@ The Windows package **is built here**, since `vpk [win] pack` cross compiles: `S
 a portable zip, the nupkg and `releases.win.json` all come out of `build/release.sh`. None
 of it has been executed. So these are still unwatched:
 
-- that `Setup.exe` installs to `%LocalAppData%\Slopworks.Workbench` without elevation
-- that `%LOCALAPPDATA%\Workbench` is left alone, and that uninstalling keeps the workspace
+- that `Setup.exe` installs to `%LocalAppData%\Slopworks.Kitbash` without elevation
+- that `%LOCALAPPDATA%\Kitbash` is left alone, and that uninstalling keeps the workspace
   list and the installed engines
 - **whether an automatic update triggers SmartScreen.** The reasoning under Code signing
   says it should not, because Velopack fetches over HTTP itself and never involves a

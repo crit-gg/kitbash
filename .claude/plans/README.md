@@ -1,6 +1,6 @@
 # Slate build plan
 
-Thirteen stages that take Workbench from the old dark theme to the Slate visual
+Thirteen stages that take Kitbash from the old dark theme to the Slate visual
 direction, and turn the launcher's one off markup into a control library that
 every tool shares.
 
@@ -42,18 +42,18 @@ must not be re added. Nocturne is a separate project in the same account. Ignore
 
 ## The shared library
 
-Launcher specific things stay in `src/Workbench`. Everything else moves to a new
+Launcher specific things stay in `src/Kitbash`. Everything else moves to a new
 project so tools get the same look without depending on the launcher.
 
 ```
-src/Workbench.Ui/            styles, control themes, custom controls, icons
-src/Workbench/               launcher only, references Workbench.Ui
-src/tools/<tool>/            each tool references Workbench.Ui
+src/Kitbash.Ui/            styles, control themes, custom controls, icons
+src/Kitbash/               launcher only, references Kitbash.Ui
+src/tools/<tool>/            each tool references Kitbash.Ui
 ```
 
-`Workbench.Ui` is named for the rule in the root `CLAUDE.md` that `Workbench` prefixes
+`Kitbash.Ui` is named for the rule in the root `CLAUDE.md` that `Kitbash` prefixes
 anything above the tool level. It takes a reference to Avalonia and to
-`Workbench.Core`, never the other way round. `Workbench.Core` stays lean, with Tomlyn
+`Kitbash.Core`, never the other way round. `Kitbash.Core` stays lean, with Tomlyn
 as its only dependency, so nothing in the contract pulls in a UI framework.
 
 What counts as launcher specific: the workspace selector, the engine strip, the git
@@ -104,7 +104,7 @@ want the same shell, so it is not the launcher's.
   change to match Slate.
 - A window has two frames, not one. `window.nativeChrome` is a global user only setting
   that hands the frame to the desktop, which hides the caption buttons and disables the
-  title bar double click. Any styling that assumes Workbench draws the edge, the corner
+  title bar double click. Any styling that assumes Kitbash draws the edge, the corner
   radius or the shadow has to be scoped to the `chromeless` class. Stage 3 has the
   detail.
 

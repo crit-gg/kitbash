@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Workbench.Core/Workbench.Core.csproj" />
-    <Project Path="src/Workbench.Ui/Workbench.Ui.csproj" />
-    <Project Path="src/Workbench.Gallery/Workbench.Gallery.csproj" />
-    <Project Path="src/Workbench/Workbench.csproj" />
-  </Folder>
-  <Folder Name="/src/tools/" />
-</Solution>

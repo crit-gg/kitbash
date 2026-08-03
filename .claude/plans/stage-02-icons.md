@@ -1,6 +1,6 @@
 # Stage 2: icons
 
-Put the 48 named Box Icons into `Workbench.Ui` as geometry, and give the app one way
+Put the 48 named Box Icons into `Kitbash.Ui` as geometry, and give the app one way
 to draw an icon at a size and a role colour.
 
 ## Goal
@@ -43,7 +43,7 @@ rendered.
 
 ```
 tools/icons/                 the generator, not shipped
-src/Workbench.Ui/Themes/Icons.axaml   generated, committed
+src/Kitbash.Ui/Themes/Icons.axaml   generated, committed
 ```
 
 Commit the output. The build must not depend on a path in the user's asset library.
@@ -58,7 +58,7 @@ is the one control in the library that has a built in type behind it and does no
 it. Deriving from `PathIcon` and dropping the local `Data` is the change. Do it when
 next in this file.
 
-An `Icon` control in `Workbench.Ui` with a `Glyph` property and a
+An `Icon` control in `Kitbash.Ui` with a `Glyph` property and a
 `Size`. It wraps the path in a fixed 24 by 24 `Canvas` inside a `Viewbox`, which is
 the shape the existing `PathIcon` control theme already uses and the reason the
 launcher chevron is the right size. `.claude/avalonia.md` records why the stock
@@ -109,7 +109,7 @@ mapped two names onto one file, which nothing else notices.
 ## As built
 
 `tools/icons/` holds `icons.txt` and `generate.py`, neither shipped.
-`src/Workbench.Ui/Themes/Icons.axaml` and `src/Workbench.Ui/Controls/IconGlyph.cs` are
+`src/Kitbash.Ui/Themes/Icons.axaml` and `src/Kitbash.Ui/Controls/IconGlyph.cs` are
 generated and committed, so a clean checkout builds without the set present.
 
 48 glyphs, all resolving, all measuring their size, none outside the box, no two alike.

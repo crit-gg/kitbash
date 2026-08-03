@@ -21,10 +21,10 @@ rather than on a parallel abstraction.
 
 ## Where it lives
 
-`Workbench.Ui` takes the dependency, so tools get docking without each one wiring it.
+`Kitbash.Ui` takes the dependency, so tools get docking without each one wiring it.
 The launcher does not dock anything and should not pay for it. If that separation
-matters, split a `Workbench.Ui.Docking` project so the launcher references only
-`Workbench.Ui`. Decide when the first tool exists, not now.
+matters, split a `Kitbash.Ui.Docking` project so the launcher references only
+`Kitbash.Ui`. Decide when the first tool exists, not now.
 
 ## Theme
 
@@ -44,12 +44,12 @@ not a second one for docking.
 
 Techniques in order of preference, and expect to need more than one:
 
-1. Override the `ControlTheme` for a Dock type in `Workbench.Ui`. A `Style` beats a
+1. Override the `ControlTheme` for a Dock type in `Kitbash.Ui`. A `Style` beats a
    `ControlTheme`, measured and recorded in `.claude/avalonia.md`, so an override in the
    app wins over the packaged theme without touching it.
 2. Replace the whole `ControlTheme` where the packaged one has no hook for what the
    design needs.
-3. Vendor the relevant theme file from Dock into `Workbench.Ui` and edit the copy, if a
+3. Vendor the relevant theme file from Dock into `Kitbash.Ui` and edit the copy, if a
    part is not reachable any other way. Record which file and which version it came
    from, so a Dock upgrade has a starting point.
 
@@ -100,7 +100,7 @@ workspace settings.
   spike answers how, not whether. Vendoring a theme file is the accepted fallback and
   the cost of it is a Dock upgrade becoming manual.
 - The library is a large surface with its own opinions about the model. Keep the docking
-  model inside the tool, and do not let dock types leak into `Workbench.Core`.
+  model inside the tool, and do not let dock types leak into `Kitbash.Core`.
 - Floating windows on Linux go through the same manual chrome path as every other window
   here, so they inherit the constraints in `.claude/avalonia.md` rather than getting
   native decorations for free.

@@ -1,0 +1,733 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <Styles.Resources>
+
+    <!-- Both grids. The rows are the list's seven states again, at 31px and flush, and
+         everything else here is the column layout over the top. -->
+
+    <!-- The sort indicator, and the four page steps. Marks rather than icons: none of them
+         is in the icon set and each is a triangle with at most a bar beside it. -->
+    <StreamGeometry x:Key="MarkSortUp">M0,4 L3,0 L6,4 Z</StreamGeometry>
+    <StreamGeometry x:Key="MarkSortDown">M0,0 L6,0 L3,4 Z</StreamGeometry>
+    <StreamGeometry x:Key="MarkPageFirst">M8,0 L8,9 L3.5,4.5 Z M0,0 L1.5,0 L1.5,9 L0,9 Z</StreamGeometry>
+    <StreamGeometry x:Key="MarkPagePrevious">M6.5,0 L6.5,9 L2,4.5 Z</StreamGeometry>
+    <StreamGeometry x:Key="MarkPageNext">M1.5,0 L1.5,9 L6,4.5 Z</StreamGeometry>
+    <StreamGeometry x:Key="MarkPageLast">M0,0 L0,9 L4.5,4.5 Z M6.5,0 L8,0 L8,9 L6.5,9 Z</StreamGeometry>
+
+    <!-- The grid's chrome sits on the root tone, which is the one place in the library a
+         surface other than a window frame takes it. A grid is a document with a toolbar, a
+         header and a status line of its own, and the design draws all three that way. -->
+    <ControlTheme x:Key="{x:Type ui:DataGrid}" TargetType="ui:DataGrid">
+        <Setter Property="(ui:Surface.Nests)" Value="True" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Two borders rather than one: a clip on the border that draws the stroke
+                     would cut the corner into two colours. -->
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                        <DockPanel LastChildFill="True">
+                            <Border Name="PART_ToolbarRow"
+                                    DockPanel.Dock="Top"
+                                    Height="{DynamicResource HeightGridToolbar}"
+                                    Padding="{DynamicResource PaddingGridCell}"
+                                    Background="{DynamicResource SurfaceRoot}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    IsVisible="{Binding $parent[ui:DataGrid].Toolbar, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                <ContentPresenter Content="{TemplateBinding Toolbar}"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Stretch" />
+                            </Border>
+
+                            <ui:DataGridHeader Name="PART_Header" DockPanel.Dock="Top" />
+
+                            <Border Name="PART_FooterRow"
+                                    DockPanel.Dock="Bottom"
+                                    Height="{DynamicResource HeightGridFooter}"
+                                    Padding="{DynamicResource PaddingGridCell}"
+                                    Background="{DynamicResource SurfaceRoot}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="0,1,0,0">
+                                <DockPanel LastChildFill="False">
+                                    <TextBlock DockPanel.Dock="Left"
+                                               Text="{TemplateBinding SelectionText}"
+                                               FontFamily="{DynamicResource FontFamilyMono}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               FontWeight="{DynamicResource FontWeightMedium}"
+                                               Foreground="{DynamicResource InkSecondary}"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding $parent[ui:DataGrid].SelectionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                    <TextBlock DockPanel.Dock="Left"
+                                               Text="/"
+                                               Margin="8,0"
+                                               Foreground="{DynamicResource InkMuted}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding $parent[ui:DataGrid].SelectionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                    <TextBlock DockPanel.Dock="Left"
+                                               Text="{TemplateBinding ShownText}"
+                                               FontFamily="{DynamicResource FontFamilyMono}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource InkMuted}"
+                                               VerticalAlignment="Center" />
+
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{TemplateBinding SortText}"
+                                               FontFamily="{DynamicResource FontFamilyMono}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource InkMuted}"
+                                               VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Border>
+
+                            <ScrollViewer Name="PART_ScrollViewer"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:TreeDataGrid}" TargetType="ui:TreeDataGrid">
+        <Setter Property="(ui:Surface.Nests)" Value="True" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                        <DockPanel LastChildFill="True">
+                            <ui:DataGridHeader Name="PART_Header" DockPanel.Dock="Top" />
+
+                            <ScrollViewer Name="PART_ScrollViewer"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- The header. Its scroller carries no bars and exists only so the titles can be moved
+         sideways to wherever the body has been taken. -->
+    <ControlTheme x:Key="{x:Type ui:DataGridHeader}" TargetType="ui:DataGridHeader">
+        <Setter Property="Height" Value="{DynamicResource HeightGridHeader}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+                    <ScrollViewer Name="PART_Scroller"
+                                  HorizontalScrollBarVisibility="Hidden"
+                                  VerticalScrollBarVisibility="Disabled">
+                        <ui:GridCells Name="PART_Cells" />
+                    </ScrollViewer>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:DataGridHeaderCell}" TargetType="ui:DataGridHeaderCell">
+        <Setter Property="Padding" Value="{DynamicResource PaddingGridCell}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ClipToBounds" Value="True" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="5"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          VerticalAlignment="Center"
+                                          TextElement.LetterSpacing="{DynamicResource LetterSpacingLabel}" />
+
+                        <Path Name="PART_Sort"
+                              Width="6"
+                              Height="4"
+                              Fill="{DynamicResource Accent}"
+                              VerticalAlignment="Center"
+                              IsVisible="False" />
+                    </StackPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- The resting geometry goes in a style rather than in the template, because the
+             sorted state has to change it and a value written in a template cannot be moved
+             by a plain style. -->
+        <Style Selector="^ /template/ Path#PART_Sort">
+            <Setter Property="Data" Value="{StaticResource MarkSortUp}" />
+        </Style>
+
+        <Style Selector="^:sortable">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style Selector="^:sortable:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^:sorted">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:sorted /template/ Path#PART_Sort">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:descending /template/ Path#PART_Sort">
+            <Setter Property="Data" Value="{StaticResource MarkSortDown}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The grab area on a column's edge. Nothing is drawn at rest, since the design rules
+         columns off with no vertical line at all. -->
+    <ControlTheme x:Key="{x:Type ui:ColumnDivider}" TargetType="ui:ColumnDivider">
+        <Setter Property="Background" Value="Transparent" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}">
+                    <Border Name="PART_Line" Background="Transparent" HorizontalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^ /template/ Border#PART_Line">
+            <Setter Property="Width" Value="{DynamicResource SizeSplitterLine}" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Line">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+        </Style>
+
+        <Style Selector="^:dragging /template/ Border#PART_Line">
+            <Setter Property="Background" Value="{DynamicResource Accent}" />
+            <Setter Property="Width" Value="{DynamicResource SizeSplitterBand}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- A row. The seven states from the list, written out rather than inherited, because a
+         grid row is flush where a list row is spaced and the order the states are declared
+         in is what decides which one wins. -->
+    <ControlTheme x:Key="{x:Type ui:DataGridRow}" TargetType="ui:DataGridRow">
+        <Setter Property="Height" Value="{DynamicResource HeightGridRow}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineRow}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ui:GridCells Name="PART_Cells" />
+                    </Border>
+
+                    <!-- Inside the row rather than outside it. See FocusLine in Tokens. -->
+                    <Border Name="PART_Focus"
+                            BorderThickness="1"
+                            BorderBrush="Transparent"
+                            IsHitTestVisible="False" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:alt">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRowAlt}" />
+        </Style>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:selected">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+        </Style>
+
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusLine}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:DataGridCell}" TargetType="ui:DataGridCell">
+        <Setter Property="Padding" Value="{DynamicResource PaddingGridCell}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ClipToBounds" Value="True" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:mono">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        </Style>
+
+        <Style Selector="^:editing">
+            <Setter Property="Padding" Value="{DynamicResource PaddingGridEdit}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The cell that indents. Its caret slot is held whether or not a caret is drawn, so a
+         branch and a leaf that are siblings line up, which is what the tree does. -->
+    <ControlTheme x:Key="{x:Type ui:TreeDataGridCell}" TargetType="ui:TreeDataGridCell"
+                  BasedOn="{StaticResource {x:Type ui:DataGridCell}}">
+        <Setter Property="IndentSize" Value="{DynamicResource IndentTree}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <DockPanel LastChildFill="True" Margin="{TemplateBinding Indent}">
+                        <Border Name="PART_Caret"
+                                DockPanel.Dock="Left"
+                                Background="Transparent"
+                                Margin="{DynamicResource MarginRowLead}">
+                            <Panel Width="{DynamicResource IconSizeCaret}">
+                                <ui:Icon Name="PART_CaretGlyph"
+                                         Glyph="ChevronRight"
+                                         Size="{DynamicResource IconSizeCaret}"
+                                         Foreground="{DynamicResource InkSecondary}"
+                                         VerticalAlignment="Center"
+                                         IsVisible="False" />
+                            </Panel>
+                        </Border>
+
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:branch /template/ ui|Icon#PART_CaretGlyph">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:expanded /template/ ui|Icon#PART_CaretGlyph">
+            <Setter Property="Glyph" Value="ChevronDown" />
+        </Style>
+    </ControlTheme>
+
+    <!-- A tree grid row. No zebra, since the design draws none, and the branch takes the
+         alternate tone instead so a heading is told from what hangs under it.
+
+         Written out rather than based on the flat row: this one is a TreeItem, the flat one
+         is a ListBoxItem, and a theme is only inherited from a base type the control has. -->
+    <ControlTheme x:Key="{x:Type ui:TreeDataGridRow}" TargetType="ui:TreeDataGridRow">
+        <Setter Property="Height" Value="{DynamicResource HeightGridRow}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineRow}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ui:GridCells Name="PART_Cells" />
+                    </Border>
+
+                    <Border Name="PART_Focus"
+                            BorderThickness="1"
+                            BorderBrush="Transparent"
+                            IsHitTestVisible="False" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- Declared before the states below, so a branch under the pointer still lights up. -->
+        <Style Selector="^:branch">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRowAlt}" />
+        </Style>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:selected">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+        </Style>
+
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusLine}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The heading over a group. It spans the grid, so it holds no cells at all. -->
+    <ControlTheme x:Key="{x:Type ui:GridGroupRow}" TargetType="ui:GridGroupRow">
+        <Setter Property="Height" Value="{DynamicResource HeightGridGroup}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingGridCell}" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRowAlt}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineRow}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Cursor" Value="Hand" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Panel Width="{DynamicResource IconSizeCaret}">
+                            <ui:Icon Name="PART_Caret"
+                                     Glyph="ChevronRight"
+                                     Size="{DynamicResource IconSizeCaret}"
+                                     Foreground="{DynamicResource InkMuted}"
+                                     VerticalAlignment="Center" />
+                        </Panel>
+
+                        <TextBlock Text="{TemplateBinding Label}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   LetterSpacing="{DynamicResource LetterSpacingLabel}"
+                                   Foreground="{DynamicResource InkSecondary}"
+                                   VerticalAlignment="Center" />
+
+                        <TextBlock Text="{TemplateBinding Count}"
+                                   FontFamily="{DynamicResource FontFamilyMono}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:expanded /template/ ui|Icon#PART_Caret">
+            <Setter Property="Glyph" Value="ChevronDown" />
+        </Style>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The pager. Its own bar under the grid, which is where the design puts it and what
+         keeps a grid that never pages free of it. -->
+    <ControlTheme x:Key="GridPagerStep" TargetType="Button">
+        <Setter Property="Width" Value="{DynamicResource SizeIconButton}" />
+        <Setter Property="Height" Value="{DynamicResource SizeIconButton}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource MarkOff}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="GridPagerPage" TargetType="Button">
+        <Setter Property="MinWidth" Value="{DynamicResource SizeIconButton}" />
+        <Setter Property="Height" Value="{DynamicResource SizeIconButton}" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- The page being shown. The same tint a picked row takes, since it is the same
+             thing being said. -->
+        <Style Selector="^.current">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+            <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:GridPager}" TargetType="ui:GridPager">
+        <Setter Property="(ui:Surface.Nests)" Value="True" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingGridPager}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <DockPanel LastChildFill="False">
+                        <TextBlock DockPanel.Dock="Left"
+                                   Text="Rows per page"
+                                   Margin="0,0,10,0"
+                                   Foreground="{DynamicResource InkMuted}"
+                                   VerticalAlignment="Center" />
+
+                        <ComboBox DockPanel.Dock="Left"
+                                  ItemsSource="{TemplateBinding PageSizes}"
+                                  SelectedItem="{Binding $parent[ui:GridPager].PageSize, Mode=TwoWay}"
+                                  VerticalAlignment="Center" />
+
+                        <!-- The readout holds the room its widest reading needs, drawn as
+                             nothing behind the real one, so a page in five figures does not
+                             shove the steps along. Mono, so every digit is the same width. -->
+                        <Panel DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <TextBlock Text="{TemplateBinding RangeWidest}"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0"
+                                       IsHitTestVisible="False" />
+
+                            <TextBlock Text="{TemplateBinding RangeText}"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center" />
+                        </Panel>
+
+                        <Border DockPanel.Dock="Right"
+                                Classes="seam"
+                                Width="1"
+                                Height="16"
+                                Margin="10,0"
+                                VerticalAlignment="Center" />
+
+                        <!-- The four steps are one group and they are docked before the
+                             numbers, so they keep their place against the edge. The run of
+                             numbers changes width as the page moves, and it grows to the
+                             left into the gap rather than pushing the steps about. -->
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    Spacing="3"
+                                    VerticalAlignment="Center">
+                            <Button Theme="{StaticResource GridPagerStep}"
+                                    Command="{Binding $parent[ui:GridPager].FirstCommand}"
+                                    IsEnabled="{TemplateBinding CanGoBack}">
+                                <Path Data="{StaticResource MarkPageFirst}" Fill="{Binding $parent[Button].Foreground}" />
+                            </Button>
+
+                            <Button Theme="{StaticResource GridPagerStep}"
+                                    Command="{Binding $parent[ui:GridPager].PreviousCommand}"
+                                    IsEnabled="{TemplateBinding CanGoBack}">
+                                <Path Data="{StaticResource MarkPagePrevious}" Fill="{Binding $parent[Button].Foreground}" />
+                            </Button>
+
+                            <Button Theme="{StaticResource GridPagerStep}"
+                                    Command="{Binding $parent[ui:GridPager].NextCommand}"
+                                    IsEnabled="{TemplateBinding CanGoForward}">
+                                <Path Data="{StaticResource MarkPageNext}" Fill="{Binding $parent[Button].Foreground}" />
+                            </Button>
+
+                            <Button Theme="{StaticResource GridPagerStep}"
+                                    Command="{Binding $parent[ui:GridPager].LastCommand}"
+                                    IsEnabled="{TemplateBinding CanGoForward}">
+                                <Path Data="{StaticResource MarkPageLast}" Fill="{Binding $parent[Button].Foreground}" />
+                            </Button>
+                        </StackPanel>
+
+                        <ItemsControl DockPanel.Dock="Right"
+                                      ItemsSource="{TemplateBinding Pages}"
+                                      Margin="0,0,8,0"
+                                      VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="ui:GridPagerPage">
+                                    <Panel>
+                                        <TextBlock Text="..."
+                                                   Width="{DynamicResource SizeIconButton}"
+                                                   TextAlignment="Center"
+                                                   FontFamily="{DynamicResource FontFamilyMono}"
+                                                   Foreground="{DynamicResource InkMuted}"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding IsEllipsis}" />
+
+                                        <Button Theme="{StaticResource GridPagerPage}"
+                                                Content="{Binding Number}"
+                                                Classes.current="{Binding IsCurrent}"
+                                                IsVisible="{Binding IsPage}"
+                                                Command="{Binding $parent[ui:GridPager].GoCommand}"
+                                                CommandParameter="{Binding Number}" />
+                                    </Panel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    </Styles.Resources>
+
+    <!-- The reach of a resize edge, the same one the splitter needed, since one pixel
+         cannot be grabbed. -->
+    <Style Selector="ui|GridCells">
+        <Setter Property="DividerReach" Value="{DynamicResource SizeSplitterReach}" />
+    </Style>
+
+    <!-- A cell's ink comes from its row, so these are the only two places a cell is told a
+         colour, and both are about which column it is rather than what is in it. A control
+         theme cannot hold a descendant selector, which is why they live out here. -->
+    <Style Selector="ui|DataGridRow:not(:selected) ui|DataGridCell:strong">
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+    </Style>
+
+    <!-- A branch row is a summary of what hangs under it, so its values read quieter than
+         data while its name reads louder. -->
+    <Style Selector="ui|TreeDataGridRow:branch:not(:selected) ui|DataGridCell">
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    </Style>
+
+    <Style Selector="ui|TreeDataGridRow:branch:not(:selected) ui|TreeDataGridCell">
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+    </Style>
+
+</Styles>

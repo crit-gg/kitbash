@@ -1,4 +1,4 @@
-# The icons Workbench and its tools draw, one per line, without the bx- prefix.
+# The icons Kitbash and its tools draw, one per line, without the bx- prefix.
 # Every name must exist in the Box Icons Pro Solid Rounded set, or in local/.
 #
 # Add a name here and rerun generate.py. Nothing else is edited by hand.

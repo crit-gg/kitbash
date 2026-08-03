@@ -38,20 +38,20 @@ the way everything else here is written.
 - **`IToastService`, taken through a constructor.** No static `Toast.Show`, no ambient
   host, no service locator. A view model that reports progress is handed the service the
   same way it is handed a file system.
-- **Registration lives beside the others.** `AddWorkbenchToasts` in `Workbench.Ui`,
-  following the shape `AddWorkbenchIO` and the rest already have, with `TryAdd` so a
+- **Registration lives beside the others.** `AddKitbashToasts` in `Kitbash.Ui`,
+  following the shape `AddKitbashIO` and the rest already have, with `TryAdd` so a
   caller can substitute its own.
 - **The service knows nothing about Avalonia's visual tree.** It owns toasts, regions,
   dwell and grouping. A `ToastHost` control observes it and draws. That split is what
   makes the timing testable without a window.
 
-**This adds a dependency.** `Workbench.Ui` references Avalonia and `Workbench.Core` today
+**This adds a dependency.** `Kitbash.Ui` references Avalonia and `Kitbash.Core` today
 and nothing else. Registration methods mean
 `Microsoft.Extensions.DependencyInjection.Abstractions`, which is the same package Core
 already uses for its own. Take the abstractions package rather than the full one, so the
 library asks for the contract and the application picks the container.
 
-`Workbench.Core` does not gain toasts. Core is the contract and stays free of a UI
+`Kitbash.Core` does not gain toasts. Core is the contract and stays free of a UI
 framework, and a toast is a UI thing.
 
 ## Toasts

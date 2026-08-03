@@ -1,0 +1,31 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Archivo for anything read as language. JetBrains Mono for identifiers, values,
+         counts, paths and shortcuts. A control names its family rather than inheriting. -->
+    <FontFamily x:Key="FontFamilyUi">avares://Kitbash.Ui/Assets/Fonts#Archivo</FontFamily>
+    <FontFamily x:Key="FontFamilyMono">avares://Kitbash.Ui/Assets/Fonts#JetBrains Mono</FontFamily>
+
+    <!-- Weights 400, 500 and 600 only. Archivo Bold ships with the fonts and is not
+         used, since hierarchy here is size and space rather than weight. -->
+    <FontWeight x:Key="FontWeightRegular">Normal</FontWeight>
+    <FontWeight x:Key="FontWeightMedium">Medium</FontWeight>
+    <FontWeight x:Key="FontWeightStrong">SemiBold</FontWeight>
+
+    <!-- The type floor is 11px. Nothing in this system is smaller. -->
+    <x:Double x:Key="FontSizeSmall">11</x:Double>
+    <x:Double x:Key="FontSizeBody">11.5</x:Double>
+    <x:Double x:Key="FontSizeControl">12</x:Double>
+    <x:Double x:Key="FontSizeTitle">12.5</x:Double>
+    <x:Double x:Key="FontSizeSubhead">13</x:Double>
+    <x:Double x:Key="FontSizeCardTitle">14.5</x:Double>
+    <x:Double x:Key="FontSizeDialogTitle">15</x:Double>
+
+    <!-- Avalonia measures letter spacing in device independent pixels, not in em, so
+         these are the design's em values already multiplied by the size each one is
+         used at. Change the size and the spacing has to be recomputed. -->
+    <x:Double x:Key="LetterSpacingTitle">0.25</x:Double>
+    <x:Double x:Key="LetterSpacingPill">0.55</x:Double>
+    <x:Double x:Key="LetterSpacingLabel">1.2</x:Double>
+
+</ResourceDictionary>

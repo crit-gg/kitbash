@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Publishes Workbench and packs it into a release feed.
+# Publishes Kitbash and packs it into a release feed.
 #
 #   build/release.sh <feed directory> [linux|win]
 #
@@ -17,10 +17,10 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-project="$root/src/Workbench/Workbench.csproj"
+project="$root/src/Kitbash/Kitbash.csproj"
 
-pack_id="Slopworks.Workbench"
-pack_title="Workbench"
+pack_id="Slopworks.Kitbash"
+pack_title="Kitbash"
 pack_authors="Slopworks"
 
 feed="${1:-}"
@@ -46,7 +46,7 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
-echo "Workbench $version into $feed"
+echo "Kitbash $version into $feed"
 
 release() {
   local os=$1 runtime=$2 exe=$3 icon=$4 extra=("${@:5}")
@@ -82,8 +82,8 @@ release() {
 
 # --categories is Linux only and names a freedesktop menu section. It defaults to
 # Utility, which is not where a person looks for this.
-linux_release() { release linux linux-x64 Workbench icons/icon_256x256.png --categories Development; }
-win_release() { release win win-x64 Workbench.exe icons/icon.ico; }
+linux_release() { release linux linux-x64 Kitbash icons/icon_256x256.png --categories Development; }
+win_release() { release win win-x64 Kitbash.exe icons/icon.ico; }
 
 case "$only" in
   linux) linux_release ;;
