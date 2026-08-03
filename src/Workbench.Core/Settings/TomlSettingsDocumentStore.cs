@@ -1,3 +1,4 @@
+using System.Text;
 using Tomlyn;
 using Tomlyn.Model;
 using Workbench.Core.IO;
@@ -6,6 +7,9 @@ namespace Workbench.Core.Settings;
 
 internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
 {
+    /// <summary>Matches what File.WriteAllText uses, apart from emitting the mark.</summary>
+    private static readonly UTF8Encoding MarkedUtf8 = new(encoderShouldEmitUTF8Identifier: true);
+
     private readonly IFileSystem _fileSystem;
 
     public TomlSettingsDocumentStore(IFileSystem fileSystem)
@@ -16,18 +20,19 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
 
     public SettingsDocument Read(string path)
     {
-        var file = Open(path, out var failure);
+        var file = Open(path, out _, out var failure);
 
         return file.ParseError is null
             ? file.Document
             : throw new SettingsFileUnreadableException(path, file.ParseError, failure);
     }
 
-    public SettingsFile Open(string path) => Open(path, out _);
+    public SettingsFile Open(string path) => Open(path, out _, out _);
 
-    private SettingsFile Open(string path, out Exception? failure)
+    private SettingsFile Open(string path, out string text, out Exception? failure)
     {
         failure = null;
+        text = string.Empty;
 
         if (!_fileSystem.FileExists(path))
         {
@@ -37,7 +42,8 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
 
         try
         {
-            var table = TomlSerializer.Deserialize<TomlTable>(_fileSystem.ReadAllText(path));
+            text = _fileSystem.ReadAllText(path);
+            var table = TomlSerializer.Deserialize<TomlTable>(text);
             return new SettingsFile(path, Exists: true, new SettingsDocument(ToTables(table ?? [])), ParseError: null);
         }
         catch (TomlException exception)
@@ -60,24 +66,14 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
         new(path, Exists: true, new SettingsDocument(), error);
 
     /// <summary>
-    /// Rewrites the file, so comments and formatting are lost. Tomlyn keeps trivia on
-    /// its syntax tree, so this can be made lossless later without changing callers.
+    /// Rewrites the file from the model, so comments, blank lines and key order all go.
+    /// This is for a file the app generates and nobody edits. Anything a person may have
+    /// written in goes through <see cref="Apply"/>, which keeps all three.
     /// </summary>
     public void Write(string path, SettingsDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-
-        var directory = Path.GetDirectoryName(path);
-
-        if (!string.IsNullOrEmpty(directory))
-        {
-            _fileSystem.CreateDirectory(directory);
-        }
-
-        // Move into place so an interrupted write cannot truncate the file.
-        var temporary = path + ".tmp";
-        _fileSystem.WriteAllText(temporary, TomlSerializer.Serialize(ToToml(document.Root)));
-        _fileSystem.MoveFile(temporary, path, overwrite: true);
+        Save(path, TomlSerializer.Serialize(ToToml(document.Root)));
     }
 
     public void Apply(string path, IReadOnlyList<SettingsEdit> edits)
@@ -89,33 +85,92 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
             return;
         }
 
-        var file = Open(path);
+        // Whether the file can be used is the verdict Open publishes, which is the one the
+        // settings window draws. A second opinion here would let a write land on a file
+        // the window has already called unreadable.
+        var file = Open(path, out var text, out _);
 
         if (file.ParseError is { } error)
         {
             throw new SettingsFileUnreadableException(path, error);
         }
 
+        var document = new TomlDocument(text);
+
+        if (document.HasErrors)
+        {
+            throw new SettingsFileUnreadableException(path, $"'{path}' is not valid TOML.");
+        }
+
         var changed = false;
 
         foreach (var edit in edits)
         {
-            if (edit.IsRemoval)
-            {
-                changed |= file.Document.RemoveValue(edit.Key);
-            }
-            else
-            {
-                file.Document.SetValue(edit.Key, edit.Value!);
-                changed = true;
-            }
+            changed |= edit.IsRemoval
+                ? document.RemoveValue(edit.Key)
+                : document.SetValue(edit.Key, edit.Value!);
         }
 
-        // Removing a key that was never there changes nothing, and a write would cost
-        // the file its comments for no reason.
+        // A write costs the file nothing now, so this is only about leaving a file, and
+        // its timestamp, alone rather than writing back what it already said.
         if (changed)
         {
-            Write(path, file.Document);
+            Save(path, document.ToString(), file.Exists && StartsWithByteOrderMark(path));
+        }
+    }
+
+    private void Save(string path, string text, bool byteOrderMark = false)
+    {
+        var directory = Path.GetDirectoryName(path);
+
+        if (!string.IsNullOrEmpty(directory))
+        {
+            _fileSystem.CreateDirectory(directory);
+        }
+
+        // Move into place so an interrupted write cannot truncate the file.
+        var temporary = path + ".tmp";
+
+        if (byteOrderMark)
+        {
+            using (var stream = _fileSystem.Create(temporary))
+            using (var writer = new StreamWriter(stream, MarkedUtf8))
+            {
+                writer.Write(text);
+            }
+        }
+        else
+        {
+            _fileSystem.WriteAllText(temporary, text);
+        }
+
+        _fileSystem.MoveFile(temporary, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// Whether the file opens with a UTF-8 byte order mark.
+    /// </summary>
+    /// <remarks>
+    /// Notepad and older Visual Studio write one, so a workspace edited on Windows often
+    /// has it, and <c>File.ReadAllText</c> takes it off the text it hands back. Writing
+    /// that text straight out would drop the mark, which is a change to a file the edit
+    /// never named, in a file that is committed and shared. Every collaborator would see
+    /// the encoding change with the setting.
+    /// </remarks>
+    private bool StartsWithByteOrderMark(string path)
+    {
+        try
+        {
+            using var stream = _fileSystem.OpenRead(path);
+            Span<byte> head = stackalloc byte[3];
+
+            return stream.ReadAtLeast(head, head.Length, throwOnEndOfStream: false) == head.Length
+                && head is [0xEF, 0xBB, 0xBF];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The read that matters already succeeded, so this cannot be a reason to fail.
+            return false;
         }
     }
 

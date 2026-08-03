@@ -265,6 +265,10 @@ Do not assume this. Ask before building on it.
 
 ## Decided
 
+- **A write keeps the file's comments.** Step 2's batched write edits the file's text
+  through `TomlDocument` rather than rebuilding it from the model, so saving a page leaves
+  every comment, blank line and key order alone. Reset takes the key and leaves the
+  paragraph above it, since that paragraph is the only documentation these files have.
 - **Undeclared keys are not reported.** A key in a file that no descriptor declares is
   drawn nowhere, so the window is a complete account of the settings rather than of the
   file. `SettingsDocument` therefore never grows a key listing, and the backing row's

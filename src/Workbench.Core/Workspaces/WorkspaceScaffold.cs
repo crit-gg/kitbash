@@ -10,10 +10,16 @@ namespace Workbench.Core.Workspaces;
 /// </summary>
 /// <remarks>
 /// <para>
-/// **The file is entirely comments, so it parses as an empty document.** Nothing is set
-/// and nothing is overridden by it existing. It is there to be read and edited, since
-/// until a settings window lands hand editing is the only way to set any of this, and an
-/// empty file answers no questions.
+/// **Every setting in it is commented out, so nothing is set and nothing is overridden by
+/// it existing.** It is there to be read and edited, since until a settings window lands
+/// hand editing is the only way to set any of this, and an empty file answers no
+/// questions.
+/// </para>
+/// <para>
+/// **The table headers are live and only the keys are commented.** Uncommenting one line
+/// then puts the key in the table it belongs to, where a commented header would have left
+/// somebody writing a root key by the same name. An empty table sets nothing, so the file
+/// still changes no value.
 /// </para>
 /// <para>
 /// **Every setting in it is written from its descriptor**, so a key added to a workspace
@@ -22,10 +28,9 @@ namespace Workbench.Core.Workspaces;
 /// <see cref="WorkspaceNameResolver"/>.
 /// </para>
 /// <para>
-/// **A write does not keep these comments.** Settings are written back from the model, so
-/// the first time anything saves a value here the commentary goes. That is the existing
-/// rule rather than something this adds, and the trade is worth it: the file is useful
-/// now, and by the time something is writing it a person has a window to do it in.
+/// **A write keeps all of this.** Saving a value edits the file in place, so it lands
+/// inside the table it belongs to, under the comment that describes it, and the rest of
+/// the file is untouched.
 /// </para>
 /// </remarks>
 internal sealed class WorkspaceScaffold : IWorkspaceScaffold
@@ -79,13 +84,41 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
         Comment(text, "Personal overrides go in .workbench/user/workbench.toml, which is "
             + "ignored by git and beats this file key by key.");
         text.AppendLine("#");
-        Comment(text, "Everything below is commented out and showing what it would be if "
-            + "nothing said otherwise. Uncomment a line to set it.");
+        Comment(text, "Every setting below is commented out and showing what it would be "
+            + "if nothing said otherwise. Uncomment a line to set it.");
         text.AppendLine();
 
+        var table = string.Empty;
+
+        foreach (var row in Rows())
+        {
+            if (!string.Equals(row.Table, table, StringComparison.Ordinal))
+            {
+                table = row.Table;
+
+                if (table.Length > 0)
+                {
+                    text.AppendLine($"[{table}]");
+                    text.AppendLine();
+                }
+            }
+
+            Section(text, row);
+        }
+
+        // One trailing newline rather than the blank line each section leaves behind.
+        return text.ToString().TrimEnd() + Environment.NewLine;
+    }
+
+    /// <summary>
+    /// Every setting the file shows, in the order it is written, each split into the table
+    /// it belongs to and the key inside it. A key of one segment has no table and is
+    /// written above the first header, where a root key has to go.
+    /// </summary>
+    private IEnumerable<Row> Rows()
+    {
         // Written by hand, since the name has no descriptor to read this from.
-        Section(
-            text,
+        yield return Row.For(
             "Name",
             "What this workspace is called in Workbench. Blank reads the Godot project's "
             + "own name, and then the folder name.",
@@ -94,23 +127,35 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
 
         foreach (var section in _godot.Page.Sections)
         {
-            foreach (var row in section.Rows.OfType<ISettingDescriptor>())
+            foreach (var descriptor in section.Rows.OfType<ISettingDescriptor>())
             {
-                Section(text, row.Name, row.Description, row.Key, row.Default as string ?? string.Empty);
+                yield return Row.For(
+                    descriptor.Name,
+                    descriptor.Description,
+                    descriptor.Key,
+                    descriptor.Default as string ?? string.Empty);
             }
         }
-
-        // One trailing newline rather than the blank line each section leaves behind.
-        return text.ToString().TrimEnd() + Environment.NewLine;
     }
 
-    private static void Section(
-        StringBuilder text, string name, string description, string key, string fallback)
+    private static void Section(StringBuilder text, Row row)
     {
-        text.AppendLine($"# {name}");
-        Comment(text, description);
-        text.AppendLine($"# {key} = \"{fallback}\"");
+        text.AppendLine($"# {row.Name}");
+        Comment(text, row.Description);
+        text.AppendLine($"# {row.Key} = \"{row.Fallback}\"");
         text.AppendLine();
+    }
+
+    private readonly record struct Row(string Name, string Description, string Table, string Key, string Fallback)
+    {
+        public static Row For(string name, string description, string key, string fallback)
+        {
+            var at = key.LastIndexOf('.');
+
+            return at < 0
+                ? new Row(name, description, string.Empty, key, fallback)
+                : new Row(name, description, key[..at], key[(at + 1)..], fallback);
+        }
     }
 
     /// <summary>One paragraph as hash prefixed lines, wrapped on words.</summary>

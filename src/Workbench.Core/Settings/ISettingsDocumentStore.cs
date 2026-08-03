@@ -15,12 +15,18 @@ internal interface ISettingsDocumentStore
     /// </summary>
     SettingsFile Open(string path);
 
+    /// <summary>
+    /// Replaces the file with the document. Comments, blank lines and key order are the
+    /// document's, which holds none of them, so a file that had any loses them. For a
+    /// file the app generates and nobody edits.
+    /// </summary>
     void Write(string path, SettingsDocument document);
 
     /// <summary>
-    /// Applies every edit to one file and writes it once. Refuses a file it could not
-    /// read, with <see cref="SettingsFileUnreadableException"/>. Writes nothing when no
-    /// edit changed anything, since a write costs the file its comments.
+    /// Applies every edit to one file and writes it once, leaving everything the edits did
+    /// not name exactly as it was, comments included. Refuses a file it could not read,
+    /// with <see cref="SettingsFileUnreadableException"/>. Writes nothing when no edit
+    /// changed anything.
     /// </summary>
     void Apply(string path, IReadOnlyList<SettingsEdit> edits);
 }

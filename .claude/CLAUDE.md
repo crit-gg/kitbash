@@ -954,15 +954,21 @@ cloned with a `.workbench` already in it and one added before this existed, not 
 folder added from here. A folder it cannot write to is survived rather than reported,
 since a workspace works without the file.
 
-**The file is entirely comments, so it parses as an empty document** and nothing is set
-or overridden by it existing. It is there to be read and edited, because until a settings
-window lands hand editing is the only way to set any of this and an empty file answers no
-questions. **Every setting in it is written from its descriptor**, so a key added to a
-workspace schema appears there without anybody remembering. Only `workspace.name` is
-written by hand, since it has no descriptor.
+**Every setting in it is commented out**, so nothing is set or overridden by it existing.
+It is there to be read and edited, because until a settings window lands hand editing is
+the only way to set any of this and an empty file answers no questions. **Every setting in
+it is written from its descriptor**, so a key added to a workspace schema appears there
+without anybody remembering. Only `workspace.name` is written by hand, since it has no
+descriptor.
 
-A write does not keep those comments. Settings are written back from the model, which is
-the existing rule rather than something this adds.
+**The table headers are live and only the keys are commented.** Uncommenting one line then
+puts the key in the table it belongs to, where under a commented header it would have made
+a root key of the same name. An empty table sets nothing, so the file still changes no
+value. This is why the scaffold writes `[godot]` and `# engine = ""` rather than the
+`# godot.engine = ""` it wrote first.
+
+A write keeps all of it. Saving `godot.engine` lands the value inside `[godot]`, under the
+paragraph that describes it, and resetting it gives the file back exactly as it was.
 
 Merging is per key, not per file. A user file holding one override does not hide
 the rest of the shared config. Keys are dotted paths onto nested TOML tables, such
@@ -972,23 +978,95 @@ type counts as absent and falls through to the layer below.
 Reads go through `ISettings`. Writes go through `ISettingsService.Set`, which names
 its layer explicitly because writing to `TeamShared` changes the setting for
 everyone. `Apply` writes a batch to one file, so saving a page of edits is one read
-and one write rather than one of each per key, and `Set` is one edit through it.
-Writes rewrite the file from the model and do not keep comments, so a batch that
-changed nothing writes nothing. There is no file watching, so one process does not
-see another's write until it reloads.
+and one write rather than one of each per key, and `Set` is one edit through it. A
+batch that changed nothing writes nothing. There is no file watching, so one process
+does not see another's write until it reloads.
 
 `ISettingsDocumentStore` is the only place the file format lives. `SettingsDocument`
 holds nested tables and no format specific types, so moving off TOML would touch one
 class. It reads two ways: `Read` throws on a file that will not parse and `Open`
 brings the failure back as a value, for a caller that draws it rather than fails.
 
+### A write keeps the file
+
+**`Apply` edits the file's text and leaves everything the edits did not name exactly as it
+was.** Comments, blank lines, key order and the person's own spelling of a value all
+survive, because the file is never rebuilt from the model. `TomlDocument` is that, holding
+Tomlyn's `SyntaxParser` tree, which keeps all trivia and writes back byte for byte. It
+carries the same three operations `SettingsDocument` has, so the store reads through one
+and writes through the other.
+
+`Write(path, document)` is still the model rewrite and still loses all of it. It has one
+caller, `EngineStore`, whose file the app generates and nobody edits.
+
+**A dotted key has five legal spellings and the search answers all of them**, since a
+finder that misses one writes the key a second time somewhere else and leaves a file
+holding the same key twice, which no later read can open. The five are `[a.b]` then `c`,
+`[a]` then `b.c`, `a.b.c` at the root, `[a]` then `b = { c }`, and `a = { b = { c } }`.
+
+**A key that is nowhere in the file takes the longest table that fits.** Then a new
+`[a.b]` table at the end, and only a single segment key goes to the root, where TOML makes
+it precede every table header. A new key goes after everything already in its table but
+before the blank line and comment that introduce the next one.
+
+**A comment above a key is not owned by that key and is left where it is.** The scaffolded
+workspace file settles it: every setting there sits under a paragraph and a commented out
+sample of itself, so taking the comment with the key would mean resetting a setting
+deletes its documentation. An orphaned note is untidy, deleted prose is gone. The comment
+after a value on the same line does go, since that one is part of the line. A table left
+with nothing in it keeps its header for the same reason, which is where the file and
+`SettingsDocument.RemoveValue` deliberately differ, since that one prunes.
+
+**Trivia hangs off tokens, not off value or key nodes.** So replacing a value drops the
+inline comment that followed the old one unless it is carried across by hand, and the
+blank line before the next table trails the last pair's end of line token rather than
+belonging to it. Both are handled in `TomlDocument` and both fail silently.
+
+**The newline is the file's own, never this machine's.** `ToString` gives back what was
+parsed, but trivia the code adds does not, so `TomlDocument` reads the file's first line
+ending and writes new lines with it. A file that does not exist yet takes
+`Environment.NewLine`. Following the file rather than the platform is what matters: a
+Windows machine editing a CRLF file writes CRLF, and editing a colleague's LF file leaves
+it on LF instead of putting one CRLF line in the middle of it.
+
+**A byte order mark is put back.** Notepad and older Visual Studio write one, so a
+workspace edited on Windows often has it, and `File.ReadAllText` takes it off the text it
+returns while `File.WriteAllText` does not put it back. Writing the text straight out drops
+it, which is a change to a committed file that the edit never named, and every collaborator
+sees the encoding change along with the setting. So `Apply` looks at the first three bytes
+and writes the mark back through a `StreamWriter` when it was there. A file without one
+never gains one. Measured: 29 bytes in, 26 out, before this.
+
+**Keys are compared ordinally, and that is not the same rule as paths.** A TOML key is case
+sensitive on every platform, so nothing here goes through `IPathRules`, which exists
+because Windows filesystems ignore case. `Godot.Engine` and `godot.engine` are two keys on
+both platforms.
+
+Measured on this machine, Linux, 119 checks over a scratch harness: a read and a write with
+no edit byte for byte, every comment position surviving a change, an added key landing
+inside its table and above the next table's comment, a new table appended, a single segment
+key landing under the file header rather than above it, a reset giving a scaffolded file
+back exactly, each of the five spellings set and removed with the result parsing and
+holding the key once, a scalar replaced where a table belongs, arrays and floats and bools,
+and a file with no trailing newline.
+
+**The Windows cases were measured here too, and could be**, because line endings and
+encoding are decided by .NET and by this code rather than by the OS. A file written the way
+a Windows editor writes one, UTF-8 with a byte order mark and CRLF throughout, keeps its
+mark, keeps every line ending, takes the edit, and comes back to the exact original bytes
+when the setting is reset. What genuinely cannot be checked from here is the platform's own
+behaviour underneath: `File.Move` replacing a file that another program holds open or that
+carries the read only attribute fails on Windows where it would not here, which is what the
+temporary file and the move were already doing before this.
+
 **A file that will not parse is never written back.** This is the one hazard in the
-whole system. A write reads the file, changes its keys and writes the whole document
-back, and a broken file reads as an empty document, so writing it back would replace
-every hand written value with almost nothing under a button that said Save changes.
-`Apply` refuses on the parse result rather than on the document being empty, because
-after the fact those two look identical. `SettingsFileUnreadableException` names the
-file, and it is what `Read` throws as well.
+whole system. Against a broken file the read produces an empty document, so a rebuild
+would replace every hand written value with almost nothing under a button that said Save
+changes. `Apply` refuses on the parse result rather than on the document being empty,
+because after the fact those two look identical, and it refuses on the verdict `Open`
+publishes rather than asking the syntax tree, so a write can never land on a file the
+settings window has already drawn as unreadable. `SettingsFileUnreadableException` names
+the file, and it is what `Read` throws as well.
 
 ### Schemas
 
