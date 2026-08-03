@@ -44,6 +44,11 @@ itself and not of the presenter that draws it, so a value set on `PART_ContentPr
 never reaches the content. **Measured** both ways. That is why `Surface` writes the level
 on the panel rather than inside its template.
 
+**A pseudo class driven from a property never gets set when the property already holds the
+value it is looking for.** `OnPropertyChanged` fires on a change, and a default is not one,
+so a control whose `IsExpanded` defaults to true starts with `:expanded` unset and looks
+closed until something toggles it. Set the class in the constructor as well as on change.
+
 Declare what a property invalidates in the static constructor, or nothing repaints:
 `AffectsRender<T>` on `Visual`, `AffectsMeasure<T>` and `AffectsArrange<T>` on
 `Layoutable`.
@@ -147,6 +152,17 @@ bubbles, which is how `SearchBox` hears its clear button.
 A `Style` matches by selector and layers on top. A `ControlTheme` replaces a control's
 whole look and is keyed by type. Use `ControlTheme` to redefine a control, `Style` to
 adjust one. `BasedOn` inherits another theme.
+
+**`BasedOn` is ignored, silently, when the control does not derive from the base theme's
+`TargetType`.** Nothing is logged, the build passes, and the derived theme's own setters
+still apply, so the control renders and is simply missing everything the base said.
+
+**Measured**: a theme for `ui:TreeDataGridRow`, which is a `TreeItem`, based on the theme
+for `ui:DataGridRow`, which is a `ListBoxItem`. Its own `Template` setter applied and the
+row drew its cells, while `Height` read `NaN` and `BorderThickness` read `0,0,0,0`, so the
+rows came out at their content height with no rule under them. Two themes that look alike
+are not a reason to base one on the other. Check the base type first, and write the setters
+out when it is not there.
 
 ### Selectors
 

@@ -22,7 +22,10 @@ public class Tree : ListBox
         NeedsContainer<TreeItem>(item, out recycleKey);
 
     protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey) =>
-        new TreeItem();
+        CreateRow();
+
+    /// <summary>What a row is. The tree grid overrides it to get one that holds cells.</summary>
+    protected virtual TreeItem CreateRow() => new();
 
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {

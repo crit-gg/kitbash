@@ -1,5 +1,9 @@
 # Stage 11: data grid
 
+**Built.** See Grids in `.claude/skills/workbench-surfaces` for what the library holds and
+"Where this departed from the plan" at the foot of this file for what the design said that
+this did not.
+
 The densest surface in the system, and the one a data tool lives in. Both grids are
 here, the flat one and the tree one, because they share a column layout and splitting
 them would mean writing that twice.
@@ -127,3 +131,71 @@ writing something a later change would have to unpick.
 - No cell sets its own brush.
 - The tree grid lays out the same columns as the flat one, and its branch rows carry
   aggregates that read as a summary rather than as data.
+
+All five hold. Measured in the gallery, headless with real drawing, over ten thousand rows:
+
+```
+deep    items=10000 extent=310000 realised=9 cells=63 alternate=4
+columns pick=34@0 ID=190@34 NAME=546@224 KIND=150@770 VALUE=96@920 TIER=104@1016 STATE=118@1120
+across  body=154 header=154 extent=1392 viewport=1238
+resize  id 190 -> 250, name starts at 284, its cell at 34 width 250
+group   'Graph' count=2500, click leaves rows 10004 -> 7504, caret now closed
+cancel  1.5 typed 999 then escape leaves 1.5
+footer  '2 selected' '100 of 10,000 shown' 'sorted by ID'
+tree    indents L0:0 L1:14 L1:14 L1:14 L2:28 L2:28 L0:0 L0:0
+```
+
+Nine rows realised out of ten thousand, four of them wearing the stripe. The header sits at
+exactly the offset the body does. A resize moves every column after it and the rows follow.
+Escape puts the old value back through `IEditableObject`.
+
+## Where this departed from the plan
+
+Seven things above are wrong against the design page or against what the stage could hold.
+The design was read again and won each time.
+
+**Focus on a grid row is an inset line, not the halo.** This is the opposite of the answer
+stage 9 reached for a list row, and both are right. A list row is spaced, so a halo has room
+outside it. A grid row is flush against the rows above and below and against the frame, so
+the same halo would land on its neighbours. The design draws `inset 0 0 0 1px
+rgba(86,158,255,.6)` here and says so in its own caption. `FocusLine` is that value.
+
+**A grid's chrome sits on `SurfaceRoot`.** The toolbar, the header and the footer are all
+`#1e1f22` in the design, in three separate places, and this stage said the same. It is the
+one surface other than a window frame that takes the root tone, and the reason is that a
+grid is a document with chrome of its own rather than a panel.
+
+**A column is pixel or star and never auto.** Auto has to measure every row, so a width that
+only works while the whole set is realised is the one thing a virtualised grid cannot have.
+`GridColumn.Width` refuses it outright rather than resolving it to something.
+
+**The tree grid has no zebra and no indent guides.** The design draws neither. A branch row
+takes `SurfaceRowAlt` instead, which is what tells a heading from what hangs under it. Guides
+would be wrong as well as absent: they are drawn from the row's leading edge, and the design
+puts a picker column in front of the names.
+
+**The tree grid indents 14, not the 22 the design's markup steps.** The design disagrees with
+itself here the way it did in stage 9, where the answer was 14 with the caret slot reserved on
+every row. A tree grid is that tree, so it steps the same.
+
+**The editing row draws no modified mark.** The plan asked for one. The design draws no mark
+on a grid row anywhere and says the state in the status column instead, which is the column's
+job. The row carries an `:editing` pseudo class so a view can say more if it has more to say.
+
+**Pagination is a control of its own rather than a footer feature.** `ui:GridPager` sits under
+the grid, which is where the design draws it, and a grid that never pages never carries it.
+That is a stronger version of what this stage asked for: the grid does not know pages exist,
+and turning them on is attaching the pager.
+
+**The pager's numbers sit to the left of its steps, not between previous and next.** The
+design draws them in the middle of the row, which means the run of numbers changes width
+under the buttons and next walks away from the pointer as it is pressed. The numbers grow
+into the gap on their left instead, and the readout on the right holds the room its widest
+reading needs, so the four steps hold one place. Measured across pages 1, 2, 50, 99 and 100.
+
+One more thing this had to decide, which the plan did not cover.
+
+**A grid is given a `GridRows`, the way a tree is given a `TreeRows`.** Sorting, grouping,
+paging and the stripe all need a view over the source rather than the source itself, and the
+tree already set the shape. A plain list handed to `ItemsSource` draws rows and does none of
+those, and nothing pretends otherwise.

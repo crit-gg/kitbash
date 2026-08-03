@@ -257,16 +257,23 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 10 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
+Stages 1 to 11 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
-combo box, the hyperlink, the list row, the tree, the tabs, the toast and the alert.
+combo box, the hyperlink, the list row, the tree, the tabs, the toast, the alert, both data
+grids and the pager.
 
 Stage 8 is done except the colour field, which waits on stage 13 because its swatch has
 nothing to open until the picker exists.
+
+**Both grids are built and they share one column model.** `ui:DataGrid` is a `ListBox` and
+`ui:TreeDataGrid` is a `ui:Tree`, so neither writes virtualisation, selection or the row
+states again. Sorting, grouping, inline edit, column resizing and the sideways header are all
+real, and paging is `ui:GridPager`, a separate control, so a grid that never pages carries
+none of it. The `workbench-surfaces` skill has the rules.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, carrying the workspace page, the

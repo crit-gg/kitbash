@@ -96,7 +96,7 @@ public class TreeItem : ListBoxItem
     /// Takes on a row, or gives up the one it had. Null releases the container, which is
     /// what stops a recycled row carrying the last one's depth.
     /// </summary>
-    internal void Follow(TreeRow? next)
+    internal virtual void Follow(TreeRow? next)
     {
         if (row is not null)
         {

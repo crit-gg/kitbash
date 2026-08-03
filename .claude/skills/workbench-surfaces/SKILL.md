@@ -1,6 +1,6 @@
 ---
 name: workbench-surfaces
-description: "Workbench surface rules. The depth ramp and Surface.Level/Nests, SurfacePanel and section labels, list and tree rows, ui:Tree virtualisation, tabs, and every floating overlay such as menus, flyouts, tooltips and popovers. Read before changing panels, lists, trees, tabs or popups."
+description: "Workbench surface rules. The depth ramp and Surface.Level/Nests, SurfacePanel and section labels, list and tree rows, ui:Tree virtualisation, both data grids and their column model, tabs, and every floating overlay such as menus, flyouts, tooltips and popovers. Read before changing panels, lists, trees, grids, tabs or popups."
 ---
 
 ### Panels and the depth ramp
@@ -170,6 +170,93 @@ sits inside the 1px stroke but at a corner it paints over it: the marker came th
 `#569eff` where the stroke should have been. Inset by the border thickness, the inner curve
 clears the stroke by about 1.4px at 45 degrees, which is why two borders work and one does
 not. The design says the same thing its own way, with `overflow:hidden` on the dock frame.
+
+### Grids
+
+Two of them, `ui:DataGrid` and `ui:TreeDataGrid`, and one column model under both. Both are
+hand built by decision, which `.claude/plans/stage-11-data-grid.md` records and which is not
+to be reopened.
+
+**Neither grid is a control that holds rows. Both are the list and the tree already built.**
+`DataGrid` is a `ListBox` and `TreeDataGrid` is a `ui:Tree`, so virtualisation, selection,
+recycling and the seven row states are the ones from stage 9 rather than a second set.
+Measured over ten thousand rows: nine rows realised holding sixty three cells, with the
+stripe intact.
+
+**One column model, `ui:GridColumns`, and it is the only place a width is worked out.** It
+resolves against the viewport, so pixel columns take what they ask for, star columns take
+what is left, and a set wider than the viewport scrolls rather than squeezing. **A width is
+pixel or star and never auto**: auto has to measure every row, and a layout that only holds
+while the whole set is realised is the one thing a virtualised grid cannot have.
+
+`ui:GridCells` is the panel that puts one element per column at those offsets. A row, a
+header and a tree grid row all use it, which is what keeps the three saying the same thing.
+An element marked `GridCells.IsDivider` straddles the column's trailing edge instead of
+filling it, which is how a resize reach sits over both sides.
+
+**A grid is given a `ui:GridRows`, the way a tree is given a `TreeRows`.**
+
+```csharp
+grid.ItemsSource = new GridRows(items);
+column.SortKey = item => ((Entry)item).Id;
+```
+
+`GridRows` is the source sorted, grouped, paged and flattened to what can be seen, and a
+group header is a row in that list rather than a container around one. A column with no
+`SortKey` cannot be sorted, so its title does nothing and draws no indicator. Sorting cycles
+up, then down, then back to the order the source came in. The stripe is counted over data
+rows alone, so a heading dropped in the middle does not flip it.
+
+Paging cuts the page from the data rows and brings a heading along when any of its rows
+landed on the page. Sorting and the counts read the whole set, so turning paging on changes
+what is drawn and nothing else.
+
+**The chrome sits on `SurfaceRoot`.** The toolbar, the header and the footer, all three. It
+is the one surface other than a window frame that takes the root tone, because a grid is a
+document with chrome of its own rather than a panel. The body rides the depth ramp normally.
+
+**Focus on a grid row is a line inside it, not the halo.** This is the opposite of the answer
+a list row takes and both are right. A list row is spaced and has room outside it. A grid row
+is flush against its neighbours and against the frame, so the halo would land on them.
+`FocusLine` is that value, and it is stronger than `FocusHalo` because it sits on the tint.
+
+**A cell takes its ink from its row.** `DataGridCell` sets no colour of its own, so hover and
+selection reach it by inheritance. Two things move it and both are about which column it is
+rather than what is in it: `IsMono` swaps the family, and `IsStrong` says the column
+identifies the row so it rests a step brighter. Both are plain `Style` rules outside the
+control themes, because a `ControlTheme` may not hold a descendant selector.
+
+**The tree grid is the tree with columns over it.** `TreeDataGridRow` is a `TreeItem`, and
+only its `LeadColumn` indents. Name that column: it defaults to the first, and the design
+puts a picker in front of the names. It steps 14 per level, the same as the tree, with the
+caret slot held on every row.
+
+It draws no stripe and no indent guides, both of which the design draws for neither. A branch
+row takes `SurfaceRowAlt` instead, and its cells read at `InkMuted` with the name at
+`InkPrimary`, so a branch reads as a summary of what hangs under it rather than as data.
+
+**Inline edit is the column's `EditTemplate`, and the item is what remembers.** Double click a
+cell that has one. The grid calls `IEditableObject` on the item, so `BeginEdit`, `EndEdit` and
+`CancelEdit` are where a value is kept or put back, and Escape works because of that rather
+than because of anything the grid holds. An item that does not implement it commits whatever
+was typed.
+
+**Pagination is `ui:GridPager`, a control of its own under the grid.** The grid does not know
+pages exist. Attaching a pager is what turns them on, which is why a grid that never pages
+carries none of it.
+
+**Its four steps never move.** Two things are arranged for that and both matter, because a
+button that walks out from under the pointer as it is pressed is the whole failure. The
+numbers sit to the left of the steps rather than between previous and next, so a run that
+changes width grows into the gap. The readout to their right holds the room its widest
+reading needs, `RangeWidest`, drawn as nothing behind the real one, so five figures do not
+shove the row along. Both rely on the readout being mono. Measured across pages 1, 2, 50, 99
+and 100: the steps sat at the same four offsets every time.
+
+**Do not base a grid theme on another grid's.** `TreeDataGridRow` is a `TreeItem` and
+`DataGridRow` is a `ListBoxItem`, so `BasedOn` between them is accepted and silently ignored,
+and the rows come out at their content height with no rule under them. `.claude/avalonia.md`
+has the measurement.
 
 ### Overlays
 

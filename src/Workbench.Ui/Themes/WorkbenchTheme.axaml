@@ -43,6 +43,7 @@
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/TextBox.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Choices.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Pickers.axaml" />
+    <StyleInclude Source="avares://Workbench.Ui/Themes/Controls/Grid.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Surfaces.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Focus.axaml" />
     <StyleInclude Source="avares://Workbench.Ui/Themes/Motion.axaml" />
