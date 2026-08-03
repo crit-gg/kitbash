@@ -30,6 +30,7 @@ public partial class LaunchDialog : DialogWindow
     private readonly CancellationTokenSource _cancellation = new();
 
     private GodotLaunchMode _mode;
+    private bool _openWhenDone;
 
     public LaunchDialog()
     {
@@ -47,7 +48,11 @@ public partial class LaunchDialog : DialogWindow
     /// cancels the token, the token ends the work, and what comes back is what the caller
     /// reports. Cancelling is an answer rather than a fault, so it is not thrown on.
     /// </remarks>
-    public static async Task RunAsync(
+    /// <returns>
+    /// True when the person asked to open the editor from the finished dialog, which only
+    /// a rebuild can offer. False for everything else, cancelling included.
+    /// </returns>
+    public static async Task<bool> RunAsync(
         Window owner,
         GodotProject project,
         GodotLaunchMode mode,
@@ -61,8 +66,23 @@ public partial class LaunchDialog : DialogWindow
             ? project.Name
             : System.IO.Path.GetFileName(project.Directory);
 
-        var verb = mode == GodotLaunchMode.Editor ? "Opening" : "Starting";
+        var verb = mode switch
+        {
+            GodotLaunchMode.Editor => "Opening",
+            GodotLaunchMode.Rebuild => "Rebuilding",
+            _ => "Starting",
+        };
+
         var dialog = new LaunchDialog { Title = $"{verb} {name}", _mode = mode };
+
+        // A rebuild has already deleted something by the time it can be cancelled, so it
+        // says what that leaves rather than the note the other two modes carry.
+        if (mode == GodotLaunchMode.Rebuild)
+        {
+            dialog.Note.Text =
+                "Cancelling stops the step that is running. The cache is made again the "
+                + "next time the project opens.";
+        }
 
         dialog.Report(new GodotLaunchStep(GodotLaunchStage.Checking));
 
@@ -82,6 +102,15 @@ public partial class LaunchDialog : DialogWindow
             catch (Exception exception)
             {
                 failure = exception;
+            }
+
+            // A rebuild that worked has something to say and something to offer, so the
+            // window stays up. Everything else has already gone where it was going.
+            if (failure is null && mode == GodotLaunchMode.Rebuild)
+            {
+                dialog.Finish();
+
+                return;
             }
 
             dialog.Close();
@@ -104,6 +133,42 @@ public partial class LaunchDialog : DialogWindow
         {
             throw failure;
         }
+
+        return dialog._openWhenDone;
+    }
+
+    /// <summary>
+    /// The rebuild worked. The bar and the Cancel go, and the two answers arrive.
+    /// </summary>
+    /// <remarks>
+    /// Public for the same reason <see cref="Report"/> is: this state is reached from
+    /// inside a run, and it has to be reachable from outside one to be looked at without
+    /// deleting somebody's import cache to see it.
+    /// </remarks>
+    public void Finish()
+    {
+        Stage.Text = "Rebuild complete";
+
+        // The detail line is mono and carries values, so the sentence goes in the note,
+        // which is the one line here written in the UI family.
+        Detail.Text = string.Empty;
+        Note.Text = "The import cache was deleted and made again. Nothing has been started.";
+        Meter.IsVisible = false;
+
+        CancelButton.IsVisible = false;
+        DonePanel.IsVisible = true;
+
+        DismissButton.Click += (_, _) => Close(false);
+
+        OpenButton.Click += (_, _) =>
+        {
+            _openWhenDone = true;
+            Close(true);
+        };
+
+        // Focus arrives as though tabbed to, so the button that answers wears the halo,
+        // which is the rule the dialog base already follows for a roled one.
+        OpenButton.Focus(Avalonia.Input.NavigationMethod.Tab);
     }
 
     /// <summary>One step from the launcher, on the UI thread.</summary>
@@ -113,6 +178,7 @@ public partial class LaunchDialog : DialogWindow
 
         Stage.Text = step.Stage switch
         {
+            GodotLaunchStage.Cleaning => "Deleting the import cache",
             GodotLaunchStage.Building => "Building C#",
             GodotLaunchStage.Importing => "Importing assets",
             GodotLaunchStage.Starting => _mode == GodotLaunchMode.Editor

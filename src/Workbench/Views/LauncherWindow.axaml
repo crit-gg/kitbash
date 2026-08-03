@@ -336,6 +336,9 @@
                                         <MenuItem Header="Play"
                                                   Command="{Binding Engine.PlayCommand}"
                                                   IsEnabled="{Binding Engine.CanLaunch}" />
+                                        <MenuItem Header="Clean rebuild"
+                                                  Command="{Binding Engine.CleanRebuildCommand}"
+                                                  IsEnabled="{Binding Engine.CanLaunch}" />
                                         <MenuItem Header="Open project folder"
                                                   Command="{Binding Engine.OpenProjectFolderCommand}"
                                                   IsEnabled="{Binding Engine.CanOpenProject}" />

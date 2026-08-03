@@ -50,32 +50,53 @@ public partial class LaunchFailedDialog : DialogWindow
         ArgumentNullException.ThrowIfNull(failure);
 
         // What did not start, so the sentence says the thing the person asked for rather
-        // than always naming the editor.
-        var target = mode == GodotLaunchMode.Editor ? "The editor" : "The project";
+        // than always naming the editor. A rebuild starts nothing, so it says so.
+        var target = mode switch
+        {
+            GodotLaunchMode.Editor => "The editor",
+            GodotLaunchMode.Rebuild => "The rebuild",
+            _ => "The project",
+        };
 
         var dialog = new LaunchFailedDialog();
 
         var what = failure.Stage switch
         {
+            GodotLaunchStage.Cleaning => "The import cache could not be deleted",
             GodotLaunchStage.Building => "The C# build failed",
             GodotLaunchStage.Importing => "Importing assets failed",
-            _ => mode == GodotLaunchMode.Editor
-                ? "The editor did not start"
-                : "The project did not start",
+            _ => mode switch
+            {
+                GodotLaunchMode.Editor => "The editor did not start",
+                GodotLaunchMode.Rebuild => "The rebuild did not finish",
+                _ => "The project did not start",
+            },
         };
 
         // The title names the task and the heading names what went wrong, which is the
         // design's rule that a heading never repeats the title.
+        dialog.Title = mode == GodotLaunchMode.Rebuild
+            ? "Could not rebuild the project"
+            : "Could not open the project";
+
         dialog.Heading.Text = $"{what}.";
 
         dialog.Body.Text = failure.Stage switch
         {
-            GodotLaunchStage.Building =>
-                $"{target} was not started, since it would have run without the "
-                + "assemblies this project needs.",
-            GodotLaunchStage.Importing =>
-                $"{target} was not started. Opening the project in Godot will import "
-                + "again and show the same problem.",
+            GodotLaunchStage.Cleaning =>
+                "Nothing was deleted and nothing was rebuilt. Something is most likely "
+                + "holding a file in it, such as an editor that is already open.",
+            GodotLaunchStage.Building => mode == GodotLaunchMode.Rebuild
+                ? "The import cache was deleted and the build that follows it failed, so "
+                  + "the assets were not imported. Fixing the build and rebuilding again "
+                  + "is what puts the project back."
+                : $"{target} was not started, since it would have run without the "
+                  + "assemblies this project needs.",
+            GodotLaunchStage.Importing => mode == GodotLaunchMode.Rebuild
+                ? "The import cache was deleted and could not be made again. Opening the "
+                  + "project in Godot will import again and show the same problem."
+                : $"{target} was not started. Opening the project in Godot will import "
+                  + "again and show the same problem.",
             _ => failure.Message,
         };
 
@@ -91,6 +112,7 @@ public partial class LaunchFailedDialog : DialogWindow
         {
             GodotLaunchStage.Building => "Copy build log",
             GodotLaunchStage.Importing => "Copy import log",
+            GodotLaunchStage.Cleaning => "Copy details",
             _ => "Copy details",
         };
 

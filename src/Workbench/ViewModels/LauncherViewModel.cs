@@ -374,7 +374,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Shows the progress dialog while a project opens. Set by the window, since a dialog
     /// belongs to one and a view model has none.
     /// </summary>
-    public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task>? Launching { get; set; }
+    /// <remarks>
+    /// Answers true when the finished dialog was told to open the editor, which only a
+    /// rebuild ever offers.
+    /// </remarks>
+    public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task<bool>>? Launching { get; set; }
 
     /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
     public Func<GodotLaunchException, GodotLaunchMode, Task>? Failed { get; set; }
@@ -403,11 +407,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                     engine, project, mode, new ShortenedDetail(progress, _paths), cancellation),
                 cancellation);
 
+        var openAfter = false;
+
         try
         {
             if (Launching is { } show)
             {
-                await show(project, mode, Work);
+                openAfter = await show(project, mode, Work);
             }
             else
             {
@@ -420,6 +426,17 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             {
                 await report(exception, mode);
             }
+
+            return;
+        }
+
+        // A rebuild that ended with Open in Editor pressed. It goes the ordinary way
+        // rather than starting the editor here, so the build is confirmed to still be
+        // good rather than assumed from a moment ago. Editor mode never answers true, so
+        // this cannot go round again.
+        if (openAfter)
+        {
+            await OpenInGodot(engine, project, GodotLaunchMode.Editor);
         }
     }
 

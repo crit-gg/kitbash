@@ -196,9 +196,19 @@ public sealed partial class EngineViewModel : ViewModelBase
     /// imported has no resources to run with.
     /// </summary>
     [RelayCommand]
-    private Task Play() =>
+    private Task Play() => Launch(GodotLaunchMode.Play);
+
+    /// <summary>
+    /// Throws the import cache away and makes it again. For the case where Godot itself
+    /// is what is wrong rather than the project, which is what a stale cache looks like.
+    /// It reports and stops, so opening the editor afterwards is a second press.
+    /// </summary>
+    [RelayCommand]
+    private Task CleanRebuild() => Launch(GodotLaunchMode.Rebuild);
+
+    private Task Launch(GodotLaunchMode mode) =>
         Resolution is { Engine: { } engine } && Project is { } project && _launcher is not null
-            ? _launcher.OpenInGodot(engine, project, GodotLaunchMode.Play)
+            ? _launcher.OpenInGodot(engine, project, mode)
             : Task.CompletedTask;
 
     [RelayCommand]

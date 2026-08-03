@@ -45,6 +45,9 @@ internal sealed class GodotLauncher : IGodotLauncher
 {
     private const string DotnetProgram = "dotnet";
 
+    /// <summary>Everything Godot generates for a project, and everything a rebuild drops.</summary>
+    private const string CacheDirectoryName = ".godot";
+
     private readonly IProcessRunner _processes;
     private readonly IPlatformServices _platform;
     private readonly IGodotImports _imports;
@@ -88,6 +91,13 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Checking));
 
+        if (mode == GodotLaunchMode.Rebuild)
+        {
+            Clean(project, progress);
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (BuildToolFor(engine, project) is { } tool)
         {
             await BuildAsync(tool, engine, project, progress, cancellationToken).ConfigureAwait(false);
@@ -95,7 +105,9 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_imports.NeedsImport(project))
+        // A rebuild imports whatever it finds, since it just threw the cache away and
+        // asking whether one is needed would be asking a question with a known answer.
+        if (mode == GodotLaunchMode.Rebuild || _imports.NeedsImport(project))
         {
             // The detail line is mono, so it carries a value and never a sentence. An
             // import has no count to report, so it carries the folder being read.
@@ -112,6 +124,13 @@ internal sealed class GodotLauncher : IGodotLauncher
         }
 
         cancellationToken.ThrowIfCancellationRequested();
+
+        // A rebuild is the work and not a way of getting somewhere, so it stops here.
+        // Whoever asked for it can open the editor next, and that is their press to make.
+        if (mode == GodotLaunchMode.Rebuild)
+        {
+            return;
+        }
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Starting));
 
@@ -132,6 +151,42 @@ internal sealed class GodotLauncher : IGodotLauncher
                     ? "The editor would not start."
                     : "The project would not start.",
                 exception);
+        }
+    }
+
+    /// <summary>
+    /// Deletes the import cache, so the import that follows makes all of it again.
+    /// </summary>
+    /// <remarks>
+    /// **This throws away more than imported assets.** <c>.godot</c> also holds the uid
+    /// cache, the script class cache and the editor's own per project state, and a
+    /// rebuild is asked for precisely when one of those is the thing that is wrong. All
+    /// of it is Godot's to make again, and none of it is committed.
+    ///
+    /// The folder is the one beside this project's <c>project.godot</c> and is named
+    /// rather than searched for, so there is no case where this deletes something it
+    /// found. A folder that is not there is not a failure, since the result asked for is
+    /// that it is gone.
+    /// </remarks>
+    private void Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
+    {
+        var cache = Path.Combine(project.Directory, CacheDirectoryName);
+
+        if (!_fileSystem.DirectoryExists(cache))
+        {
+            return;
+        }
+
+        progress.Report(new GodotLaunchStep(GodotLaunchStage.Cleaning, cache));
+
+        try
+        {
+            _fileSystem.DeleteDirectory(cache);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new GodotLaunchException(
+                GodotLaunchStage.Cleaning, "The import cache could not be deleted.", exception);
         }
     }
 

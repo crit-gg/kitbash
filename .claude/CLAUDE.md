@@ -1334,10 +1334,31 @@ handed a path, and `--editor` is what asks for the editor instead. So Open in Ed
 4.7.1: nothing in the 129 lines of `--help` matches `-g` or `--game`, and the editor flag
 reads "Start the editor instead of running the scene."
 
-`GodotLaunchMode` is read by the last step and by nothing else. A project that will not
-build will not run either, and one that was never imported has no resources to run with,
-so both modes do exactly the same work up to that point. Measured against a real broken
-project in both modes: the build throws, the import never runs and nothing starts.
+**Clean rebuild is a third mode.** It deletes `.godot`, builds, imports unconditionally,
+and then stops. It is for the case where Godot itself is what is wrong rather than the
+project, which is what a stale cache looks like.
+
+It throws away more than imported assets. `.godot` also holds the uid cache, the script
+class cache and the editor's own per project state, and a rebuild is asked for precisely
+when one of those is the thing that is broken. All of it is Godot's to make again and
+none of it is committed. **The folder is named, never searched for**, so there is no case
+where this deletes something it found.
+
+**It does not open the editor when it finishes.** The dialog stays up and offers Dismiss
+and Open in Editor, and pressing the second goes the ordinary way rather than starting
+the editor from there, so the build is confirmed to still be good rather than assumed
+from a moment ago.
+
+Otherwise `GodotLaunchMode` is read by the last step and nothing else. A project that
+will not build will not run either, and one that was never imported has no resources to
+run with, so editing and playing do the same work up to that point.
+
+Measured against real projects rather than written logs. A broken build in both launch
+modes: it throws, the import never runs, nothing starts and nothing lands in the project.
+A real rebuild twice over: the first found no cache and made one of 7 files, a marker
+file put inside it was gone after the second, proving the folder itself went rather than
+its contents, the engine made it again, and the project read as imported both times with
+nothing ever started.
 
 **A plain engine never builds.** A project's C# only builds against the .NET build, so
 asking a plain one fails and asking dotnet produces assemblies that engine will not load.

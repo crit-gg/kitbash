@@ -6,6 +6,9 @@ public enum GodotLaunchStage
     /// <summary>Working out what has to happen before the editor can open.</summary>
     Checking,
 
+    /// <summary>Deleting the import cache, which only a rebuild does.</summary>
+    Cleaning,
+
     /// <summary>Building the project's C#, so the editor opens with its assemblies ready.</summary>
     Building,
 
