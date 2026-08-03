@@ -330,6 +330,12 @@
                                          VerticalAlignment="Center">
                                 <SplitButton.Flyout>
                                     <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                        <!-- The same work as the button, and only the last
+                                             step differs. Running is what Godot does with
+                                             no flag, so editing is the one that adds one. -->
+                                        <MenuItem Header="Play"
+                                                  Command="{Binding Engine.PlayCommand}"
+                                                  IsEnabled="{Binding Engine.CanLaunch}" />
                                         <MenuItem Header="Open project folder"
                                                   Command="{Binding Engine.OpenProjectFolderCommand}"
                                                   IsEnabled="{Binding Engine.CanOpenProject}" />

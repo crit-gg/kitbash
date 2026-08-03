@@ -33,20 +33,25 @@ public partial class LaunchFailedDialog : DialogWindow
         InitializeComponent();
     }
 
-    public static async Task Show(Window owner, GodotLaunchException failure)
+    public static async Task Show(Window owner, GodotLaunchException failure, GodotLaunchMode mode)
     {
         ArgumentNullException.ThrowIfNull(owner);
 
-        await For(failure).ShowDialog(owner);
+        await For(failure, mode).ShowDialog(owner);
     }
 
     /// <summary>
     /// The dialog, built and filled in but not shown. Separate from <see cref="Show"/> so
     /// it can be rendered without a window to own it.
     /// </summary>
-    public static LaunchFailedDialog For(GodotLaunchException failure)
+    public static LaunchFailedDialog For(
+        GodotLaunchException failure, GodotLaunchMode mode = GodotLaunchMode.Editor)
     {
         ArgumentNullException.ThrowIfNull(failure);
+
+        // What did not start, so the sentence says the thing the person asked for rather
+        // than always naming the editor.
+        var target = mode == GodotLaunchMode.Editor ? "The editor" : "The project";
 
         var dialog = new LaunchFailedDialog();
 
@@ -54,7 +59,9 @@ public partial class LaunchFailedDialog : DialogWindow
         {
             GodotLaunchStage.Building => "The C# build failed",
             GodotLaunchStage.Importing => "Importing assets failed",
-            _ => "The editor did not start",
+            _ => mode == GodotLaunchMode.Editor
+                ? "The editor did not start"
+                : "The project did not start",
         };
 
         // The title names the task and the heading names what went wrong, which is the
@@ -64,10 +71,10 @@ public partial class LaunchFailedDialog : DialogWindow
         dialog.Body.Text = failure.Stage switch
         {
             GodotLaunchStage.Building =>
-                "The editor was not started, since it would have opened without the "
+                $"{target} was not started, since it would have run without the "
                 + "assemblies this project needs.",
             GodotLaunchStage.Importing =>
-                "The editor was not started. Opening the project in Godot will import "
+                $"{target} was not started. Opening the project in Godot will import "
                 + "again and show the same problem.",
             _ => failure.Message,
         };

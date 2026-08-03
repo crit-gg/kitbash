@@ -76,7 +76,7 @@ public sealed partial class EngineViewModel : ViewModelBase
                 State = EngineState.Matched;
                 Version = $"Godot {EngineRowViewModel.NameOf(engine.Tag)}";
                 Note = paths.Shorten(engine.Directory, NoteLength);
-                Action = "Open in Godot";
+                Action = "Open in Editor";
 
                 break;
 
@@ -165,9 +165,12 @@ public sealed partial class EngineViewModel : ViewModelBase
         _ => "Ok",
     };
 
+    /// <summary>True when there is an engine and a project, so either mode can start.</summary>
+    public bool CanLaunch => Resolution?.Engine is not null && Project is not null && _launcher is not null;
+
     /// <summary>
-    /// Opens the project, or goes to the engines page when there is nothing to open it
-    /// with. One button, and what it does follows what the strip says.
+    /// Opens the project in the editor, or goes to the engines page when there is nothing
+    /// to open it with. One button, and what it does follows what the strip says.
     /// </summary>
     [RelayCommand]
     private Task Run()
@@ -179,13 +182,24 @@ public sealed partial class EngineViewModel : ViewModelBase
 
         if (Resolution is { Engine: { } engine } && Project is { } project)
         {
-            return _launcher.OpenInGodot(engine, project);
+            return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor);
         }
 
         ShowEngines();
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Runs the project rather than editing it. The same build and the same import happen
+    /// first, since a project that will not build will not run and one that was never
+    /// imported has no resources to run with.
+    /// </summary>
+    [RelayCommand]
+    private Task Play() =>
+        Resolution is { Engine: { } engine } && Project is { } project && _launcher is not null
+            ? _launcher.OpenInGodot(engine, project, GodotLaunchMode.Play)
+            : Task.CompletedTask;
 
     [RelayCommand]
     private void OpenProjectFolder()

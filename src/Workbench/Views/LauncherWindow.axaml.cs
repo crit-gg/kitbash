@@ -33,8 +33,10 @@ public partial class LauncherWindow : ChromelessWindow
 
             if (Model is { } model)
             {
-                model.Launching ??= (project, work) => LaunchDialog.RunAsync(this, project, work);
-                model.Failed ??= failure => LaunchFailedDialog.Show(this, failure);
+                model.Launching ??= (project, mode, work) =>
+                    LaunchDialog.RunAsync(this, project, mode, work);
+
+                model.Failed ??= (failure, mode) => LaunchFailedDialog.Show(this, failure, mode);
             }
         };
     }

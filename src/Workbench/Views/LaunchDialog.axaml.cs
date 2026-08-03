@@ -29,6 +29,8 @@ public partial class LaunchDialog : DialogWindow
 {
     private readonly CancellationTokenSource _cancellation = new();
 
+    private GodotLaunchMode _mode;
+
     public LaunchDialog()
     {
         InitializeComponent();
@@ -48,6 +50,7 @@ public partial class LaunchDialog : DialogWindow
     public static async Task RunAsync(
         Window owner,
         GodotProject project,
+        GodotLaunchMode mode,
         Func<IProgress<GodotLaunchStep>, CancellationToken, Task> work)
     {
         ArgumentNullException.ThrowIfNull(owner);
@@ -58,7 +61,8 @@ public partial class LaunchDialog : DialogWindow
             ? project.Name
             : System.IO.Path.GetFileName(project.Directory);
 
-        var dialog = new LaunchDialog { Title = $"Opening {name}" };
+        var verb = mode == GodotLaunchMode.Editor ? "Opening" : "Starting";
+        var dialog = new LaunchDialog { Title = $"{verb} {name}", _mode = mode };
 
         dialog.Report(new GodotLaunchStep(GodotLaunchStage.Checking));
 
@@ -111,13 +115,15 @@ public partial class LaunchDialog : DialogWindow
         {
             GodotLaunchStage.Building => "Building C#",
             GodotLaunchStage.Importing => "Importing assets",
-            GodotLaunchStage.Starting => "Starting the editor",
+            GodotLaunchStage.Starting => _mode == GodotLaunchMode.Editor
+                ? "Starting the editor"
+                : "Starting the project",
             _ => "Checking what this project needs",
         };
 
         Detail.Text = step.Detail;
 
-        // Nothing can be cancelled once the editor has been handed to the desktop.
+        // Nothing can be cancelled once it has been handed to the desktop.
         CancelButton.IsEnabled = step.Stage != GodotLaunchStage.Starting;
     }
 

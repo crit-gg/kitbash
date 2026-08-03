@@ -16,13 +16,17 @@ namespace Workbench.Core.Godot;
 /// editor, so both take <c>--headless</c> and neither puts a window on screen.
 /// </para>
 /// <para>
-/// **The build and the import are waited for and the editor is not.** The first two have
-/// to finish before the third is worth starting, and the editor is the thing a person is
-/// waiting for, so it is handed to <see cref="IPlatformServices.StartDetached"/> and
-/// outlives Workbench.
+/// **The build and the import are waited for and the last step is not.** The first two
+/// have to finish before the third is worth starting, and what starts is the thing a
+/// person is waiting for, so it is handed to
+/// <see cref="IPlatformServices.StartDetached"/> and outlives Workbench.
+///
+/// The last step is the only one that reads <see cref="GodotLaunchMode"/>. A project that
+/// will not build will not run either, and one that was never imported has no resources
+/// to run with, so editing and playing do exactly the same work up to that point.
 /// </para>
 /// <para>
-/// **A step that fails stops the whole thing, and the editor never opens.** That is the
+/// **A step that fails stops the whole thing, and nothing starts.** That is the
 /// point of building first. Opening anyway would put somebody in an editor whose
 /// assemblies are stale or missing, which is the failure the build is there to catch, and
 /// it would do it silently because the editor itself has no idea a build was attempted.
@@ -74,6 +78,7 @@ internal sealed class GodotLauncher : IGodotLauncher
     public async Task OpenAsync(
         InstalledEngine engine,
         GodotProject project,
+        GodotLaunchMode mode,
         IProgress<GodotLaunchStep> progress,
         CancellationToken cancellationToken)
     {
@@ -110,15 +115,23 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Starting));
 
+        // Running is no flag at all, so editing is the one that adds an argument.
+        string[] arguments = mode == GodotLaunchMode.Editor
+            ? ["--path", project.Directory, "--editor"]
+            : ["--path", project.Directory];
+
         try
         {
-            _platform.StartDetached(ProcessRequest.Command(
-                engine.Executable, "--path", project.Directory, "--editor"));
+            _platform.StartDetached(ProcessRequest.Command(engine.Executable, arguments));
         }
         catch (ProcessStartException exception)
         {
             throw new GodotLaunchException(
-                GodotLaunchStage.Starting, "The editor would not start.", exception);
+                GodotLaunchStage.Starting,
+                mode == GodotLaunchMode.Editor
+                    ? "The editor would not start."
+                    : "The project would not start.",
+                exception);
         }
     }
 

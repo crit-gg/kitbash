@@ -7,7 +7,7 @@ public interface IGodotLauncher
 {
     /// <summary>
     /// Builds the project's C# if it needs it, imports its assets if they are not there,
-    /// then starts the editor detached and returns without waiting for it.
+    /// then starts it detached and returns without waiting for it.
     /// </summary>
     /// <remarks>
     /// Runs processes and walks a project, so never on the UI thread. Cancelling stops
@@ -18,6 +18,7 @@ public interface IGodotLauncher
     Task OpenAsync(
         InstalledEngine engine,
         GodotProject project,
+        GodotLaunchMode mode,
         IProgress<GodotLaunchStep> progress,
         CancellationToken cancellationToken);
 }

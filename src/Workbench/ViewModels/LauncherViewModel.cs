@@ -374,10 +374,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Shows the progress dialog while a project opens. Set by the window, since a dialog
     /// belongs to one and a view model has none.
     /// </summary>
-    public Func<GodotProject, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task>? Launching { get; set; }
+    public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task>? Launching { get; set; }
 
     /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
-    public Func<GodotLaunchException, Task>? Failed { get; set; }
+    public Func<GodotLaunchException, GodotLaunchMode, Task>? Failed { get; set; }
 
     /// <summary>
     /// Opens a project in an engine, building its C# and importing its assets first when
@@ -386,12 +386,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <remarks>
     /// **The wait is the reason there is a dialog.** A first open on a fresh clone imports
     /// every asset, which is minutes, and a C# build is not instant either. Neither is
-    /// something to do behind a button that has already sprung back.
+    /// something to do behind a button that has already sprung back. Playing waits on the
+    /// same two steps, since a project that will not build will not run.
     ///
     /// Without a window to show one in, the same work still runs and only the reporting is
     /// missing. That is the case a rendering harness composes.
     /// </remarks>
-    public async Task OpenInGodot(InstalledEngine engine, GodotProject project)
+    public async Task OpenInGodot(InstalledEngine engine, GodotProject project, GodotLaunchMode mode)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(project);
@@ -399,14 +400,14 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         Task Work(IProgress<GodotLaunchStep> progress, CancellationToken cancellation) =>
             Task.Run(
                 () => _godotLauncher.OpenAsync(
-                    engine, project, new ShortenedDetail(progress, _paths), cancellation),
+                    engine, project, mode, new ShortenedDetail(progress, _paths), cancellation),
                 cancellation);
 
         try
         {
             if (Launching is { } show)
             {
-                await show(project, Work);
+                await show(project, mode, Work);
             }
             else
             {
@@ -417,7 +418,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         {
             if (Failed is { } report)
             {
-                await report(exception);
+                await report(exception, mode);
             }
         }
     }

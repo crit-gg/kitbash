@@ -1323,10 +1323,21 @@ which is running. The flags are read off `--help` on 4.7.1 rather than remembere
 
 1. **Build the C#**, when the project has C# in it and the engine is the .NET build.
 2. **Import the assets**, when anything a sidecar declares is not on disk.
-3. **Start the editor**, `--path <folder> --editor`, through `StartDetached`.
+3. **Start it**, through `StartDetached`.
 
 **The first two are waited for and the third is not.** Both have to finish before the
-third is worth starting, and the editor is the thing a person is waiting for.
+third is worth starting, and what starts is the thing a person is waiting for.
+
+**Running is the default and editing is the flag.** Godot 4 runs the project when it is
+handed a path, and `--editor` is what asks for the editor instead. So Open in Editor is
+`--path <folder> --editor` and Play is `--path <folder>` with nothing added. Measured on
+4.7.1: nothing in the 129 lines of `--help` matches `-g` or `--game`, and the editor flag
+reads "Start the editor instead of running the scene."
+
+`GodotLaunchMode` is read by the last step and by nothing else. A project that will not
+build will not run either, and one that was never imported has no resources to run with,
+so both modes do exactly the same work up to that point. Measured against a real broken
+project in both modes: the build throws, the import never runs and nothing starts.
 
 **A plain engine never builds.** A project's C# only builds against the .NET build, so
 asking a plain one fails and asking dotnet produces assemblies that engine will not load.
