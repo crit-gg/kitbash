@@ -161,7 +161,8 @@
 
              A half covers its side of the frame completely when it fills, so no
              translucency is involved anywhere. The seam between them is the kind's
-             pressed tone, which is the fill already darkened. -->
+             pressed tone, which is the fill already darkened. Neutral is the one
+             exception and says why where it departs. -->
         <Style Selector="^.primary">
             <Setter Property="Background" Value="{DynamicResource Accent}" />
             <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
@@ -179,6 +180,31 @@
         <Style Selector="^.primary /template/ Button:pressed">
             <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <!-- The second lead. Derived rather than read, since the design's split button row
+             draws the accent kind alone.
+
+             The seam is the one departure from the rule above. It takes the border rather
+             than the pressed tone, because neutral is the only kind whose edge does not
+             track its fill: a darkened seam inside a lighter frame would read as two
+             different edges on one control. -->
+        <Style Selector="^.neutral">
+            <Setter Property="Background" Value="{DynamicResource Neutral}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource NeutralLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource NeutralInk}" />
+        </Style>
+
+        <Style Selector="^.neutral /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource NeutralLine}" />
+        </Style>
+
+        <Style Selector="^.neutral /template/ Button:pointerover">
+            <Setter Property="Background" Value="{DynamicResource NeutralHover}" />
+        </Style>
+
+        <Style Selector="^.neutral /template/ Button:pressed">
+            <Setter Property="Background" Value="{DynamicResource NeutralPressed}" />
         </Style>
 
         <Style Selector="^.warn">

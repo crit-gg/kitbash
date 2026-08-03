@@ -224,10 +224,35 @@ draws nothing at all, silently.
 <ui:StatusPill Status="Ok" Text="synced" />
 ```
 
-Buttons are 26px and come in five kinds. Secondary is what a button is when it is told
-nothing. `primary` is the one accent flood, `danger` the one other, `ghost` carries no
-fill and `icon` is a 24 by 24 hit area. An icon button needs a tooltip and an accessible
-name, since nothing in the theme can supply the word.
+Buttons are 26px and come in six kinds. Secondary is what a button is when it is told
+nothing. `primary` is the accent flood, `neutral` the grey one, `danger` the third,
+`ghost` carries no fill and `icon` is a 24 by 24 hit area. An icon button needs a tooltip
+and an accessible name, since nothing in the theme can supply the word.
+
+**Two buttons lead, and which one depends on reach.** A view gets at most one `primary`,
+for the action the whole screen is built around. Where a view repeats the same lead action
+across many cards or rows, that one is `neutral`: it outranks the bordered secondary
+inside its own card without nine of them fighting each other, and it leaves the accent
+free to mean selection and focus. `neutral` is the only kind whose border holds one value
+through every live state, since its fill moves and its edge does not.
+
+`neutral` is carried by every button like control: `Button`, `CompactButton` and
+`SplitButton`. Only the plain button's values are read from the design, which draws the
+kind once. The split button's and the compact one's are derived, and each says so where it
+departs. The split button's seam is the one real departure: every other kind takes its
+pressed tone there, and `neutral` takes its border instead, since it is the only kind whose
+edge does not track its fill.
+
+They do not otherwise carry the same set. Only `secondary`, `primary` and `neutral` are on
+all three. `Button` adds `ghost`, `danger` and `icon`, `CompactButton` adds `link`, and
+`SplitButton` adds `warn` and `danger`.
+
+**The gaps are unbuilt rather than refused**, with two exceptions worth knowing before
+closing one. `CompactButton` must never gain `danger`: it is the toast and alert button,
+and the design says a toast never carries a destructive action, which is also the rule
+under Toasts and alerts below. `SplitButton` has no `icon`, since it is a label and a caret
+and there is no glyph only form of one. Everything else missing is simply a kind nobody has
+needed yet, and adding one is a small change against the theme that lacks it.
 
 `SplitButton` and `DropDownButton` are stock Avalonia types with a theme each. `Chip` and
 `StatusPill` are ours.

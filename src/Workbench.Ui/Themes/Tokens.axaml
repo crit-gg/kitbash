@@ -89,14 +89,32 @@
          selected row or on a combo box's chosen line does nothing at all. -->
     <SolidColorBrush x:Key="AccentTintStrong" Color="#244b71" />
 
-    <!-- Accent. The one accent, used as a line and a mark rather than a flood. The
-         primary button and the destructive button are the only fills in the system. -->
+    <!-- Accent. The one accent, used as a line and a mark rather than a flood. There are
+         three fills in the system and each leads at its own reach: the accent primary
+         leads a screen, the neutral primary leads a card, and the destructive warns. -->
     <SolidColorBrush x:Key="Accent" Color="#569eff" />
     <SolidColorBrush x:Key="AccentHover" Color="#6fadff" />
     <SolidColorBrush x:Key="AccentPressed" Color="#3f86e0" />
     <SolidColorBrush x:Key="AccentInk" Color="#0d1a29" />
     <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
     <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
+
+    <!-- The second lead. A grey flood for the action a view repeats across many cards or
+         rows, where nine accent buttons would fight each other and the accent would stop
+         meaning selection and focus.
+
+         NeutralPressed carries the same value as StatePressed and NeutralInk the same as
+         InkCaption, and both are kept apart for the reason StatePressed and LineControl
+         are: these two belong to a flood that moves as one, where the others are a hover
+         ramp step and a title bar ink. Changing this family must not reach either.
+
+         NeutralLine holds through every live state, unlike the accent and destructive
+         borders which track their fill. -->
+    <SolidColorBrush x:Key="Neutral" Color="#464a52" />
+    <SolidColorBrush x:Key="NeutralHover" Color="#50555e" />
+    <SolidColorBrush x:Key="NeutralPressed" Color="#3d4045" />
+    <SolidColorBrush x:Key="NeutralLine" Color="#4f545c" />
+    <SolidColorBrush x:Key="NeutralInk" Color="#eef1f4" />
 
     <!-- Focus is a soft halo hugging the control, outside its border, never replacing
          one. It is a colour and a thickness together, so both live here. The halo sits

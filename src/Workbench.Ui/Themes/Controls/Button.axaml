@@ -94,6 +94,26 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
         </Style>
 
+        <!-- The second lead. Where a view repeats one lead action across many cards or
+             rows, this outranks the bordered secondary inside its own card without every
+             card shouting, and it leaves the accent to mean selection and focus. A view
+             still gets at most one primary. -->
+        <Style Selector="^.neutral">
+            <Setter Property="Background" Value="{DynamicResource Neutral}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource NeutralLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource NeutralInk}" />
+        </Style>
+
+        <!-- The border holds through every live state, unlike primary and danger where it
+             tracks the fill, so neither state below touches it. -->
+        <Style Selector="^.neutral:pointerover">
+            <Setter Property="Background" Value="{DynamicResource NeutralHover}" />
+        </Style>
+
+        <Style Selector="^.neutral:pressed">
+            <Setter Property="Background" Value="{DynamicResource NeutralPressed}" />
+        </Style>
+
         <!-- Ghost carries no fill and no border. The background is still set, because a
              control with none is not hit tested and the hover could never be reached. -->
         <Style Selector="^.ghost">
@@ -253,6 +273,26 @@
             <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPressed}" />
             <Setter Property="Foreground" Value="{DynamicResource AccentInkPressed}" />
+        </Style>
+
+        <!-- The second lead, at 24px. Derived rather than read, since the design draws no
+             neutral button on a toast or an alert. The family is taken unchanged rather
+             than lightened for the tone up, which is what the accent above already does.
+             The weight is raised for the same reason it is there: a lead is strong where
+             a compact button rests at medium. -->
+        <Style Selector="^.neutral">
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Background" Value="{DynamicResource Neutral}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource NeutralLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource NeutralInk}" />
+        </Style>
+
+        <Style Selector="^.neutral:pointerover">
+            <Setter Property="Background" Value="{DynamicResource NeutralHover}" />
+        </Style>
+
+        <Style Selector="^.neutral:pressed">
+            <Setter Property="Background" Value="{DynamicResource NeutralPressed}" />
         </Style>
 
         <!-- Accent text with a hover fill and no border, for the one action an undo bar

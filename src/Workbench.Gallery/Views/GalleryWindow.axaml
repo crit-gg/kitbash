@@ -83,7 +83,7 @@
                                    Text="Every kind in every state. The first column is live, so hover it, hold it and tab to it. The rest are held in one state so the five can be compared at once, and they ignore the pointer for that reason." />
 
                         <Grid ColumnDefinitions="90,Auto,Auto,Auto,Auto,Auto"
-                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                               ColumnSpacing="10" RowSpacing="9">
 
                             <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="live" />
@@ -106,38 +106,45 @@
                             <Button Grid.Row="2" Grid.Column="4" Classes="primary forceFocus" Content="Add workspace" />
                             <Button Grid.Row="2" Grid.Column="5" Classes="primary" Content="Add workspace" IsEnabled="False" />
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="ghost" VerticalAlignment="Center" />
-                            <Button Grid.Row="3" Grid.Column="1" Classes="ghost" Content="Cancel" />
-                            <Button Grid.Row="3" Grid.Column="2" Classes="ghost forceHover" Content="Cancel" />
-                            <Button Grid.Row="3" Grid.Column="3" Classes="ghost forcePressed" Content="Cancel" />
-                            <Button Grid.Row="3" Grid.Column="4" Classes="ghost forceFocus" Content="Cancel" />
-                            <Button Grid.Row="3" Grid.Column="5" Classes="ghost" Content="Cancel" IsEnabled="False" />
+                            <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="neutral" VerticalAlignment="Center" />
+                            <Button Grid.Row="3" Grid.Column="1" Classes="neutral" Content="Launch" />
+                            <Button Grid.Row="3" Grid.Column="2" Classes="neutral forceHover" Content="Launch" />
+                            <Button Grid.Row="3" Grid.Column="3" Classes="neutral forcePressed" Content="Launch" />
+                            <Button Grid.Row="3" Grid.Column="4" Classes="neutral forceFocus" Content="Launch" />
+                            <Button Grid.Row="3" Grid.Column="5" Classes="neutral" Content="Launch" IsEnabled="False" />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="danger" VerticalAlignment="Center" />
-                            <Button Grid.Row="4" Grid.Column="1" Classes="danger" Content="Remove" />
-                            <Button Grid.Row="4" Grid.Column="2" Classes="danger forceHover" Content="Remove" />
-                            <Button Grid.Row="4" Grid.Column="3" Classes="danger forcePressed" Content="Remove" />
-                            <Button Grid.Row="4" Grid.Column="4" Classes="danger forceFocus" Content="Remove" />
-                            <Button Grid.Row="4" Grid.Column="5" Classes="danger" Content="Remove" IsEnabled="False" />
+                            <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="ghost" VerticalAlignment="Center" />
+                            <Button Grid.Row="4" Grid.Column="1" Classes="ghost" Content="Cancel" />
+                            <Button Grid.Row="4" Grid.Column="2" Classes="ghost forceHover" Content="Cancel" />
+                            <Button Grid.Row="4" Grid.Column="3" Classes="ghost forcePressed" Content="Cancel" />
+                            <Button Grid.Row="4" Grid.Column="4" Classes="ghost forceFocus" Content="Cancel" />
+                            <Button Grid.Row="4" Grid.Column="5" Classes="ghost" Content="Cancel" IsEnabled="False" />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" Classes="caption" Text="icon" VerticalAlignment="Center" />
-                            <Button Grid.Row="5" Grid.Column="1" Classes="icon"
+                            <TextBlock Grid.Row="5" Grid.Column="0" Classes="caption" Text="danger" VerticalAlignment="Center" />
+                            <Button Grid.Row="5" Grid.Column="1" Classes="danger" Content="Remove" />
+                            <Button Grid.Row="5" Grid.Column="2" Classes="danger forceHover" Content="Remove" />
+                            <Button Grid.Row="5" Grid.Column="3" Classes="danger forcePressed" Content="Remove" />
+                            <Button Grid.Row="5" Grid.Column="4" Classes="danger forceFocus" Content="Remove" />
+                            <Button Grid.Row="5" Grid.Column="5" Classes="danger" Content="Remove" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Classes="caption" Text="icon" VerticalAlignment="Center" />
+                            <Button Grid.Row="6" Grid.Column="1" Classes="icon"
                                     ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
                                 <ui:Icon Glyph="Cog" />
                             </Button>
-                            <Button Grid.Row="5" Grid.Column="2" Classes="icon forceHover"
+                            <Button Grid.Row="6" Grid.Column="2" Classes="icon forceHover"
                                     ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
                                 <ui:Icon Glyph="Cog" />
                             </Button>
-                            <Button Grid.Row="5" Grid.Column="3" Classes="icon forcePressed"
+                            <Button Grid.Row="6" Grid.Column="3" Classes="icon forcePressed"
                                     ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
                                 <ui:Icon Glyph="Cog" />
                             </Button>
-                            <Button Grid.Row="5" Grid.Column="4" Classes="icon forceFocus"
+                            <Button Grid.Row="6" Grid.Column="4" Classes="icon forceFocus"
                                     ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
                                 <ui:Icon Glyph="Cog" />
                             </Button>
-                            <Button Grid.Row="5" Grid.Column="5" Classes="icon" IsEnabled="False"
+                            <Button Grid.Row="6" Grid.Column="5" Classes="icon" IsEnabled="False"
                                     ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
                                 <ui:Icon Glyph="Cog" />
                             </Button>
@@ -169,6 +176,15 @@
                                     <MenuFlyout Placement="BottomEdgeAlignedLeft">
                                         <MenuItem Header="Open project folder" />
                                         <MenuItem Header="Edit project.godot" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+
+                            <SplitButton Classes="neutral" Content="Launch">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Launch and attach" />
+                                        <MenuItem Header="Launch clean" />
                                     </MenuFlyout>
                                 </SplitButton.Flyout>
                             </SplitButton>
@@ -1077,6 +1093,7 @@
                                       Description="They will build but produce nothing at runtime.">
                                 <ui:Alert.Actions>
                                     <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Button Theme="{StaticResource CompactButton}" Classes="neutral" Content="Fix all" />
                                         <Button Theme="{StaticResource CompactButton}" Content="Show in Problems" />
                                         <HyperlinkButton Content="Ignore for this workspace" />
                                     </StackPanel>
