@@ -1355,6 +1355,22 @@ Godot 4 or `.import` for Godot 3, since a sidecar also names its source file and
 and neither says whether an import has run. Measured on Slopworks: 399 sidecars among
 6560 files, answered in 20ms.
 
+**A step that fails stops everything and the editor never opens.** Opening anyway would
+put somebody in an editor whose assemblies are stale or missing, which is the failure the
+build exists to catch, and it would do it silently, since the editor has no idea a build
+was attempted. Turning the build off is a setting and a deliberate act, so the failure
+dialog offers no Retry and no Open anyway. Measured against a real broken project: the
+build throws, the import never runs, the editor never starts and nothing is written into
+the project.
+
+**The failure dialog shows the errors and copies the log**, which are deliberately two
+different things. Measured on a two error build, dotnet writes 13 lines, opens with
+restore chatter and prints every error twice, once inline and once in its summary, so the
+well shows the error lines deduplicated and falls back to everything when none stand out.
+The button takes the whole log and says which log it took, since the well is showing
+something shorter. It confirms on itself rather than through a toast, because a toast
+belongs to the window behind the modal.
+
 `LaunchDialog` is the design's Progress kind and `LaunchFailedDialog` its Error kind.
 Two departures on the first, both because there is no number: the bar is indeterminate
 and the mono line carries a value rather than a count, since neither a build nor an

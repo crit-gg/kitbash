@@ -22,6 +22,14 @@ namespace Workbench.Core.Godot;
 /// outlives Workbench.
 /// </para>
 /// <para>
+/// **A step that fails stops the whole thing, and the editor never opens.** That is the
+/// point of building first. Opening anyway would put somebody in an editor whose
+/// assemblies are stale or missing, which is the failure the build is there to catch, and
+/// it would do it silently because the editor itself has no idea a build was attempted.
+/// So this throws and nothing further runs. Turning the build off is a setting and a
+/// deliberate act, not something a failure talks anybody into.
+/// </para>
+/// <para>
 /// **The import runs before the editor rather than being left to it.** Godot imports on
 /// open by itself, so this is not work the editor would skip. Doing it here means the
 /// wait happens under a dialog that says what is happening and can be cancelled, instead

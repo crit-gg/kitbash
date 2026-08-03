@@ -15,12 +15,19 @@ namespace Workbench.Views;
 /// read them, since Workbench started the process and owns its pipes.
 /// </para>
 /// <para>
-/// It has no Retry, which the design's example does. Retrying means pressing Open again,
-/// and after a failed build that is almost never the next thing to do. Fixing the code is.
+/// **There is no Retry and no Open anyway.** A build that failed means the editor would
+/// open without the assemblies the project needs, so opening it is the one thing this
+/// dialog must not offer. The only ways on are fixing the code or turning the build off
+/// in settings, and both are deliberate acts elsewhere.
 /// </para>
 /// </remarks>
 public partial class LaunchFailedDialog : DialogWindow
 {
+    /// <summary>How long the button says Copied before it goes back to its own word.</summary>
+    private static readonly TimeSpan Confirmation = TimeSpan.FromMilliseconds(1400);
+
+    private bool _copying;
+
     public LaunchFailedDialog()
     {
         InitializeComponent();
@@ -71,17 +78,56 @@ public partial class LaunchFailedDialog : DialogWindow
         dialog.Output.Text = shown;
         dialog.OutputWell.IsVisible = shown.Length > 0;
 
-        // Copy takes the whole thing, since the point of copying is to paste it somewhere
-        // that can read all of it.
-        dialog.Copy.Click += async (_, _) =>
+        // The button says what it copies, since the well is showing something shorter and
+        // a person has to know the whole thing is what lands on the clipboard.
+        var label = failure.Stage switch
         {
-            if (TopLevel.GetTopLevel(dialog)?.Clipboard is { } clipboard)
-            {
-                await clipboard.SetTextAsync(output);
-            }
+            GodotLaunchStage.Building => "Copy build log",
+            GodotLaunchStage.Importing => "Copy import log",
+            _ => "Copy details",
         };
 
+        dialog.Copy.Content = label;
+        dialog.Copy.Click += async (_, _) => await dialog.CopyAsync(output, label);
+
         return dialog;
+    }
+
+    /// <summary>
+    /// Puts the whole log on the clipboard and says so on the button for a moment.
+    /// </summary>
+    /// <remarks>
+    /// **The whole log, not what the well is showing.** The well shows the errors, and the
+    /// log is what somebody pastes into a message or a search, so the two are deliberately
+    /// different and only the button can say which one was taken.
+    ///
+    /// The confirmation is the button's own label rather than a toast. A toast belongs to
+    /// the window that raised it, and this is a modal in front of that window, so one
+    /// would appear behind the thing being read.
+    /// </remarks>
+    private async Task CopyAsync(string log, string label)
+    {
+        if (_copying || TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
+        {
+            return;
+        }
+
+        _copying = true;
+
+        try
+        {
+            await clipboard.SetTextAsync(log);
+
+            Copy.Content = "Copied";
+
+            await Task.Delay(Confirmation);
+
+            Copy.Content = label;
+        }
+        finally
+        {
+            _copying = false;
+        }
     }
 
     /// <summary>
