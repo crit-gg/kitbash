@@ -3,6 +3,10 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />
 
+    <!-- The settings window is the one thing here with view models of its own, and the
+         generator is what keeps them from being a page of hand written notifications. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+
     <!-- The registration methods, and nothing more. The library asks for the contract
          and the application picks the container, which is the same package Core takes
          for its own registrations. -->

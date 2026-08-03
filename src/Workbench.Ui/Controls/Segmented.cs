@@ -46,6 +46,16 @@ public class Segmented : ItemsControl
         set => SetValue(ThumbTransitionsProperty, value);
     }
 
+    /// <summary>
+    /// The options are radios whether they were written in by hand or came from a list,
+    /// since the row reads the row rather than the items to find the one that is chosen.
+    /// </summary>
+    protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey) =>
+        NeedsContainer<RadioButton>(item, out recycleKey);
+
+    protected override Control CreateContainerForItemOverride(object? item, int index, object? recycleKey) =>
+        new RadioButton();
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);

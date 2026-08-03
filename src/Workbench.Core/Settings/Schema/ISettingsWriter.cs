@@ -10,6 +10,7 @@ public interface ISettingsWriter
     /// Every edit has to name a key the page declares, so a window can only write what
     /// it drew.
     /// </summary>
+    /// <param name="place">Which of the home's places, and null for the only one.</param>
     /// <param name="layer">Which file, and null for a home that does not layer.</param>
     /// <exception cref="SettingsFileUnreadableException">
     /// The file is there and could not be read, so nothing was written.
@@ -17,6 +18,7 @@ public interface ISettingsWriter
     void Write(
         SettingsScope scope,
         SettingsPage page,
+        SettingsPlace? place,
         SettingsLayer? layer,
         IReadOnlyList<SettingsEdit> edits);
 }

@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Workbench.Ui.Controls;
+using Workbench.Ui.Settings;
 using Workbench.ViewModels;
 
 namespace Workbench.Views;
@@ -43,7 +44,23 @@ public partial class LauncherWindow : ChromelessWindow
         };
     }
 
+    /// <summary>Where the rail's Settings item goes. Handed over by the composition root.</summary>
+    public ISettingsWindows? Settings { get; init; }
+
     private LauncherViewModel? Model => DataContext as LauncherViewModel;
+
+    // The item is a way in rather than a page, so the mark goes straight back off it and
+    // the workspace or engines page stays the one the rail says is open.
+    private void OnSettingsSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (RailFoot.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        RailFoot.SelectedIndex = -1;
+        Settings?.Open(this);
+    }
 
     /// <summary>
     /// Builds the workspace list once, before anyone asks for it.

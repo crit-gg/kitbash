@@ -819,6 +819,13 @@ control })`. The last pointer arguments may be null when nothing reads them.
 - `ClipToBounds` on the same `Border` that draws the stroke clips children to the outer
   rounded rectangle, so the corner reads as two colours. Use two borders, one for the
   stroke and one for the clip, the way the window frame does.
+- Writing your own `InitializeComponent` in a code behind shadows the one the XAML
+  compiler generates, so every `x:Name` field stays null and the first one touched throws
+  a `NullReferenceException` with nothing to say. Call it, never define it.
+- An `ItemsControl` makes a `ContentPresenter` per item unless `NeedsContainerOverride`
+  and `CreateContainerForItemOverride` say otherwise, so a control that reads its own
+  containers, such as `Segmented` reading which `RadioButton` is checked, works with items
+  written in by hand and not with an `ItemsSource` until it creates them itself.
 
 ## How these were checked
 

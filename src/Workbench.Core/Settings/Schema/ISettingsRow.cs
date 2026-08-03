@@ -34,6 +34,13 @@ public interface ISettingDescriptor : ISettingsRow
     /// <summary>Drawn but never written. The value still comes from a file.</summary>
     bool IsReadOnly { get; }
 
+    /// <summary>
+    /// Nothing already running reads this again, so a change to it means nothing until the
+    /// app starts afresh. Say it here rather than in the description, since a window offers
+    /// to restart on the strength of it.
+    /// </summary>
+    bool NeedsRestart { get; }
+
     /// <summary>Drawn after a number, such as px or ms. Null when there is none.</summary>
     string? Unit { get; }
 

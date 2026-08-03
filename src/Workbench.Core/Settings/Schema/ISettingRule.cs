@@ -10,6 +10,19 @@ public interface ISettingRule
     string Summary { get; }
 }
 
+/// <summary>
+/// The ends a rule puts on a number, with the type erased, so an editor can bound itself
+/// rather than wait for the value to be refused.
+/// </summary>
+public interface ISettingBounds
+{
+    /// <summary>Inclusive. Null when that end is open.</summary>
+    object? Minimum { get; }
+
+    /// <summary>Inclusive. Null when that end is open.</summary>
+    object? Maximum { get; }
+}
+
 /// <summary>A rule over one setting's type.</summary>
 public interface ISettingRule<in T> : ISettingRule
 {

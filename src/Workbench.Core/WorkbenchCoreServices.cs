@@ -216,6 +216,10 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IApplicationState, ApplicationState>();
         services.TryAddSingleton<WindowSettingsSchema>();
         services.TryAddSingleton<IWindowSettings, WindowSettings>();
+
+        // The schema alone, so a settings window can draw the page without the lookup
+        // behind it. AddWorkbenchExternalTools is what puts IExternalTools over it.
+        services.TryAddSingleton<ExternalToolsSettingsSchema>();
         services.TryAddSingleton<GodotSettingsSchema>();
         services.TryAddSingleton<IGodotSettings, GodotSettings>();
         services.TryAddSingleton<WorkspacesSettingsSchema>();
@@ -237,6 +241,22 @@ public static class WorkbenchCoreServices
         services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, ApplicationStateHome>());
         services.TryAddSingleton<ISettingsInspector, SettingsInspector>();
         services.TryAddSingleton<ISettingsWriter, SettingsWriter>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The workspace half of a settings window for an app that holds a list of them,
+    /// which is the launcher. Every workspace a person has added becomes a place, so the
+    /// window lists them all rather than following whichever one is open. An app that
+    /// opens one workspace and keeps it calls <see cref="AddWorkbenchSettings"/> instead.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchKnownWorkspaceSettings(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddWorkbenchWorkspaces();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, KnownWorkspacesSettingsHome>());
 
         return services;
     }

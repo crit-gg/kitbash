@@ -28,13 +28,16 @@ internal sealed class SettingsInspector : ISettingsInspector
         _converter = converter;
     }
 
-    public SettingsPageView Read(SettingsScope scope, SettingsPage page)
+    public IReadOnlyList<SettingsPlace> PlacesIn(SettingsHome home) =>
+        _homes.TryGetValue(home, out var found) ? found.Places : [];
+
+    public SettingsPageView Read(SettingsScope scope, SettingsPage page, SettingsPlace? place = null)
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (!_homes.TryGetValue(page.Home, out var home))
+        if (!_homes.TryGetValue(page.Home, out var home) || Where(home, place) is not { } at)
         {
-            return new SettingsPageView(page, IsAvailable: false, [], []);
+            return new SettingsPageView(page, IsAvailable: false, IsWritable: false, [], []);
         }
 
         var files = new List<SettingsFileView>(home.Layers.Count);
@@ -43,7 +46,7 @@ internal sealed class SettingsInspector : ISettingsInspector
         // Lowest precedence first, the order the home declares.
         foreach (var layer in home.Layers)
         {
-            var file = _store.Open(home.FileFor(scope, layer));
+            var file = _store.Open(home.FileFor(at, scope, layer));
 
             files.Add(new SettingsFileView(layer, file.Path, file.Exists, file.ParseError));
             documents.Add((layer, file.Document));
@@ -56,7 +59,41 @@ internal sealed class SettingsInspector : ISettingsInspector
             values.Add(Judge(descriptor, documents));
         }
 
-        return new SettingsPageView(page, IsAvailable: true, files, values);
+        return new SettingsPageView(
+            page,
+            IsAvailable: true,
+            IsWritable: !page.IsReadOnly && !home.IsReadOnly,
+            files,
+            values);
+    }
+
+    /// <summary>
+    /// The place asked for, or the only one when none was named. Null when the home has
+    /// none, or when the one asked for has gone since the caller last looked.
+    /// </summary>
+    internal static SettingsPlace? Where(ISettingsHome home, SettingsPlace? place)
+    {
+        var places = home.Places;
+
+        if (places.Count == 0)
+        {
+            return null;
+        }
+
+        if (place is null)
+        {
+            return places[0];
+        }
+
+        foreach (var candidate in places)
+        {
+            if (string.Equals(candidate.Id, place.Id, StringComparison.Ordinal))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     private SettingValueView Judge(

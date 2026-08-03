@@ -137,13 +137,15 @@ Core exposes registration methods rather than a container of its own:
 `Workbench.Ui` exposes one of its own, `WorkbenchUiServices`:
 
 - `AddWorkbenchToasts` the toast service, its clock and its settings
+- `AddWorkbenchSettingsWindow` the settings window, over whatever schema is registered
 
 They use `TryAdd`, so calling several is safe and a caller can substitute any service
 by registering its own first.
 
-`Workbench.Ui` takes `Microsoft.Extensions.DependencyInjection.Abstractions` for that and
-nothing more, so the library asks for the contract and the application still picks the
-container. `Workbench.Core` already takes the same package.
+`Workbench.Ui` takes `Microsoft.Extensions.DependencyInjection.Abstractions` for that, so
+the library asks for the contract and the application still picks the container.
+`Workbench.Core` already takes the same package. It also takes `CommunityToolkit.Mvvm`,
+which the settings window's view models are the only user of.
 
 ## Commits
 
@@ -200,7 +202,7 @@ part of the app, and each is the only place those rules are written.
 | `workbench-surfaces` | panels, the depth ramp, lists, trees, tabs, overlays |
 | `workbench-toasts` | raising a toast or drawing an alert |
 | `workbench-windows` | a window or dialog, or work that touches a disk on the UI thread |
-| `workbench-settings` | a setting, a schema, or per user storage |
+| `workbench-settings` | a setting, a schema, the settings window, or per user storage |
 | `workbench-platform` | the filesystem, the environment, a path or a process |
 | `workbench-godot` | engine matching or launching a project |
 | `workbench-git` | anything that runs git |
@@ -255,9 +257,9 @@ The app is being moved to the Slate design, in the twelve stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 10 are done. `Workbench.Ui` carries the Slate
-tokens, the type scale, the 49 icons, the window shell, the activity rail, every overlay
-surface, the depth ramp, and the control themes built so far: five button kinds, the split
+Stages 1 to 10 are done. `Workbench.Ui` carries the Slate tokens, the type scale, the 49
+icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
+settings window, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
 field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
@@ -267,7 +269,8 @@ Stage 8 is done except the colour field, which waits on stage 13 because its swa
 nothing to open until the picker exists.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
-It is a shell now, a title bar over a rail and a page, with only the workspace page built.
+It is a shell now, a title bar over a rail and a page, carrying the workspace page, the
+Godot engines page and a settings window.
 
 **The launcher raises no toasts and holds no host, on purpose.** It has nothing transient
 to report yet. The one slow thing it does, updating from git, reports on itself in the
@@ -288,18 +291,23 @@ and every version, update, install state and blocked state on a card comes from
 and download nothing. That stands until there is an answer to where a tool comes from, which
 is an open decision below. Delete the mock when there is.
 
-The settings schema is at step 3 of the six in `.claude/plans/settings-schema.md`. Core
-has the schema types, the rules, the per layer read, the batched write, the remove, the
-parse state as a value and the write refusal that goes with it. `window.nativeChrome` is
-on a descriptor and `WindowSettings` reads its default from it. Nothing draws any of it
-yet, and steps 4 to 6 are the window, the launcher's own schema and probes. There are five
-schemas now, since the clone dialog reads `workspaces.directory` and nothing draws that
-either, so it is set by hand until the window lands.
+**The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
+`.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in
+`Workbench.Ui` and draws whatever `SettingsSchema` it is handed, so a tool writes a schema
+class and one line to open it. The launcher's schema is
+`Workbench/Settings/LauncherSettingsSchema`, its tree is Application, Workspace and State,
+and the rail's cog opens it. The Workspace store lists every workspace by name with its own
+settings under it, so any of them can be changed without switching to it first. Nothing has to be hand edited any more: every setting Core
+declares is drawn, `workspaces.directory` included. A setting nothing rereads carries
+`NeedsRestart`, and the footer grows a Save and restart button while one is waiting.
 
-The rail's other two pages, Godot engines and Settings, are drawn and disabled. Both have
-designs in the Claude Design project and neither has a stage yet. The rail itself carries
-every state, including the two a pointer cannot reach on its own, an open page under the
-cursor and an item that is open but disabled. All four are in the gallery.
+The design's red Reset Workbench button is deliberately not built. It deletes a person's
+whole workspace list and nothing asked for it, so the State page reads the registry and
+changes nothing.
+
+The rail carries every state, including the two a pointer cannot reach on its own, an open
+page under the cursor and an item that is open but disabled. All four are in the gallery.
+The cog at its foot opens a window rather than a page, so it never stays selected.
 
 ## Open decisions
 

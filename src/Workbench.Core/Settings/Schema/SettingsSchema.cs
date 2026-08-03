@@ -5,8 +5,13 @@ namespace Workbench.Core.Settings.Schema;
 /// </summary>
 public sealed class SettingsSchema
 {
-    public SettingsSchema(SettingsScope scope, IReadOnlyList<SettingsPage> pages)
+    /// <param name="title">
+    /// What the settings window is called. It names the app, since every app owns its own
+    /// window and two of them can be open at once.
+    /// </param>
+    public SettingsSchema(SettingsScope scope, string title, IReadOnlyList<SettingsPage> pages)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
         ArgumentNullException.ThrowIfNull(pages);
 
         if (pages.Count == 0)
@@ -27,10 +32,14 @@ public sealed class SettingsSchema
         }
 
         Scope = scope;
+        Title = title;
         Pages = pages;
     }
 
     public SettingsScope Scope { get; }
+
+    /// <summary>What the settings window is called, which is the app's own name.</summary>
+    public string Title { get; }
 
     /// <summary>In the order the tree draws them, grouped by <see cref="SettingsHome"/>.</summary>
     public IReadOnlyList<SettingsPage> Pages { get; }

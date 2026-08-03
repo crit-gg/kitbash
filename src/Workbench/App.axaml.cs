@@ -10,8 +10,10 @@ using Workbench.Core.Platform;
 using Workbench.Core.Settings;
 using Workbench.Core.Workspaces;
 using Workbench.Mock;
+using Workbench.Settings;
 using Workbench.ViewModels;
 using Workbench.Ui;
+using Workbench.Ui.Settings;
 using Workbench.Ui.Toasts;
 using Workbench.Views;
 
@@ -36,6 +38,10 @@ public partial class App : Application
             desktop.MainWindow = new LauncherWindow
             {
                 UsesNativeChrome = windows.UseNativeChrome,
+
+                // A window is built without a container, so the one service it opens for
+                // itself is handed over here rather than resolved inside it.
+                Settings = _services.GetRequiredService<ISettingsWindows>(),
                 DataContext = _services.GetRequiredService<LauncherViewModel>(),
             };
 
@@ -53,7 +59,12 @@ public partial class App : Application
             .AddWorkbenchWorkspaces()
             .AddWorkbenchGit()
             .AddWorkbenchEngines()
+            .AddWorkbenchSettingsSchema()
+            .AddWorkbenchKnownWorkspaceSettings()
             .AddWorkbenchToasts()
+            .AddWorkbenchSettingsWindow()
+            .AddSingleton<LauncherSettingsSchema>()
+            .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
             .AddSingleton(BuildRegistry())
             .AddSingleton<MockToolCatalogue>()

@@ -21,6 +21,7 @@ internal sealed class SettingsWriter : ISettingsWriter
     public void Write(
         SettingsScope scope,
         SettingsPage page,
+        SettingsPlace? place,
         SettingsLayer? layer,
         IReadOnlyList<SettingsEdit> edits)
     {
@@ -36,6 +37,12 @@ internal sealed class SettingsWriter : ISettingsWriter
         {
             throw new InvalidOperationException(
                 $"Nothing is composed for {page.Home} settings, so page '{page.Id}' cannot be saved.");
+        }
+
+        if (SettingsInspector.Where(home, place) is not { } at)
+        {
+            throw new InvalidOperationException(
+                $"{page.Home} settings have nowhere to be right now, so page '{page.Id}' cannot be saved.");
         }
 
         if (page.IsReadOnly || home.IsReadOnly)
@@ -67,7 +74,7 @@ internal sealed class SettingsWriter : ISettingsWriter
             }
         }
 
-        home.Apply(scope, layer, edits);
+        home.Apply(at, scope, layer, edits);
     }
 
     private static ISettingDescriptor? Find(SettingsPage page, string key)

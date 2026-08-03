@@ -59,12 +59,17 @@ public sealed record SettingValueView(
 /// page is opened to make it.
 /// </summary>
 /// <param name="IsAvailable">
-/// False when nothing is composed for the page's home, such as a workspace page with no
+/// False when the page's home has nowhere to be, such as a workspace page with no
 /// workspace open. There are no files and no values in that case.
+/// </param>
+/// <param name="IsWritable">
+/// False for a read only page and for every page of a read only home, such as the
+/// application state the app writes and a person does not.
 /// </param>
 public sealed record SettingsPageView(
     SettingsPage Page,
     bool IsAvailable,
+    bool IsWritable,
     IReadOnlyList<SettingsFileView> Files,
     IReadOnlyList<SettingValueView> Values)
 {

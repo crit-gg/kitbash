@@ -20,12 +20,23 @@ public interface ISettingsHome
     /// </summary>
     IReadOnlyList<SettingsLayer?> Layers { get; }
 
-    /// <summary>The file behind one scope and layer. It need not exist.</summary>
-    string FileFor(SettingsScope scope, SettingsLayer? layer);
+    /// <summary>
+    /// What this home keeps files for. Asked again every time, since a person can add a
+    /// workspace while the app runs. Empty means the home has nowhere to be at all, such
+    /// as a workspace home for somebody who has added no workspace.
+    /// </summary>
+    IReadOnlyList<SettingsPlace> Places { get; }
+
+    /// <summary>The file behind one place, scope and layer. It need not exist.</summary>
+    string FileFor(SettingsPlace place, SettingsScope scope, SettingsLayer? layer);
 
     /// <summary>
     /// Writes every edit to one file at once, through the service that owns it, so
     /// anything holding that file's values reads them again afterwards.
     /// </summary>
-    void Apply(SettingsScope scope, SettingsLayer? layer, IReadOnlyList<SettingsEdit> edits);
+    void Apply(
+        SettingsPlace place,
+        SettingsScope scope,
+        SettingsLayer? layer,
+        IReadOnlyList<SettingsEdit> edits);
 }

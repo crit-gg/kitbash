@@ -154,12 +154,15 @@
             <!-- The rail. Selection, keyboard navigation and the selected state all come from ListBox,
                  so what the library supplies is a look. -->
             <DockPanel Grid.Column="0">
+                <!-- Settings opens a window rather than a page, since every app owns its
+                     own and a tool's is not reachable from here. The rail item is a way
+                     in rather than a place, so it never stays selected. -->
                 <ListBox DockPanel.Dock="Bottom" Name="RailFoot"
                          Theme="{StaticResource ActivityRail}"
                          Padding="0,0,0,8"
-                         SelectedIndex="-1">
+                         SelectedIndex="-1"
+                         SelectionChanged="OnSettingsSelected">
                     <ListBoxItem Theme="{StaticResource ActivityRailItem}"
-                                 IsEnabled="False"
                                  ToolTip.Tip="Settings" ToolTip.Placement="Right"
                                  AutomationProperties.Name="Settings">
                         <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />

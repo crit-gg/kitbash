@@ -176,6 +176,10 @@
     <CornerRadius x:Key="RadiusSurface">8</CornerRadius>
     <CornerRadius x:Key="RadiusMark">2</CornerRadius>
 
+    <!-- The one round mark in the system. It says where a setting's value came from, and
+         it is round so it is never read as the square mark a chip and a row carry. -->
+    <CornerRadius x:Key="RadiusDot">2.5</CornerRadius>
+
     <!-- The 14px box a checkbox draws, and the colour swatch that is the same box. Between
          the mark radius and the control radius, because the box is between those sizes. -->
     <CornerRadius x:Key="RadiusBox">3</CornerRadius>

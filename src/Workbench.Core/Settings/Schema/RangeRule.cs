@@ -5,7 +5,7 @@ namespace Workbench.Core.Settings.Schema;
 /// minimum alone. The bounds are inclusive, and an editor reads them to bound itself
 /// rather than waiting for the value to be refused.
 /// </summary>
-public sealed class RangeRule<T> : ISettingRule<T>
+public sealed class RangeRule<T> : ISettingRule<T>, ISettingBounds
     where T : struct, IComparable<T>
 {
     public RangeRule(T? minimum = null, T? maximum = null)
@@ -27,6 +27,10 @@ public sealed class RangeRule<T> : ISettingRule<T>
     public T? Minimum { get; }
 
     public T? Maximum { get; }
+
+    object? ISettingBounds.Minimum => Minimum;
+
+    object? ISettingBounds.Maximum => Maximum;
 
     public string Summary => (Minimum, Maximum) switch
     {

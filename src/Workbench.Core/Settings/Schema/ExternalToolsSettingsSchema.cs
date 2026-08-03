@@ -14,8 +14,9 @@ public sealed class ExternalToolsSettingsSchema
             Name = "Git Executable",
             Description =
                 "Full path to the git to run. Leave blank to use the first git on PATH, "
-                + "which is what a terminal on this machine would use. Takes effect at the next launch.",
+                + "which is what a terminal on this machine would use.",
             Default = string.Empty,
+            NeedsRestart = true,
             Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 
@@ -24,9 +25,9 @@ public sealed class ExternalToolsSettingsSchema
             Key = "tools.gitClient.path",
             Name = "Git Client",
             Description =
-                "Full path to the git client to run. Leave blank to not use and git client. " +
-                "Takes effect at the next launch.",
+                "Full path to the git client to run. Leave blank to use no git client.",
             Default = string.Empty,
+            NeedsRestart = true,
             Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 
@@ -35,9 +36,9 @@ public sealed class ExternalToolsSettingsSchema
             Key = "tools.dotnet.path",
             Name = "Dotnet Executable",
             Description =
-                "Full path to the dotnet to run. Leave blank to use the first dotnet on PATH. "
-                + "Takes effect at the next launch.",
+                "Full path to the dotnet to run. Leave blank to use the first dotnet on PATH.",
             Default = string.Empty,
+            NeedsRestart = true,
             Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Workbench.Ui.Settings;
 using Workbench.Ui.Toasts;
 
 namespace Workbench.Ui;
@@ -23,6 +24,21 @@ public static class WorkbenchUiServices
         services.TryAddSingleton(new ToastOptions());
         services.TryAddSingleton<IToastService, ToastService>();
         services.TryAddSingleton<IToastServiceFactory, ToastServiceFactory>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The settings window. It draws whatever <c>SettingsSchema</c> is registered, so an
+    /// app writes a schema and one line to open it. Core's
+    /// <c>AddWorkbenchSettingsSchema</c> supplies everything behind it.
+    /// </summary>
+    public static IServiceCollection AddWorkbenchSettingsWindow(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IApplicationRestart, ApplicationRestart>();
+        services.TryAddSingleton<ISettingsWindows, SettingsWindows>();
 
         return services;
     }

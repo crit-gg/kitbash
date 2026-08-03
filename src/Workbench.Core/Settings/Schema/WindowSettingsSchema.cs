@@ -14,9 +14,9 @@ public sealed class WindowSettingsSchema
             Key = "window.nativeChrome",
             Name = "Use the desktop title bar",
             Description =
-                "Draw the title bar and frame the desktop supplies instead of the Workbench one. "
-                + "Windows that are already open keep the frame they have.",
+                "Draw the title bar and frame the desktop supplies instead of the Workbench one.",
             Default = false,
+            NeedsRestart = true,
         };
 
         Page = new SettingsPage

@@ -95,6 +95,9 @@ public sealed class SettingDescriptor<T> : ISettingDescriptor
     /// <summary>Shown but never written. The value still comes from a file.</summary>
     public bool IsReadOnly { get; init; }
 
+    /// <inheritdoc cref="ISettingDescriptor.NeedsRestart"/>
+    public bool NeedsRestart { get; init; }
+
     public Type ValueType => typeof(T);
 
     /// <summary>The merged value, with this descriptor's own default behind it.</summary>

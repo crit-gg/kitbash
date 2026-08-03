@@ -1,6 +1,6 @@
 ---
 name: workbench-settings
-description: "Workbench settings. Layered TOML scopes and layers, the write that preserves a file byte for byte, setting schemas and descriptors, the four schemas that exist, and per user application storage. Read before adding a setting or touching settings storage."
+description: "Workbench settings. Layered TOML scopes and layers, the write that preserves a file byte for byte, setting schemas and descriptors, the schemas that exist, the settings window every app shares, and per user application storage. Read before adding a setting, touching settings storage, or changing the settings window."
 ---
 
 ## Settings
@@ -190,6 +190,12 @@ falls back. A probe message means the value survived and the world is wrong, so 
 origin stays the layer it came from. That is the whole of severity, and there is no
 severity field.
 
+**A setting nothing rereads carries `NeedsRestart`.** `window.nativeChrome` and the three
+external tool paths are the four, since a window keeps the frame it opened with and
+`IExternalTools` resolves once and holds. It is a field rather than a sentence in the
+description, because the window offers to restart on the strength of it. Do not write
+"takes effect at the next launch" in a description as well.
+
 **The editor is derived unless named.** A bool is a toggle, a closed choice is a segment
 when it has at most three options of at most twelve characters and a dropdown otherwise,
 a number is a number, an array is a list, and anything left is text. The two thresholds
@@ -209,18 +215,47 @@ today's value and quietly opts that person out of every future change to it.
 
 **A home that is not composed is a home with nothing behind it.** `ISettingsHome` is one
 per store, and `AddWorkbenchSettingsSchema` registers the two that need no workspace.
-`AddWorkbenchSettings` contributes the workspace one, so a window composed without a
-workspace reads its workspace pages as unavailable rather than failing on them. The
-launcher changes which workspace is open at runtime, and nothing yet follows that, which
-is the settings window's problem to solve when it lands.
+There are two ways to get the third:
 
-`ISettingsWriter` saves a page. It refuses a read only page or home, a layer that does
-not match whether the page layers, and any key the page does not declare, so a window
-can only write what it drew.
+- `AddWorkbenchSettings(paths)` for an app that opens one workspace and keeps it. Writes
+  through `ISettingsService`, so that service's cache is dropped by the same call.
+- `AddWorkbenchKnownWorkspaceSettings()` for an app that holds a list of them, which is
+  the launcher. Writes straight to the document store, since nothing in that app caches a
+  workspace's settings.
+
+**A home has places, and a page is read for one of them.** `ISettingsHome.Places` is what
+the home keeps files for. A home over this machine has a single place with no name. The
+launcher's workspace home has one per workspace a person has added, each named the way the
+launcher names it, so its window lists them all rather than following whichever one is
+open. `ISettingsInspector.Read` and `ISettingsWriter.Write` both take the place, and null
+means the only one.
+
+**Only workspaces that are still on disk become places.** A workspace whose folder has
+gone has nothing to change, and offering to write into a folder that is not there would
+only fail. It stays in the launcher's list and in the State page either way.
+
+**Places are asked for again every time, and compared by id.** A person can add a
+workspace while the window is open. The id is opaque and only ever names a place the home
+itself listed, so it is compared ordinally rather than through `IPathRules`. A home with
+no places at all reads a page as `IsAvailable: false` with no files, which is what the
+window draws its empty state from.
+
+`ISettingsWriter` saves a page. It refuses a read only page or home, a home with nowhere
+to be, a layer that does not match whether the page layers, and any key the page does not
+declare, so a window can only write what it drew.
+
+**A row that is not a setting is a `SettingsListRow`.** That is the whole escape hatch,
+and it reads rather than edits: a name, a description and a function returning lines, one
+of which may be marked. The launcher's State page is the only user, listing the open
+workspace and the known ones. The function is called again every time the page loads,
+since what it lists changes while the app runs. Anything an app wants to draw that this
+cannot describe is a reason to change the window, not to add a row kind.
 
 ### The schemas that exist
 
-Five, all Core's, four in the `Application` home. That home is per user per machine and
+Five in Core, four of them in the `Application` home, plus the launcher's own State page
+in `Workbench/Settings/LauncherSettingsSchema`, which is what puts them together into the
+window's tree. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
 other**, so none of those can be shared through a workspace's team config by accident.
 `godot.engine` is the one that is genuinely a team fact, so it is the one that layers.
@@ -232,6 +267,10 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
+
+`ExternalToolsSettingsSchema` is registered by `AddWorkbenchApplicationStorage` alongside
+the others, so a settings window can draw the page without the lookup behind it, and by
+`AddWorkbenchExternalTools` where `IExternalTools` is what needs it.
 
 **`workspaces.directory` defaults to blank and blank is the right default.** It is where
 the clone dialog offers to put a new workspace, and there is no folder this app can guess
@@ -325,3 +364,104 @@ as a typed read over a document rather than as a claim about settings.
 The cache has a directory and `ApplicationPaths.CacheFileFor`, and no API beyond that.
 Nothing caches anything yet, so the first thing that does picks its own shape.
 
+
+## The settings window
+
+`Workbench.Ui/Controls/SettingsWindow` draws whatever `SettingsSchema` it is handed, so
+the launcher and every tool share one window and differ only in the pages they give it.
+Its view models are `Workbench.Ui/Settings`. The design is `Workbench Settings v3` in the
+Claude Design project.
+
+**Every app owns its own window.** A tool's settings are not reachable from the launcher,
+so no schema ever crosses a process boundary. `ISettingsWindows.Open(owner)` is how an
+app opens its own, and opening it again brings the one already open to the front rather
+than making a second. Register it with `AddWorkbenchSettingsWindow`, plus a
+`SettingsSchema` of the app's own.
+
+```csharp
+services.AddWorkbenchSettingsSchema()
+        .AddWorkbenchOpenWorkspaceSettings()
+        .AddWorkbenchSettingsWindow()
+        .AddSingleton(provider => provider.GetRequiredService<MyToolSettingsSchema>().Schema);
+```
+
+**The roots of the tree are the stores, not the app.** Application, Workspace and State,
+because that is the question that decides which file a change lands in. A store with no
+page is left out, which is also what a search that matches nothing under it leaves, and so
+is one with nowhere to keep anything. Clicking a store opens nothing and puts the mark back
+on the page that is open.
+
+**A store whose places are named holds a level of them.** The launcher's Workspace store
+lists every workspace by name with the same pages under each, so a person changes any
+workspace's settings from one window rather than switching workspace first. A store with a
+single unnamed place draws no level, which is what a tool with one workspace gets. The page
+heading names the place it is writing to, since two pages under two workspaces are
+otherwise the same page twice.
+
+**The tree is built again when the window comes to the front**, since nothing watches the
+workspace list any more than it watches the files. That is separate from the page reload
+and synchronous, so the selection can be put back before anything reacts, and a node is
+found again by its place and page rather than by reference.
+
+**Unsaved changes are per window and Save writes only this app's files.** The footer
+counts every staged change across every page that has been opened, and Save groups them
+by page and layer and writes each file once. A page keeps its own changes, so switching
+pages and coming back keeps them.
+
+**A value that a rule refuses is kept and blocks the save.** Taking it away as a person
+types would be worse than refusing to write it. The row shows the reason under the
+control, the origin dot turns red, and Save is disabled until every staged change is
+good. Reset stages a removal rather than writing the default.
+
+**Changing the layer is refused for a file that will not parse**, since writing it would
+replace content this app could not read. See the decision recorded in
+`.claude/plans/settings-schema.md`.
+
+**A change to a setting nothing rereads offers a restart.** The row says so wherever it
+stands and turns warn once there is a change waiting on it, and the footer grows a button
+between Discard and Save changes. It reads Save and restart while anything is staged and
+Restart now once the change is written, which is what stops a plain Save from leaving a
+setting quietly not applying. A save that did not land leaves the changes alone and
+nothing restarts over the top of them.
+
+`IApplicationRestart` is what does it: a fresh copy started detached through
+`IPlatformServices.StartDetached`, then `Shutdown` on Avalonia's own lifetime. It reaches
+for `Application.Current`, which is the one piece of ambient state here and the only way a
+library can end the app it is running in. An app launched as `dotnet app.dll` reports
+dotnet as its path, so the assembly goes back on the front of the arguments. False comes
+back when the copy could not be started, and then nothing has changed.
+
+**Nothing here reads a disk on the UI thread.** A page load and a save both go through
+`Task.Run`. Nothing watches the filesystem either, so the window reads every open page
+again when it comes to the front, the way `IGitStatusMonitor` is driven.
+
+**The gutter is the icon button's height whether a button is there or not.** A row that
+grew when Discard or Reset appeared moved the editor beside it down four pixels, which was
+visible on a toggle every time a change was staged. Measured before and after: 645,134 then
+645,138 with a button, and 645,138 in every state after.
+
+Measured on this machine, Linux, through a headless harness driving the real window: each
+of the six pages drawn, a toggle and a dropdown edited and saved with the value landing
+inside its own table and every comment kept, a reset removing the key and pruning the
+table it emptied, a relative path refused with its reason and Save disabled, a personal
+value masking a team one, a write to the team layer, a broken team file leaving personal
+readable and writable while its end of the picker greys out, both files broken leaving the
+page read only, no workspace drawing the empty state, a stored choice nothing offers
+falling back with the reason, search filtering the tree, and the launcher rail opening the
+window.
+
+The workspace level was measured on the same harness: three workspaces listed by name, a
+renamed one showing the name the resolver gives it, a page under one reading and writing
+only that workspace's files, two workspaces edited at once with one Save writing each to
+its own file, a workspace whose folder was deleted dropping out, one added while the window
+was up appearing on the next reload with the selection still on the page it was on, no
+workspaces at all leaving the store out entirely, and search keeping the level while
+filtering the pages under it.
+
+The restart was measured too: the button appearing only for a setting that carries the
+flag, Save and restart writing then asking, Restart now surviving a plain Save, an invalid
+change refusing both, discarding taking the button away before a save and leaving it after
+one, and the failure message. The spawn itself was run for real, the harness restarting
+itself both as an apphost and as `dotnet app.dll`, with the second copy reporting the path
+and arguments it was given. The shutdown half was measured once under a real
+`ClassicDesktopStyleApplicationLifetime`, where `Exit` fired.

@@ -94,14 +94,22 @@ accident and write into the file the whole team shares.
 files fill the backing table and what the scope line under the title says. There is no
 per setting home.
 
+**A home has places, and that is where the tree gets its middle level.** The design draws
+one Workspace node because it drew one workspace. A launcher has a list of them, so the
+Workspace store lists every workspace by name and the same pages hang under each. A store
+whose single place has no name draws no level, which keeps a tool's tree exactly as the
+design has it.
+
 **A descriptor is an instance member, reached through a constructor.** A
 `public static readonly` descriptor is the obvious shortcut and it is ambient state, so
 `WindowSettings` takes the schema in and reads `_schema.NativeChrome.Read(settings)`.
 
 **`Description` is required and is drawn.** The v3 row is the name over the description
-and the key is gone from the row entirely, surviving only in search. Where a setting only
-takes effect later, that goes in the description as a sentence, which is what the design
-does with `window.nativeChrome`. There is no structured field for it.
+and the key is gone from the row entirely, surviving only in search.
+
+**A setting that only takes effect later carries `NeedsRestart`.** This started as a
+sentence in the description and became a field, because the window offers to restart on
+the strength of it and prose cannot be read.
 
 **Editor is derived unless set.** A bool is a toggle, a closed choice is a segment when
 the options are few and short and a dropdown otherwise, a number is a number with its
@@ -127,6 +135,9 @@ rule kind is a deliberate change.
 | `PatternRule` | a regex and its own summary, since a regex is not a message |
 | `ChoiceRule<T>` | value, label and description per option |
 | `PathShapeRule` | file or directory, rooted or not |
+
+`RangeRule<T>` also implements `ISettingBounds`, which is the same two ends with the type
+erased, so a number editor can bound itself without knowing what kind of number it is.
 
 **A choice source is not a rule.** `ui.theme` is a closed `ChoiceRule`, so `"midnight"`
 is invalid and the default takes over. `engine.version` is a list of installed engines
@@ -246,24 +257,21 @@ One escape hatch, used twice, so the schema never grows a way to describe a butt
 ```
 src/Workbench.Core/Settings/Schema/     descriptors, pages, rules, choices, probes
 src/Workbench.Core/Settings/            the inspector, the writer, the read side gaps
-src/Workbench.Ui/Controls/              the window that draws any schema
-src/Workbench.Gallery/                  a page hosting the window over a sample schema
+src/Workbench.Ui/Controls/              SettingsWindow, the window that draws any schema
+src/Workbench.Ui/Settings/              its view models and the way an app opens it
+src/Workbench/Settings/                 the launcher's own schema
 ```
 
 Core gains no dependency. The window takes a `SettingsSchema` plus the inspector and the
 writer, so a tool writes a schema class and one line to open it.
 
-## Open decisions
-
-Do not assume this. Ask before building on it.
-
-- **Does a broken file kill the page or only its own layer?** The banner says nothing on
-  the page can be read, but a broken team file leaves the personal file perfectly good.
-  Disabling the tab for the broken layer and keeping Save for the other is a smaller claim
-  and loses nothing. Nothing in Core rests on the answer, since the parse error is
-  recorded per file and both readings are drawn from the same `SettingsPageView`.
-
 ## Decided
+
+- **A broken file kills its own layer, not the page.** Asked and answered. The layer whose
+  file will not parse has its end of the picker disabled, the banner names it and says what
+  still works, and the other layer stays readable and saveable. A page whose every file is
+  broken has nowhere good to write, so that one does go read only. All of it is drawn from
+  `SettingsPageView.Files`, which records the error per file.
 
 - **A write keeps the file's comments.** Step 2's batched write edits the file's text
   through `TomlDocument` rather than rebuilding it from the model, so saving a page leaves
@@ -289,8 +297,14 @@ Each step leaves the app working.
 2. **The read and write gaps.** Per layer reads, remove, batched write, file existence,
    parse state as a value, and the write refusal that goes with it.
 3. **The inspector and the page view.**
-4. **The window in `Workbench.Ui`**, plus the gallery page. Editors: toggle, select,
-   segment, number with unit, text, read only list, and the app supplied row.
-5. **The launcher's schema**, which is the first real one, and the Settings page the rail
-   already draws disabled.
-6. **Probes**, last. Every page is useful before any of them exist.
+4. **The window in `Workbench.Ui`**. Done. Editors: toggle, select, segment, number with
+   unit, text, read only list, and the app supplied row. No gallery page in the end, since
+   the window is a window rather than a control and the launcher exercises it over a real
+   schema.
+5. **The launcher's schema**, which is the first real one, and the rail's Settings item.
+   Done.
+6. **Probes**, last. Every page is useful before any of them exist. Not started.
+
+Added after the fact, on the same shape: `NeedsRestart` on a descriptor and the Save and
+restart button that goes with it, through `IApplicationRestart` in `Workbench.Ui`, and
+`SettingsPlace` so the Workspace store lists every workspace rather than the open one.

@@ -2,11 +2,12 @@ namespace Workbench.Core.Settings.Schema;
 
 /// <summary>
 /// The one file this user keeps on this machine. No layer, since there is nothing to
-/// share it with.
+/// share it with, and one place, since there is only one of this machine.
 /// </summary>
 internal sealed class ApplicationSettingsHome : ISettingsHome
 {
     private static readonly IReadOnlyList<SettingsLayer?> Unlayered = [null];
+    private static readonly IReadOnlyList<SettingsPlace> Single = [SettingsPlace.Only];
 
     private readonly ApplicationPaths _paths;
     private readonly IApplicationSettings _settings;
@@ -26,9 +27,16 @@ internal sealed class ApplicationSettingsHome : ISettingsHome
 
     public IReadOnlyList<SettingsLayer?> Layers => Unlayered;
 
-    public string FileFor(SettingsScope scope, SettingsLayer? layer) => _paths.SettingsFileFor(scope);
+    public IReadOnlyList<SettingsPlace> Places => Single;
 
-    public void Apply(SettingsScope scope, SettingsLayer? layer, IReadOnlyList<SettingsEdit> edits) =>
+    public string FileFor(SettingsPlace place, SettingsScope scope, SettingsLayer? layer) =>
+        _paths.SettingsFileFor(scope);
+
+    public void Apply(
+        SettingsPlace place,
+        SettingsScope scope,
+        SettingsLayer? layer,
+        IReadOnlyList<SettingsEdit> edits) =>
         _settings.Apply(scope, edits);
 }
 
@@ -39,6 +47,7 @@ internal sealed class ApplicationSettingsHome : ISettingsHome
 internal sealed class ApplicationStateHome : ISettingsHome
 {
     private static readonly IReadOnlyList<SettingsLayer?> Unlayered = [null];
+    private static readonly IReadOnlyList<SettingsPlace> Single = [SettingsPlace.Only];
 
     private readonly ApplicationPaths _paths;
 
@@ -55,20 +64,29 @@ internal sealed class ApplicationStateHome : ISettingsHome
 
     public IReadOnlyList<SettingsLayer?> Layers => Unlayered;
 
-    public string FileFor(SettingsScope scope, SettingsLayer? layer) => _paths.StateFileFor(scope);
+    public IReadOnlyList<SettingsPlace> Places => Single;
 
-    public void Apply(SettingsScope scope, SettingsLayer? layer, IReadOnlyList<SettingsEdit> edits) =>
+    public string FileFor(SettingsPlace place, SettingsScope scope, SettingsLayer? layer) =>
+        _paths.StateFileFor(scope);
+
+    public void Apply(
+        SettingsPlace place,
+        SettingsScope scope,
+        SettingsLayer? layer,
+        IReadOnlyList<SettingsEdit> edits) =>
         throw new InvalidOperationException("Application state is read only. The app writes it, not a person.");
 }
 
 /// <summary>
-/// The open workspace, and the only home that layers. Composed only when a workspace is
-/// known, so a window opened without one draws no workspace pages.
+/// The one workspace an app was started in, and the only home that layers. Its place
+/// carries no name, so a tool with a single workspace draws no level for it.
 /// </summary>
 internal sealed class WorkspaceSettingsHome : ISettingsHome
 {
     private static readonly IReadOnlyList<SettingsLayer?> LowestFirst =
         [SettingsLayer.TeamShared, SettingsLayer.User];
+
+    private static readonly IReadOnlyList<SettingsPlace> Single = [SettingsPlace.Only];
 
     private readonly WorkspacePaths _paths;
     private readonly ISettingsService _settings;
@@ -88,10 +106,16 @@ internal sealed class WorkspaceSettingsHome : ISettingsHome
 
     public IReadOnlyList<SettingsLayer?> Layers => LowestFirst;
 
-    public string FileFor(SettingsScope scope, SettingsLayer? layer) =>
+    public IReadOnlyList<SettingsPlace> Places => Single;
+
+    public string FileFor(SettingsPlace place, SettingsScope scope, SettingsLayer? layer) =>
         _paths.FileFor(scope, Require(layer));
 
-    public void Apply(SettingsScope scope, SettingsLayer? layer, IReadOnlyList<SettingsEdit> edits) =>
+    public void Apply(
+        SettingsPlace place,
+        SettingsScope scope,
+        SettingsLayer? layer,
+        IReadOnlyList<SettingsEdit> edits) =>
         _settings.Apply(scope, Require(layer), edits);
 
     private static SettingsLayer Require(SettingsLayer? layer) =>
