@@ -602,7 +602,7 @@
                 </ListBox>
 
                 <!-- Release cards. A card is a header that opens onto its builds. -->
-                <ListBox ItemsSource="{Binding Cards}"
+                <ListBox Name="CardList" ItemsSource="{Binding Cards}"
                          IsVisible="{Binding OnAvailable}"
                          Padding="20,12,20,18"
                          ItemContainerTheme="{StaticResource EngineCard}"

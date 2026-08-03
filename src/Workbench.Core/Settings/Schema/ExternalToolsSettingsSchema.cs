@@ -17,7 +17,7 @@ public sealed class ExternalToolsSettingsSchema
         GitPath = new SettingDescriptor<string>
         {
             Key = "tools.git.path",
-            Name = "Git program",
+            Name = "Git Executable",
             Description =
                 "Full path to the git to run. Leave blank to use the first git on PATH, "
                 + "which is what a terminal on this machine would use. Takes effect at the next launch.",
@@ -28,7 +28,7 @@ public sealed class ExternalToolsSettingsSchema
         GitClientPath = new SettingDescriptor<string>
         {
             Key = "tools.gitClient.path",
-            Name = "Git client program",
+            Name = "Git Client",
             Description =
                 "Full path to the git client to run. Leave blank to not use and git client. " +
                 "Takes effect at the next launch.",
@@ -39,7 +39,7 @@ public sealed class ExternalToolsSettingsSchema
         DotnetPath = new SettingDescriptor<string>
         {
             Key = "tools.dotnet.path",
-            Name = "dotnet program",
+            Name = "Dotnet Executable",
             Description =
                 "Full path to the dotnet to run. Leave blank to use the first dotnet on PATH. "
                 + "Takes effect at the next launch.",
@@ -52,7 +52,10 @@ public sealed class ExternalToolsSettingsSchema
             Id = "externalTools",
             Title = "External tools",
             Home = SettingsHome.Application,
-            Sections = [new SettingsSection("Programs", [GitPath, GitClientPath, DotnetPath])]
+            Sections = [
+                new SettingsSection("Git", [GitPath, GitClientPath]),
+                new SettingsSection(".NET", [DotnetPath])
+            ]
         };
     }
 

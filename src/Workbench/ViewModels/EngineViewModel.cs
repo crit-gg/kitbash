@@ -279,10 +279,9 @@ public sealed partial class EngineViewModel : ViewModelBase
     }
 
     // Not a command. The rail is how a person goes to the engines page, and the only
-    // reason this exists is that Install has nowhere else to send them. It carries the
-    // version, so the page opens filtered to what would answer rather than to all 183.
-    private void ShowEngines() =>
-        _launcher?.ShowEngines(Resolution?.Requirement.Version?.ToString());
+    // reason this exists is that Install has nowhere else to send them when the workspace
+    // names no version at all.
+    private void ShowEngines() => _launcher?.ShowEngines();
 
     /// <summary>The numbers alone, such as <c>4.7.1</c>, from what was asked for.</summary>
     private static string NumberOf(EngineVersionPattern wanted)

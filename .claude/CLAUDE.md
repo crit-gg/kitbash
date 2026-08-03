@@ -1337,10 +1337,14 @@ item appears. A mismatch is not a state to settle into.
 
 **It installs in one press rather than going looking.** A workspace that names a version
 has already said which engine it wants, so pressing Install picks the release the same
-way the resolver picks an install, opens the engines page filtered to it with its card
-open, and starts the download. The page is where an install already shows its bar, its
-cancel and its toasts, so the strip starts one there rather than owning a second way of
-reporting one.
+way the resolver picks an install, opens its card and starts the download. The page is
+where an install already shows its bar, its cancel and its toasts, so the strip starts
+one there rather than owning a second way of reporting one.
+
+**The filter is left alone and the card is scrolled to instead.** Typing into somebody's
+search field on their behalf takes away everything else they might have wanted, and they
+asked for an engine rather than for a filtered list. Scrolling is `Reveal`, which the
+page supplies the same way it supplies the clipboard, the folder picker and the confirm.
 
 **The strip shows an engine the way an engine is named**, whether one is installed or
 only asked for: the numbers alone as the title, then the channel and the .NET flag as

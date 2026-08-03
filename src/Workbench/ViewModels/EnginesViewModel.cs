@@ -229,14 +229,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Opens this page showing what would answer a version, which is where the strip
-    /// sends somebody whose workspace asks for something that is not installed.
+    /// Brings a card into view. Set by the page, since scrolling belongs to a list and a
+    /// view model has none.
     /// </summary>
-    public void ShowAvailable(string version)
-    {
-        Query = version;
-        OnAvailable = true;
-    }
+    public Action<ReleaseCardViewModel>? Reveal { get; set; }
 
     /// <summary>
     /// Installs the build that answers a requirement, and shows it happening.
@@ -250,6 +246,11 @@ public sealed partial class EnginesViewModel : ViewModelBase
     ///
     /// The pattern picks the release the same way the resolver picks an install, so a
     /// workspace asking for 4.7 gets the newest 4.7 stable rather than a candidate.
+    ///
+    /// **The filter is left alone.** Typing into somebody's search field on their behalf
+    /// hides everything else they might have wanted, and they did not ask for a filtered
+    /// list, they asked for an engine. The card is scrolled to instead, which shows the
+    /// install without taking the rest of the page away.
     /// </remarks>
     public async Task InstallForAsync(EngineVersionPattern wanted, bool mono)
     {
@@ -264,8 +265,6 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         if (wanted.BestMatch(_cards.Keys) is not { } tag)
         {
-            Query = string.Empty;
-
             Post(
                 ToastTier.Error,
                 $"Nothing published matches {wanted}",
@@ -276,8 +275,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         var card = _cards[tag];
 
-        Query = tag.ToString();
         card.IsOpen = true;
+        Reveal?.Invoke(card);
 
         var row = card.Rows.FirstOrDefault(candidate =>
             candidate.Build.IsMono == mono

@@ -36,9 +36,23 @@ public partial class EnginesPage : UserControl
         engines.Copier ??= CopyAsync;
         engines.Picker ??= PickAsync;
         engines.Confirm ??= ConfirmAsync;
+        engines.Reveal ??= Reveal;
 
         await engines.LoadAsync();
     }
+
+    /// <summary>
+    /// Scrolls a card into view. **The filter is deliberately left alone**, so what the
+    /// person was looking at is still there and only the view has moved.
+    /// </summary>
+    /// <remarks>
+    /// Posted rather than called, because the card may have been added by the load that
+    /// just ran and the list has not built a container for it yet.
+    /// </remarks>
+    private void Reveal(ReleaseCardViewModel card) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(
+            () => CardList.ScrollIntoView(card),
+            Avalonia.Threading.DispatcherPriority.Background);
 
     private async Task CopyAsync(string text)
     {

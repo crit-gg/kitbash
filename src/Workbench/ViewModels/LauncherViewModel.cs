@@ -462,20 +462,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     });
 
-    /// <summary>
-    /// Opens the engines page. A version sends it to the available list already filtered
-    /// to what would answer, since arriving at 183 releases and a search field is being
-    /// shown the haystack.
-    /// </summary>
-    public void ShowEngines(string? version = null)
-    {
-        if (version is { Length: > 0 })
-        {
-            Engines.ShowAvailable(version);
-        }
-
-        Page = 1;
-    }
+    /// <summary>Opens the engines page, which is the rail's second item.</summary>
+    public void ShowEngines() => Page = 1;
 
     /// <summary>
     /// Installs the engine this workspace asks for, on the engines page so the install is
