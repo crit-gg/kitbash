@@ -241,6 +241,11 @@ cell that has one. The grid calls `IEditableObject` on the item, so `BeginEdit`,
 than because of anything the grid holds. An item that does not implement it commits whatever
 was typed.
 
+An edit ends when focus leaves the cell, with one exception written into
+`DataGridCell.OnLostFocus`: a context menu opens in a popup and takes the focus with it, so
+the edit would end under the open menu. The cell holds on while any menu inside it is open.
+`TextBox.OnLostFocus` guards its own selection the same way.
+
 **Pagination is `ui:GridPager`, a control of its own under the grid.** The grid does not know
 pages exist. Attaching a pager is what turns them on, which is why a grid that never pages
 carries none of it.
@@ -295,6 +300,17 @@ opened it reads as a mistake. `ui:Popups.MatchesTarget` puts a floor under the w
 off the placement target the popup already holds, so an overlay with more to say is still
 as wide as it needs to be. Menus and plain flyouts take it. A context menu does not, since
 it belongs to whatever it was opened on and that may be a whole page.
+
+**So a context menu is a `ContextMenu` and never a `MenuFlyout`.** The two look alike and
+are not interchangeable. `ContextMenu` defaults to `PlacementMode.Pointer` and has a theme
+here that takes neither `MatchesTarget` nor `Popups.InPopup`, so it opens at the cursor at
+its own width. A `MenuFlyout` draws through `MenuFlyoutPresenter`, which is the dropdown
+menu: it carries both, so `Popups.Place` pins it to the bottom edge of its target and holds
+it to that target's width. Set it as `ContextFlyout` on a text field and it opens under the
+field, as wide as the field. Measured: `ContextMenu` on a 420px field opened at the pointer
+at 133px.
+
+`MenuFlyout` is for a button's dropdown, which is what both of those behaviours are for.
 
 **A wheel inside an overlay stays in it.** A popup is its own window, but its child's
 logical parent is the popup, which lives in the parent window's tree, so an unhandled wheel

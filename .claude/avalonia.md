@@ -164,6 +164,13 @@ rows came out at their content height with no rule under them. Two themes that l
 are not a reason to base one on the other. Check the base type first, and write the setters
 out when it is not there.
 
+**Replacing a theme takes away behaviour, not only a look.** Fluent's `TextBox` theme
+carries a `ContextFlyout` with Cut, Copy and Paste on it, so a theme of ours over the same
+type left every field in the app with no right click menu and nothing was logged. Verified
+by reading `Avalonia.Themes.Fluent.dll` 12.1.1, which holds the `TextBox+Cut_0`, `Copy_0`
+and `Paste_0` command trampolines and the menu headers. Read what Fluent's theme sets
+before writing one, not only what it draws.
+
 ### Selectors
 
 The grammar supports type, `Is(Type)`, name, class, pseudo class, attached property,
@@ -626,6 +633,17 @@ openings, including a reopened dialog whose scope had a remembered element.
 - `IClipboard.SetTextAsync` is gone with it. Putting text on the clipboard is
   `clipboard.SetValueAsync(DataFormat.Text, text)`, an extension in
   `Avalonia.Input.Platform`, and reading it back is `TryGetTextAsync`.
+- **`TopLevel.PlatformSettings` is private in 12.1.1**, whatever the API docs list.
+  `Application.Current?.PlatformSettings?.HotkeyConfiguration` is the only public way to
+  the platform's key gestures, and it is what `TextBox.CutGesture` uses.
+- `ContextMenu.Opening` is raised from the `ContextRequested` path alone. The public
+  `Open(control)` does not raise it, so state prepared there is missing from a menu opened
+  in code. `Closing` is the same. Both are `CancelEventHandler` rather than routed events.
+- A `ContextFlyout` opened by a right click is placed at the pointer: `PositionPopup` sets
+  `PlacementMode.Pointer` and returns before it reads the flyout's own `Placement`. So a
+  theme that forces placement on the presenter overrides the pointer, silently.
+- `ContextMenu` wins when a control sets both. Avalonia logs it at Verbose and uses the
+  menu.
 
 ## Bindings
 

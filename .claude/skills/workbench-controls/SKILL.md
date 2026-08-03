@@ -219,6 +219,31 @@ worked until the search field took 8 where every other field takes 5 and wore th
 control's ring. A square corner stays square, which is what keeps one end of a split
 control right.
 
+**Every field carries a right click menu**, and it is `ui:TextMenu`, an attached property
+one style turns on for `:is(TextBox)`. Undo, Redo, then Cut, Copy, Paste, Delete, then
+Select all, in the order every desktop prints them. A field that wants none sets
+`(ui:TextMenu.Shows)="False"`.
+
+It is code rather than a setter for the reason `ui:SearchBox` is a control: a menu item has
+to do something and a control theme has no code behind. A setter value is also one shared
+instance across every field the theme reaches, and a menu can target only one control at a
+time.
+
+It is a `ContextMenu` and not a `MenuFlyout`, which is what opens it at the cursor at its
+own width. See the `workbench-surfaces` skill under Overlays for why the two are not
+interchangeable.
+
+**Its state is filled in on `Opening`, and that fires from the `ContextRequested` path
+only.** The public `Open` skips it, so a menu opened in code reads every row on. Right
+click and the context key both go the right way.
+
+Nothing in it is written here that the framework already knows. What is on comes from
+`CanCut`, `CanCopy`, `CanPaste`, `CanUndo` and `CanRedo`, read when the menu opens, so a
+password field cannot copy and a read only one cannot paste without either being named. The
+shortcuts come from `PlatformSettings.HotkeyConfiguration`, which is the same object
+`TextBox` matches a key against, so a hint and the key that works cannot disagree on either
+OS. Delete is the one exception, since the platform lists no gesture for it.
+
 **`ui:SearchBox`** is the one input control that is ours, and only for its clear button. A
 mark and a radius would be a class, but emptying a field is behaviour and a theme cannot
 carry it. Its button lives in inner content, which no control theme can reach, so the theme

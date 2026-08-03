@@ -224,4 +224,10 @@
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
+    <!-- Every field that takes typing, including the ones inside a spinner and a picker.
+         :is, so a derived field is covered without a style of its own. -->
+    <Style Selector=":is(TextBox)">
+        <Setter Property="(ui:TextMenu.Shows)" Value="True" />
+    </Style>
+
 </Styles>

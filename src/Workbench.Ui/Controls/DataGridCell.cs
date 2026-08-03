@@ -90,11 +90,21 @@ public class DataGridCell : ContentControl
     {
         base.OnLostFocus(e);
 
-        if (IsEditing && !this.IsKeyboardFocusWithin && this.FindAncestorOfType<DataGrid>() is { } grid)
+        if (IsEditing && !this.IsKeyboardFocusWithin && !HasMenuOpen &&
+            this.FindAncestorOfType<DataGrid>() is { } grid)
         {
             grid.CommitEdit();
         }
     }
+
+    /// <summary>
+    /// A menu opens in a popup and takes the focus with it, which would end the edit under
+    /// the open menu. TextBox.OnLostFocus guards its own selection the same way.
+    /// </summary>
+    private bool HasMenuOpen =>
+        this.GetVisualDescendants()
+            .OfType<Control>()
+            .Any(child => child.ContextFlyout is { IsOpen: true } || child.ContextMenu is { IsOpen: true });
 
     private void Apply()
     {
