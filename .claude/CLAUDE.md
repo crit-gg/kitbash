@@ -1467,6 +1467,18 @@ real question is whether a phase is the work or the startup around it. **The fin
 reported by the launcher**, since Godot's last phase declares the whole count and then
 takes one step, which left a full bar reading almost nothing.
 
+**The two phases are told apart and the item is shown.** Scanning and importing both
+declare the asset count and both are real work, so the dialog names which one is running
+and the mono line carries the count and the file being read, such as
+`312 / 520  big_311.png`. The scan is the one task name read, and anything else long
+enough to report reads as importing, so a rename costs a word rather than the progress.
+
+**Godot's own narration is left out and its items are kept.** A line carries one or the
+other and the two are told apart by the trailing dots: measured over a whole import,
+every message that is a sentence ends in them and no file name does. The narration says
+nothing a person waiting for their project needs, and the line it would go on is mono and
+holds values.
+
 A line it cannot read is skipped and nothing fails. An older engine that prints none of
 this leaves the bar indeterminate, which is what it was before.
 

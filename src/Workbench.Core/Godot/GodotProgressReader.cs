@@ -48,6 +48,16 @@ public sealed partial class GodotProgressReader
     /// </remarks>
     private const int WorthShowing = 10;
 
+    /// <summary>
+    /// The task Godot runs to work out what has changed, before importing any of it.
+    /// </summary>
+    /// <remarks>
+    /// The one place a task name is read, and only to tell two phases of the same work
+    /// apart on screen. Anything else long enough to report reads as importing, so a
+    /// rename costs a word rather than the progress.
+    /// </remarks>
+    private const string ScanTask = "_update_scan_actions";
+
     private string _task = string.Empty;
     private int _total;
     private int _done;
@@ -86,9 +96,7 @@ public sealed partial class GodotProgressReader
             _done = 0;
             _largest = Math.Max(_largest, _total);
 
-            return _total > WorthShowing
-                ? new GodotLaunchStep(GodotLaunchStage.Importing, Count(), 0)
-                : null;
+            return _total > WorthShowing ? new GodotLaunchStep(StageOf(task), Count(), 0) : null;
         }
 
         // A short phase says nothing, so the bar holds what the work left it at rather
@@ -101,10 +109,28 @@ public sealed partial class GodotProgressReader
         _done++;
 
         return new GodotLaunchStep(
-            GodotLaunchStage.Importing,
-            Count(),
+            StageOf(task),
+            Detail(message),
             int.Parse(step.Groups[1].ValueSpan) / 100d);
     }
+
+    private static GodotLaunchStage StageOf(string task) =>
+        task == ScanTask ? GodotLaunchStage.Scanning : GodotLaunchStage.Importing;
+
+    /// <summary>
+    /// The count, and the item beside it when the line names one.
+    /// </summary>
+    /// <remarks>
+    /// **Godot's own narration is left out and its items are kept.** The line carries one
+    /// or the other, and the two are told apart by the trailing dots: measured over a
+    /// whole import, every message that is a sentence ends in them and no file name does.
+    /// The narration says nothing a person waiting for their project needs, and the line
+    /// it would go on is mono and holds values.
+    /// </remarks>
+    private string Detail(string message) =>
+        message.EndsWith("...", StringComparison.Ordinal) || message.Length == 0
+            ? Count()
+            : $"{Count()}  {message}".TrimStart();
 
     /// <summary>
     /// The step to report once the import has exited, which is a full bar.

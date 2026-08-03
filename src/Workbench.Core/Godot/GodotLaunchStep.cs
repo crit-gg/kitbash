@@ -12,6 +12,12 @@ public enum GodotLaunchStage
     /// <summary>Building the project's C#, so the editor opens with its assemblies ready.</summary>
     Building,
 
+    /// <summary>
+    /// Reading the project to find what has changed. Godot's own first pass, and the one
+    /// before the import proper.
+    /// </summary>
+    Scanning,
+
     /// <summary>Importing assets, which a fresh clone always needs.</summary>
     Importing,
 

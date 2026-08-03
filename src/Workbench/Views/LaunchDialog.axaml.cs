@@ -180,6 +180,7 @@ public partial class LaunchDialog : DialogWindow
         {
             GodotLaunchStage.Cleaning => "Deleting the import cache",
             GodotLaunchStage.Building => "Building C#",
+            GodotLaunchStage.Scanning => "Scanning assets",
             GodotLaunchStage.Importing => "Importing assets",
             GodotLaunchStage.Starting => _mode == GodotLaunchMode.Editor
                 ? "Starting the editor"
