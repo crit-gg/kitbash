@@ -40,4 +40,12 @@ public sealed class WorkspaceViewModel
     };
 
     public bool CanSwitch => !IsCurrent && !Workspace.IsMissing;
+
+    /// <summary>
+    /// There is a folder to open, and one to write a name into. A missing workspace can
+    /// still have its path copied and can still be taken off the list.
+    /// </summary>
+    public bool IsOnDisk => !Workspace.IsMissing;
+
+    public string RemoveLabel => $"Remove {Name}";
 }

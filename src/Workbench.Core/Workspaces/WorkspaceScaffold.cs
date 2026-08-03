@@ -49,6 +49,32 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
         }
     }
 
+    public void EnsureUserLayerIgnored(string root)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+
+        var paths = new WorkspacePaths(root);
+        var file = Path.Combine(paths.WorkbenchDirectory, ".gitignore");
+
+        if (_fileSystem.FileExists(file))
+        {
+            return;
+        }
+
+        try
+        {
+            _fileSystem.CreateDirectory(paths.WorkbenchDirectory);
+            _fileSystem.WriteAllText(
+                file,
+                $"# Personal Workbench settings. Not shared.{Environment.NewLine}user/{Environment.NewLine}");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The settings still work. A checkout that cannot be written is not a reason
+            // to stop, and the same rule is in the repository's own ignore file for most.
+        }
+    }
+
     private string Template()
     {
         var text = new StringBuilder();

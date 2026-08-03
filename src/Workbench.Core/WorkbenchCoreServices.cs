@@ -99,8 +99,10 @@ public static class WorkbenchCoreServices
 
         services.AddWorkbenchExternalTools();
         services.TryAddTransient<IDirectoryWatcher, DirectoryWatcher>();
+        services.TryAddSingleton<GitEnvironment>();
         services.TryAddSingleton<IGitStatusReader, GitStatusReader>();
         services.TryAddSingleton<IGitUpdater, GitUpdater>();
+        services.TryAddSingleton<IGitCloner, GitCloner>();
         services.TryAddSingleton<IGitStatusMonitor, GitStatusMonitor>();
 
         return services;
@@ -216,6 +218,8 @@ public static class WorkbenchCoreServices
         services.TryAddSingleton<IWindowSettings, WindowSettings>();
         services.TryAddSingleton<GodotSettingsSchema>();
         services.TryAddSingleton<IGodotSettings, GodotSettings>();
+        services.TryAddSingleton<WorkspacesSettingsSchema>();
+        services.TryAddSingleton<IWorkspacesSettings, WorkspacesSettings>();
 
         return services;
     }

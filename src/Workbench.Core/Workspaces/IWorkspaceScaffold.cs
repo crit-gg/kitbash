@@ -8,4 +8,10 @@ public interface IWorkspaceScaffold
     /// Touches a disk, so keep it off the UI thread.
     /// </summary>
     void Ensure(string root);
+
+    /// <summary>
+    /// Writes the ignore rule that keeps the user layer out of git. The folder sits inside
+    /// <c>.workbench</c>, so it carries its own rule rather than relying on the repository's.
+    /// </summary>
+    void EnsureUserLayerIgnored(string root);
 }

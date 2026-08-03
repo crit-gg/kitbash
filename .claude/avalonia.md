@@ -580,6 +580,9 @@ old behavior. Animations started by hand through `RunAsync`, and animations targ
   `DoDragDropAsync`, and `DragEventArgs.Data` became `DragEventArgs.DataTransfer`.
   `BinaryFormatter` is no longer used on Windows, so custom payloads need their own
   serialization. X11 gained XDND support in 12.1.
+- `IClipboard.SetTextAsync` is gone with it. Putting text on the clipboard is
+  `clipboard.SetValueAsync(DataFormat.Text, text)`, an extension in
+  `Avalonia.Input.Platform`, and reading it back is `TryGetTextAsync`.
 
 ## Bindings
 

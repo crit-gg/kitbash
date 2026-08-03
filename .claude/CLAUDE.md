@@ -276,6 +276,12 @@ over. The gallery is where the toast service is wired to a composition root and 
 
 The git strip and the engine strip are both real and both read the open workspace.
 
+**The workspace popover is finished.** Each row's menu opens a folder, copies its path,
+renames it and takes it off the list, and the footer adds a workspace from a folder or
+clones one from git. The clone dialog runs `IGitCloner` and stays open until git has
+finished, so what it hands back is a folder that is really there. Renaming and cloning are
+covered by the `workbench-platform` and `workbench-git` skills.
+
 **The tools section is drawn and its data is invented.** The set of tools is the registry's,
 and every version, update, install state and blocked state on a card comes from
 `Workbench/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
@@ -286,7 +292,9 @@ The settings schema is at step 3 of the six in `.claude/plans/settings-schema.md
 has the schema types, the rules, the per layer read, the batched write, the remove, the
 parse state as a value and the write refusal that goes with it. `window.nativeChrome` is
 on a descriptor and `WindowSettings` reads its default from it. Nothing draws any of it
-yet, and steps 4 to 6 are the window, the launcher's own schema and probes.
+yet, and steps 4 to 6 are the window, the launcher's own schema and probes. There are five
+schemas now, since the clone dialog reads `workspaces.directory` and nothing draws that
+either, so it is set by hand until the window lands.
 
 The rail's other two pages, Godot engines and Settings, are drawn and disabled. Both have
 designs in the Claude Design project and neither has a stage yet. The rail itself carries

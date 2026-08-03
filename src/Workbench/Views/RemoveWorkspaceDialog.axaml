@@ -1,0 +1,56 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Workbench.Ui.Controls;assembly=Workbench.Ui"
+                 x:Class="Workbench.Views.RemoveWorkspaceDialog"
+                 Title="Remove workspace"
+                 Width="428" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="Remove workspace" />
+
+        <StackPanel Grid.Row="1" Margin="16,16,16,14">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="11">
+                <ui:Icon Grid.Column="0" Glyph="InfoCircle" Size="20"
+                         Foreground="{DynamicResource Accent}"
+                         VerticalAlignment="Top" />
+
+                <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Name="Heading"
+                               FontSize="{DynamicResource FontSizeSubhead}"
+                               FontWeight="{DynamicResource FontWeightStrong}"
+                               Foreground="{DynamicResource InkPrimary}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Text="The folder stays where it is. Nothing on disk is deleted, and you can add it again at any time."
+                               FontSize="{DynamicResource FontSizeControl}"
+                               LineHeight="19"
+                               Foreground="{DynamicResource InkSecondary}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <!-- The path as evidence, so a click on the wrong row shows itself here. -->
+            <Border Margin="31,12,0,0" Padding="10,8"
+                    Background="{DynamicResource SurfaceWell}"
+                    BorderBrush="{DynamicResource LineSeam}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource RadiusControl}">
+                <TextBlock Name="Path"
+                           FontFamily="{DynamicResource FontFamilyMono}"
+                           FontSize="{DynamicResource FontSizeSmall}"
+                           FontWeight="{DynamicResource FontWeightMedium}"
+                           Foreground="{DynamicResource InkPrimary}"
+                           TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+
+        <ui:DialogFooter Grid.Row="2">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Cancel" ui:Dialog.Role="Cancel" />
+                <Button Content="Remove" Classes="danger" ui:Dialog.Role="Accept" />
+            </StackPanel>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

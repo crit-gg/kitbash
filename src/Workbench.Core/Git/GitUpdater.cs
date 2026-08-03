@@ -12,40 +12,30 @@ public sealed class GitUpdater : IGitUpdater
     /// <summary>Long enough for a large repository on a slow link, short enough to give up on.</summary>
     private static readonly TimeSpan Limit = TimeSpan.FromSeconds(30);
 
-    /// <summary>
-    /// Everything that would otherwise wait for a person. An empty value unsets the
-    /// variable, which is what stops a helper that the environment already names.
-    /// </summary>
-    private static readonly Dictionary<string, string> Unattended = new(StringComparer.Ordinal)
-    {
-        ["GIT_TERMINAL_PROMPT"] = "0",
-        ["GIT_ASKPASS"] = "",
-        ["SSH_ASKPASS"] = "",
-        ["SSH_ASKPASS_REQUIRE"] = "never",
-        ["GIT_SSH_COMMAND"] = "ssh -oBatchMode=yes -oStrictHostKeyChecking=accept-new",
-        ["GCM_INTERACTIVE"] = "never",
-    };
-
     private readonly IProcessRunner _processes;
     private readonly IExternalTools _tools;
     private readonly IFileSystem _fileSystem;
     private readonly IGitStatusReader _status;
+    private readonly GitEnvironment _environment;
 
     public GitUpdater(
         IProcessRunner processes,
         IExternalTools tools,
         IFileSystem fileSystem,
-        IGitStatusReader status)
+        IGitStatusReader status,
+        GitEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(processes);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(fileSystem);
         ArgumentNullException.ThrowIfNull(status);
+        ArgumentNullException.ThrowIfNull(environment);
 
         _processes = processes;
         _tools = tools;
         _fileSystem = fileSystem;
         _status = status;
+        _environment = environment;
     }
 
     public async Task<GitUpdateResult> UpdateAsync(string root, CancellationToken cancellation = default)
@@ -111,7 +101,7 @@ public sealed class GitUpdater : IGitUpdater
         try
         {
             output = await _processes.ReadAsync(
-                ProcessRequest.CommandIn(root, git, arguments).With(Unattended),
+                ProcessRequest.CommandIn(root, git, arguments).With(_environment.Unattended),
                 limit).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)

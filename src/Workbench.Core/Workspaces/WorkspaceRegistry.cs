@@ -123,6 +123,20 @@ internal sealed class WorkspaceRegistry : IWorkspaceRegistry
         Refresh();
     }
 
+    public void Rename(string root, string? name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+
+        if (!_fileSystem.DirectoryExists(root))
+        {
+            return;
+        }
+
+        _names.SetName(root, name);
+
+        Refresh();
+    }
+
     public void SetCurrent(string root)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);

@@ -69,11 +69,13 @@ public partial class App : Application
                 provider.GetRequiredService<IToastService>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
+                provider.GetRequiredService<IWorkspacesSettings>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IToolRegistry>(),
                 provider.GetRequiredService<MockToolCatalogue>(),
                 provider.GetRequiredService<IGitStatusMonitor>(),
                 provider.GetRequiredService<IGitUpdater>(),
+                provider.GetRequiredService<IGitCloner>(),
                 provider.GetRequiredService<IUiDispatcher>(),
                 provider.GetRequiredService<IEngineRequirementReader>(),
                 provider.GetRequiredService<IEngineStore>(),

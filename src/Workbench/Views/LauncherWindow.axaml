@@ -242,7 +242,8 @@
 
                                                                 <Button Grid.Column="3" Classes="icon"
                                                                         ToolTip.Tip="More"
-                                                                        AutomationProperties.Name="More">
+                                                                        AutomationProperties.Name="More"
+                                                                        Click="OnWorkspaceMenuClick">
                                                                     <ui:Icon Glyph="DotsVerticalRounded" />
                                                                 </Button>
                                                             </Grid>
@@ -253,18 +254,31 @@
                                         </ScrollViewer>
 
                                         <ui:Popover.Footer>
-                                            <!-- A library button rather than a menu item. The row is one action, not a menu, and the
+                                            <!-- Library buttons rather than menu items. Each row is one action, not a menu, and the
                                                  ghost kind is what a button with no fill already looks like here. -->
-                                            <Button Classes="ghost"
-                                                    HorizontalAlignment="Stretch"
-                                                    HorizontalContentAlignment="Left"
-                                                    Click="OnAddWorkspaceClick">
-                                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                                    <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
-                                                    <TextBlock Text="Add workspace from folder"
-                                                               VerticalAlignment="Center" />
-                                                </StackPanel>
-                                            </Button>
+                                            <StackPanel Spacing="2">
+                                                <Button Classes="ghost"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left"
+                                                        Click="OnAddWorkspaceClick">
+                                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                                        <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Add workspace from folder"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <Button Classes="ghost"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left"
+                                                        Click="OnCloneWorkspaceClick">
+                                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                                        <ui:Icon Glyph="GitBranch" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Clone workspace from git"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
                                         </ui:Popover.Footer>
                                     </ui:Popover>
                                 </Flyout>

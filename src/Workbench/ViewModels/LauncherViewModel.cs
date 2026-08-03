@@ -19,9 +19,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private const int RowPathLength = 48;
 
     private readonly IWorkspaceRegistry _workspaces;
+    private readonly IWorkspacesSettings _workspaceSettings;
     private readonly IPathShortener _paths;
     private readonly IGitStatusMonitor _git;
     private readonly IGitUpdater _updater;
+    private readonly IGitCloner _cloner;
     private readonly IUiDispatcher _dispatcher;
     private readonly IEngineRequirementReader _requirements;
     private readonly IEngineStore _engines;
@@ -61,11 +63,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     public LauncherViewModel(
         IWorkspaceRegistry workspaces,
+        IWorkspacesSettings workspaceSettings,
         IPathShortener paths,
         IToolRegistry tools,
         MockToolCatalogue catalogue,
         IGitStatusMonitor git,
         IGitUpdater updater,
+        IGitCloner cloner,
         IUiDispatcher dispatcher,
         IEngineRequirementReader requirements,
         IEngineStore engineStore,
@@ -76,11 +80,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         EnginesViewModel engines)
     {
         ArgumentNullException.ThrowIfNull(workspaces);
+        ArgumentNullException.ThrowIfNull(workspaceSettings);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(updater);
+        ArgumentNullException.ThrowIfNull(cloner);
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(engineStore);
@@ -91,9 +97,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(engines);
 
         _workspaces = workspaces;
+        _workspaceSettings = workspaceSettings;
         _paths = paths;
         _git = git;
         _updater = updater;
+        _cloner = cloner;
         _dispatcher = dispatcher;
         _requirements = requirements;
         _engines = engineStore;
@@ -162,6 +170,41 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             // There is nowhere to report it yet. Give it one.
         }
     });
+
+    /// <summary>
+    /// A clone about to be set up, with this machine's usual folder already in it. The
+    /// dialog owns it, since nothing outside one is cloning.
+    /// </summary>
+    public CloneWorkspaceViewModel NewClone() =>
+        new(_cloner, _workspaceSettings.DefaultDirectory);
+
+    /// <summary>Takes a workspace out of the list. The folder on disk is left alone.</summary>
+    public Task RemoveWorkspaceAsync(WorkspaceViewModel workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        return LoadAsync(() => _workspaces.Remove(workspace.Workspace.Root));
+    }
+
+    /// <summary>Names a workspace for this person. Blank goes back to the derived name.</summary>
+    public Task RenameWorkspaceAsync(WorkspaceViewModel workspace, string? name)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        return LoadAsync(() =>
+        {
+            try
+            {
+                _workspaces.Rename(workspace.Workspace.Root, name);
+            }
+            catch (Exception exception) when (exception is SettingsFileUnreadableException
+                or IOException or UnauthorizedAccessException)
+            {
+                // Caught so a file that will not take the name does not take the app down
+                // from a background thread. There is nowhere to report it yet. Give it one.
+            }
+        });
+    }
 
     public Task SwitchToAsync(WorkspaceViewModel workspace)
     {

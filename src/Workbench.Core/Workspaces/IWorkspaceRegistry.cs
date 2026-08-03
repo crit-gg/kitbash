@@ -20,6 +20,12 @@ public interface IWorkspaceRegistry
     /// <summary>Forgets a workspace. The folder on disk is left alone.</summary>
     void Remove(string root);
 
+    /// <summary>
+    /// Names a workspace for this person. Blank goes back to the name the workspace
+    /// resolves on its own. Does nothing for a folder that is not there.
+    /// </summary>
+    void Rename(string root, string? name);
+
     void SetCurrent(string root);
 
     /// <summary>Reads names and states from disk again.</summary>

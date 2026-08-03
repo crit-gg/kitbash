@@ -220,7 +220,7 @@ can only write what it drew.
 
 ### The schemas that exist
 
-Four, all Core's, three in the `Application` home. That home is per user per machine and
+Five, all Core's, four in the `Application` home. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
 other**, so none of those can be shared through a workspace's team config by accident.
 `godot.engine` is the one that is genuinely a team fact, so it is the one that layers.
@@ -230,7 +230,15 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `WindowSettingsSchema` | `window.nativeChrome` |
 | `ExternalToolsSettingsSchema` | `tools.git.path`, `tools.dotnet.path` |
 | `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
+| `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
+
+**`workspaces.directory` defaults to blank and blank is the right default.** It is where
+the clone dialog offers to put a new workspace, and there is no folder this app can guess
+that would be better than asking. Reading it goes through `IWorkspacesSettings`, which
+also answers blank for a relative path a hand edited file might hold, since a relative
+path is not a place. `workspaces.known` and `workspaces.current` look like neighbours and
+are not: those two are application state, in a different file, written by the app.
 
 **A blank override means the app decides.** `tools.git.path` and `tools.dotnet.path`
 default to blank, and blank is an answer rather than a gap, so `PathShapeRule` takes

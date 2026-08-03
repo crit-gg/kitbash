@@ -63,6 +63,33 @@ Measured across every case: clean and behind pulls, a modified file does not, a 
 does not, diverged does not, a detached head does not, no upstream does not, already level
 does not, and an untracked file in the way does not.
 
+### Cloning
+
+`IGitCloner` is the launcher's Clone workspace from git. It runs `git clone` with the
+same unattended variables the updater uses, which are `GitEnvironment.Unattended` now
+that two callers need them.
+
+**An address is parsed before it reaches a process.** `GitRemote` accepts http, https,
+`ssh://` and the scp form such as `git@example.com:team/game.git`, and refuses everything
+else, a local path included. It also carries the folder name git would pick, which is the
+last path segment without `.git`, so the destination is on screen before anything is
+written. A single character before the colon is a Windows drive letter, so an scp host
+needs two or more.
+
+**It refuses a destination that exists and clears up one it made.** Nothing was there a
+moment before, so a folder there after a failure is git's half written one, and cancelling
+or timing out leaves the same thing. The parent is created when it is missing. There is a
+30 minute backstop and the dialog's Cancel stops it sooner.
+
+The outcome is read out of git's words the way the updater reads its own, and anything
+unrecognised is a plain failure.
+
+Measured on this machine against a repository served over http by `python3 -m http.server`
+from a temporary folder, which is dumb http, so the real client with its smart protocol
+fallback ran: a clone landing with its files and its `.git`, a second one refused, a
+repository that is not there reported as `NotFound` with no folder left behind, a parent
+created two levels deep, and a cancelled clone clearing up after itself.
+
 ### Watching a repository
 
 Modeled on what editors do and checked against two, the VS Code git extension and

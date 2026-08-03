@@ -89,10 +89,21 @@ anyone maintaining a list.
 
 **Name**, in order, from `IWorkspaceNameResolver`:
 
-1. `workspace.name` in the workspace's team config
-2. `config/name` from the first `project.godot` found under the folder, through
+1. `workspace.name` in this person's own user layer
+2. `workspace.name` in the workspace's team config
+3. `config/name` from the first `project.godot` found under the folder, through
    `IGodotProjectReader`
-3. the folder name
+4. the folder name
+
+**Renaming writes the user layer, never the team one.** `IWorkspaceRegistry.Rename` is
+the launcher's Rename workspace, and the launcher's list is one person's. Writing the
+team config would put a modified tracked file in the repository the status bar is
+watching, so a rename made in a personal list would read as an unstaged change to
+everybody. Blank removes the key and the four rules above decide again. The user layer
+gets `.workbench/.gitignore` written beside it, through `IWorkspaceScaffold`, so the
+file never shows up as untracked either.
+
+A folder that is not there is not renamed, since the name is a file inside it.
 
 **States.** `IsLocal` means no repository, so there is no branch or history to show.
 `IsMissing` means the folder is gone. A missing workspace is kept in the list rather

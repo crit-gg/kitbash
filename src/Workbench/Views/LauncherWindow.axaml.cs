@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
@@ -118,6 +119,109 @@ public partial class LauncherWindow : ChromelessWindow
     {
         WorkspaceSelector.Flyout?.Hide();
         await AddWorkspaceFromFolderAsync();
+    }
+
+    private async void OnCloneWorkspaceClick(object? sender, RoutedEventArgs e)
+    {
+        WorkspaceSelector.Flyout?.Hide();
+
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        var dialog = new CloneWorkspaceDialog { DataContext = model.NewClone() };
+
+        // The dialog only says yes once git has finished, so the folder is really there.
+        if (await dialog.ShowDialog<bool>(this) && dialog.Root is { } root)
+        {
+            await model.AddWorkspaceAsync(root);
+        }
+    }
+
+    // The row's own menu. Assembled here rather than declared with the row, since
+    // MenuFlyout takes items or an ItemsSource but not both.
+    private void OnWorkspaceMenuClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: WorkspaceViewModel workspace } button)
+        {
+            return;
+        }
+
+        var menu = new MenuFlyout();
+
+        menu.Items.Add(Item(
+            "Open folder",
+            workspace.IsOnDisk,
+            () => Model?.OpenFolder(workspace.Workspace.Root)));
+
+        menu.Items.Add(Item("Copy path", enabled: true, () => _ = CopyPathAsync(workspace)));
+
+        menu.Items.Add(Item(
+            "Rename workspace",
+            workspace.IsOnDisk,
+            () => _ = RenameWorkspaceAsync(workspace)));
+
+        // Last, behind a separator, and it names its workspace, so a click on the wrong
+        // row is visible before it is confirmed.
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Item(
+            workspace.RemoveLabel,
+            enabled: true,
+            () => _ = RemoveWorkspaceAsync(workspace),
+            danger: true));
+
+        menu.ShowAt(button);
+    }
+
+    private static MenuItem Item(string header, bool enabled, Action run, bool danger = false)
+    {
+        var item = new MenuItem { Header = header, IsEnabled = enabled };
+
+        if (danger)
+        {
+            item.Classes.Add("danger");
+        }
+
+        item.Click += (_, _) => run();
+
+        return item;
+    }
+
+    /// <summary>The real root rather than the shortened one the row draws.</summary>
+    private async Task CopyPathAsync(WorkspaceViewModel workspace)
+    {
+        WorkspaceSelector.Flyout?.Hide();
+
+        // Avalonia 12 replaced SetTextAsync with a format and a value.
+        if (Clipboard is { } clipboard)
+        {
+            await clipboard.SetValueAsync(DataFormat.Text, workspace.Workspace.Root);
+        }
+    }
+
+    private async Task RenameWorkspaceAsync(WorkspaceViewModel workspace)
+    {
+        WorkspaceSelector.Flyout?.Hide();
+
+        var dialog = RenameWorkspaceDialog.For(workspace);
+
+        if (await dialog.ShowDialog<bool>(this) && Model is { } model)
+        {
+            await model.RenameWorkspaceAsync(workspace, dialog.ChosenName);
+        }
+    }
+
+    private async Task RemoveWorkspaceAsync(WorkspaceViewModel workspace)
+    {
+        WorkspaceSelector.Flyout?.Hide();
+
+        var dialog = RemoveWorkspaceDialog.For(workspace);
+
+        if (await dialog.ShowDialog<bool>(this) && Model is { } model)
+        {
+            await model.RemoveWorkspaceAsync(workspace);
+        }
     }
 
     private async void OnChooseFolderClick(object? sender, RoutedEventArgs e) =>
