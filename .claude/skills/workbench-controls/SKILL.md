@@ -337,6 +337,16 @@ letting the halo out.
 two halves are, so each half carries its own halo and rounds only its outer end. That is
 why the frame does not clip: a clip would take both halos with it.
 
+**A press on anything that is not a control takes the focus off the one that held it.**
+`ChromelessWindow` is `Focusable`, which is the whole of it. Avalonia walks up from
+whatever was pressed and focuses the first thing that can take focus, and it gives up when
+there is none, so the window is the last stop. A press on a button still stops at the
+button. A press on a panel, a heading, a scrollbar or the title bar reaches the window and
+the field behind loses its caret. See `.claude/avalonia.md` under Input for what was
+measured.
+
+A window that does not derive from `ChromelessWindow` does not get this.
+
 Disabled flattens the fill to `SurfaceControlOff` with a `LineControlOff` border and
 `InkDisabled` text. Never opacity. A kind with no fill keeps none.
 

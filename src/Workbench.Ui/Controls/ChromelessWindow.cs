@@ -33,6 +33,10 @@ public class ChromelessWindow : Window
 
     public ChromelessWindow()
     {
+        // Avalonia moves focus to the first focusable thing above whatever was pressed and
+        // gives up when there is none, so the window taking focus is what drops a field's.
+        Focusable = true;
+
         Classes.Set("chromeless", true);
         Classes.Set("inactive", !IsActive);
     }

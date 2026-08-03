@@ -589,6 +589,33 @@ old behavior. Animations started by hand through `RunAsync`, and animations targ
   `ExclusionRect` and `FocusHintRectangle` for directional navigation.
 - `NavigationDirection` covers `Next`, `Previous`, `First`, `Last`, the four arrows and
   the two page keys.
+
+### A press only ever moves focus, so it needs somewhere to move it to
+
+`FocusManager`'s static constructor adds a tunnel class handler on `PointerPressedEvent`
+for every `IInputElement`. On a primary press it walks from the pressed element up the
+visual parents and focuses the first one that can take focus. **There is no branch that
+clears focus.** A press with nothing focusable above it leaves the old focus standing,
+which is why a text field keeps its caret after a click on a panel.
+
+The fix is to give the walk a last stop rather than to write a handler:
+`ChromelessWindow` sets `Focusable = true`. Measured over the real window: with it off, a
+press on a heading leaves focus on the field. With it on, focus lands on the window and
+the field's `IsKeyboardFocusWithin` goes false. A press on a button still stops at the
+button, with one `LostFocus` and no refocus in between.
+
+`IsTabStop` stays true and costs nothing, because navigation searches descendants and
+never offers the root. Measured: Tab cycles the three controls and never reaches the
+window.
+
+`FocusManager.Focus(null)` is not the way. It has a branch that restores the focus
+scope's remembered element instead of clearing, and it only clears when that element is
+already the focused one.
+
+Watch the order when a window focuses something itself. `SetFocusScope` runs on
+activation and now finds the window focusable, so it takes focus when the scope has
+nothing remembered. `DialogWindow.OnOpened` runs after that and wins. Measured over three
+openings, including a reopened dialog whose scope had a remembered element.
 - Access keys are matched on the printed symbol rather than the virtual key, so accented
   characters and digits work. `AccessText.AccessKey` changed from `char` to `string?`.
 - Clipboard and drag and drop were rewritten. `IDataObject` is gone. `DataObject`

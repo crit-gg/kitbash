@@ -72,6 +72,11 @@ corner radius, the eight resize grips and the whole title bar, and
                    Icon="avares://Workbench/Assets/Icons/icon_64x64.png" />
 ```
 
+**`ChromelessWindow` is `Focusable`, and that is load bearing.** It is what drops a text
+field's focus when a person clicks empty space, because Avalonia moves focus up from
+whatever was pressed and gives up if it finds nothing focusable. A window that does not
+derive from it loses the behaviour. See `.claude/avalonia.md` under Input.
+
 `WindowTitleBar` owns the icon, the title, the caption buttons, the move drag and the
 double click. Its content is whatever else the window wants in the chrome, such as a
 menu or a toolbar, and it is empty by default. Do not hand write a title bar row, and
