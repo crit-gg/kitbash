@@ -477,6 +477,17 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         Page = 1;
     }
 
+    /// <summary>
+    /// Installs the engine this workspace asks for, on the engines page so the install is
+    /// visible while it runs.
+    /// </summary>
+    public Task InstallEngineAsync(EngineVersionPattern wanted, bool mono)
+    {
+        Page = 1;
+
+        return Engines.InstallForAsync(wanted, mono);
+    }
+
     private void OnInstallsChanged(object? sender, EventArgs e) => _ = RefreshEngineAsync();
 
     /// <summary>

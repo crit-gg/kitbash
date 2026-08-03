@@ -16,9 +16,9 @@ namespace Workbench.Core.Godot;
 /// key is not an answer at all and falls through.
 /// </para>
 /// <para>
-/// The .NET flag never comes from the config. Whether a project has C# in it is a fact
-/// about the project, not a choice, so it is read off the project every time even when
-/// the version came from the workspace.
+/// The .NET flag is read off the project every time, since whether a project has C# in
+/// it is a fact rather than a choice. A pin ending in <c>-mono</c> can add to it, so a
+/// workspace can require the .NET build of a version, but nothing can take it away.
 /// </para>
 /// <para>
 /// Both layers of the config are read, personal over team shared, which is the same
@@ -58,7 +58,11 @@ internal sealed class EngineRequirementReader : IEngineRequirementReader
             return new EngineRequirement
             {
                 Version = pinned,
-                NeedsDotnet = needsDotnet,
+
+                // A pin ending in mono asks for the .NET build as well. It only ever adds
+                // to what the project needs, since a pin without it asks for nothing
+                // either way and the project is what knows whether it has C# in it.
+                NeedsDotnet = needsDotnet || pinned.NeedsDotnet,
                 Source = EngineRequirementSource.Workspace,
                 Project = project,
             };

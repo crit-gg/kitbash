@@ -15,10 +15,11 @@ namespace Workbench.Core.Godot;
 /// knows its patch and its channel, so a requirement needs a type of its own.
 /// </para>
 /// <para>
-/// The .NET flag is deliberately not here. An engine's identity is a tag plus that flag,
-/// and the two are answered by different questions: the version comes from what a project
-/// pins and the flag from whether the project has C# in it. Mixing them into one pattern
-/// makes both harder to read.
+/// The version and the .NET flag are still different questions. The flag is a fact about
+/// the project and is read off it, and <see cref="NeedsDotnet"/> only ever adds to that:
+/// a pin ending <c>-mono</c> asks for the .NET build as well, and one that does not ends
+/// asks for nothing either way. So the grammar here is the one an install is named by,
+/// and a person can paste what the engines page calls a build.
 /// </para>
 /// <para>
 /// **A pattern cannot spell one exact release the way a tag does, and it is not meant
@@ -31,13 +32,15 @@ namespace Workbench.Core.Godot;
 /// </remarks>
 public readonly partial record struct EngineVersionPattern
 {
-    private EngineVersionPattern(int major, int? minor, int? patch, EngineChannel? channel, int? number)
+    private EngineVersionPattern(
+        int major, int? minor, int? patch, EngineChannel? channel, int? number, bool needsDotnet)
     {
         Major = major;
         Minor = minor;
         Patch = patch;
         Channel = channel;
         Number = number;
+        NeedsDotnet = needsDotnet;
     }
 
     public int Major { get; }
@@ -50,6 +53,18 @@ public readonly partial record struct EngineVersionPattern
 
     /// <summary>The number after the channel, when the pattern is as exact as <c>4.8-rc1</c>.</summary>
     public int? Number { get; }
+
+    /// <summary>
+    /// True when the pattern ended in <c>-mono</c>, which asks for the .NET build.
+    /// </summary>
+    /// <remarks>
+    /// **Asymmetric on purpose.** Writing <c>-mono</c> requires the .NET build, and
+    /// leaving it off requires nothing, because that is how an engine's own name is
+    /// spelled: a plain build carries no suffix, so a missing one cannot mean "not .NET"
+    /// without making <c>4.7</c> mean it too. What a project needs is a fact about the
+    /// project and is read off it, and this only ever adds to that.
+    /// </remarks>
+    public bool NeedsDotnet { get; }
 
     /// <summary>The same scope rule <see cref="EngineTag.IsSupported"/> states.</summary>
     public bool IsSupported => Major >= 4;
@@ -94,6 +109,13 @@ public readonly partial record struct EngineVersionPattern
             : null;
 
         int? number = match.Groups[5].Success ? int.Parse(match.Groups[5].ValueSpan) : null;
+        var needsDotnet = match.Groups[6].Success;
+
+        // A .NET build is named by its channel, so there is no such thing as 4.7-mono.
+        if (needsDotnet && channel is null)
+        {
+            return false;
+        }
 
         // Stable never carries a number, the same rule the tag grammar enforces.
         if (channel == EngineChannel.Stable && number is not null)
@@ -106,7 +128,8 @@ public readonly partial record struct EngineVersionPattern
             match.Groups[2].Success ? int.Parse(match.Groups[2].ValueSpan) : null,
             match.Groups[3].Success ? int.Parse(match.Groups[3].ValueSpan) : null,
             channel,
-            number);
+            number,
+            needsDotnet);
 
         return true;
     }
@@ -182,7 +205,7 @@ public readonly partial record struct EngineVersionPattern
             text += $"-{ChannelText(channel)}{Number}";
         }
 
-        return text;
+        return NeedsDotnet ? text + "-mono" : text;
     }
 
     private static string ChannelText(EngineChannel channel) => channel switch
@@ -197,6 +220,9 @@ public readonly partial record struct EngineVersionPattern
     // A patch cannot appear without a minor, which the nesting enforces. Unlike the tag
     // grammar a zero patch is allowed, since this is what a person writes rather than
     // what Godot published, and 4.7.0 plainly means 4.7.
-    [GeneratedRegex(@"^(\d+)(?:\.(\d+)(?:\.(\d+))?)?(?:-(stable|dev|alpha|beta|rc)(\d+)?)?$")]
+    //
+    // The -mono tail makes this the same grammar an install is named by, so a person can
+    // paste what the engines page calls a build and have it mean that build.
+    [GeneratedRegex(@"^(\d+)(?:\.(\d+)(?:\.(\d+))?)?(?:-(stable|dev|alpha|beta|rc)(\d+)?)?(-mono)?$")]
     private static partial Regex Grammar();
 }

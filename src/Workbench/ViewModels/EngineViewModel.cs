@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Workbench.Core.Godot;
 using Workbench.Core.IO;
+using Workbench.Ui.Controls;
 
 namespace Workbench.ViewModels;
 
@@ -74,7 +75,9 @@ public sealed partial class EngineViewModel : ViewModelBase
         {
             case EngineMatch.Matched when resolution.Engine is { } engine:
                 State = EngineState.Matched;
-                Version = $"Godot {EngineRowViewModel.NameOf(engine.Tag)}";
+                Version = $"Godot {EngineRowViewModel.VersionOf(engine.Tag)}";
+                Channel = ChannelOf(engine.Tag.Channel);
+                ChannelTier = TierOf(engine.Tag.Channel);
                 Note = paths.Shorten(engine.Directory, NoteLength);
                 Action = "Open in Editor";
 
@@ -82,25 +85,39 @@ public sealed partial class EngineViewModel : ViewModelBase
 
             case EngineMatch.Mismatch when resolution.Engine is { } engine:
                 State = EngineState.Mismatch;
-                Version = $"Godot {EngineRowViewModel.NameOf(engine.Tag)}";
+                Version = $"Godot {EngineRowViewModel.VersionOf(engine.Tag)}";
+                Channel = ChannelOf(engine.Tag.Channel);
+                ChannelTier = TierOf(engine.Tag.Channel);
                 StateLabel = "mismatch";
                 Note = MismatchNote(requirement, engine, resolution.IsDefault, asked);
 
                 // **Installing what was asked for is the answer, and opening what is here
                 // is the workaround.** So the button is the answer and the workaround is
                 // in the menu. A mismatch is not a state to settle into.
-                Action = asked is null ? "Install" : $"Install {asked}";
+                Action = requirement.Version is { } fix ? $"Install {NumberOf(fix)}" : "Install";
 
                 break;
 
             case EngineMatch.Missing:
                 State = EngineState.Missing;
-                Version = asked is null ? "No engine installed" : $"Godot {asked}";
                 StateLabel = "not installed";
-                Note = asked is null
-                    ? "No Godot engine is installed on this machine."
-                    : $"No install matches {asked}.";
-                Action = "Install";
+
+                // What was asked for is all there is to show, so it is shown the way an
+                // engine is: the number, then what it says about itself in pills.
+                if (requirement.Version is { } wanted)
+                {
+                    Version = $"Godot {NumberOf(wanted)}";
+                    Channel = wanted.Channel is { } named ? ChannelOf(named) : string.Empty;
+                    ChannelTier = wanted.Channel is { } tiered ? TierOf(tiered) : BadgeTier.Neutral;
+                    Note = $"No install matches {wanted}.";
+                    Action = $"Install {NumberOf(wanted)}";
+                }
+                else
+                {
+                    Version = "No engine installed";
+                    Note = "No Godot engine is installed on this machine.";
+                    Action = "Install";
+                }
 
                 break;
 
@@ -137,6 +154,21 @@ public sealed partial class EngineViewModel : ViewModelBase
     /// <summary>The runtime badge, or empty when the project is not a .NET project.</summary>
     public string Runtime { get; private init; } = string.Empty;
 
+    /// <summary>
+    /// The channel as a pill, such as <c>STABLE</c>. Empty only when nothing names one,
+    /// which is a requirement like <c>4.7</c> with no engine behind it yet.
+    /// </summary>
+    /// <remarks>
+    /// **Shown for stable too, unlike the engines page.** A row there sits among other
+    /// rows and a missing pill reads as stable by contrast. This is one line on its own,
+    /// so nothing is being contrasted with and the pill is the only thing that says it.
+    /// </remarks>
+    public string Channel { get; private init; } = string.Empty;
+
+    public BadgeTier ChannelTier { get; private init; } = BadgeTier.Neutral;
+
+    public bool HasChannel => Channel.Length > 0;
+
     public EngineState State { get; private init; } = EngineState.Quiet;
 
     /// <summary>What the state means, in words. Empty when there is nothing to add.</summary>
@@ -162,11 +194,12 @@ public sealed partial class EngineViewModel : ViewModelBase
 
     public bool IsMissing => State == EngineState.Missing;
 
-    public string BadgeTier => State switch
+    /// <summary>The tier of the state pill, which is the one that says how things are.</summary>
+    public BadgeTier StateTier => State switch
     {
-        EngineState.Mismatch => "Modified",
-        EngineState.Missing => "Error",
-        _ => "Ok",
+        EngineState.Mismatch => BadgeTier.Modified,
+        EngineState.Missing => BadgeTier.Error,
+        _ => BadgeTier.Ok,
     };
 
     /// <summary>True when there is an engine and a project, so either mode can start.</summary>
@@ -184,12 +217,20 @@ public sealed partial class EngineViewModel : ViewModelBase
             return Task.CompletedTask;
         }
 
-        // A match opens. Anything else sends the person to the version that would fix it.
+        // A match opens.
         if (State == EngineState.Matched
             && Resolution is { Engine: { } engine }
             && Project is { } project)
         {
             return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor);
+        }
+
+        // **Anything else installs what was asked for, in one press.** A workspace that
+        // names a version has already said which engine it wants, so making somebody find
+        // it in a list of 183 is asking a question that is already answered.
+        if (Resolution?.Requirement is { Version: { } wanted } requirement)
+        {
+            return _launcher.InstallEngineAsync(wanted, requirement.NeedsDotnet);
         }
 
         ShowEngines();
@@ -242,6 +283,36 @@ public sealed partial class EngineViewModel : ViewModelBase
     // version, so the page opens filtered to what would answer rather than to all 183.
     private void ShowEngines() =>
         _launcher?.ShowEngines(Resolution?.Requirement.Version?.ToString());
+
+    /// <summary>The numbers alone, such as <c>4.7.1</c>, from what was asked for.</summary>
+    private static string NumberOf(EngineVersionPattern wanted)
+    {
+        var text = wanted.Major.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (wanted.Minor is { } minor)
+        {
+            text += $".{minor}";
+        }
+
+        return wanted.Patch is { } patch ? $"{text}.{patch}" : text;
+    }
+
+    private static string ChannelOf(EngineChannel channel) => channel switch
+    {
+        EngineChannel.Stable => "STABLE",
+        EngineChannel.Rc => "RC",
+        EngineChannel.Beta => "BETA",
+        EngineChannel.Alpha => "ALPHA",
+        _ => "DEV",
+    };
+
+    private static BadgeTier TierOf(EngineChannel channel) => channel switch
+    {
+        EngineChannel.Rc => BadgeTier.Modified,
+        EngineChannel.Beta => BadgeTier.Graph,
+        EngineChannel.Alpha => BadgeTier.Error,
+        _ => BadgeTier.Neutral,
+    };
 
     private static string MismatchNote(
         EngineRequirement requirement,

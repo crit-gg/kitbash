@@ -239,6 +239,70 @@ public sealed partial class EnginesViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Installs the build that answers a requirement, and shows it happening.
+    /// </summary>
+    /// <remarks>
+    /// **One press, and the page it lands on is the one already built to show an install.**
+    /// The row's own bar, its cancel and the toasts all belong to this page, so the strip
+    /// starts the install here rather than owning a second way of reporting one. The page
+    /// is filtered to the release and the card is opened, so what is running is on screen
+    /// rather than somewhere in 183 rows.
+    ///
+    /// The pattern picks the release the same way the resolver picks an install, so a
+    /// workspace asking for 4.7 gets the newest 4.7 stable rather than a candidate.
+    /// </remarks>
+    public async Task InstallForAsync(EngineVersionPattern wanted, bool mono)
+    {
+        // Nothing has been read if the page has not been opened yet, and the strip can
+        // send somebody here before that has happened.
+        if (_cards.Count == 0)
+        {
+            await LoadAsync().ConfigureAwait(true);
+        }
+
+        OnAvailable = true;
+
+        if (wanted.BestMatch(_cards.Keys) is not { } tag)
+        {
+            Query = string.Empty;
+
+            Post(
+                ToastTier.Error,
+                $"Nothing published matches {wanted}",
+                "Check the version this workspace asks for.");
+
+            return;
+        }
+
+        var card = _cards[tag];
+
+        Query = tag.ToString();
+        card.IsOpen = true;
+
+        var row = card.Rows.FirstOrDefault(candidate =>
+            candidate.Build.IsMono == mono
+            && candidate.Build.Architecture == HostArchitecture);
+
+        if (row is null)
+        {
+            Post(
+                ToastTier.Error,
+                $"Godot {EngineRowViewModel.NameOf(tag)} has no build for this machine",
+                $"Nothing published for {HostPlatformText} {EngineBuild.TextFor(HostArchitecture)}"
+                + (mono ? " with C# support." : "."));
+
+            return;
+        }
+
+        if (row.IsInstalled)
+        {
+            return;
+        }
+
+        await InstallAsync(row).ConfigureAwait(true);
+    }
+
+    /// <summary>
     /// Shows the engine directory in whatever file browser this desktop has.
     /// </summary>
     /// <remarks>

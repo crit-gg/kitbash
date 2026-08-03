@@ -22,7 +22,18 @@ public sealed class ExternalToolsSettingsSchema
                 "Full path to the git to run. Leave blank to use the first git on PATH, "
                 + "which is what a terminal on this machine would use. Takes effect at the next launch.",
             Default = string.Empty,
-            Rules = [new PathShapeRule(PathKind.File, mustBeRooted: true, allowEmpty: true)],
+            Rules = [new PathShapeRule(PathKind.File, true, true)]
+        };
+
+        GitClientPath = new SettingDescriptor<string>
+        {
+            Key = "tools.gitClient.path",
+            Name = "Git client program",
+            Description =
+                "Full path to the git client to run. Leave blank to not use and git client. " +
+                "Takes effect at the next launch.",
+            Default = string.Empty,
+            Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 
         DotnetPath = new SettingDescriptor<string>
@@ -33,7 +44,7 @@ public sealed class ExternalToolsSettingsSchema
                 "Full path to the dotnet to run. Leave blank to use the first dotnet on PATH. "
                 + "Takes effect at the next launch.",
             Default = string.Empty,
-            Rules = [new PathShapeRule(PathKind.File, mustBeRooted: true, allowEmpty: true)],
+            Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 
         Page = new SettingsPage
@@ -41,9 +52,12 @@ public sealed class ExternalToolsSettingsSchema
             Id = "externalTools",
             Title = "External tools",
             Home = SettingsHome.Application,
-            Sections = [new SettingsSection("Programs", [GitPath, DotnetPath])],
+            Sections = [new SettingsSection("Programs", [GitPath, GitClientPath, DotnetPath])]
         };
     }
+
+    /// <summary>Blank means no git client has been configured.</summary>
+    public SettingDescriptor<string> GitClientPath { get; set; }
 
     /// <summary>Blank means the git on PATH, which is what the app did before this existed.</summary>
     public SettingDescriptor<string> GitPath { get; }

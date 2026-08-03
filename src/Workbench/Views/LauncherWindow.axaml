@@ -285,13 +285,20 @@
                                                Foreground="{DynamicResource InkPrimary}"
                                                VerticalAlignment="Center" />
 
+                                    <!-- What the engine is, then how things are with it.
+                                         The channel shows even for stable, since this is
+                                         one line with nothing beside it to contrast with. -->
+                                    <ui:Badge Tier="{Binding Engine.ChannelTier}"
+                                              Content="{Binding Engine.Channel}"
+                                              IsVisible="{Binding Engine.HasChannel}" />
+
                                     <!-- A runtime is a fact rather than a status, which is
                                          why it is the data tier and carries a dot. -->
                                     <ui:Badge Tier="Data" HasDot="True"
                                               Content="{Binding Engine.Runtime}"
                                               IsVisible="{Binding Engine.HasRuntime}" />
 
-                                    <ui:Badge Tier="{Binding Engine.BadgeTier}"
+                                    <ui:Badge Tier="{Binding Engine.StateTier}"
                                               Content="{Binding Engine.StateLabel}"
                                               IsVisible="{Binding Engine.HasState}" />
                                 </StackPanel>

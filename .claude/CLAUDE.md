@@ -1271,9 +1271,12 @@ outright is the obvious rule and it is wrong: a candidate is not an upgrade from
 release, and somebody who wants one names it. A pattern that does name a channel has
 already said so, so there the highest wins.
 
-**The .NET flag is never part of the version.** An engine's identity is a tag plus that
-flag, and the two answer different questions: the version comes from what a workspace
-pins and the flag from whether the project has C# in it. Nobody chooses the flag.
+**A pin can end in `-mono`, which is how an install is named.** So `godot.engine` takes
+the exact text the engines page calls a build, `4.7.1-stable-mono`, and it means that
+release and the .NET one. The suffix is asymmetric on purpose: writing it requires the
+.NET build, and leaving it off requires nothing, since a plain build carries no suffix
+and a missing one cannot mean "not .NET" without making `4.7` mean it too. Whether a
+project needs C# is a fact read off the project, and a pin can only add to it.
 
 ### Where the requirement comes from
 
@@ -1330,9 +1333,21 @@ watch and no beat to run.
 
 **On a mismatch the button installs what was asked for.** Opening the wrong engine is the
 workaround, so it moves into the menu as Open anyway, which is the one state where that
-item appears. A mismatch is not a state to settle into. The button carries the version,
-and pressing it opens the engines page already filtered to what would answer, since
-arriving at 183 releases and a search field is being shown the haystack.
+item appears. A mismatch is not a state to settle into.
+
+**It installs in one press rather than going looking.** A workspace that names a version
+has already said which engine it wants, so pressing Install picks the release the same
+way the resolver picks an install, opens the engines page filtered to it with its card
+open, and starts the download. The page is where an install already shows its bar, its
+cancel and its toasts, so the strip starts one there rather than owning a second way of
+reporting one.
+
+**The strip shows an engine the way an engine is named**, whether one is installed or
+only asked for: the numbers alone as the title, then the channel and the .NET flag as
+pills. So a workspace pinned to `4.7.1-stable-mono` reads Godot 4.7.1 with STABLE and
+.NET beside it, rather than 4.7 or a raw string. The channel pill shows for stable too,
+unlike a row on the engines page, because a row there sits among others and a missing
+pill reads as stable by contrast, where this is one line with nothing to contrast with.
 
 **The strip names the engine that would open the project, not what was asked for**,
 except when there is no engine to name. Reading 4.7 while 4.6 is what opens would be

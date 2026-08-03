@@ -27,14 +27,15 @@ public sealed class WorkspaceGodotSettingsSchema
             Name = "Engine version",
             Description =
                 "Which Godot version this workspace needs. Any part may be left off, so "
-                + "4.7 means any 4.7 release and 4.7.1-stable means exactly that one. "
-                + "Blank uses the version the project itself names in project.godot.",
+                + "4.7 means any 4.7 release and 4.7.1-stable means exactly that one. End "
+                + "it with mono to require the .NET build, which is how the engines page "
+                + "names one. Blank uses the version the project names in project.godot.",
             Default = string.Empty,
             Rules =
             [
                 new PatternRule(
-                    @"^$|^\d+(\.\d+(\.\d+)?)?(-(stable|(dev|alpha|beta|rc)\d*))?$",
-                    "a Godot version such as 4.7, 4.7.1 or 4.8-rc1, or blank for none"),
+                    @"^$|^\d+(\.\d+(\.\d+)?)?(-(stable|(dev|alpha|beta|rc)\d*)(-mono)?)?$",
+                    "a Godot version such as 4.7, 4.7.1 or 4.7.1-stable-mono, or blank for none"),
             ],
         };
 
