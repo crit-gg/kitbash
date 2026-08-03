@@ -85,7 +85,11 @@ public sealed partial class EngineViewModel : ViewModelBase
                 Version = $"Godot {EngineRowViewModel.NameOf(engine.Tag)}";
                 StateLabel = "mismatch";
                 Note = MismatchNote(requirement, engine, resolution.IsDefault, asked);
-                Action = "Open anyway";
+
+                // **Installing what was asked for is the answer, and opening what is here
+                // is the workaround.** So the button is the answer and the workaround is
+                // in the menu. A mismatch is not a state to settle into.
+                Action = asked is null ? "Install" : $"Install {asked}";
 
                 break;
 
@@ -180,7 +184,10 @@ public sealed partial class EngineViewModel : ViewModelBase
             return Task.CompletedTask;
         }
 
-        if (Resolution is { Engine: { } engine } && Project is { } project)
+        // A match opens. Anything else sends the person to the version that would fix it.
+        if (State == EngineState.Matched
+            && Resolution is { Engine: { } engine }
+            && Project is { } project)
         {
             return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor);
         }
@@ -189,6 +196,16 @@ public sealed partial class EngineViewModel : ViewModelBase
 
         return Task.CompletedTask;
     }
+
+    /// <summary>
+    /// True on a mismatch, which is the one state with an engine that is not the right
+    /// one. Everywhere else the button already opens or there is nothing to open with.
+    /// </summary>
+    public bool CanOpenAnyway => IsMismatch && CanLaunch;
+
+    /// <summary>Opens in the engine that is here, knowing it is not the one asked for.</summary>
+    [RelayCommand]
+    private Task OpenAnyway() => Launch(GodotLaunchMode.Editor);
 
     /// <summary>
     /// Runs the project rather than editing it. The same build and the same import happen
@@ -221,8 +238,10 @@ public sealed partial class EngineViewModel : ViewModelBase
     }
 
     // Not a command. The rail is how a person goes to the engines page, and the only
-    // reason this exists is that Install has nowhere else to send them.
-    private void ShowEngines() => _launcher?.ShowEngines();
+    // reason this exists is that Install has nowhere else to send them. It carries the
+    // version, so the page opens filtered to what would answer rather than to all 183.
+    private void ShowEngines() =>
+        _launcher?.ShowEngines(Resolution?.Requirement.Version?.ToString());
 
     private static string MismatchNote(
         EngineRequirement requirement,

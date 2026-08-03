@@ -186,6 +186,20 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     public bool IsEmpty => (OnAvailable ? Cards.Count : Rows.Count) == 0 && !HasFailed;
 
+    /// <summary>
+    /// Raised after a read, so anything else showing what is installed can follow it.
+    /// </summary>
+    /// <remarks>
+    /// **Every mutation on this page ends in a read**, which is why one event here covers
+    /// installing, uninstalling, importing and naming a default. It is the same reason
+    /// the git strip watches a repository: what a person does in one place has to show up
+    /// in the other, and the workspace page's engine strip is the other place.
+    ///
+    /// It fires on the first read as well. Refreshing a strip that was already right
+    /// costs a read nobody sees, where missing one leaves the strip wrong.
+    /// </remarks>
+    public event EventHandler? InstallsChanged;
+
     /// <summary>Reads everything again. The Refresh button goes past the cache, a first open does not.</summary>
     [RelayCommand]
     public async Task LoadAsync(bool refresh = false)
@@ -208,6 +222,20 @@ public sealed partial class EnginesViewModel : ViewModelBase
             IsLoading = false;
             _loading.Release();
         }
+
+        // After the release, so a listener that reads engines cannot meet this page still
+        // holding its own load open.
+        InstallsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Opens this page showing what would answer a version, which is where the strip
+    /// sends somebody whose workspace asks for something that is not installed.
+    /// </summary>
+    public void ShowAvailable(string version)
+    {
+        Query = version;
+        OnAvailable = true;
     }
 
     /// <summary>

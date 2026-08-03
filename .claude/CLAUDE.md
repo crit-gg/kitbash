@@ -1304,6 +1304,20 @@ Four answers, and `EngineViewModel` turns one into the strip's words:
 | `Mismatch` | the engine that would open it, why it is wrong, Open anyway |
 | `Missing` | what was asked for, not installed, Install |
 
+**The strip follows the engines page.** `EnginesViewModel.InstallsChanged` fires after
+every read there, and every mutation on that page ends in a read, so one event covers
+installing, uninstalling, importing and naming a default. Installing the version a
+workspace asks for turns the strip green without anybody switching workspaces to make it
+notice. It is the same reason the git strip watches a repository, with the difference
+that engines are changed inside this app rather than outside it, so there is nothing to
+watch and no beat to run.
+
+**On a mismatch the button installs what was asked for.** Opening the wrong engine is the
+workaround, so it moves into the menu as Open anyway, which is the one state where that
+item appears. A mismatch is not a state to settle into. The button carries the version,
+and pressing it opens the engines page already filtered to what would answer, since
+arriving at 183 releases and a search field is being shown the haystack.
+
 **The strip names the engine that would open the project, not what was asked for**,
 except when there is no engine to name. Reading 4.7 while 4.6 is what opens would be
 worse than saying nothing. The `.NET` badge follows the same rule and describes the

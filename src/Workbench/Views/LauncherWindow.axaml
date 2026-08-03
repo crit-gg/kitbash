@@ -48,13 +48,6 @@
             <Setter Property="Padding" Value="15,14" />
         </Style>
 
-        <Style Selector="Border.engineMark">
-            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
-        </Style>
-
         <Style Selector="Border.toolMark">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
             <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
@@ -283,18 +276,8 @@
                          EngineViewModel's, so nothing here decides anything. -->
                     <Border Grid.Row="1" Classes="page" BorderThickness="0,0,0,1"
                             Height="56" Padding="20,0">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
-                            <Border Grid.Column="0" Classes="engineMark"
-                                    Width="28" Height="28" VerticalAlignment="Center">
-                                <TextBlock Classes="mono" Text="GD"
-                                           FontSize="{DynamicResource FontSizeSmall}"
-                                           FontWeight="{DynamicResource FontWeightStrong}"
-                                           Foreground="{DynamicResource AccentTintInk}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
-                            </Border>
-
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="11">
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{Binding Engine.Version}"
                                                FontSize="{DynamicResource FontSizeTitle}"
@@ -320,7 +303,7 @@
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
 
-                            <SplitButton Grid.Column="2"
+                            <SplitButton Grid.Column="1"
                                          Classes.primary="{Binding Engine.IsMatched}"
                                          Classes.warn="{Binding Engine.IsMismatch}"
                                          Classes.danger="{Binding Engine.IsMissing}"
@@ -333,6 +316,11 @@
                                         <!-- The same work as the button, and only the last
                                              step differs. Running is what Godot does with
                                              no flag, so editing is the one that adds one. -->
+                                        <!-- Only on a mismatch, where the button offers
+                                             the fix and this offers the workaround. -->
+                                        <MenuItem Header="Open anyway"
+                                                  Command="{Binding Engine.OpenAnywayCommand}"
+                                                  IsVisible="{Binding Engine.CanOpenAnyway}" />
                                         <MenuItem Header="Play"
                                                   Command="{Binding Engine.PlayCommand}"
                                                   IsEnabled="{Binding Engine.CanLaunch}" />

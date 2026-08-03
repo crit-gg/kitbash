@@ -107,6 +107,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // before anything bound to it is touched.
         _git.Changed += OnGitChanged;
 
+        // The strip describes what is installed, so it follows the page that changes it.
+        // Installing the version a workspace asks for has to turn the strip green without
+        // anybody switching workspaces to make it notice.
+        Engines.InstallsChanged += OnInstallsChanged;
+
         // The one read that stays here. This runs before the window exists, so there is no
         // frame to drop and nothing to feel, and doing it now means the launcher opens
         // filled in rather than opening empty and filling in a moment later.
@@ -175,7 +180,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Lets go of the monitor. The container owns the monitor itself and disposes it, so
     /// this only takes back what this class added to it.
     /// </summary>
-    public void Dispose() => _git.Changed -= OnGitChanged;
+    public void Dispose()
+    {
+        _git.Changed -= OnGitChanged;
+        Engines.InstallsChanged -= OnInstallsChanged;
+    }
 
     private void OnGitChanged(object? sender, EventArgs e) =>
         _dispatcher.Post(() => Git.Status = _git.Status);
@@ -453,8 +462,22 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     });
 
-    /// <summary>Opens the engines page, which is the rail's second item.</summary>
-    public void ShowEngines() => Page = 1;
+    /// <summary>
+    /// Opens the engines page. A version sends it to the available list already filtered
+    /// to what would answer, since arriving at 183 releases and a search field is being
+    /// shown the haystack.
+    /// </summary>
+    public void ShowEngines(string? version = null)
+    {
+        if (version is { Length: > 0 })
+        {
+            Engines.ShowAvailable(version);
+        }
+
+        Page = 1;
+    }
+
+    private void OnInstallsChanged(object? sender, EventArgs e) => _ = RefreshEngineAsync();
 
     /// <summary>
     /// Writes a path in a step's detail line for the width it is shown in.
