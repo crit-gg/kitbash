@@ -1,0 +1,93 @@
+name: Release
+on:
+  push:
+    paths-ignore: ['.github/**', '.gitignore', '.gitattributes']
+    branches: ["main"]
+
+  workflow_dispatch:
+
+# One release at a time. Two at once would work out the same version and race on the feed.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  B2_ENDPOINT: https://s3.us-west-002.backblazeb2.com
+  B2_REGION: us-west-002
+  B2_BUCKET: kitbash-updates
+  B2_PREFIX: kitbash/
+  # Matched to the Velopack package reference. A newer vpk can write a feed this
+  # launcher's Velopack does not read.
+  VPK_VERSION: 1.2.0
+
+jobs:
+  version:
+    name: Determine Version
+    uses: ./.github/workflows/_version.yml
+
+  publish:
+    name: Publish To The Feed
+    needs: [version]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install vpk
+        run: |
+          dotnet tool install -g vpk --version "$VPK_VERSION"
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      # vpk pack builds deltas by diffing against the previous full package sitting in the
+      # feed directory, so without this every client downloads the whole app again.
+      - name: Fetch the published releases
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          for channel in linux win; do
+            vpk download s3 \
+              --endpoint "$B2_ENDPOINT" --region "$B2_REGION" \
+              --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+              --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+              --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
+              || echo "Nothing published on $channel yet, so this release carries no delta."
+          done
+
+      - name: Build and pack
+        env:
+          KITBASH_VERSION: ${{ needs.version.outputs.version }}
+        run: build/release.sh "$RUNNER_TEMP/feed"
+
+      - name: Upload to the feed
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          for channel in linux win; do
+            vpk upload s3 \
+              --endpoint "$B2_ENDPOINT" --region "$B2_REGION" \
+              --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+              --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+              --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
+              --keepMaxReleases 5
+          done
+
+  # The tag is the baseline the next version counts from, so it is written only after a
+  # release really published. It is a tag and nothing else. No commit lands on the branch.
+  create_tag:
+    name: Create Tag
+    needs: [version, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: rickstaa/action-create-tag@v1
+        with:
+          tag: "v${{ needs.version.outputs.version }}"
+          tag_exists_error: false

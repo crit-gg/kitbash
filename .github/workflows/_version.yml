@@ -1,0 +1,25 @@
+name: Version
+on:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Reads tags and the commits since the last one. Nothing is written back, so no
+      # version lives in a tracked file. [major], [minor] or [version:x.y.z] in a commit
+      # message moves it further than the patch it would take on its own.
+      - name: Calculate version
+        id: version
+        uses: arcmantle/prospector@v1.1.0
+        with:
+          dir: '.'

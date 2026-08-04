@@ -1,3 +1,4 @@
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -34,6 +35,8 @@ public partial class GalleryWindow : ChromelessWindow
 
         InitializeComponent();
 
+        TitleBar.Version = BuildVersion();
+
         WindowToasts.Service = _toasts;
         PanelToasts.Service = _panelToasts;
 
@@ -51,6 +54,25 @@ public partial class GalleryWindow : ChromelessWindow
         }
 
         ShowValue();
+    }
+
+    /// <summary>
+    /// The version this was built at. The SDK appends the commit as build metadata, which
+    /// is not part of the product version, so everything after the plus goes.
+    /// </summary>
+    private static string BuildVersion()
+    {
+        var informational = Assembly.GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+
+        if (string.IsNullOrEmpty(informational))
+        {
+            return string.Empty;
+        }
+
+        var metadata = informational.IndexOf('+', StringComparison.Ordinal);
+
+        return metadata < 0 ? informational : informational[..metadata];
     }
 
     protected override void OnLoaded(RoutedEventArgs e)

@@ -58,9 +58,9 @@
         <!-- The title bar carries content, which is the case that keeps the row alive
              under the desktop's own frame. Turn window.nativeChrome on and this row
              stays while the launcher's disappears.
-             Version is the quiet readout after the name. The dialog below sets none, so
-             both states are here. -->
-        <ui:WindowTitleBar Grid.Row="0" Title="Kitbash Gallery" Version="0.1.0">
+             Version is the quiet readout after the name, set from the build. The dialog
+             below sets none, so both states are here. -->
+        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar" Title="Kitbash Gallery">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Right" VerticalAlignment="Center"
                         Margin="0,0,8,0">

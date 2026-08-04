@@ -4,6 +4,9 @@
 #
 #   build/release.sh <feed directory> [linux|win]
 #
+# KITBASH_VERSION overrides the version, and is how CI passes the one it worked out from
+# git history. Unset, the placeholder in Directory.Build.props is used.
+#
 # vpk cross compiles between Linux and Windows, and dotnet publishes for both from
 # either, so one machine builds both releases. Building is not testing: a package made
 # here for the other OS has not been run anywhere.
@@ -39,10 +42,21 @@ fi
 mkdir -p "$feed"
 feed=$(cd "$feed" && pwd)
 
-version=$(dotnet msbuild "$project" -getProperty:Version -nologo | tr -d '[:space:]')
+# CI works the version out from git history and sets it here. A local run has no history
+# to read, so it falls back to the placeholder in Directory.Build.props.
+version="${KITBASH_VERSION:-}"
+
+if [ -z "$version" ]; then
+  version=$(dotnet msbuild "$project" -getProperty:Version -nologo | tr -d '[:space:]')
+fi
 
 if [ -z "$version" ]; then
   echo "Could not read Version from $project" >&2
+  exit 1
+fi
+
+if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+  echo "Version $version does not start with three numbers." >&2
   exit 1
 fi
 
@@ -60,7 +74,8 @@ release() {
     --configuration Release \
     --runtime "$runtime" \
     --self-contained \
-    --output "$out"
+    --output "$out" \
+    -p:Version="$version"
 
   # The channel is left at its default, which is the OS short name, so this writes
   # releases.linux.json and releases.win.json beside the packages.
