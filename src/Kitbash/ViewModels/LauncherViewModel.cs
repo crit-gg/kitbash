@@ -155,6 +155,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<ToolGroupViewModel> ToolGroups { get; }
 
     /// <summary>
+    /// Whether the tools section draws. False while every card on it is invented, so the
+    /// page says tools are coming rather than offering ones that do not exist.
+    /// </summary>
+    public bool HasTools => false;
+
+    /// <summary>
     /// Registers a folder and opens it. A folder inside a workspace already added is
     /// refused and nothing happens.
     /// </summary>

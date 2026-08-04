@@ -324,11 +324,13 @@ clones one from git. The clone dialog runs `IGitCloner` and stays open until git
 finished, so what it hands back is a folder that is really there. Renaming and cloning are
 covered by the `kitbash-platform` and `kitbash-git` skills.
 
-**The tools section is drawn and its data is invented.** The set of tools is the registry's,
-and every version, update, install state and blocked state on a card comes from
-`Kitbash/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
-and download nothing. That stands until there is an answer to where a tool comes from, which
-is an open decision below. Delete the mock when there is.
+**The tools section is drawn, its data is invented, and it is hidden.** The set of tools is
+the registry's, and every version, update, install state and blocked state on a card comes
+from `Kitbash/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
+and download nothing. None of it is on screen: `LauncherViewModel.HasTools` is false, so the
+page shows a Tools are coming soon panel and the cards draw only when it turns true. The
+markup and the mock are both intact behind it. That stands until there is an answer to where
+a tool comes from, which is an open decision below. Delete the mock when there is.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
 `.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in

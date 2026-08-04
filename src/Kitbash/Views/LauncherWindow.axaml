@@ -381,7 +381,9 @@
 
                     <!-- tools -->
                     <Border Grid.Row="2" Classes="page" BorderThickness="0">
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                      <Panel>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                      IsVisible="{Binding HasTools}">
                             <ItemsControl ItemsSource="{Binding ToolGroups}" Margin="20,16,20,18">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
@@ -568,6 +570,32 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+
+                        <!-- No tool is built yet, so the section that would list them says
+                             so. Same shape as the empty workspace page. -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    MaxWidth="400"
+                                    IsVisible="{Binding !HasTools}">
+                            <Border Classes="toolMark" Width="52" Height="52"
+                                    HorizontalAlignment="Center">
+                                <ui:Icon Glyph="Package" Size="{DynamicResource IconSizeLarge}"
+                                         Foreground="{DynamicResource Accent}" />
+                            </Border>
+
+                            <TextBlock Text="Tools are coming soon" Margin="0,18,0,0"
+                                       FontSize="{DynamicResource FontSizeDialogTitle}"
+                                       FontWeight="{DynamicResource FontWeightStrong}"
+                                       Foreground="{DynamicResource InkPrimary}"
+                                       HorizontalAlignment="Center" />
+
+                            <TextBlock Margin="0,8,0,0"
+                                       FontSize="{DynamicResource FontSizeControl}"
+                                       LineHeight="18"
+                                       TextWrapping="Wrap" TextAlignment="Center"
+                                       Foreground="{DynamicResource InkSecondary}"
+                                       Text="The first tools are being built. They will show up here for the workspace you have open." />
+                        </StackPanel>
+                      </Panel>
                     </Border>
 
                     <!-- The status bar. Two of them, one row, and which one shows is
