@@ -1,8 +1,43 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- The secret store differs per OS and so does its package. These follow the runtime
+       being built for, never the machine doing the build, since release.sh publishes both
+       from one machine. An empty identifier is a plain build and takes both. -->
+  <PropertyGroup>
+    <KitbashWindowsSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashWindowsSecrets>
+    <KitbashLinuxSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashLinuxSecrets>
+    <KitbashWindowsSecrets Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win'))">true</KitbashWindowsSecrets>
+    <KitbashLinuxSecrets Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('linux'))">true</KitbashLinuxSecrets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(KitbashWindowsSecrets)' == 'true'">
+    <DefineConstants>$(DefineConstants);KITBASH_WINDOWS_SECRETS</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(KitbashLinuxSecrets)' == 'true'">
+    <DefineConstants>$(DefineConstants);KITBASH_LINUX_SECRETS</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
     <PackageReference Include="Tomlyn" Version="2.10.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KitbashWindowsSecrets)' == 'true'">
+    <PackageReference Include="Meziantou.Framework.Win32.CredentialManager" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KitbashLinuxSecrets)' == 'true'">
+    <PackageReference Include="Ace4896.DBus.Services.Secrets" Version="1.6.0" />
+  </ItemGroup>
+
+  <!-- A store cannot compile without its package, so each one goes out with it. -->
+  <ItemGroup Condition="'$(KitbashWindowsSecrets)' != 'true'">
+    <Compile Remove="Platform/Windows/WindowsSecretStore.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(KitbashLinuxSecrets)' != 'true'">
+    <Compile Remove="Platform/Linux/LinuxSecretStore.cs" />
   </ItemGroup>
 
 </Project>

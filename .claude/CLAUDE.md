@@ -129,6 +129,7 @@ Core exposes registration methods rather than a container of its own:
 
 - `AddKitbashIO` filesystem, environment, user directories, path display
 - `AddKitbashPlatform` the services that differ per OS
+- `AddKitbashSecrets` where a credential is kept for this person on this machine
 - `AddKitbashApplicationStorage` settings, state and the cache for this machine
 - `AddKitbashWorkspaces` the list of workspaces a person has added
 - `AddKitbashWorkspace` workspace discovery

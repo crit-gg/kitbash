@@ -79,6 +79,21 @@ public static class KitbashCoreServices
     }
 
     /// <summary>
+    /// Where a credential is kept for this person on this machine. Its own registration,
+    /// so a tool that wants a token does not also take the process runner and the
+    /// launcher lookup.
+    /// </summary>
+    public static IServiceCollection AddKitbashSecrets(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashIO();
+        services.TryAddSingleton(CreateSecretStore);
+
+        return services;
+    }
+
+    /// <summary>
     /// Where the programs Kitbash runs are on this machine. A person's override first
     /// and PATH behind it, so this is the only registration that makes the platform
     /// services depend on application settings, and only because where git is became a
@@ -305,6 +320,31 @@ public static class KitbashCoreServices
                 provider.GetRequiredService<IDesktopLauncherResolver>(),
                 provider.GetRequiredService<IExecutableFinder>());
         }
+
+        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+    }
+
+    /// <summary>
+    /// The fourth place in this file that tests the running OS. The constants come from
+    /// the project file, which drops the store a runtime is not being built for.
+    /// </summary>
+    private static ISecretStore CreateSecretStore(IServiceProvider provider)
+    {
+#if KITBASH_WINDOWS_SECRETS
+        // The version is the credential package's own floor, which CA1416 makes this test
+        // rather than the plain Windows one every other factory here uses.
+        if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+        {
+            return new WindowsSecretStore();
+        }
+#endif
+
+#if KITBASH_LINUX_SECRETS
+        if (OperatingSystem.IsLinux())
+        {
+            return new LinuxSecretStore(provider.GetRequiredService<IEnvironment>());
+        }
+#endif
 
         throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
     }

@@ -93,8 +93,8 @@ uninstaller, so nothing would call one. `WindowsDesktopIntegration` does nothing
 **`StartupWMClass` is deliberately absent** from the entry. A wrong one is worse than none,
 and the value Avalonia actually sets has not been checked with `xprop WM_CLASS`.
 
-`AddPlatformIO`, `AddEngineFiles` and `CreatePlatform`, all in `KitbashCoreServices`,
-are the only places that test the running OS.
+`AddPlatformIO`, `AddEngineFiles`, `CreatePlatform` and `CreateSecretStore`, all in
+`KitbashCoreServices`, are the only places that test the running OS.
 
 Targets are value objects. `WebAddress` accepts absolute http and https only, and
 `DirectoryLocation` requires a rooted path. Parsing is the only way to make either,
@@ -109,6 +109,71 @@ Linux assumes no particular distribution. `DesktopLauncherResolver` uses the fir
 launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE,
 MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
 what it looked for. Add candidates there rather than in `LinuxPlatform`.
+
+## Secrets
+
+`ISecretStore` keeps a credential for one person on one machine. Read, write and remove
+against a `SecretKey`, which is a service and an account, parsed the way `WebAddress` is.
+Registered by `AddKitbashSecrets`, which is its own method so a tool that wants a token
+does not also take the process runner and the launcher lookup.
+
+**A token never goes in settings.** The settings system is layered TOML and `config/` is
+committed, the workspace scaffold writes every descriptor into it, and the settings window
+draws each value with the line copyable. A secret has no business in any of that.
+
+**`SecretResult` names four outcomes and `Unavailable` is the one that matters.** It means
+this machine has no keyring, which is not the same as being signed out, and the two need
+different words on screen. `NotFound` is nothing stored, `Failed` is a store that refused.
+
+| | Windows | Linux |
+|---|---|---|
+| Behind it | Credential Manager, via `Meziantou.Framework.Win32.CredentialManager` | freedesktop Secret Service, via `Ace4896.DBus.Services.Secrets` |
+| Native dependency | none | none, it speaks D-Bus rather than binding libsecret |
+| `Unavailable` | never, the store is part of the OS | no session bus, or no daemon answering |
+
+Windows keys on a target name alone, so both halves go into it as `Kitbash:service:account`,
+and persistence is `LocalMachine` rather than `Enterprise` so a token does not roam to a
+machine that cannot use it. A blob over 2560 bytes is refused before Windows answers 1783.
+`CredentialManager.ReadCredential` gives null when nothing is stored, `DeleteCredential`
+throws instead, so 1168 is mapped to `NotFound`.
+
+The credential package declares `windows5.1.2600`, so the store carries that version and
+`CreateSecretStore` tests `OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600)`. Plain
+`OperatingSystem.IsWindows` does not satisfy CA1416 and the build fails on it.
+
+Linux reads `DBUS_SESSION_BUS_ADDRESS` through `IEnvironment` and answers `Unavailable`
+without connecting when it is unset. A null collection or a null item is a keyring that
+would not unlock, which is `Unavailable` too. It connects per call, since a token is read
+rarely. The same attributes can match more than one item, so a read takes the first and a
+remove deletes every match.
+
+**The packages are gated in `Kitbash.Core.csproj` on `RuntimeIdentifier`, never on the
+machine doing the build**, because `release.sh` publishes both runtimes from one machine.
+An empty identifier is a plain build and takes both. A gated package means its store cannot
+compile either, so the compile item goes with it and a constant each lets
+`CreateSecretStore` name the type it has. Those two `#if` blocks are the only preprocessor
+directives in the repository.
+
+There is no fallback for a Linux machine with no Secret Service. It answers `Unavailable`
+and stores nothing. An encrypted file protected by permissions alone was considered and
+deliberately not built, since nothing has reported needing it.
+
+**Restore lists both packages whatever the runtime**, because `RuntimeIdentifiers` is plural
+in `Directory.Build.props` and restore covers every declared one. So `project.assets.json`
+naming a package proves nothing. The build is where the condition applies, and the publish
+output is the thing to check.
+
+Measured on this machine, Linux, through a harness resolving the store from a real
+container: a secret written, read back byte for byte, removed and read again as `NotFound`,
+a remove of a key never written answering `NotFound`, the label reading
+`Kitbash: kitbash-harness (probe)` in the keyring, and all three operations answering
+`Unavailable` with `DBUS_SESSION_BUS_ADDRESS` unset. The gating was measured by publishing
+both runtimes from this one Linux machine: `win-x64` carries the credential package and no
+`DBus.Services.Secrets.dll`, and `linux-x64` the reverse. `Tmds.DBus.Protocol.dll` is in
+both and always was, since `Avalonia.FreeDesktop` depends on it.
+
+**The Windows store has never been executed**, since this machine is Linux. Its target name,
+persistence, size refusal and the 1168 mapping are reasoned rather than measured.
 
 ## Workspaces
 
