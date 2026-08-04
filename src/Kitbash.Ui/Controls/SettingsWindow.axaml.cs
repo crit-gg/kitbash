@@ -49,11 +49,21 @@ public partial class SettingsWindow : ChromelessWindow
 
     private async void OnOpened(object? sender, EventArgs e)
     {
-        if (Model?.First() is { } first)
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        model.Saved += OnSaved;
+
+        if (model.First() is { } first)
         {
             await Show(first);
         }
     }
+
+    /// <summary>Everything staged is written, so there is nothing left to be here for.</summary>
+    private void OnSaved(object? sender, EventArgs e) => Close();
 
     /// <summary>
     /// Nothing watches the filesystem and nothing watches the workspace list, so both are

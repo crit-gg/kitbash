@@ -637,9 +637,12 @@
                                         IsVisible="{Binding NeedsRestart}"
                                         IsEnabled="{Binding CanRestart}"
                                         Command="{Binding RestartCommand}" />
-                                <Button Classes="primary" Content="Save changes"
+                                <Button Content="Save"
                                         IsEnabled="{Binding CanSave}"
                                         Command="{Binding SaveCommand}" />
+                                <Button Classes="primary" Content="Save and close"
+                                        IsEnabled="{Binding CanSave}"
+                                        Command="{Binding SaveAndCloseCommand}" />
                             </StackPanel>
                         </Grid>
                     </Border>

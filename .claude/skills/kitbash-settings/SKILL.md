@@ -468,6 +468,14 @@ counts every staged change across every page that has been opened, and Save grou
 by page and layer and writes each file once. A page keeps its own changes, so switching
 pages and coming back keeps them.
 
+**There are two save buttons and they write the same way.** Save stays, and Save and close
+goes when the write landed. Both run `WriteAsync`, which reports whether everything staged
+was written, and only Save and close raises `Saved` on a true answer. The window closes on
+that event. A page a disk or an unreadable file refused leaves its changes staged and
+`Problem` set, so a false answer keeps the window up with its message whichever button was
+pressed. Restart writes through `WriteAsync` too and never closes, since a restart that
+could not start a copy has something to say.
+
 **A value that a rule refuses is kept and blocks the save.** Taking it away as a person
 types would be worse than refusing to write it. The row shows the reason under the
 control, the origin dot turns red, and Save is disabled until every staged change is

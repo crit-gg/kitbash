@@ -93,6 +93,9 @@ public sealed partial class SettingsWindowViewModel : ObservableObject
 
     public bool CanRestart => NeedsRestart && !IsSaving && (!IsDirty || CanSave);
 
+    /// <summary>Raised by Save and close once everything staged is written.</summary>
+    public event EventHandler? Saved;
+
     /// <summary>Opens a page, reading its files the first time it is asked for.</summary>
     public async Task OpenAsync(SettingsTreeNode? node)
     {
@@ -164,11 +167,30 @@ public sealed partial class SettingsWindowViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveAsync()
+    private async Task SaveAsync() => await WriteAsync().ConfigureAwait(true);
+
+    /// <summary>
+    /// Writes, then goes, unless there is something left to see. Restart and a plain save
+    /// both leave the window where it is.
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveAndCloseAsync()
+    {
+        if (await WriteAsync().ConfigureAwait(true))
+        {
+            Saved?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Writes every page holding a change. False when anything is still staged or a file
+    /// refused the write, since then there is something left to see.
+    /// </summary>
+    private async Task<bool> WriteAsync()
     {
         if (!CanSave)
         {
-            return;
+            return false;
         }
 
         IsSaving = true;
@@ -186,6 +208,8 @@ public sealed partial class SettingsWindowViewModel : ObservableObject
             IsSaving = false;
             OnPageChanged();
         }
+
+        return !IsDirty && !HasProblem;
     }
 
     /// <summary>
@@ -200,14 +224,11 @@ public sealed partial class SettingsWindowViewModel : ObservableObject
             return;
         }
 
-        if (IsDirty)
+        // The window stays up through this, so it is still there to say that a restart did
+        // not happen.
+        if (IsDirty && !await WriteAsync().ConfigureAwait(true))
         {
-            await SaveAsync().ConfigureAwait(true);
-
-            if (IsDirty)
-            {
-                return;
-            }
+            return;
         }
 
         if (!_restart.Restart())
