@@ -13,6 +13,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Kitbash.Core.Platform;
 
 namespace Kitbash.Ui.Controls;
 
@@ -87,6 +88,13 @@ public class ColorPicker : TemplatedControl
         AvaloniaProperty.Register<ColorPicker, IList<ColorValue>?>(nameof(Recent));
 
     /// <summary>
+    /// Where a colour picked off the screen comes from. The eyedropper is drawn only when a
+    /// host supplies one and the desktop can run the gesture.
+    /// </summary>
+    public static readonly StyledProperty<IScreenColour?> ScreenColourProperty =
+        AvaloniaProperty.Register<ColorPicker, IScreenColour?>(nameof(ScreenColour));
+
+    /// <summary>
     /// Whether alpha can be edited. Turning it off drops the alpha lane and the alpha row,
     /// and leaves whatever alpha the colour arrived with.
     /// </summary>
@@ -155,6 +163,7 @@ public class ColorPicker : TemplatedControl
     private const string OverbrightPart = "PART_Overbright";
     private const string RevertPart = "PART_Revert";
     private const string CopyPart = "PART_Copy";
+    private const string DropperPart = "PART_Dropper";
     private const string AddSwatchPart = "PART_AddSwatch";
     private const string ApplyPart = "PART_Apply";
     private const string CancelPart = "PART_Cancel";
@@ -217,6 +226,7 @@ public class ColorPicker : TemplatedControl
     private Control? _recent;
     private Control? _actions;
     private Control? _swatches;
+    private Control? _dropper;
     private Control? _overbright;
     private Control? _revert;
 
@@ -346,6 +356,13 @@ public class ColorPicker : TemplatedControl
         set => SetValue(IsInPanelProperty, value);
     }
 
+    /// <inheritdoc cref="ScreenColourProperty"/>
+    public IScreenColour? ScreenColour
+    {
+        get => GetValue(ScreenColourProperty);
+        set => SetValue(ScreenColourProperty, value);
+    }
+
     /// <inheritdoc cref="EditsAlphaProperty"/>
     public bool EditsAlpha
     {
@@ -396,6 +413,7 @@ public class ColorPicker : TemplatedControl
         _recent = e.NameScope.Find<Control>(RecentPart);
         _actions = e.NameScope.Find<Control>(ActionsPart);
         _swatches = e.NameScope.Find<Control>(SwatchesPart);
+        _dropper = e.NameScope.Find<Control>(DropperPart);
         _overbright = e.NameScope.Find<Control>(OverbrightPart);
         _revert = e.NameScope.Find<Control>(RevertPart);
 
@@ -1031,6 +1049,10 @@ public class ColorPicker : TemplatedControl
                 Copy();
                 break;
 
+            case Button { Name: DropperPart }:
+                Sample();
+                break;
+
             case Button { Name: AddSwatchPart }:
                 Keep();
                 break;
@@ -1045,6 +1067,32 @@ public class ColorPicker : TemplatedControl
         }
 
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Hands the gesture to the desktop and takes whatever comes back. Nothing is drawn over
+    /// the screen here, since the portal draws its own.
+    /// </summary>
+    private async void Sample()
+    {
+        if (ScreenColour is not { CanPick: true } screen)
+        {
+            return;
+        }
+
+        try
+        {
+            if (await screen.PickAsync() is { } picked)
+            {
+                SetCurrentValue(ColorProperty, new ColorValue(picked.Red, picked.Green, picked.Blue, Color.A));
+                Remember();
+            }
+        }
+        catch (Exception)
+        {
+            // A desktop that refuses is a desktop with no eyedropper, which is not an error
+            // worth putting in front of somebody who was picking a colour.
+        }
     }
 
     private async void Copy()
@@ -1242,11 +1290,16 @@ public class ColorPicker : TemplatedControl
             _flat.Third = Shape == ColorShape.OkhlRectangle ? _okSaturation : _okLightness;
         }
 
+        if (_dropper is not null)
+        {
+            _dropper.IsVisible = ScreenColour is { CanPick: true };
+        }
+
         if (_shapeMark is not null)
         {
             _shapeMark.Glyph = Shape switch
             {
-                ColorShape.Wheel or ColorShape.Circle or ColorShape.OkhslCircle => IconGlyph.Crosshair,
+                ColorShape.Wheel or ColorShape.Circle or ColorShape.OkhslCircle => IconGlyph.Shapes,
                 ColorShape.Sliders => IconGlyph.Columns,
                 _ => IconGlyph.SelectAll,
             };

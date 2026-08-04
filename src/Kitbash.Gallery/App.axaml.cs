@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Kitbash.Gallery.Views;
+using Kitbash.Core;
 using Kitbash.Ui;
 
 namespace Kitbash.Gallery;
@@ -27,6 +28,7 @@ public partial class App : Application
     /// </summary>
     private static ServiceProvider BuildServices() =>
         new ServiceCollection()
+            .AddKitbashPlatform()
             .AddKitbashToasts()
             .AddSingleton<GalleryWindow>()
             .BuildServiceProvider();

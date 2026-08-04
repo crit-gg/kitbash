@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
+using Kitbash.Core.Platform;
 using Kitbash.Ui.Controls;
 using Kitbash.Ui.Toasts;
 
@@ -13,6 +14,9 @@ namespace Kitbash.Gallery.Views;
 
 public partial class GalleryWindow : ChromelessWindow
 {
+    /// <summary>The desktop's own colour picking, handed to the pickers on the page.</summary>
+    private readonly IScreenColour _screen;
+
     private readonly List<Control> _chips = [];
     private readonly List<Node> _big = [];
 
@@ -30,13 +34,14 @@ public partial class GalleryWindow : ChromelessWindow
     /// <summary>The docking harness. It owns the layout, so rebuilding is one call.</summary>
     private DockHarness? _dock;
 
-    public GalleryWindow(IToastService toasts, IToastServiceFactory scopes)
+    public GalleryWindow(IToastService toasts, IToastServiceFactory scopes, IScreenColour screen)
     {
         ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(scopes);
 
         _toasts = toasts;
         _panelToasts = scopes.Create();
+        _screen = screen;
 
         InitializeComponent();
 
@@ -71,6 +76,9 @@ public partial class GalleryWindow : ChromelessWindow
     {
         var swatches = new ObservableCollection<ColorValue>();
         var recent = new ObservableCollection<ColorValue>();
+
+        Bench.ScreenColour = _screen;
+        Tint.ScreenColour = _screen;
 
         Bench.Swatches = swatches;
         Bench.Recent = recent;

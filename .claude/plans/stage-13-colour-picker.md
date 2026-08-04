@@ -198,9 +198,18 @@ painted into a bitmap at half size, 9042 pixels in 3.2 ms measured, since OKHSL 
 gradient. The shape is chosen from a menu, since seven icons do not fit the design's segmented
 row.
 
+**The eyedropper is built on Linux.** `IScreenColour` in Core, `LinuxScreenColour` over the
+desktop portal's `PickColor`, and the button drawn only where a host supplies one that can
+pick. The portal's reply is a signal to the connection that asked, and `gdbus call` is its own
+connection, so the answer is read off a `gdbus monitor` started first and matched by the
+request's own token. No D-Bus library was taken.
+
+**Windows has no eyedropper.** There is no portal there, so the gesture would be a full screen
+window over a capture of the desktop, which is what Godot falls back to. `NoScreenColour` is
+registered instead and the button never appears.
+
 ### Still Godot's and not ours
 
-- **The eyedropper.** Screen capture, one implementation per OS, the portal on Linux.
 - **Palettes as files.** Godot saves and loads a preset list, and names it in the picker.
 - **Dragging a colour** from the sample onto a swatch, or between swatches.
 - **The keyboard on the shape.** Godot focuses the field, enters a cursor editing mode on

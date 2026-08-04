@@ -48,6 +48,10 @@ public static class KitbashCoreServices
             services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
             services.TryAddSingleton<IDesktopIntegration, WindowsDesktopIntegration>();
 
+            // No portal here, so picking a colour off the screen would mean a window over a
+            // capture of the desktop, which is not built.
+            services.TryAddSingleton<IScreenColour, NoScreenColour>();
+
             return services;
         }
 
@@ -58,6 +62,7 @@ public static class KitbashCoreServices
             services.TryAddSingleton<IPathRules, LinuxPathRules>();
             services.TryAddSingleton<IBundleEnvironment, AppImageEnvironment>();
             services.TryAddSingleton<IDesktopIntegration, LinuxDesktopIntegration>();
+            services.TryAddSingleton<IScreenColour, LinuxScreenColour>();
 
             return services;
         }

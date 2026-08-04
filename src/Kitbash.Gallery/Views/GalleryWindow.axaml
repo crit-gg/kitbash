@@ -859,6 +859,12 @@
                                            Text="RGB and HSV read whole numbers, LINEAR reads the colour as light, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the EV row, which multiplies in light, so one stop is twice as bright. Type 400 into red and the excess moves into the EV row, which is what Godot does." />
 
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="THE EYEDROPPER" Content="the desktop's own" />
+
+                                <TextBlock Classes="note"
+                                           Text="The crosshair in the header hands the gesture to the desktop portal, which draws the magnifier and gives one colour back. It works the same on Wayland and X11 and on any desktop that implements the portal. It is drawn only where there is one, so on Windows there is no button at all." />
+
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="SWATCHES" Content="empty until they are not" />
 
                                 <TextBlock Classes="note"

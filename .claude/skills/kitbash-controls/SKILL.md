@@ -477,9 +477,15 @@ likely to fall into.
 lane with it, and `EditsExposure="False"` puts the stops back into the colour before it goes,
 so the value never changes underneath. Both are Godot's `edit_alpha` and `edit_intensity`.
 
-**Three things Godot has and this does not.** The eyedropper, saving and loading a palette as
-a file, and dragging a colour from one swatch to another. None is refused, they are simply not
-built, and the stage file records what each would take.
+**The eyedropper is the desktop's own gesture.** `ScreenColour` is an `IScreenColour` a host
+hands in, and the button is drawn only when one is supplied and it says it can pick. Nothing
+is drawn over the screen here: on Linux the portal draws its own magnifier and gives one
+colour back, which is the only way that works on Wayland. On Windows there is no portal, so
+`NoScreenColour` is registered and the button never appears. See the `kitbash-platform` skill.
+
+**Two things Godot has and this does not.** Saving and loading a palette as a file, and
+dragging a colour from one swatch to another. Neither is refused, they are simply not built,
+and the stage file records what each would take.
 
 **The picker owns its own hue.** A grey has no hue and black has no saturation, so both are
 held on the control rather than read back from the colour every time. Without that the field

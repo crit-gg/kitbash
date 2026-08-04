@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Kitbash.Core.Platform;
 
 namespace Kitbash.Ui.Controls;
 
@@ -28,6 +29,10 @@ public class ColorField : Button
     /// <inheritdoc cref="ColorPicker.RecentProperty"/>
     public static readonly StyledProperty<IList<ColorValue>?> RecentProperty =
         AvaloniaProperty.Register<ColorField, IList<ColorValue>?>(nameof(Recent));
+
+    /// <inheritdoc cref="ColorPicker.ScreenColourProperty"/>
+    public static readonly StyledProperty<IScreenColour?> ScreenColourProperty =
+        AvaloniaProperty.Register<ColorField, IScreenColour?>(nameof(ScreenColour));
 
     /// <inheritdoc cref="ColorPicker.HeaderProperty"/>
     public static readonly StyledProperty<object?> HeaderProperty =
@@ -82,6 +87,13 @@ public class ColorField : Button
         set => SetValue(RecentProperty, value);
     }
 
+    /// <inheritdoc cref="ScreenColourProperty"/>
+    public IScreenColour? ScreenColour
+    {
+        get => GetValue(ScreenColourProperty);
+        set => SetValue(ScreenColourProperty, value);
+    }
+
     /// <inheritdoc cref="HeaderProperty"/>
     public object? Header
     {
@@ -112,6 +124,7 @@ public class ColorField : Button
     private void OnOpening(object? sender, EventArgs e)
     {
         _picker.Header = Header;
+        _picker.ScreenColour = ScreenColour;
         _picker.Swatches = Swatches;
         _picker.Recent = Recent;
         _picker.Previous = Color;

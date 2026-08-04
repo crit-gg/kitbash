@@ -209,7 +209,7 @@
                      same card and the panel case is the shell's own class. -->
                 <ui:Popover Name="PART_Frame">
                     <ui:Popover.Header>
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
                             <TextBlock Grid.Column="0"
                                        Text="{Binding $parent[ui:ColorPicker].Header}"
                                        FontSize="{DynamicResource FontSizeSmall}"
@@ -218,7 +218,17 @@
                                        Foreground="{DynamicResource InkMuted}"
                                        VerticalAlignment="Center" />
 
-                            <DropDownButton Grid.Column="1"
+                            <Button Grid.Column="1"
+                                    Name="PART_Dropper"
+                                    Classes="icon"
+                                    Margin="{DynamicResource MarginRowLead}"
+                                    ToolTip.Tip="Pick a colour off the screen"
+                                    AutomationProperties.Name="Pick a colour off the screen"
+                                    IsVisible="False">
+                                <ui:Icon Glyph="Crosshair" Size="{DynamicResource IconSizeAlert}" />
+                            </Button>
+
+                            <DropDownButton Grid.Column="2"
                                                Name="PART_ShapeMenu"
                                                Classes="icon"
                                                Height="{DynamicResource HeightControlSmall}"

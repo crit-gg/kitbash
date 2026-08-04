@@ -78,6 +78,21 @@ them. When tools land, a tool started from our own bundle should keep the enviro
 that is the moment to add the distinction. `PlainEnvironment` is empty, for Windows and for
 a Linux run outside a bundle, and `Outside` being empty is the honest answer for both.
 
+**`IScreenColour` picks a colour off the screen, and the desktop runs the gesture.** A screen
+is not ours to read: Wayland refuses it outright and hands the job to the portal. So the
+interface is the whole gesture rather than a pixel read, `CanPick` says whether this desktop
+has one at all, and a caller draws no eyedropper where there is none.
+
+`LinuxScreenColour` calls `org.freedesktop.portal.Screenshot.PickColor`, which arrives in
+version 2 of that interface. **The reply is a signal to the connection that asked**, and each
+run of `gdbus` is its own connection, so the answer is read off `gdbus monitor` started before
+the call and matched by the `handle_token` the call passes. Both go through `IProcessRunner`,
+so no D-Bus library is taken and Core stays on Tomlyn alone. `gdbus` is probed for through
+`IExecutableFinder` rather than assumed.
+
+`NoScreenColour` is Windows, which has no portal. The gesture there would be a window over a
+capture of the desktop, which is Godot's own fallback and is not built.
+
 **`IDesktopIntegration` makes the AppImage findable.** An AppImage is a file in Downloads
 with no menu entry. `LinuxDesktopIntegration` writes `applications/kitbash.desktop` and
 `icons/hicolor/256x256/apps/kitbash.png` under `XDG_DATA_HOME`, and rewrites whenever
