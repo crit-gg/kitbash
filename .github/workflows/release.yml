@@ -13,7 +13,6 @@ concurrency:
 
 env:
   B2_ENDPOINT: https://s3.us-west-002.backblazeb2.com
-  B2_REGION: us-west-002
   B2_BUCKET: kitbash-updates
   B2_PREFIX: kitbash/
   # Matched to the Velopack package reference. A newer vpk can write a feed this
@@ -50,7 +49,7 @@ jobs:
         run: |
           for channel in linux win; do
             vpk download s3 \
-              --endpoint "$B2_ENDPOINT" --region "$B2_REGION" \
+              --endpoint "$B2_ENDPOINT" \
               --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
               --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
               --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
@@ -69,7 +68,7 @@ jobs:
         run: |
           for channel in linux win; do
             vpk upload s3 \
-              --endpoint "$B2_ENDPOINT" --region "$B2_REGION" \
+              --endpoint "$B2_ENDPOINT" \
               --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
               --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
               --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
