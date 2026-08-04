@@ -348,13 +348,30 @@
     <x:Double x:Key="HeightPanelHeader">26</x:Double>
     <x:Double x:Key="HeightPanelFooter">26</x:Double>
 
-    <!-- The scrollbar. The bar is the reach and the thumb is what is drawn, so the
-         difference between the two is the room a pointer has to catch it. The thumb is
-         fully round, which is half its own width. -->
+    <!-- The scrollbar. The lane is the reach and the thumb is what is drawn, so the
+         difference between the two is the room a pointer has to catch it. Four lanes:
+         a panel, a data grid that scrolls both ways, a pane too narrow for the first,
+         and an input well. The thumb takes RadiusControl like everything else and
+         clamps to half its own width. -->
     <x:Double x:Key="SizeScrollBar">12</x:Double>
     <x:Double x:Key="SizeScrollBarThumb">6</x:Double>
     <x:Double x:Key="LengthScrollBarThumb">30</x:Double>
-    <CornerRadius x:Key="RadiusScrollBar">3</CornerRadius>
+
+    <x:Double x:Key="SizeScrollBarTracked">14</x:Double>
+    <x:Double x:Key="SizeScrollBarTrackedThumb">6</x:Double>
+
+    <x:Double x:Key="SizeScrollBarDense">8</x:Double>
+    <x:Double x:Key="SizeScrollBarDenseThumb">4</x:Double>
+    <x:Double x:Key="LengthScrollBarDenseThumb">24</x:Double>
+
+    <x:Double x:Key="SizeScrollBarWell">10</x:Double>
+    <x:Double x:Key="SizeScrollBarWellThumb">4</x:Double>
+    <x:Double x:Key="LengthScrollBarWellThumb">26</x:Double>
+
+    <!-- A well is darker than a panel, so the thumb there steps up a rung to read at the
+         same strength. LineControlDeep is the rest tone and these are the other two. -->
+    <SolidColorBrush x:Key="ThumbWellHover" Color="#525761" />
+    <SolidColorBrush x:Key="ThumbWellPressed" Color="#5f6570" />
 
     <!-- The splitter. The line is what a person sees and the reach is what they can
          grab, so the second is much the larger. Dragging widens the line to the band

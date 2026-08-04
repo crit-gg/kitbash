@@ -913,6 +913,12 @@ another has to be a `DynamicResource`, which resolves through the tree at run ti
 Replacing a template with a part of a different type is a build error, so a part declared
 `Panel` cannot become a `Border` however little the control cares.
 
+**A property condition goes after any pseudo class in a selector, and an attached property is
+written two different ways.** `^:vertical[(ui|ScrollLane.Kind)=Well]` parses and swapping the
+two halves does not. In a selector the namespace separator is a pipe, the way a type selector
+writes `ui|Icon`, while the same property in a `Setter` is `(ui:ScrollLane.Kind)` with a
+colon.
+
 **A packaged theme's own styles still apply to a replaced template.** A `Style` beats a
 `ControlTheme`, so a `Template` setter in a plain style replaces the template while every
 nested style in the packaged `ControlTheme` keeps matching template children by name. An
@@ -942,6 +948,8 @@ declare it later.
   fires on whatever the drag is over. Measured through a real Dock drag: the drop target under
   the cursor reported `IsPointerOver` false on every part while the library's own hit test had
   already found it. Read the state from what the drag reports rather than from the pointer.
+- A scroll bar overlays its content rather than taking a column, so showing one does not move
+  anything. Measured: a 150px wide list stayed 150px wide when it grew past its box.
 - A binding converts a double to a bool the way `Convert.ToBoolean` does, so `IsVisible` bound
   to an `Opacity` is true at anything other than zero. Useful when a library writes an opacity
   and offers nothing else to style on.

@@ -131,9 +131,11 @@ replaced to move the tabs up beside the buttons.
 room and offers no way to reach a tab that has scrolled off, and the design draws a chevron
 there.
 
-**The scrollbar was themed here.** The library had no `ScrollBar` theme at all, so every
-scrollbar in the app was Fluent's. That is library wide rather than docking's, and this stage
-is where it was noticed, since a docked view is full of them.
+**The scrollbar was themed here**, to the Scroll bars section of the Surfaces design page: four
+lanes, the thumb ladder, hover on the whole lane, and no disabled state. The library had no
+`ScrollBar` theme at all, so every scrollbar in the app was Fluent's. That is library wide
+rather than docking's, and this stage is where it was noticed, since a docked view is full of
+them.
 
 **There is no disallowed drop target.** Dock hides an operation it will not accept and leaves
 one it might accept sitting at rest until the pointer reaches it, so a target that never

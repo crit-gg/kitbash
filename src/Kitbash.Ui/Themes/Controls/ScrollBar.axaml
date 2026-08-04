@@ -1,12 +1,16 @@
-<ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
 
-    <!-- The scrollbar. A thumb on nothing: the track is never drawn, so a bar that has
-         nowhere to go leaves no groove behind it. The thumb is thinner than the bar it
-         sits in, and the difference is the room a pointer has to catch it. -->
+    <Styles.Resources>
 
-    <!-- The halves of the track above and below the thumb. They page when clicked and
-         draw nothing, which is what makes the track look empty. -->
+    <!-- The scrollbar. The thumb is the whole control: no stepper arrows, no filled
+         track, no border, so scrolling never adds a second edge beside the panel seam it
+         sits inside. It never carries the accent either, because position is not a
+         selection. -->
+
+    <!-- The halves of the lane above and below the thumb. They page when clicked and draw
+         nothing, which is what keeps the lane empty. -->
     <ControlTheme x:Key="ScrollBarPage" TargetType="RepeatButton">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Focusable" Value="False" />
@@ -19,33 +23,30 @@
         </Setter>
     </ControlTheme>
 
+    <!-- Every tone comes from the bar rather than from here, since a well's thumb walks a
+         different rung of the same ladder and one place should say so. -->
     <ControlTheme x:Key="ScrollBarThumb" TargetType="Thumb">
-        <Setter Property="Background" Value="{DynamicResource LineControl}" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="PART_Bar"
-                        Background="{TemplateBinding Background}"
-                        CornerRadius="{DynamicResource RadiusScrollBar}" />
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="{DynamicResource RadiusControl}" />
             </ControlTemplate>
         </Setter>
-
-        <Style Selector="^:pointerover">
-            <Setter Property="Background" Value="{DynamicResource LineWindow}" />
-        </Style>
-
-        <Style Selector="^:pressed">
-            <Setter Property="Background" Value="{DynamicResource LineWell}" />
-        </Style>
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
         <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="MinWidth" Value="0" />
         <Setter Property="MinHeight" Value="0" />
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{TemplateBinding Background}">
+                <Border Name="PART_Lane"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{DynamicResource RadiusControl}">
                     <Track Name="PART_Track"
                            Minimum="{TemplateBinding Minimum}"
                            Maximum="{TemplateBinding Maximum}"
@@ -66,13 +67,34 @@
             </ControlTemplate>
         </Setter>
 
-        <Style Selector="^:vertical">
-            <Setter Property="Width" Value="{DynamicResource SizeScrollBar}" />
+        <!-- Hover is the whole lane, not the thumb, so the target is the full width even
+             though only the middle of it is drawn. -->
+        <Style Selector="^:pointerover /template/ Border#PART_Lane">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellHover}" />
+        </Style>
+
+        <!-- The thumb's three tones. A press holds for as long as the drag does, which is
+             what Thumb already reports, including while the pointer is off the lane. -->
+        <Style Selector="^ /template/ Thumb#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource LineControl}" />
+        </Style>
+
+        <Style Selector="^ /template/ Thumb#PART_Thumb:pointerover">
+            <Setter Property="Background" Value="{DynamicResource LineWindow}" />
+        </Style>
+
+        <Style Selector="^ /template/ Thumb#PART_Thumb:pressed">
+            <Setter Property="Background" Value="{DynamicResource LineWell}" />
         </Style>
 
         <!-- The track counts down the screen, so a vertical bar reads the other way. -->
         <Style Selector="^:vertical /template/ Track#PART_Track">
             <Setter Property="IsDirectionReversed" Value="True" />
+        </Style>
+
+        <!-- A panel, which is trees, lists and sidebars. -->
+        <Style Selector="^:vertical">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBar}" />
         </Style>
 
         <Style Selector="^:vertical /template/ Thumb#PART_Thumb">
@@ -89,9 +111,109 @@
             <Setter Property="MinWidth" Value="{DynamicResource LengthScrollBarThumb}" />
         </Style>
 
-        <Style Selector="^:disabled /template/ Thumb#PART_Thumb">
-            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
+        <!-- Tracked, for a surface that scrolls both ways. It is the only lane that is
+             drawn, so the two meet cleanly in the corner instead of leaving a hole. -->
+        <Style Selector="^[(ui|ScrollLane.Kind)=Tracked] /template/ Border#PART_Lane">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+
+        <Style Selector="^:pointerover[(ui|ScrollLane.Kind)=Tracked] /template/ Border#PART_Lane">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        </Style>
+
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Tracked]">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarTracked}" />
+            <Setter Property="BorderThickness" Value="1,0,0,0" />
+        </Style>
+
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Tracked] /template/ Thumb#PART_Thumb">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarTrackedThumb}" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Tracked]">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarTracked}" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Tracked] /template/ Thumb#PART_Thumb">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarTrackedThumb}" />
+        </Style>
+
+        <!-- Dense, for a pane too narrow to give twelve pixels to a lane. Same tones, a
+             smaller lane. -->
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Dense]">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarDense}" />
+        </Style>
+
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Dense] /template/ Thumb#PART_Thumb">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarDenseThumb}" />
+            <Setter Property="MinHeight" Value="{DynamicResource LengthScrollBarDenseThumb}" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Dense]">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarDense}" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Dense] /template/ Thumb#PART_Thumb">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarDenseThumb}" />
+            <Setter Property="MinWidth" Value="{DynamicResource LengthScrollBarDenseThumb}" />
+        </Style>
+
+        <!-- A well. The fill under it is darker, so the thumb steps up a rung to read at
+             the same strength, and the lane stays inside the well's own border. -->
+        <Style Selector="^[(ui|ScrollLane.Kind)=Well] /template/ Thumb#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource LineControlDeep}" />
+        </Style>
+
+        <Style Selector="^[(ui|ScrollLane.Kind)=Well] /template/ Thumb#PART_Thumb:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ThumbWellHover}" />
+        </Style>
+
+        <Style Selector="^[(ui|ScrollLane.Kind)=Well] /template/ Thumb#PART_Thumb:pressed">
+            <Setter Property="Background" Value="{DynamicResource ThumbWellPressed}" />
+        </Style>
+
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Well]">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarWell}" />
+        </Style>
+
+        <Style Selector="^:vertical[(ui|ScrollLane.Kind)=Well] /template/ Thumb#PART_Thumb">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarWellThumb}" />
+            <Setter Property="MinHeight" Value="{DynamicResource LengthScrollBarWellThumb}" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Well]">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarWell}" />
+        </Style>
+
+        <Style Selector="^:horizontal[(ui|ScrollLane.Kind)=Well] /template/ Thumb#PART_Thumb">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarWellThumb}" />
+            <Setter Property="MinWidth" Value="{DynamicResource LengthScrollBarWellThumb}" />
         </Style>
     </ControlTheme>
 
-</ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- Where each lane goes. The kind is inherited, so it is set on the thing that owns
+         the surface and reaches the bars inside its scroll viewer's template, which a view
+         has no other way to touch. -->
+
+    <!-- Code, logs and text areas. The fill under the bar is a well. -->
+    <Style Selector=":is(TextBox)">
+        <Setter Property="(ui:ScrollLane.Kind)" Value="Well" />
+    </Style>
+
+    <!-- Both grids scroll in two directions, which is the only case that draws a lane. -->
+    <Style Selector="ui|DataGrid, ui|TreeDataGrid">
+        <Setter Property="(ui:ScrollLane.Kind)" Value="Tracked" />
+    </Style>
+
+    <!-- Anything floating is narrow by nature, so twelve pixels would eat the value
+         column. A pane that is narrow for the same reason sets this itself. -->
+    <Style Selector="MenuFlyoutPresenter, ContextMenu, ui|Popover">
+        <Setter Property="(ui:ScrollLane.Kind)" Value="Dense" />
+    </Style>
+
+</Styles>

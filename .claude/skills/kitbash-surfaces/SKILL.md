@@ -337,6 +337,46 @@ A `BoxShadow` cannot be cleared by a setter with an empty value, which throws at
 rather than at build. Use `ShadowNone`.
 
 
+### Scroll bars
+
+**The thumb is the whole control.** No stepper arrows, no filled track, no border, so
+scrolling never adds a second edge beside the panel seam it sits inside. It never carries the
+accent either, because position is not a selection.
+
+**Four lanes, chosen by `ui:ScrollLane.Kind`.** The property is inherited, so it is set on the
+thing that owns the surface and reaches the bars inside its scroll viewer's template, which a
+view has no other way to touch.
+
+| Kind | Lane | Thumb | For |
+|---|---|---|---|
+| `Panel`, the default | 12 | 6, `LineControl` | trees, lists, sidebars |
+| `Tracked` | 14 | 6, `LineControl` | a surface that scrolls both ways |
+| `Dense` | 8 | 4, `LineControl` | a pane too narrow to give twelve to a lane |
+| `Well` | 10 | 4, `LineControlDeep` | code, logs, text areas |
+
+The library sets three of them: `Well` on every text field, `Tracked` on both grids, `Dense`
+on anything floating. A pane that is narrow for the same reason a popup is sets `Dense`
+itself, since no selector can know how wide a view will be.
+
+**Only a surface that scrolls both ways draws its lane.** The tracked lane sits on
+`SurfaceRoot` with one `LineSeam` hairline against the content, so the two lanes meet cleanly
+in the corner instead of leaving a hole. Every other lane is transparent and the thumb floats
+on the panel, which is what the 5px padding on a list keeps rows clear of.
+
+**A well's thumb is a rung brighter**, because the fill under it is darker and it has to read
+at the same strength.
+
+**Hover is the whole lane, not the thumb**, so the target is the full width even though only
+the middle of it is drawn. A press holds its tone for as long as the drag does, including
+while the pointer is off the lane sideways, which `Thumb` already reports.
+
+**There is no disabled scrollbar and no empty lane holding space.** A surface that fits its
+content draws nothing at all. Measured: content is 150px wide whether or not the list
+overflows, because Avalonia overlays the bar rather than giving it a column, so a panel never
+shifts by a lane's width when a list grows past its box.
+
+Thumbs take `RadiusControl` like every other control and clamp to half their own width.
+
 ### Docking
 
 Dock for Avalonia under a Slate theme. It is the one third party control package in the

@@ -314,7 +314,9 @@ per machine under the state directory, keyed by scope and view. The gallery's DO
 is the harness.
 
 **The scrollbar is themed and that is library wide.** Every scrollbar in the app was Fluent's
-until stage 12, which is where it was noticed.
+until stage 12, which is where it was noticed. Four lanes from the Surfaces design page, a
+panel, a tracked one for a surface that scrolls both ways, a dense one and a well, chosen by
+the inherited `ui:ScrollLane.Kind`.
 
 **`ui:PathField` is built**, from the `Theme Slate - Path Field` design, which is outside
 the twelve stages. It holds one path or none, browses for a file or a folder, filters both
