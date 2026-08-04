@@ -121,9 +121,13 @@ install root their parent, and uninstalling would take the workspace list, every
 the app wrote, and every installed Godot engine under `State\engines`, which is gigabytes
 a person chose to download.
 
-**The pack id is `Slopworks.Kitbash`.** It installs to `%LocalAppData%\Slopworks.Kitbash`,
-which shares nothing with the three user directories, so all three sit outside the install
-root and survive. Velopack's own guidance is to namespace a pack id, and this is why.
+**The pack id is `Kitbash`.** It installs to `%LocalAppData%\Kitbash`, which is the parent
+of `State` and `Cache`, so those two sit inside the install root and an uninstall removes
+them. The name carries no company and that was the requirement. Velopack's own guidance is
+to namespace a pack id, and this deliberately does not.
+
+**So the hazard above is live on Windows and the fix is to move the user directories**,
+not to rename the package. Nothing has been distributed, so nothing has been lost yet.
 
 Two things follow. `--mainExe` becomes required rather than optional, since it otherwise
 defaults to the pack id and the executable is named after the project. And the same rule
@@ -891,9 +895,9 @@ The Windows package **is built here**, since `vpk [win] pack` cross compiles: `S
 a portable zip, the nupkg and `releases.win.json` all come out of `build/release.sh`. None
 of it has been executed. So these are still unwatched:
 
-- that `Setup.exe` installs to `%LocalAppData%\Slopworks.Kitbash` without elevation
-- that `%LOCALAPPDATA%\Kitbash` is left alone, and that uninstalling keeps the workspace
-  list and the installed engines
+- that `Setup.exe` installs to `%LocalAppData%\Kitbash` without elevation
+- **what uninstalling actually removes**, now that the install root is the parent of
+  `State` and `Cache`
 - **whether an automatic update triggers SmartScreen.** The reasoning under Code signing
   says it should not, because Velopack fetches over HTTP itself and never involves a
   browser, so no mark of the web is written. That is reasoning, not something anyone has

@@ -1,7 +1,7 @@
 # Kitbash
 
-Cross platform desktop app hosting designer facing tools for the Slopworks Godot
-project at `/home/jason/Projects/godot/slopworks/godot`.
+Cross platform desktop app hosting designer facing tools for the Godot game project
+this app serves.
 
 The point of this app existing outside Godot: the Godot editor's inspector and
 save/load behavior are awkward for authoring gameplay data, and designers should
@@ -271,10 +271,12 @@ All of that is built and measured. **`UpdateSettingsSchema.IsEnabled` is false**
 there is nowhere to publish to yet, so nothing checks and the settings window offers no
 feed. Releases will go to Backblaze B2 from a GitHub workflow that versions them itself.
 
-The pack id is `Slopworks.Kitbash` and it must stay namespaced, because Velopack's
-uninstaller deletes all of `%LocalAppData%\{packId}` and `Kitbash` alone would put a
-person's state and engines inside it. `.claude/plans/distribution-and-updates.md` has the
-rules and records five things it originally got wrong. **Tool distribution is not built**,
+The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash`,
+which is also the parent of `State` and `Cache`. Velopack's uninstaller deletes the whole
+install root, so **uninstalling takes the workspace list, every setting and every
+installed engine with it**. Moving the two user directories out is the fix and has not
+been done. `.claude/plans/distribution-and-updates.md` has the rules and records five
+things it originally got wrong. **Tool distribution is not built**,
 so `ITool` and the registry are unchanged.
 
 The app is being moved to the Slate design, in the twelve stages under

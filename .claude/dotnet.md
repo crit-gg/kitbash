@@ -661,7 +661,7 @@ Do not assume any of these.
 - Whether an update is ever offered for a system install, or whether lane two stays purely
   informational forever.
 - What actually needs the SDK. The schema reading in `CLAUDE.md` reads
-  `.godot/mono/temp/bin/Debug/Slopworks.dll` through `MetadataLoadContext`, and that file is
+  the game assembly under `.godot/mono/temp/bin/Debug` through `MetadataLoadContext`, and that file is
   a build output. If Kitbash is meant to produce it rather than wait for it, the SDK is a
   hard requirement and this becomes load bearing. If a committed schema manifest is used
   instead, as `CLAUDE.md` prefers, then none of this is on the critical path and it is a

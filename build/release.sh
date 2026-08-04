@@ -22,9 +22,9 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 project="$root/src/Kitbash/Kitbash.csproj"
 
-pack_id="Slopworks.Kitbash"
+pack_id="Kitbash"
 pack_title="Kitbash"
-pack_authors="Slopworks"
+pack_authors="Kitbash"
 
 feed="${1:-}"
 only="${2:-both}"

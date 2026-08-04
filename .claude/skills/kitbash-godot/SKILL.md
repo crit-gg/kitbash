@@ -202,8 +202,8 @@ declares is on disk. The sidecars are committed and the generated files are not,
 fresh clone has all of one and none of the other. The folder can also be present while
 its contents were cleared. Only the generated paths count, under `.godot/imported` for
 Godot 4 or `.import` for Godot 3, since a sidecar also names its source file and its uid
-and neither says whether an import has run. Measured on Slopworks: 399 sidecars among
-6560 files, answered in 20ms.
+and neither says whether an import has run. Measured on the real game project: 399
+sidecars among 6560 files, answered in 20ms.
 
 **A step that fails stops everything and the editor never opens.** Opening anyway would
 put somebody in an editor whose assemblies are stale or missing, which is the failure the
@@ -270,7 +270,7 @@ expensive to rediscover.
   types (`Vector3`, `Color`, `Aabb`, `Transform3D`, `Mathf`, `Variant` over
   primitives) work fine. Never reference GodotSharp from this app.
 - **Type schemas can be read without the engine.** `MetadataLoadContext` over
-  `.godot/mono/temp/bin/Debug/Slopworks.dll` loads cleanly and exposes `[Export]`
+  the game assembly under `.godot/mono/temp/bin/Debug` loads cleanly and exposes `[Export]`
   hints, custom attributes with their constructor arguments, base types, and
   `ScriptPathAttribute`. Roughly 110 Resource derived types. Prefer consuming a
   committed schema manifest over reading the game's build output directly, so this
@@ -280,7 +280,7 @@ expensive to rediscover.
   form is base 34 over the alphabet `a..y` then `0..8` (no `z`, no `9`). Godot mints
   UIDs itself on import, and `create_id_for_path` is seeded partly from the file's
   md5 so it is not stable across content edits.
-- **Catalog addresses cannot be derived here.** `slopworks:machine.moldurr` style
+- **Catalog addresses cannot be derived here.** `<project>:machine.moldurr` style
   addresses come from a native GDExtension (`addons/resource_catalog/bin/*.so`),
   and the `CritGG.ResourceCatalog` NuGet package is only a GodotSharp facade over it.
   Already resolved entries are readable from the committed

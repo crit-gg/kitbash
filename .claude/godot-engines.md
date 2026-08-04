@@ -705,8 +705,8 @@ when the key is absent.
 
 ## Custom and locally built engines
 
-Both GUI tools support engines that were never downloaded from GitHub, and Slopworks has
-a GDExtension in it, so this is not hypothetical for us.
+Both GUI tools support engines that were never downloaded from GitHub, and the game
+project has a GDExtension in it, so this is not hypothetical for us.
 
 **Godots** treats every engine the same way. An engine is a name plus a path to an
 executable, whether it was downloaded or imported, and a person imports one by pointing

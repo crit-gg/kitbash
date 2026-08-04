@@ -316,7 +316,7 @@ public partial class GalleryWindow : ChromelessWindow
     private void OnToastInfo(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
     {
         Anchor = Chosen,
-        Title = "Workspace switched to Slopworks",
+        Title = "Workspace switched to Sandbox",
     });
 
     private void OnToastOk(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest

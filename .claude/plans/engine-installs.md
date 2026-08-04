@@ -652,7 +652,7 @@ Eight steps, all done. Each one is checkable on its own and the numbers are the 
    `4.7.1-stable`. Here a pattern naming no channel prefers a stable release.
 
    Checked by a probe over the real types: 95 assertions covering the grammar and its
-   refusals, matching, the stable preference, the real Slopworks `project.godot`, a
+   refusals, matching, the stable preference, the real game `project.godot`, a
    commented out feature line, a features key in the wrong section, a `[mono]` project,
    a project inside `.godot` being skipped, all four requirement sources with blank and
    broken configs, and every resolver answer including a default that is not installed
