@@ -844,6 +844,20 @@
 
                             <StackPanel Spacing="9" Width="320">
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="FLOATING" Content="the same body" />
+
+                                <TextBlock Classes="note"
+                                           Text="The other host. The same control in a flyout, where it draws its own card and its own shadow and commits on Apply. This is what the colour field opens, written out by hand." />
+
+                                <Button Name="Floater" Content="Open the picker" HorizontalAlignment="Left">
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover">
+                                            <ui:ColorPicker Name="Floating" Header="TINT" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="THE SHAPES" Content="seven of them" />
 
                                 <TextBlock Classes="note"
@@ -856,7 +870,7 @@
                                                         Header="THE MODES" Content="four of them" />
 
                                 <TextBlock Classes="note"
-                                           Text="RGB and HSV read whole numbers, LINEAR reads the colour as light, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the EV row, which multiplies in light, so one stop is twice as bright. Type 400 into red and the excess moves into the EV row, which is what Godot does." />
+                                           Text="RGB and HSV read whole numbers, LINEAR reads the colour as light, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the I row, which is Godot's intensity: it multiplies in light, so one stop is twice as bright. Type 400 into red and the excess moves into that row, which is what Godot does." />
 
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="THE EYEDROPPER" Content="the desktop's own" />

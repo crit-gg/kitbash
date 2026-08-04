@@ -154,6 +154,7 @@ public class ColorPicker : TemplatedControl
     private const string NewPart = "PART_New";
     private const string OldPart = "PART_Old";
     private const string HexPart = "PART_Hex";
+    private const string LiteralWellPart = "PART_LiteralWell";
     private const string LiteralPart = "PART_Literal";
     private const string LiteralFootPart = "PART_LiteralFoot";
     private const string ChannelsPart = "PART_Channels";
@@ -179,6 +180,12 @@ public class ColorPicker : TemplatedControl
 
     /// <summary>The stops the exposure ramp reaches, either side of nothing. Godot's own.</summary>
     private const double ExposureReach = 10;
+
+    /// <summary>
+    /// What the exposure row is called. Godot calls it the intensity and labels it I, and the
+    /// design calls it EV. They are the same number and this follows Godot.
+    /// </summary>
+    private const string IntensityLabel = "I";
 
     /// <summary>How many colours the recent row holds, which is Godot's own count.</summary>
     private const int RecentKept = 9;
@@ -221,6 +228,7 @@ public class ColorPicker : TemplatedControl
     private Border? _new;
     private Border? _old;
     private TextBox? _hex;
+    private Control? _literalWell;
     private TextBlock? _literal;
     private TextBlock? _literalFoot;
     private Control? _recent;
@@ -408,6 +416,7 @@ public class ColorPicker : TemplatedControl
         _new = e.NameScope.Find<Border>(NewPart);
         _old = e.NameScope.Find<Border>(OldPart);
         _hex = e.NameScope.Find<TextBox>(HexPart);
+        _literalWell = e.NameScope.Find<Control>(LiteralWellPart);
         _literal = e.NameScope.Find<TextBlock>(LiteralPart);
         _literalFoot = e.NameScope.Find<TextBlock>(LiteralFootPart);
         _recent = e.NameScope.Find<Control>(RecentPart);
@@ -467,6 +476,7 @@ public class ColorPicker : TemplatedControl
         else if (change.Property == IsInPanelProperty)
         {
             Host();
+            Show();
         }
         else if (change.Property == EditsAlphaProperty)
         {
@@ -719,7 +729,7 @@ public class ColorPicker : TemplatedControl
         // calls this the intensity and the design calls it EV, and it is the same number.
         if (EditsExposure)
         {
-            Channels.Add(new ColorChannel("EV", -ExposureCeiling, ExposureCeiling, 1, "+0.00;-0.00;+0.00")
+            Channels.Add(new ColorChannel(IntensityLabel, -ExposureCeiling, ExposureCeiling, 1, "+0.00;-0.00;+0.00")
             {
                 RampMinimum = -ExposureReach,
                 RampMaximum = ExposureReach,
@@ -1088,11 +1098,29 @@ public class ColorPicker : TemplatedControl
                 Remember();
             }
         }
-        catch (Exception)
+        catch (Exception failure)
         {
-            // A desktop that refuses is a desktop with no eyedropper, which is not an error
-            // worth putting in front of somebody who was picking a colour.
+            await Blame(failure);
         }
+    }
+
+    /// <summary>
+    /// Says what the desktop said. The words are the portal's own, so they are copyable
+    /// rather than only readable.
+    /// </summary>
+    private async Task Blame(Exception failure)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
+        var dialog = ErrorDialog.For(
+            "Could not pick a colour",
+            "The desktop could not run its colour picker.",
+            failure.Message);
+
+        await dialog.ShowDialog(owner);
     }
 
     private async void Copy()
@@ -1205,6 +1233,13 @@ public class ColorPicker : TemplatedControl
                 _literal.Text = literal;
             }
 
+            if (_literalWell is not null)
+            {
+                // The field above says the same thing once the colour has no hex, and one
+                // line twice is not a readout.
+                _literalWell.IsVisible = !IsInPanel && Color.HasHex;
+            }
+
             if (_literalFoot is not null)
             {
                 _literalFoot.Text = literal;
@@ -1290,6 +1325,13 @@ public class ColorPicker : TemplatedControl
             _flat.Third = Shape == ColorShape.OkhlRectangle ? _okSaturation : _okLightness;
         }
 
+        if (_swatches is not null)
+        {
+            // An empty list is hidden rather than empty, so the row's own spacing does not
+            // stand the add tile away from where the first swatch goes.
+            _swatches.IsVisible = Swatches is { Count: > 0 };
+        }
+
         if (_dropper is not null)
         {
             _dropper.IsVisible = ScreenColour is { CanPick: true };
@@ -1363,7 +1405,7 @@ public class ColorPicker : TemplatedControl
         {
             var (number, ramp) = (channel.Label, Mode) switch
             {
-                ("EV", _) => (Exposure, Token("SurfaceWell", "InkTitle")),
+                (IntensityLabel, _) => (Exposure, Token("SurfaceWell", "InkTitle")),
 
                 ("R", ColorValueMode.Linear) => (linear.R, Along(0)),
                 ("G", ColorValueMode.Linear) => (linear.G, Along(1)),

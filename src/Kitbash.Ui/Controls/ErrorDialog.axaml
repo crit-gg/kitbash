@@ -1,0 +1,52 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Kitbash.Ui.Controls"
+                 x:Class="Kitbash.Ui.Controls.ErrorDialog"
+                 Width="520" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <!-- The design's Error kind. A sentence says what failed, the program's own words sit
+         in a mono well under it, and the copy action is hard left away from the decision. -->
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding $parent[Window].Title}" />
+
+        <StackPanel Grid.Row="1" Margin="16,16,16,15">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="11">
+                <ui:Icon Grid.Column="0" Glyph="AlertCircle" Size="20"
+                         Foreground="{DynamicResource Error}"
+                         VerticalAlignment="Top" />
+
+                <TextBlock Grid.Column="1" Name="Heading"
+                           FontSize="{DynamicResource FontSizeSubhead}"
+                           FontWeight="{DynamicResource FontWeightStrong}"
+                           Foreground="{DynamicResource InkPrimary}"
+                           TextWrapping="Wrap" />
+            </Grid>
+
+            <Border Name="Well" Margin="31,12,0,0" Padding="10,8"
+                    Background="{DynamicResource SurfaceWell}"
+                    BorderBrush="{DynamicResource LineSeam}"
+                    BorderThickness="1"
+                    CornerRadius="{DynamicResource RadiusControl}">
+                <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled">
+                    <SelectableTextBlock Name="Details"
+                                         FontFamily="{DynamicResource FontFamilyMono}"
+                                         FontSize="{DynamicResource FontSizeSmall}"
+                                         LineHeight="17"
+                                         Foreground="{DynamicResource InkSecondary}"
+                                         TextWrapping="Wrap" />
+                </ScrollViewer>
+            </Border>
+        </StackPanel>
+
+        <ui:DialogFooter Grid.Row="2">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Name="Copy" Classes="ghost" Content="Copy details" />
+
+                <Button Grid.Column="2" Content="Dismiss"
+                        ui:Dialog.Role="Cancel" ui:Dialog.TakesFocus="True" />
+            </Grid>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

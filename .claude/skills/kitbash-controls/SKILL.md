@@ -432,8 +432,18 @@ it read `srgb_to_linear`, so 0.878 in the numbers a colour is written with is 0.
 The mode follows Godot. The sRGB floats are still on the picker, in the literal at the foot,
 which is the line a person pastes into a script.
 
-**EV is Godot's intensity row under the design's name.** It reaches ten stops either way on
-the ramp and can be typed past that, and its arrows step whole stops.
+**The exposure row is Godot's intensity row, and it is labelled I as Godot labels it.** The
+design calls it EV. It reaches ten stops either way on the ramp and can be typed past that,
+and its arrows step whole stops.
+
+**Pressing a lane anywhere moves the handle there and keeps following the pointer**, which is
+Godot's pattern and Avalonia's own. A slider moves to a point through its decrease and
+increase buttons, so a lane template without them can only be dragged by the handle. They are
+in the theme, transparent, drawing nothing.
+
+**The text field is a row of its own under the channels**, where the design puts it beside the
+value modes. An expression is far wider than a hex and it grew the header out of shape. The
+literal well below it hides itself while the field is already showing the same line.
 
 **The text field carries the hex while there is one and the expression otherwise.** A colour
 with a channel above 1 or below 0 has no hex, so the field reads `Color(1.569, 0.663, 0.29)`
@@ -464,6 +474,10 @@ rather than chosen from a palette. The two that do come from the palette, the ex
 and the checkerboard, are looked up by key, so their hex still lives in `Tokens.axaml` and
 the rule that nothing else writes a colour still holds.
 
+**The add tile stands where the first swatch would.** An empty list is hidden rather than
+empty, since a row that spaces its children would otherwise hold a gap for a list with nothing
+in it.
+
 **Swatches and recents start empty and the picker never seeds them.** They are `IList` in, and
 the picker keeps them the way Godot keeps its presets: saving a colour that is already saved
 moves it to the end rather than landing twice, a right click takes one off, and the recent row
@@ -482,6 +496,10 @@ hands in, and the button is drawn only when one is supplied and it says it can p
 is drawn over the screen here: on Linux the portal draws its own magnifier and gives one
 colour back, which is the only way that works on Wayland. On Windows there is no portal, so
 `NoScreenColour` is registered and the button never appears. See the `kitbash-platform` skill.
+
+**A pick that fails says so in `ui:ErrorDialog`**, with the portal's own words in a mono well
+and a button that copies them. A person changing their mind is not a failure and says nothing.
+That dialog is the library's, so any control here can report a failure the same way.
 
 **Two things Godot has and this does not.** Saving and loading a palette as a file, and
 dragging a colour from one swatch to another. Neither is refused, they are simply not built,

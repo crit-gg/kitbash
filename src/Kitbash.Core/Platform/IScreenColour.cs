@@ -18,7 +18,8 @@ public interface IScreenColour
 
     /// <summary>
     /// Lets a person point at something on screen and gives back what they pointed at, or
-    /// null when they dropped it or the desktop refused.
+    /// null when they changed their mind.
     /// </summary>
+    /// <exception cref="ScreenColourException">The desktop could not run the gesture.</exception>
     Task<ScreenColour?> PickAsync(CancellationToken cancellation = default);
 }

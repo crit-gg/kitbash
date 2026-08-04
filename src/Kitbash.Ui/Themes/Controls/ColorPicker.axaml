@@ -30,6 +30,19 @@
         </Setter>
     </ControlTheme>
 
+    <ControlTheme x:Key="ColorLaneStep" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Focusable" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
     <ControlTheme x:Key="ColorLane" TargetType="Slider">
         <Setter Property="Height" Value="{DynamicResource SizeColorRamp}" />
         <Setter Property="MinHeight" Value="0" />
@@ -57,6 +70,16 @@
                            IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
                            Orientation="{TemplateBinding Orientation}"
                            ClipToBounds="False">
+                        <!-- The two halves of the lane draw nothing and are what a press
+                             lands on. A slider moves to a point through these, so a lane
+                             without them can only be dragged by the handle. -->
+                        <Track.DecreaseButton>
+                            <RepeatButton Name="PART_DecreaseButton" Theme="{StaticResource ColorLaneStep}" />
+                        </Track.DecreaseButton>
+                        <Track.IncreaseButton>
+                            <RepeatButton Name="PART_IncreaseButton" Theme="{StaticResource ColorLaneStep}" />
+                        </Track.IncreaseButton>
+
                         <Thumb Name="PART_Thumb" Theme="{StaticResource ColorLaneKnob}" />
                     </Track>
                 </Panel>
@@ -381,8 +404,8 @@
                             </Border>
                         </Grid>
 
-                        <!-- Which numbers, and the hex those numbers spell. -->
-                        <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Which numbers the rows read. -->
+                        <Grid ColumnDefinitions="Auto,*">
                             <ui:Segmented Grid.Column="0" Classes="compact">
                                 <RadioButton Content="RGB"
                                              IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Rgb}}" />
@@ -393,24 +416,6 @@
                                 <RadioButton Content="OKHSL"
                                              IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Okhsl}}" />
                             </ui:Segmented>
-
-                            <TextBox Grid.Column="2"
-                                     Name="PART_Hex"
-                                     Height="{DynamicResource HeightControlSmall}"
-                                     MinWidth="0"
-                                     Padding="{DynamicResource PaddingColorHex}"
-                                     FontFamily="{DynamicResource FontFamilyMono}"
-                                     FontSize="{DynamicResource FontSizeSmall}"
-                                     VerticalContentAlignment="Center">
-                                <TextBox.InnerRightContent>
-                                    <Button Name="PART_Copy"
-                                            Classes="icon"
-                                            ToolTip.Tip="Copy the hex"
-                                            AutomationProperties.Name="Copy the hex">
-                                        <ui:Icon Glyph="Copy" Size="{DynamicResource IconSizeAlert}" />
-                                    </Button>
-                                </TextBox.InnerRightContent>
-                            </TextBox>
                         </Grid>
 
                         <ItemsControl Name="PART_Channels"
@@ -421,6 +426,24 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
+
+                        <TextBox
+                                 Name="PART_Hex"
+                                 Height="{DynamicResource HeightControlSmall}"
+                                 MinWidth="0"
+                                 Padding="{DynamicResource PaddingColorHex}"
+                                 FontFamily="{DynamicResource FontFamilyMono}"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 VerticalContentAlignment="Center">
+                            <TextBox.InnerRightContent>
+                                <Button Name="PART_Copy"
+                                        Classes="icon"
+                                        ToolTip.Tip="Copy the hex"
+                                        AutomationProperties.Name="Copy the hex">
+                                    <ui:Icon Glyph="Copy" Size="{DynamicResource IconSizeAlert}" />
+                                </Button>
+                            </TextBox.InnerRightContent>
+                        </TextBox>
 
                         <StackPanel Spacing="{DynamicResource SpacingColorSection}">
                             <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="SWATCHES" />
@@ -521,10 +544,8 @@
 
         <!-- In a panel the value applies live, so there is nothing to commit. The two
              halves of that swap are inside the frame's own footer, where a template
-             selector does not reach, so the control shows and hides them itself. -->
-        <Style Selector="^[IsInPanel=True] /template/ Border#PART_LiteralWell">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
+             selector does not reach, so the control shows and hides them itself, and the
+             well in the body goes with them. -->
     </ControlTheme>
 
     <!-- The value editor. A well with the swatch inside it behind a hairline, which is the

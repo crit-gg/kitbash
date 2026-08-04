@@ -73,7 +73,7 @@ public sealed partial class LinuxScreenColour : IScreenColour
 
         try
         {
-            await _runner.ReadAsync(
+            var asked = await _runner.ReadAsync(
                 ProcessRequest.Command(
                     Tool,
                     "call",
@@ -85,18 +85,44 @@ public sealed partial class LinuxScreenColour : IScreenColour
                     "{'handle_token': <'" + token + "'>}"),
                 cancellation);
 
+            if (asked.ExitCode != 0)
+            {
+                await picked.CancelAsync();
+
+                throw new ScreenColourException(Blame(asked));
+            }
+
             await listening;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (picked.IsCancellationRequested && !cancellation.IsCancellationRequested)
         {
             // The pick landing is what cancels the monitor, so this is the ordinary path.
         }
-        catch (ProcessStartException)
+        catch (OperationCanceledException)
         {
             return null;
         }
+        catch (ProcessStartException exception)
+        {
+            throw new ScreenColourException($"{Tool} could not be started.", exception);
+        }
 
-        return cancellation.IsCancellationRequested ? null : colour;
+        return colour;
+    }
+
+    /// <summary>
+    /// What the portal said when it refused. Its own words, since a person copying them into
+    /// a search is better served by those than by anything written here.
+    /// </summary>
+    private static string Blame(ProcessOutput asked)
+    {
+        var said = string.IsNullOrWhiteSpace(asked.StandardError)
+            ? asked.StandardOutput
+            : asked.StandardError;
+
+        return string.IsNullOrWhiteSpace(said)
+            ? $"The desktop portal refused, and {Tool} exited with {asked.ExitCode}."
+            : said.Trim();
     }
 
     /// <summary>

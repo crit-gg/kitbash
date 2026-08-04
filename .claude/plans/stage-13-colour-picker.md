@@ -208,6 +208,28 @@ request's own token. No D-Bus library was taken.
 window over a capture of the desktop, which is what Godot falls back to. `NoScreenColour` is
 registered instead and the button never appears.
 
+### Six changes after it was used
+
+**The add tile stands where the first swatch goes.** The row spaces its children, so an empty
+list still held a gap. It is hidden while it has nothing in it.
+
+**A failed pick opens `ui:ErrorDialog`** with the portal's own words and a button that copies
+them. `PickAsync` throws on a failure and returns null on a person changing their mind, which
+is what separates the two.
+
+**The text field is a row of its own** under the channels. An expression is far wider than a
+hex and it grew the header out of shape once a colour went over 1. The literal well below it
+hides while the field is already showing the same line.
+
+**Pressing a lane anywhere moves the handle there and keeps following.** Avalonia moves a
+slider to a point through its decrease and increase buttons, and the lane template had none,
+so it could only be dragged by the handle. They are in it now, transparent.
+
+**The exposure row is labelled I**, which is Godot's own label for it.
+
+**The gallery draws the flyout host as well**, written out by hand beside the panel one, so
+both hosts of the one body are on the page.
+
 ### Still Godot's and not ours
 
 - **Palettes as files.** Godot saves and loads a preset list, and names it in the picker.

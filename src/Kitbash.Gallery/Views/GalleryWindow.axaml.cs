@@ -77,13 +77,21 @@ public partial class GalleryWindow : ChromelessWindow
         var swatches = new ObservableCollection<ColorValue>();
         var recent = new ObservableCollection<ColorValue>();
 
-        Bench.ScreenColour = _screen;
-        Tint.ScreenColour = _screen;
+        foreach (var picker in new[] { Bench, Floating })
+        {
+            picker.ScreenColour = _screen;
+            picker.Swatches = swatches;
+            picker.Recent = recent;
+        }
 
-        Bench.Swatches = swatches;
-        Bench.Recent = recent;
+        Tint.ScreenColour = _screen;
         Tint.Swatches = swatches;
         Tint.Recent = recent;
+
+        // A picker written into a flyout by hand closes its own host, which is the one thing
+        // ui:ColorField does for you.
+        Floating.Applied += (_, _) => (Floater.Flyout as Flyout)?.Hide();
+        Floating.Cancelled += (_, _) => (Floater.Flyout as Flyout)?.Hide();
     }
 
     /// <summary>
