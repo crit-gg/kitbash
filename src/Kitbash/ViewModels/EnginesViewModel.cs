@@ -6,6 +6,7 @@ using Kitbash.Core.Godot;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
+using Kitbash.Settings;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.ViewModels;
@@ -32,6 +33,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IEngineInstaller _installer;
     private readonly IEngineFiles _engineFiles;
     private readonly IToastService _toasts;
+    private readonly ILauncherCloseSettings _close;
+    private readonly IApplicationShutdown _shutdown;
 
     /// <summary>One token per build being installed, so each cancels on its own.</summary>
     private readonly Dictionary<EngineId, CancellationTokenSource> _running = [];
@@ -93,7 +96,9 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IFileSystem files,
         IEngineInstaller installer,
         IEngineFiles engineFiles,
-        IToastService toasts)
+        IToastService toasts,
+        ILauncherCloseSettings close,
+        IApplicationShutdown shutdown)
     {
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
@@ -104,6 +109,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(engineFiles);
         ArgumentNullException.ThrowIfNull(toasts);
+        ArgumentNullException.ThrowIfNull(close);
+        ArgumentNullException.ThrowIfNull(shutdown);
 
         _catalogue = catalogue;
         _store = store;
@@ -114,6 +121,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _installer = installer;
         _engineFiles = engineFiles;
         _toasts = toasts;
+        _close = close;
+        _shutdown = shutdown;
 
         // Not read here. It fetches over a network and the window would wait on it.
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
@@ -494,6 +503,13 @@ public sealed partial class EnginesViewModel : ViewModelBase
             {
                 _platform.StartDetached(
                     ProcessRequest.Command(engine.Executable, "--project-manager"));
+
+                // Only once the desktop has taken it, so a start that failed leaves the
+                // launcher up with its toast on screen.
+                if (_close.AfterProjectManager)
+                {
+                    _shutdown.Shutdown();
+                }
             }
             catch (ProcessStartException)
             {

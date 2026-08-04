@@ -144,9 +144,12 @@ public partial class App : Application
             .AddSingleton<UpdateSettingsSchema>()
             .AddSingleton<UpdateLog>()
             .AddSingleton<IApplicationUpdates, VelopackUpdates>()
+            .AddSingleton<LauncherCloseSettingsSchema>()
+            .AddSingleton<ILauncherCloseSettings, LauncherCloseSettings>()
             .AddSingleton<LauncherSettingsSchema>()
             .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>()
+            .AddSingleton<IApplicationShutdown, AvaloniaApplicationShutdown>()
             .AddSingleton(BuildRegistry())
             .AddSingleton<MockToolCatalogue>()
             .AddSingleton(provider => new EnginesViewModel(
@@ -158,7 +161,9 @@ public partial class App : Application
                 provider.GetRequiredService<IFileSystem>(),
                 provider.GetRequiredService<IEngineInstaller>(),
                 provider.GetRequiredService<IEngineFiles>(),
-                provider.GetRequiredService<IToastService>()))
+                provider.GetRequiredService<IToastService>(),
+                provider.GetRequiredService<ILauncherCloseSettings>(),
+                provider.GetRequiredService<IApplicationShutdown>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IWorkspacesSettings>(),
@@ -175,6 +180,8 @@ public partial class App : Application
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IGodotLauncher>(),
                 provider.GetRequiredService<IPlatformServices>(),
+                provider.GetRequiredService<ILauncherCloseSettings>(),
+                provider.GetRequiredService<IApplicationShutdown>(),
                 provider.GetRequiredService<EnginesViewModel>()))
             .BuildServiceProvider();
 

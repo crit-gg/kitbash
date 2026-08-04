@@ -293,8 +293,9 @@ cannot describe is a reason to change the window, not to add a row kind.
 
 ### The schemas that exist
 
-Five in Core, four of them in the `Application` home, plus the launcher's own State page
-in `Kitbash/Settings/LauncherSettingsSchema`, which is what puts them together into the
+Five in Core, four of them in the `Application` home, plus the launcher's own two,
+`LauncherCloseSettingsSchema` and the State page in
+`Kitbash/Settings/LauncherSettingsSchema`, which is what puts them all together into the
 window's tree. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
 other**, so none of those can be shared through a workspace's team config by accident.
@@ -308,6 +309,13 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
+| `LauncherCloseSettingsSchema` | `launcher.close.projectManager`, `launcher.close.editor`, `launcher.close.play`, the launcher's |
+
+**A `launcher.` key is the launcher's own behaviour and Core never declares one.** Closing
+after a project opens is something only the launcher can do, so the keys, the page and the
+typed reader all live in `Kitbash/Settings` rather than beside the Godot keys in Core.
+Read them through `ILauncherCloseSettings`, which reads at every launch, so a change
+applies without a restart. The `kitbash-godot` skill has what each one follows.
 
 **A descriptor does not have to be on a page.** `updates.feed` is the first that is not:
 where releases come from is the app's answer rather than a person's, so its default is a

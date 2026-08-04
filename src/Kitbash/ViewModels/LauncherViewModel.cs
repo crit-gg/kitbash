@@ -9,6 +9,7 @@ using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 using Kitbash.Core.Workspaces;
 using Kitbash.Mock;
+using Kitbash.Settings;
 
 namespace Kitbash.ViewModels;
 
@@ -31,6 +32,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGodotSettings _godot;
     private readonly IGodotLauncher _godotLauncher;
     private readonly IPlatformServices _platform;
+    private readonly ILauncherCloseSettings _close;
+    private readonly IApplicationShutdown _shutdown;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
 
@@ -77,6 +80,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGodotSettings godot,
         IGodotLauncher godotLauncher,
         IPlatformServices platform,
+        ILauncherCloseSettings close,
+        IApplicationShutdown shutdown,
         EnginesViewModel engines)
     {
         ArgumentNullException.ThrowIfNull(workspaces);
@@ -94,6 +99,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(godot);
         ArgumentNullException.ThrowIfNull(godotLauncher);
         ArgumentNullException.ThrowIfNull(platform);
+        ArgumentNullException.ThrowIfNull(close);
+        ArgumentNullException.ThrowIfNull(shutdown);
         ArgumentNullException.ThrowIfNull(engines);
 
         _workspaces = workspaces;
@@ -109,6 +116,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _godot = godot;
         _godotLauncher = godotLauncher;
         _platform = platform;
+        _close = close;
+        _shutdown = shutdown;
 
         Engines = engines;
 
@@ -395,7 +404,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Shows the progress dialog while a project opens. Set by the window, since a dialog
     /// belongs to one and a view model has none.
     /// </summary>
-    public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task<bool>>? Launching { get; set; }
+    public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task<GodotLaunchOutcome>>? Launching { get; set; }
 
     /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
     public Func<GodotLaunchException, GodotLaunchMode, Task>? Failed { get; set; }
@@ -415,13 +424,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                     engine, project, mode, new ShortenedDetail(progress, _paths), cancellation),
                 cancellation);
 
-        var openAfter = false;
+        var outcome = GodotLaunchOutcome.Finished;
 
         try
         {
             if (Launching is { } show)
             {
-                openAfter = await show(project, mode, Work);
+                outcome = await show(project, mode, Work);
             }
             else
             {
@@ -440,13 +449,30 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         // A rebuild that ended with Open in Editor pressed. It goes the ordinary way
         // rather than starting the editor here, so the build is confirmed to still be
-        // good rather than assumed from a moment ago. Editor mode never answers true, so
-        // this cannot go round again.
-        if (openAfter)
+        // good rather than assumed from a moment ago. Editor mode never answers this, so
+        // it cannot go round again, and the close below is left to the second pass.
+        if (outcome == GodotLaunchOutcome.OpenEditor)
         {
             await OpenInGodot(engine, project, GodotLaunchMode.Editor);
+
+            return;
+        }
+
+        // Only ever after something really started. A cancelled launch started nothing
+        // and a rebuild starts nothing by design.
+        if (outcome == GodotLaunchOutcome.Finished && ClosesAfter(mode))
+        {
+            _shutdown.Shutdown();
         }
     }
+
+    /// <summary>Whether this person asked for the launcher to go once the mode has started.</summary>
+    private bool ClosesAfter(GodotLaunchMode mode) => mode switch
+    {
+        GodotLaunchMode.Editor => _close.AfterEditor,
+        GodotLaunchMode.Play => _close.AfterPlay,
+        _ => false,
+    };
 
     /// <summary>Shows a folder in the file browser. Off the UI thread, like every open is.</summary>
     public void OpenFolder(string directory) => Task.Run(() =>

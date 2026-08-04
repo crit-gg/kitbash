@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Kitbash.Core.Godot;
 using Kitbash.Ui.Controls;
+using Kitbash.ViewModels;
 
 namespace Kitbash.Views;
 
@@ -25,10 +26,10 @@ public partial class LaunchDialog : DialogWindow
     /// has not opened.
     /// </summary>
     /// <returns>
-    /// True when the person asked to open the editor from the finished dialog, which only
-    /// a rebuild can offer. False for everything else, cancelling included.
+    /// How it ended. <c>OpenEditor</c> is the person asking to open the editor from the
+    /// finished dialog, which only a rebuild can offer.
     /// </returns>
-    public static async Task<bool> RunAsync(
+    public static async Task<GodotLaunchOutcome> RunAsync(
         Window owner,
         GodotProject project,
         GodotLaunchMode mode,
@@ -110,7 +111,14 @@ public partial class LaunchDialog : DialogWindow
             throw failure;
         }
 
-        return dialog._openWhenDone;
+        if (dialog._openWhenDone)
+        {
+            return GodotLaunchOutcome.OpenEditor;
+        }
+
+        // The only failure that reaches here is the cancellation, since every other one
+        // was thrown a line ago.
+        return failure is null ? GodotLaunchOutcome.Finished : GodotLaunchOutcome.Cancelled;
     }
 
     /// <summary>
