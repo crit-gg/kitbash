@@ -72,6 +72,13 @@ corner radius, the eight resize grips and the whole title bar, and
                    Icon="avares://Kitbash/Assets/Icons/icon_64x64.png" />
 ```
 
+**The frame itself is keyed as `WindowFrame`, so a window that cannot derive from
+`ChromelessWindow` can still wear it.** Dock's floating tool window is the one that does:
+a `Style` points its `Template` at the key through a `DynamicResource`, since a
+`StaticResource` cannot reach another document's resources. Anything taking the frame that
+way also needs `ui:WindowResize.Grips`, which is what turns a press on one of the eight
+named borders into a resize. `ChromelessWindow` sets it in its own constructor.
+
 **`ChromelessWindow` is `Focusable`, and that is load bearing.** It is what drops a text
 field's focus when a person clicks empty space, because Avalonia moves focus up from
 whatever was pressed and gives up if it finds nothing focusable. A window that does not

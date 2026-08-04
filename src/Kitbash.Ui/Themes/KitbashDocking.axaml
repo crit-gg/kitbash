@@ -1,0 +1,17 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dock="using:Dock.Avalonia.Themes.Fluent">
+
+    <!-- Docking, in one line, for a consumer that docks. It is separate from
+         KitbashTheme because the launcher docks nothing and should not carry Dock's
+         fifty dictionaries to draw a workspace list.
+
+         Include it after KitbashTheme. A Styles collection is searched from the last
+         child back, so Docking.axaml is reached before the Fluent theme under it, which
+         is what lets it replace a packaged resource. -->
+
+    <dock:DockFluentTheme />
+
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Docking.axaml" />
+
+</Styles>

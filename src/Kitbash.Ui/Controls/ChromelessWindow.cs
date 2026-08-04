@@ -1,13 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 
 namespace Kitbash.Ui.Controls;
 
 /// <summary>
 /// A window that draws its own title bar. The frame lives in
-/// Themes/Controls/WindowChrome.axaml, which supplies the resize grips wired up here.
+/// Themes/Controls/WindowChrome.axaml and its resize grips are wired by
+/// <see cref="WindowResize"/>.
 /// </summary>
 public class ChromelessWindow : Window
 {
@@ -19,23 +19,13 @@ public class ChromelessWindow : Window
     public static readonly StyledProperty<bool> UsesNativeChromeProperty =
         AvaloniaProperty.Register<ChromelessWindow, bool>(nameof(UsesNativeChrome));
 
-    private static readonly string[] ResizeGripNames =
-    [
-        "PART_ResizeTopLeft",
-        "PART_ResizeTop",
-        "PART_ResizeTopRight",
-        "PART_ResizeLeft",
-        "PART_ResizeRight",
-        "PART_ResizeBottomLeft",
-        "PART_ResizeBottom",
-        "PART_ResizeBottomRight",
-    ];
-
     public ChromelessWindow()
     {
         // Avalonia moves focus to the first focusable thing above whatever was pressed and
         // gives up when there is none, so the window taking focus is what drops a field's.
         Focusable = true;
+
+        WindowResize.SetGrips(this, true);
 
         Classes.Set("chromeless", true);
         Classes.Set("inactive", !IsActive);
@@ -112,32 +102,5 @@ public class ChromelessWindow : Window
         }
 
         ToggleMaximized();
-    }
-
-    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
-    {
-        base.OnApplyTemplate(e);
-
-        foreach (var name in ResizeGripNames)
-        {
-            if (e.NameScope.Find<Border>(name) is not { } grip)
-            {
-                continue;
-            }
-
-            grip.PointerPressed -= OnResizeGripPressed;
-            grip.PointerPressed += OnResizeGripPressed;
-        }
-    }
-
-    private void OnResizeGripPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (!CanResize || sender is not Border { Tag: WindowEdge edge })
-        {
-            return;
-        }
-
-        BeginResizeDrag(edge, e);
-        e.Handled = true;
     }
 }

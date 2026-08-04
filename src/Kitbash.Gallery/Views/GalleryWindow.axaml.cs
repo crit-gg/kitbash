@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Dock.Model.Controls;
 using Kitbash.Ui.Controls;
 using Kitbash.Ui.Toasts;
 
@@ -25,6 +26,9 @@ public partial class GalleryWindow : ChromelessWindow
 
     private bool _disabled;
 
+    /// <summary>The docking harness. It owns the layout, so rebuilding is one call.</summary>
+    private DockHarness? _dock;
+
     public GalleryWindow(IToastService toasts, IToastServiceFactory scopes)
     {
         ArgumentNullException.ThrowIfNull(toasts);
@@ -45,6 +49,7 @@ public partial class GalleryWindow : ChromelessWindow
 
         BuildTrees();
         BuildGrids();
+        BuildDock();
 
         _chips.AddRange(Chips.Children);
 
@@ -595,6 +600,46 @@ public partial class GalleryWindow : ChromelessWindow
 
         GridCount.Text = $"{rows} rows, {real} of them are controls, holding {cells} cells";
     }
+
+    private void BuildDock()
+    {
+        _dock = new DockHarness();
+        Docking.Layout = _dock.Build();
+    }
+
+    private HarnessTool? Tool(string id) => _dock?.Built(id) as HarnessTool;
+
+    private void OnFloatTool(object? sender, RoutedEventArgs e)
+    {
+        if (Tool("Inspector") is { } tool)
+        {
+            _dock?.FloatDockable(tool);
+        }
+    }
+
+    private void OnPinTool(object? sender, RoutedEventArgs e)
+    {
+        if (Tool("Explorer") is { } tool)
+        {
+            _dock?.PinDockable(tool);
+        }
+    }
+
+    /// <summary>Empties the document dock, which is the one state a dock draws by itself.</summary>
+    private void OnCloseDocuments(object? sender, RoutedEventArgs e)
+    {
+        if (_dock?.Built("Documents") is not IDocumentDock { VisibleDockables: { } open })
+        {
+            return;
+        }
+
+        foreach (var document in open.ToList())
+        {
+            _dock.CloseDockable(document);
+        }
+    }
+
+    private void OnResetDock(object? sender, RoutedEventArgs e) => BuildDock();
 
     /// <summary>A command that runs one action. The gallery has no view models.</summary>
     private sealed class Run(Action action) : System.Windows.Input.ICommand

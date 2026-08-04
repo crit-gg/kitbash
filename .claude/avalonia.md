@@ -895,6 +895,31 @@ control })`. The last pointer arguments may be null when nothing reads them.
   name, otherwise weight selection silently fails. `fc-scan` shows the family a file
   reports.
 
+## Third party control themes
+
+Measured while theming Dock for Avalonia 12.1.0, and the same rules apply to any packaged
+theme.
+
+**A Styles collection is searched from its last child back.** `Styles.TryGetResource` checks
+its own resources first and then walks its children in reverse, so a file listed after a
+packaged theme is reached before it and can replace a packaged resource by key. Listing it
+first does nothing.
+
+**A `StaticResource` cannot see another XAML document's resources.** It resolves against the
+parent stack of the document it is written in. A key declared in one `Styles` file and used in
+another has to be a `DynamicResource`, which resolves through the tree at run time.
+
+**A `[TemplatePart]` attribute's type is enforced by the XAML compiler**, not only documented.
+Replacing a template with a part of a different type is a build error, so a part declared
+`Panel` cannot become a `Border` however little the control cares.
+
+**A packaged theme's own styles still apply to a replaced template.** A `Style` beats a
+`ControlTheme`, so a `Template` setter in a plain style replaces the template while every
+nested style in the packaged `ControlTheme` keeps matching template children by name. An
+override has to name anything it wants back, and one carrying an activator binds at
+`StyleTrigger`, so a plain style will not beat it. Give the override an activator too and
+declare it later.
+
 ## Traps already hit in this project
 
 - `ExtendClientAreaChromeHints` does not exist. Build error, easy to spot.
@@ -913,6 +938,13 @@ control })`. The last pointer arguments may be null when nothing reads them.
 - Writing your own `InitializeComponent` in a code behind shadows the one the XAML
   compiler generates, so every `x:Name` field stays null and the first one touched throws
   a `NullReferenceException` with nothing to say. Call it, never define it.
+- Pointer over stops updating once a drag has captured the pointer, so `:pointerover` never
+  fires on whatever the drag is over. Measured through a real Dock drag: the drop target under
+  the cursor reported `IsPointerOver` false on every part while the library's own hit test had
+  already found it. Read the state from what the drag reports rather than from the pointer.
+- A binding converts a double to a bool the way `Convert.ToBoolean` does, so `IsVisible` bound
+  to an `Opacity` is true at anything other than zero. Useful when a library writes an opacity
+  and offers nothing else to style on.
 - An `ItemsControl` makes a `ContentPresenter` per item unless `NeedsContainerOverride`
   and `CreateContainerForItemOverride` say otherwise, so a control that reads its own
   containers, such as `Segmented` reading which `RadioButton` is checked, works with items

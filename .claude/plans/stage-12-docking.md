@@ -61,19 +61,23 @@ content, and the empty dock state.
 
 Every value comes from stage 1 tokens. No Fluent value survives.
 
-**Tabs.** Three states from the design: active, inactive, and inactive dock, which is a
-tab in a dock that does not hold focus. Active takes an inset 2px `Accent` line, from the
-`inset 0 2px 0 #569eff` in the design page. Inactive is `InkSecondary` text with no
-fill. Inactive dock drops further to `InkMuted`.
+**Tabs.** Five states on the design page: active, inactive, hover, modified, and inactive
+dock, which is a tab in a dock that does not hold focus. Active takes an inset 2px `Accent`
+line, from the `inset 0 2px 0 #569eff` in the design page, and the content surface with it.
+Inactive is `InkSecondary` text with no fill. Modified adds a round `Warn` mark. Inactive
+dock takes `SurfaceRowAlt` on `InkDisabled`.
 
 **Drop targets.** Three states, and all three have to be visually distinct at a glance
 because they appear during a drag when the user cannot read:
 
 | State | Look |
 |---|---|
-| available | a quiet `LineControl` outline on a faint fill |
-| under the cursor | `Accent` outline over `AccentTint` |
-| disallowed | `#ef6a6e` outline, no fill |
+| available | an `AccentTintLine` edge on `SurfaceDrop` with an `Accent` glyph |
+| under the cursor | `Accent` edge on `AccentTint` with a 2px ring |
+| disallowed | the same square, dimmed, with a `MarkOff` glyph |
+
+The design also draws the region a drop would claim as a ten percent accent wash with a
+forty five percent edge, covering exactly the area the drop takes.
 
 **Floating tool window.** A real window using the stage 3 shell, with `ShadowWindow` and
 `LineWindow`. It is a window, so it gets the window treatment rather than a panel one.
@@ -104,6 +108,43 @@ workspace settings.
 - Floating windows on Linux go through the same manual chrome path as every other window
   here, so they inherit the constraints in `.claude/avalonia.md` rather than getting
   native decorations for free.
+
+## What was built
+
+Stage 12 is done. `.claude/skills/kitbash-surfaces/SKILL.md` has the rules and everything
+below is what departed from this plan.
+
+**Docking is a second style include rather than part of `KitbashTheme`**, so the launcher
+does not carry it. The plan left that open until the first tool existed. It costs a tool one
+extra line and it costs the launcher nothing.
+
+**Dock has a token layer of its own**, about 150 keys, so most of the work was overriding
+those rather than replacing themes. Six templates are replaced and the rest is tokens. The
+spike the plan asked for was not needed: nothing resisted, and no theme file had to be
+vendored.
+
+**A tool dock is one strip.** Dock draws a title row and puts the tool tabs along the bottom,
+which is two rows where the design has one, so `ToolChromeControl` and `ToolControl` are both
+replaced to move the tabs up beside the buttons.
+
+**The tab list at the end of a document strip is ours.** Dock scrolls a strip that runs out of
+room and offers no way to reach a tab that has scrolled off, and the design draws a chevron
+there.
+
+**The scrollbar was themed here.** The library had no `ScrollBar` theme at all, so every
+scrollbar in the app was Fluent's. That is library wide rather than docking's, and this stage
+is where it was noticed, since a docked view is full of them.
+
+**There is no disallowed drop target.** Dock hides an operation it will not accept and leaves
+one it might accept sitting at rest until the pointer reaches it, so a target that never
+lights is the refusal. The greyed square in the design has nothing to draw it for.
+
+**The floating tool window wears the drawn frame** by pointing at it as a keyed template
+rather than by deriving from `ChromelessWindow`, which `HostWindow` cannot do. The resize
+grips moved into `ui:WindowResize` so both use one implementation.
+
+**The layout is serialised with Newtonsoft, not System.Text.Json.** Dock's own System.Text.Json
+serializer cannot write a layout that has been through `InitLayout`, measured at 12.1.0.
 
 ## Done when
 

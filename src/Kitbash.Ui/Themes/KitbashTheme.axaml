@@ -25,6 +25,7 @@
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Slider.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/NumericUpDown.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/GridSplitter.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/ScrollBar.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/SplitView.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/List.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tree.axaml" />

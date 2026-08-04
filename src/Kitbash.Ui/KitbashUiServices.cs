@@ -1,5 +1,9 @@
+using System.Collections.ObjectModel;
+using Dock.Model.Core;
+using Dock.Serializer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Kitbash.Ui.Docking;
 using Kitbash.Ui.Settings;
 using Kitbash.Ui.Toasts;
 
@@ -39,6 +43,25 @@ public static class KitbashUiServices
 
         services.TryAddSingleton<IApplicationRestart, ApplicationRestart>();
         services.TryAddSingleton<ISettingsWindows, SettingsWindows>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Where a dock layout is kept between runs. Takes Core's
+    /// <c>AddKitbashApplicationStorage</c> and <c>AddKitbashIO</c>, since the file sits in
+    /// application state. The look is a separate line, the style include in
+    /// Themes/KitbashDocking.axaml.
+    /// </summary>
+    public static IServiceCollection AddKitbashDocking(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // The list type a restored layout rebuilds its collections as. Dock's own model
+        // holds ObservableCollection, so a layout read back notifies the way a built one
+        // does. Substitute IDockSerializer to write the layout some other way.
+        services.TryAddSingleton<IDockSerializer>(_ => new DockSerializer(typeof(ObservableCollection<>)));
+        services.TryAddSingleton<IDockLayoutStore, DockLayoutStore>();
 
         return services;
     }

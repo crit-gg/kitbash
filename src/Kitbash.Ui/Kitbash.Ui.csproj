@@ -11,6 +11,19 @@
          and the application picks the container, which is the same package Core takes
          for its own registrations. -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+
+    <!-- Docking. The one third party control package here, MIT, and the exception to the
+         rule that a control is an Avalonia type with a theme over it. The Fluent theme is
+         the base Themes/Docking.axaml overrides, and Mvvm is the model so the dock uses
+         the same observables as everything else. -->
+    <PackageReference Include="Dock.Avalonia" Version="12.1.0" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageReference Include="Dock.Model.Mvvm" Version="12.1.0" />
+    <!-- Newtonsoft rather than the System.Text.Json one, which cannot write a layout that
+         has been through InitLayout. Measured against 12.1.0: a dockable's Owner is
+         written as a polymorphic value, reference preservation does not apply to one, and
+         the writer recurses until it gives up. -->
+    <PackageReference Include="Dock.Serializer.Newtonsoft" Version="12.1.0" />
   </ItemGroup>
 
   <ItemGroup>

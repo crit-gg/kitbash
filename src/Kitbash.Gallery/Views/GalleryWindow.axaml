@@ -10,6 +10,17 @@
         FontFamily="{StaticResource FontFamilyUi}"
         FontSize="{StaticResource FontSizeBody}">
 
+    <Window.DataTemplates>
+        <!-- What a docked thing draws. A dockable is a view model and the shell finds its
+             view by type, so the harness says here what a tool and a document look like. -->
+        <DataTemplate DataType="views:HarnessTool">
+            <TextBlock Classes="caption" Margin="11,9" Text="{Binding Body}" />
+        </DataTemplate>
+        <DataTemplate DataType="views:HarnessDocument">
+            <TextBlock Classes="caption" Margin="11,9" Text="{Binding Body}" />
+        </DataTemplate>
+    </Window.DataTemplates>
+
     <Window.Styles>
         <!-- The gallery's own furniture. Nothing here is a control look. Every one of
              those comes from Kitbash.Ui, so anything wrong on this page is wrong in
@@ -1080,6 +1091,26 @@
                                 <TabItem Header="three.toml" IsEnabled="False" />
                             </TabControl>
                         </ui:SurfacePanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="DOCKING" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="Docking is Dock for Avalonia under a Slate theme. A document tab carries the top marker and a close, a tool tab is a flat label sharing its strip with the dock's own buttons, and every division between docks is the seam until a pointer is on it." />
+
+                        <ui:SurfacePanel Padding="0" Height="452" ClipToBounds="True">
+                            <DockControl Name="Docking" />
+                        </ui:SurfacePanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Float the inspector" Click="OnFloatTool" />
+                            <Button Content="Pin the explorer" Click="OnPinTool" />
+                            <Button Content="Close every document" Click="OnCloseDocuments" />
+                            <Button Content="Build the layout again" Click="OnResetDock" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

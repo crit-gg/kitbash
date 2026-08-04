@@ -12,6 +12,7 @@ public sealed class ApplicationPaths
     private const string GlobalFileName = "kitbash.toml";
     private const string ToolsDirectoryName = "tools";
     private const string EnginesDirectoryName = "engines";
+    private const string LayoutsDirectoryName = "layouts";
 
     public ApplicationPaths(IUserDirectories directories)
     {
@@ -43,6 +44,26 @@ public sealed class ApplicationPaths
 
     /// <summary>The state file backing one scope. The file need not exist.</summary>
     public string StateFileFor(SettingsScope scope) => FileIn(State, scope);
+
+    /// <summary>
+    /// Where one view's window layout is kept. It is state rather than a setting, since
+    /// the app writes it and it is right for one person on one machine.
+    /// </summary>
+    /// <param name="scope">Whose layout it is.</param>
+    /// <param name="view">Which view inside that app, since an app has several.</param>
+    public string LayoutFileFor(SettingsScope scope, string view)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(view);
+
+        if (view.AsSpan().IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            throw new ArgumentException($"'{view}' cannot be used as a file name.", nameof(view));
+        }
+
+        var owner = scope.IsGlobal ? ApplicationName : scope.ToolId ?? ApplicationName;
+
+        return Path.Combine(State, LayoutsDirectoryName, owner, view + ".json");
+    }
 
     /// <summary>A named place in the cache. Nothing is created until something writes.</summary>
     public string CacheFileFor(string name)

@@ -8,6 +8,9 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
+
+        <!-- The second line, taken only by an app that docks. -->
+        <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashDocking.axaml" />
     </Application.Styles>
 
 </Application>

@@ -1,6 +1,6 @@
 ---
 name: kitbash-surfaces
-description: "Kitbash surface rules. The depth ramp and Surface.Level/Nests, SurfacePanel and section labels, list and tree rows, ui:Tree virtualisation, both data grids and their column model, tabs, and every floating overlay such as menus, flyouts, tooltips and popovers. Read before changing panels, lists, trees, grids, tabs or popups."
+description: "Kitbash surface rules. The depth ramp and Surface.Level/Nests, SurfacePanel and section labels, list and tree rows, ui:Tree virtualisation, both data grids and their column model, tabs, every floating overlay such as menus, flyouts, tooltips and popovers, and docking. Read before changing panels, lists, trees, grids, tabs, popups or anything docked."
 ---
 
 ### Panels and the depth ramp
@@ -336,3 +336,141 @@ and does not rebuild. Lay items out some other way rather than assuming it took.
 A `BoxShadow` cannot be cleared by a setter with an empty value, which throws at layout
 rather than at build. Use `ShadowNone`.
 
+
+### Docking
+
+Dock for Avalonia under a Slate theme. It is the one third party control package in the
+repository, MIT, and the exception to the rule that a control is an Avalonia type with a
+theme over it. Everything Dock builds on underneath, a `Button`, a `ScrollViewer`, a
+`MenuItem`, still takes the theme already written for it.
+
+**Docking is a second include, not part of `KitbashTheme`.**
+
+```xml
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashDocking.axaml" />
+```
+
+The launcher docks nothing and takes only the first, so it never carries Dock's fifty
+dictionaries to draw a workspace list. `KitbashDocking.axaml` holds Dock's Fluent theme and
+`Themes/Controls/Docking.axaml` over it. **A Styles collection is searched from its last
+child back**, so the file listed after the Fluent theme is reached first, which is what lets
+it replace a packaged resource.
+
+**Dock carries a token layer of its own** in `Accents/Fluent.axaml`, about 150 keys covering
+brushes, sizes, paddings and radii. Most of the Slate look is overriding those keys, and only
+the parts with no token behind them replace a template. **A Style beats a ControlTheme**, so a
+template is replaced with a `Style` holding a `Template` setter rather than by writing the
+whole theme out again. Everything Dock's theme sets that the design does not disagree with is
+then still set, including the styles it puts on its own template children, so an override has
+to name any of those it wants back.
+
+**Four templates are replaced and the rest is tokens.**
+
+| Replaced | Why |
+|---|---|
+| `ToolChromeControl` | the tab strip moves into the chrome's own strip |
+| `ToolControl` | so the strip is not drawn twice |
+| `DockTarget`, `GlobalDockTarget` | the selectors are PNG images in Dock's theme |
+| `ToolPinnedControl`, `ToolPinItemControl` | the strip has no border and the item is a plain label |
+| `ProportionalStackPanelSplitter` | the seam |
+| `HostWindow` | so a floated tool wears the drawn window frame |
+
+**A tool dock is one strip.** Dock draws a title row with the dock's buttons and puts the
+tool tabs along the bottom, which is two rows where the design has one. The strip in the
+replaced chrome holds the tabs on the left and the buttons on the right, and `ToolControl`
+draws only content. **The buttons take their width first and the tabs take what is left**, so
+a narrow dock loses the end of a tab name and never a button.
+
+**A dock holding one tool still draws its tab.** Dock hides a lone tab because its own header
+carries the title, and ours does not. A lone tab drops its fill so it reads as the title it
+is, which is `ToolTabStrip:singleitem ToolTabStripItem:selected`. A floated tool is the
+exception: it keeps no strip while it is alone, because the window's title bar names it.
+
+**A document tab and a tool tab are deliberately different.** A document is named by an
+identifier, so its label is mono, it carries the 2px `Accent` top marker when its dock has
+focus, a round `Warn` mark when it is modified and a close. A tool tab is a flat label in the
+UI family, one tier quieter at `InkMuted`, and carries neither marker nor close.
+
+**The marker is the tab's own top border**, not a separate part, which is what the design's
+inset shadow is. A dock that does not own focus drops its open tab to `SurfaceRowAlt` on
+`InkDisabled` and draws no marker.
+
+**The tab list at the end of a document strip is ours.** Dock scrolls a strip that runs out
+of room and offers nothing to reach a tab that has scrolled off, so the strip's `RightContent`
+carries a chevron opening a `MenuFlyout` over `VisibleDockables`. Its rows bind through
+`MenuFlyoutPresenter.tabList`, since a flyout's items source alone cannot say what a row runs.
+
+**Every division between docks is the seam.** `ProportionalStackPanelSplitter` is one pixel
+in layout, so the panes stay flush, and its template reaches three pixels either side with a
+transparent band so there is something to catch. It goes `Accent` under the pointer and
+widens to the band without moving while it is dragged, which is `GridSplitter`'s rule.
+
+#### Drop targets
+
+Three states, and they have to be distinguishable at a glance because they are read during a
+drag.
+
+| State | Look |
+|---|---|
+| available | `AccentTintLine` edge on `SurfaceDrop`, `Accent` glyph |
+| under the cursor | `Accent` edge on `AccentTint` with `ShadowDropTarget` |
+| the region it would claim | `DropPreview` wash with a `DropPreviewLine` edge |
+
+**Avalonia stops tracking what a pointer is over once a drag has captured it**, so
+`:pointerover` never fires on a target. Which one is hit is read from the preview Dock turns
+on for that same operation instead: each selector holds a highlight whose `IsVisible` is bound
+to the matching indicator's `Opacity`, and a double converts to a bool on its own. Measured
+during a real drag: the left indicator at 0.5 and exactly one highlight visible.
+
+**Dock writes `Opacity` on the preview region itself, and the value is 0.5.** So `DropPreview`
+and `DropPreviewLine` are the design's ten and forty five percent doubled, which is said where
+they are declared. Dock also floods the whole region with `DockTargetIndicatorBrush`, so that
+key is set transparent and the wash is drawn by a child of it.
+
+**A `[TemplatePart]` type is enforced by the XAML compiler.** Dock declares the preview
+regions as `Panel`, so the fill and the edge sit on a `Border` inside each one rather than on
+the part itself.
+
+**There is no disallowed target.** The design draws a greyed square for one, and Dock hides an
+operation it will not accept and leaves a target it might accept sitting at rest until the
+pointer reaches it. A target that never lights is the refusal.
+
+#### Floating and pinned
+
+**A torn out dockable wears the same drawn frame every Kitbash window has.** The frame is
+keyed as `WindowFrame` in `Themes/Controls/WindowChrome.axaml` so `HostWindow`, which cannot
+derive from `ChromelessWindow`, can still take it, and `ui:WindowResize.Grips` wires the eight
+resize borders for any window that carries them. The selector names a pseudo class,
+`HostWindow:toolwindow`, because Dock sets the desktop frame under the same conditions from a
+style that carries one and would otherwise win.
+
+The tool chrome inside is the title bar: at `HeightTitleBar` while floating, with the title in
+the window title's own type, and the close floods red there and only there.
+
+**A pinned tool is a label turned on its side.** The strip sits on the root tone with a seam
+facing the content it collapsed out of, chosen from `DockPanel.Dock`, since Dock gives the
+strip no alignment of its own.
+
+#### What a tool has to supply
+
+- The two style includes, and `AddKitbashDocking` for the layout store.
+- A `HostWindowLocator` on its factory. **Dock builds no window without one**, so a tear out
+  silently removes the dockable from the layout and shows nothing.
+- `EmptyContent` on a document dock, since what a dock with nothing in it says is the tool's.
+  Only its tone is set here.
+- An `IconTemplate` if its tabs carry a mark. The library's is empty, because the leading slot
+  is for a tool's own icon and only the tool knows it.
+
+**A layout is per person and per machine.** `IDockLayoutStore` reads and writes one under the
+application state directory, keyed by scope and view, so a tool with several views keeps one
+for each. A layout that cannot be read or written is survived rather than reported, the way a
+workspace that cannot be scaffolded is, since starting on the default layout is not a loss of
+work.
+
+**Dock's System.Text.Json serializer cannot write an initialised layout.** Measured against
+12.1.0: a dockable's `Owner` is written as a polymorphic value, reference preservation does
+not apply to one, and the writer recurses until it gives up at depth 64. A layout straight out
+of `CreateLayout` writes fine and the same layout after `InitLayout` does not.
+`Dock.Serializer.Newtonsoft` round trips it, so that is the package, and `IDockSerializer` is
+registered through `TryAdd` so swapping back later is one line.

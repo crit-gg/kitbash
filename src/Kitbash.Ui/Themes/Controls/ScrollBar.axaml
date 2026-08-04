@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The scrollbar. A thumb on nothing: the track is never drawn, so a bar that has
+         nowhere to go leaves no groove behind it. The thumb is thinner than the bar it
+         sits in, and the difference is the room a pointer has to catch it. -->
+
+    <!-- The halves of the track above and below the thumb. They page when clicked and
+         draw nothing, which is what makes the track look empty. -->
+    <ControlTheme x:Key="ScrollBarPage" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="ScrollBarThumb" TargetType="Thumb">
+        <Setter Property="Background" Value="{DynamicResource LineControl}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Bar"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{DynamicResource RadiusScrollBar}" />
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource LineWindow}" />
+        </Style>
+
+        <Style Selector="^:pressed">
+            <Setter Property="Background" Value="{DynamicResource LineWell}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}">
+                    <Track Name="PART_Track"
+                           Minimum="{TemplateBinding Minimum}"
+                           Maximum="{TemplateBinding Maximum}"
+                           Value="{TemplateBinding Value, Mode=TwoWay}"
+                           ViewportSize="{TemplateBinding ViewportSize}"
+                           Orientation="{TemplateBinding Orientation}">
+                        <Track.DecreaseButton>
+                            <RepeatButton Name="PART_PageUpButton"
+                                          Theme="{StaticResource ScrollBarPage}" />
+                        </Track.DecreaseButton>
+                        <Track.IncreaseButton>
+                            <RepeatButton Name="PART_PageDownButton"
+                                          Theme="{StaticResource ScrollBarPage}" />
+                        </Track.IncreaseButton>
+                        <Thumb Name="PART_Thumb" Theme="{StaticResource ScrollBarThumb}" />
+                    </Track>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:vertical">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBar}" />
+        </Style>
+
+        <!-- The track counts down the screen, so a vertical bar reads the other way. -->
+        <Style Selector="^:vertical /template/ Track#PART_Track">
+            <Setter Property="IsDirectionReversed" Value="True" />
+        </Style>
+
+        <Style Selector="^:vertical /template/ Thumb#PART_Thumb">
+            <Setter Property="Width" Value="{DynamicResource SizeScrollBarThumb}" />
+            <Setter Property="MinHeight" Value="{DynamicResource LengthScrollBarThumb}" />
+        </Style>
+
+        <Style Selector="^:horizontal">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBar}" />
+        </Style>
+
+        <Style Selector="^:horizontal /template/ Thumb#PART_Thumb">
+            <Setter Property="Height" Value="{DynamicResource SizeScrollBarThumb}" />
+            <Setter Property="MinWidth" Value="{DynamicResource LengthScrollBarThumb}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Thumb#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

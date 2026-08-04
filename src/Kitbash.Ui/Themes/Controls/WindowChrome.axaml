@@ -52,6 +52,80 @@
                 <Setter Property="Background" Value="{DynamicResource ClosePressed}" />
             </Style>
         </ControlTheme>
+
+        <!-- The frame itself, keyed so a window that cannot derive from ChromelessWindow
+             can still wear it. Dock's floating tool window is the one that does. -->
+        <ControlTemplate x:Key="WindowFrame" TargetType="Window">
+            <Panel>
+                <!-- The shadow is an effect on the wrapper rather than a BoxShadow on
+                     the frame, so it blurs what is actually drawn and has no shape
+                     edge of its own to show through. -->
+                <Grid Margin="{TemplateBinding Padding}"
+                      Effect="drop-shadow(0 0 12 #60000000)">
+                    <Border x:Name="PART_ContentRoot"
+                            Background="{DynamicResource SurfaceRoot}"
+                            BorderBrush="{DynamicResource LineWindow}"
+                            BorderThickness="1"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
+                            <!-- The name is the whole thing. TopLevel finds this part by name and installs the overlay
+                                 and adorner layers into it, so a manager without the name gets neither and nothing
+                                 complains. -->
+                            <VisualLayerManager Name="PART_VisualLayerManager">
+                                <ContentPresenter Name="PART_ContentPresenter"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  Content="{TemplateBinding Content}"
+                                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </VisualLayerManager>
+                        </Border>
+                    </Border>
+                </Grid>
+
+                <!-- Grips cover the shadow gutter exactly, so the whole soft edge
+                     around the frame is the resize target. -->
+                <Border x:Name="PART_ResizeTopLeft" Classes="resizeGrip"
+                        Width="12" Height="12" Background="Transparent"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Cursor="TopLeftCorner" Tag="{x:Static WindowEdge.NorthWest}" />
+
+                <Border x:Name="PART_ResizeTop" Classes="resizeGrip"
+                        Height="12" Margin="12,0" Background="Transparent"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                        Cursor="TopSide" Tag="{x:Static WindowEdge.North}" />
+
+                <Border x:Name="PART_ResizeTopRight" Classes="resizeGrip"
+                        Width="12" Height="12" Background="Transparent"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Cursor="TopRightCorner" Tag="{x:Static WindowEdge.NorthEast}" />
+
+                <Border x:Name="PART_ResizeLeft" Classes="resizeGrip"
+                        Width="12" Margin="0,12" Background="Transparent"
+                        HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                        Cursor="LeftSide" Tag="{x:Static WindowEdge.West}" />
+
+                <Border x:Name="PART_ResizeRight" Classes="resizeGrip"
+                        Width="12" Margin="0,12" Background="Transparent"
+                        HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                        Cursor="RightSide" Tag="{x:Static WindowEdge.East}" />
+
+                <Border x:Name="PART_ResizeBottomLeft" Classes="resizeGrip"
+                        Width="12" Height="12" Background="Transparent"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Cursor="BottomLeftCorner" Tag="{x:Static WindowEdge.SouthWest}" />
+
+                <Border x:Name="PART_ResizeBottom" Classes="resizeGrip"
+                        Height="12" Margin="12,0" Background="Transparent"
+                        HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                        Cursor="BottomSide" Tag="{x:Static WindowEdge.South}" />
+
+                <Border x:Name="PART_ResizeBottomRight" Classes="resizeGrip"
+                        Width="12" Height="12" Background="Transparent"
+                        HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Cursor="BottomRightCorner" Tag="{x:Static WindowEdge.SouthEast}" />
+            </Panel>
+        </ControlTemplate>
+
     </Styles.Resources>
 
     <!-- The glyph is the button's content, so it belongs to the title bar's template
@@ -204,78 +278,7 @@
         <Setter Property="Padding" Value="{StaticResource WindowShadowGutter}" />
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
 
-        <Setter Property="Template">
-            <ControlTemplate>
-                <Panel>
-                    <!-- The shadow is an effect on the wrapper rather than a BoxShadow on
-                         the frame, so it blurs what is actually drawn and has no shape
-                         edge of its own to show through. -->
-                    <Grid Margin="{TemplateBinding Padding}"
-                          Effect="drop-shadow(0 0 12 #60000000)">
-                        <Border x:Name="PART_ContentRoot"
-                                Background="{DynamicResource SurfaceRoot}"
-                                BorderBrush="{DynamicResource LineWindow}"
-                                BorderThickness="1"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <Border CornerRadius="{TemplateBinding CornerRadius}" ClipToBounds="True">
-                                <!-- The name is the whole thing. TopLevel finds this part by name and installs the overlay
-                                     and adorner layers into it, so a manager without the name gets neither and nothing
-                                     complains. -->
-                                <VisualLayerManager Name="PART_VisualLayerManager">
-                                    <ContentPresenter Name="PART_ContentPresenter"
-                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                      Content="{TemplateBinding Content}"
-                                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                </VisualLayerManager>
-                            </Border>
-                        </Border>
-                    </Grid>
-
-                    <!-- Grips cover the shadow gutter exactly, so the whole soft edge
-                         around the frame is the resize target. -->
-                    <Border x:Name="PART_ResizeTopLeft" Classes="resizeGrip"
-                            Width="12" Height="12" Background="Transparent"
-                            HorizontalAlignment="Left" VerticalAlignment="Top"
-                            Cursor="TopLeftCorner" Tag="{x:Static WindowEdge.NorthWest}" />
-
-                    <Border x:Name="PART_ResizeTop" Classes="resizeGrip"
-                            Height="12" Margin="12,0" Background="Transparent"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                            Cursor="TopSide" Tag="{x:Static WindowEdge.North}" />
-
-                    <Border x:Name="PART_ResizeTopRight" Classes="resizeGrip"
-                            Width="12" Height="12" Background="Transparent"
-                            HorizontalAlignment="Right" VerticalAlignment="Top"
-                            Cursor="TopRightCorner" Tag="{x:Static WindowEdge.NorthEast}" />
-
-                    <Border x:Name="PART_ResizeLeft" Classes="resizeGrip"
-                            Width="12" Margin="0,12" Background="Transparent"
-                            HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                            Cursor="LeftSide" Tag="{x:Static WindowEdge.West}" />
-
-                    <Border x:Name="PART_ResizeRight" Classes="resizeGrip"
-                            Width="12" Margin="0,12" Background="Transparent"
-                            HorizontalAlignment="Right" VerticalAlignment="Stretch"
-                            Cursor="RightSide" Tag="{x:Static WindowEdge.East}" />
-
-                    <Border x:Name="PART_ResizeBottomLeft" Classes="resizeGrip"
-                            Width="12" Height="12" Background="Transparent"
-                            HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                            Cursor="BottomLeftCorner" Tag="{x:Static WindowEdge.SouthWest}" />
-
-                    <Border x:Name="PART_ResizeBottom" Classes="resizeGrip"
-                            Height="12" Margin="12,0" Background="Transparent"
-                            HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
-                            Cursor="BottomSide" Tag="{x:Static WindowEdge.South}" />
-
-                    <Border x:Name="PART_ResizeBottomRight" Classes="resizeGrip"
-                            Width="12" Height="12" Background="Transparent"
-                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                            Cursor="BottomRightCorner" Tag="{x:Static WindowEdge.SouthEast}" />
-                </Panel>
-            </ControlTemplate>
-        </Setter>
+        <Setter Property="Template" Value="{StaticResource WindowFrame}" />
     </Style>
 
     <!-- The outer edge is a step lighter than any line inside the window, because the

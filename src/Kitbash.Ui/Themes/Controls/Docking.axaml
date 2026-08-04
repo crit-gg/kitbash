@@ -1,0 +1,941 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls"
+        xmlns:core="using:Dock.Model.Core"
+        xmlns:dmc="using:Dock.Model.Controls">
+
+    <!-- Slate over Dock. Dock carries a token layer of its own in Accents/Fluent.axaml,
+         so most of the look is the overrides below and only the parts with no token
+         behind them replace a template.
+
+         A Style beats a ControlTheme, so a template is replaced with a Style here rather
+         than by writing out the whole theme again. Everything Dock's theme sets that the
+         design does not disagree with is then still set.
+
+         Every value comes from Tokens.axaml. Nothing in this file writes a hex. -->
+
+    <Styles.Resources>
+        <ResourceDictionary>
+
+            <!-- Surfaces. A dock is a container, so it adds a level: the frame and every
+                 strip sit on the root tone and the content inside a dock is one deeper. -->
+            <StaticResource x:Key="DockSurfaceWorkbenchBrush" ResourceKey="SurfaceRoot" />
+            <StaticResource x:Key="DockSurfaceSidebarBrush" ResourceKey="SurfaceRoot" />
+            <StaticResource x:Key="DockSurfaceEditorBrush" ResourceKey="SurfaceNest1" />
+            <StaticResource x:Key="DockSurfacePanelBrush" ResourceKey="SurfaceNest1" />
+            <StaticResource x:Key="DockSurfaceHeaderBrush" ResourceKey="SurfaceRoot" />
+
+            <!-- A dock that owns focus does not change its strip. What says which dock is
+                 current is the tab, not the ground behind it. -->
+            <StaticResource x:Key="DockSurfaceHeaderActiveBrush" ResourceKey="SurfaceRoot" />
+
+            <!-- Lines. Every division between docks is the seam. -->
+            <StaticResource x:Key="DockBorderSubtleBrush" ResourceKey="LineSeam" />
+            <StaticResource x:Key="DockBorderStrongBrush" ResourceKey="LineControl" />
+            <StaticResource x:Key="DockSeparatorBrush" ResourceKey="LineSeam" />
+            <StaticResource x:Key="DockSplitterIdleBrush" ResourceKey="LineSeam" />
+            <StaticResource x:Key="DockSplitterHoverBrush" ResourceKey="Accent" />
+            <StaticResource x:Key="DockSplitterDragBrush" ResourceKey="Accent" />
+
+            <!-- Tabs. -->
+            <SolidColorBrush x:Key="DockTabBackgroundBrush" Color="Transparent" />
+            <StaticResource x:Key="DockTabHoverBackgroundBrush" ResourceKey="StateHover" />
+            <StaticResource x:Key="DockTabActiveBackgroundBrush" ResourceKey="SurfaceNest1" />
+            <StaticResource x:Key="DockTabActiveIndicatorBrush" ResourceKey="Accent" />
+            <StaticResource x:Key="DockTabForegroundBrush" ResourceKey="InkSecondary" />
+            <StaticResource x:Key="DockTabSelectedForegroundBrush" ResourceKey="InkPrimary" />
+            <StaticResource x:Key="DockTabActiveForegroundBrush" ResourceKey="InkPrimary" />
+            <StaticResource x:Key="DockTabCloseHoverBackgroundBrush" ResourceKey="StatePressed" />
+
+            <!-- The open tab of a dock that does not own focus. It keeps the content
+                 surface and drops its whole strip to the muted tier. -->
+            <StaticResource x:Key="DockDocumentTabStripBackgroundBrush" ResourceKey="SurfaceRoot" />
+            <StaticResource x:Key="DockDocumentTabSelectedForegroundBrush" ResourceKey="InkDisabled" />
+            <StaticResource x:Key="DockDocumentTabPointerOverForegroundBrush" ResourceKey="InkPrimary" />
+            <StaticResource x:Key="DockDocumentTabCloseSelectedForegroundBrush" ResourceKey="InkSecondary" />
+            <StaticResource x:Key="DockDocumentTabClosePointerOverForegroundBrush" ResourceKey="InkPrimary" />
+
+            <!-- The tool chrome's buttons. The close here is an ordinary button: the red
+                 close belongs to a window and a floating tool gets it from the shell. -->
+            <StaticResource x:Key="DockChromeButtonForegroundBrush" ResourceKey="InkSecondary" />
+            <StaticResource x:Key="DockChromeButtonHoverBackgroundBrush" ResourceKey="StateHover" />
+            <StaticResource x:Key="DockChromeButtonPressedBackgroundBrush" ResourceKey="StatePressed" />
+            <StaticResource x:Key="DockChromeButtonDangerHoverBrush" ResourceKey="StateHover" />
+            <StaticResource x:Key="DockToolChromeIconBrush" ResourceKey="InkSecondary" />
+
+            <!-- Dock floods the whole preview region with this. The wash and its edge are
+                 drawn inside it instead, so the region itself paints nothing. -->
+            <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="DockChromeGripBrush" Color="Transparent" />
+
+            <!-- Density. -->
+            <StaticResource x:Key="DockFontSizeNormal" ResourceKey="FontSizeBody" />
+            <StaticResource x:Key="DockHeaderHeight" ResourceKey="HeightTab" />
+            <x:Double x:Key="DockTabHeight">30</x:Double>
+            <x:Double x:Key="DockTabHorizontalPadding">11</x:Double>
+
+            <!-- A tab is as wide as what is in it. Fluent floors a document tab at 64,
+                 which pads a short title out to nothing. -->
+            <x:Double x:Key="DockDocumentTabItemMinWidth">0</x:Double>
+            <x:Double x:Key="DockDocumentTabItemMinHeight">30</x:Double>
+            <x:Double x:Key="DockToolTabItemMinHeight">28</x:Double>
+            <x:Double x:Key="DockTabItemMinHeight">28</x:Double>
+            <Thickness x:Key="DockDocumentTabItemPadding">11,0</Thickness>
+            <Thickness x:Key="DockToolTabItemPadding">11,0</Thickness>
+            <Thickness x:Key="DockToolTabItemSelectedPadding">11,0</Thickness>
+            <Thickness x:Key="DockDocumentTabItemMargin">0</Thickness>
+            <Thickness x:Key="DockTabContentMargin">0</Thickness>
+            <Thickness x:Key="DockHeaderContentPadding">0</Thickness>
+            <Thickness x:Key="DockModifiedIndicatorMargin">0</Thickness>
+            <x:Double x:Key="DockTabContentSpacing">8</x:Double>
+            <x:Double x:Key="DockDocumentTabHeaderContentSpacing">8</x:Double>
+
+            <!-- Nothing in a dock is round. Panes are flush against each other and a
+                 radius there would show the tone behind the corner. -->
+            <x:Double x:Key="DockCornerRadiusSmall">0</x:Double>
+            <CornerRadius x:Key="DockDocumentTabItemCornerRadius">0</CornerRadius>
+            <CornerRadius x:Key="DockDocumentTabCreateButtonCornerRadius">0</CornerRadius>
+
+            <!-- The line under a document strip, and the one between tabs. -->
+            <x:Double x:Key="DockDocumentTabStripSeparatorSize">1</x:Double>
+            <x:Double x:Key="DockDocumentTabItemSeparatorOpacity">1</x:Double>
+
+            <!-- The content under a document strip. Its sides and foot are the seam
+                 between docks, which the splitter draws, so only the strip's line is
+                 left. -->
+            <Thickness x:Key="DockDocumentContentBorderThickness">0</Thickness>
+
+            <x:Double x:Key="DockChromeButtonWidth">22</x:Double>
+            <x:Double x:Key="DockChromeButtonHeight">22</x:Double>
+            <Thickness x:Key="DockChromeButtonPadding">0</Thickness>
+            <Thickness x:Key="DockChromeButtonMargin">0</Thickness>
+            <x:Double x:Key="DockCloseButtonSize">16</x:Double>
+
+            <!-- What a document tab says, and what closes it. A document is named by an
+                 identifier, so its label is mono, and its modified mark is the round one
+                 a tab carries everywhere else. -->
+            <DataTemplate x:Key="DockDocumentHeaderTemplate" x:DataType="core:IDockable">
+                <TextBlock Text="{Binding Title}"
+                           VerticalAlignment="Center"
+                           FontFamily="{DynamicResource FontFamilyMono}"
+                           FontWeight="{DynamicResource FontWeightMedium}" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="DockToolHeaderTemplate" x:DataType="core:IDockable">
+                <TextBlock Text="{Binding Title}"
+                           VerticalAlignment="Center"
+                           FontFamily="{DynamicResource FontFamilyUi}"
+                           FontWeight="{DynamicResource FontWeightMedium}" />
+            </DataTemplate>
+
+            <!-- A tab draws no mark of its own. What the leading slot is for is a tool's
+                 own icon, which only the tool knows, so it stays empty here. -->
+            <DataTemplate x:Key="DockNoIconTemplate" x:DataType="core:IDockable">
+                <Panel />
+            </DataTemplate>
+
+            <DataTemplate x:Key="DockModifiedTemplate" x:DataType="core:IDockable">
+                <Ellipse Width="{DynamicResource SizeMarkModified}"
+                         Height="{DynamicResource SizeMarkModified}"
+                         VerticalAlignment="Center"
+                         Fill="{DynamicResource Warn}" />
+            </DataTemplate>
+
+            <ControlTheme x:Key="DockCloseButton" TargetType="Button">
+                <Setter Property="Width" Value="{DynamicResource DockCloseButtonSize}" />
+                <Setter Property="Height" Value="{DynamicResource DockCloseButtonSize}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border Name="PART_Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding Content}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+                <Style Selector="^:pointerover /template/ Border#PART_Root">
+                    <Setter Property="Background" Value="{DynamicResource StatePressed}" />
+                </Style>
+            </ControlTheme>
+
+            <!-- A button on a dock's own strip. Square hover, no border, and the same
+                 shape whether it pins, closes or opens the dock's menu. -->
+            <ControlTheme x:Key="DockChromeButton" TargetType="Button"
+                          BasedOn="{StaticResource DockCloseButton}">
+                <Setter Property="Width" Value="{DynamicResource DockChromeButtonWidth}" />
+                <Setter Property="Height" Value="{DynamicResource DockChromeButtonHeight}" />
+                <Style Selector="^:pointerover /template/ Border#PART_Root">
+                    <Setter Property="Background" Value="{DynamicResource StateHover}" />
+                </Style>
+            </ControlTheme>
+
+            <!-- A tool sitting in the pinned strip. It is turned on its side by the strip
+                 above it, so the padding here reads across the strip rather than down. -->
+            <ControlTheme x:Key="DockPinnedButton" TargetType="Button"
+                          BasedOn="{StaticResource DockCloseButton}">
+                <Setter Property="Width" Value="NaN" />
+                <Setter Property="Height" Value="{DynamicResource SizeDockPinned}" />
+                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+                <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border Name="PART_Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Content="{TemplateBinding Content}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+                <Style Selector="^:pointerover">
+                    <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+                </Style>
+                <Style Selector="^:pointerover /template/ Border#PART_Root">
+                    <Setter Property="Background" Value="{DynamicResource StateHover}" />
+                </Style>
+            </ControlTheme>
+
+            <!-- The tab list at the end of a document strip. A strip scrolls when it runs
+                 out of room, so this is how a tab that has scrolled off is reached. -->
+            <DataTemplate x:Key="DockTabListTemplate" x:DataType="dmc:IDocumentDock">
+                <Button Theme="{StaticResource DockChromeButton}"
+                        Width="28"
+                        Height="{DynamicResource DockTabHeight}"
+                        ToolTip.Tip="Open documents">
+                    <Button.Flyout>
+                        <MenuFlyout ItemsSource="{Binding VisibleDockables}"
+                                    FlyoutPresenterClasses="tabList" />
+                    </Button.Flyout>
+                    <ui:Icon Glyph="ChevronDown" Size="{DynamicResource IconSizeCaret}" />
+                </Button>
+            </DataTemplate>
+
+            <!-- The cross on a document tab. Dock hands the close button the dockable, so
+                 the command and what it may act on are its own. -->
+            <DataTemplate x:Key="DockDefaultDocumentCloseTemplate" x:DataType="core:IDockable">
+                <Button Command="{Binding Owner.Factory.CloseDockable}"
+                        CommandParameter="{Binding}"
+                        Theme="{Binding $parent[DocumentTabStrip].CloseButtonTheme}"
+                        IsVisible="{Binding CanClose}">
+                    <ui:Icon Glyph="X"
+                             Size="{DynamicResource IconSizeCompact}"
+                             Foreground="{Binding $parent[DocumentTabStripItem].Foreground}" />
+                </Button>
+            </DataTemplate>
+
+            <!-- The splitter is the seam, so the panes stay flush and the line is the only
+                 thing between them. -->
+            <ControlTheme x:Key="{x:Type ProportionalStackPanelSplitter}"
+                          TargetType="ProportionalStackPanelSplitter">
+                <Setter Property="Thickness" Value="{DynamicResource SizeSplitterLine}" />
+                <Setter Property="Background" Value="Transparent" />
+
+                <!-- The grab band reaches past the seam, and a templated control clips to
+                     its bounds in Avalonia 12, so the band would be cut back to the
+                     line. -->
+                <Setter Property="ClipToBounds" Value="False" />
+
+                <Setter Property="Template">
+                    <ControlTemplate>
+                        <Border Name="PART_Reach" Background="Transparent" Margin="-3">
+                            <Border Name="PART_Line"
+                                    Margin="3"
+                                    Background="{DynamicResource DockSplitterIdleBrush}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter>
+
+                <Style Selector="^:pointerover /template/ Border#PART_Line">
+                    <Setter Property="Background" Value="{DynamicResource DockSplitterHoverBrush}" />
+                </Style>
+
+                <!-- Two pixels of inset rather than three widens the line to the band
+                     without moving its centre, which is GridSplitter's rule as well. -->
+                <Style Selector="^:pressed /template/ Border#PART_Line">
+                    <Setter Property="Margin" Value="2" />
+                    <Setter Property="Background" Value="{DynamicResource DockSplitterDragBrush}" />
+                </Style>
+            </ControlTheme>
+
+        </ResourceDictionary>
+    </Styles.Resources>
+
+    <!-- Anything docked reads in the app's own type. Dock sets a size and leaves the
+         family to whatever it inherits. -->
+    <Style Selector="DockControl">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+    </Style>
+
+    <!-- Documents -->
+
+    <Style Selector="DocumentControl">
+        <Setter Property="IconTemplate" Value="{StaticResource DockNoIconTemplate}" />
+        <Setter Property="HeaderTemplate" Value="{StaticResource DockDocumentHeaderTemplate}" />
+        <Setter Property="ModifiedTemplate" Value="{StaticResource DockModifiedTemplate}" />
+        <Setter Property="CloseButtonTheme" Value="{StaticResource DockCloseButton}" />
+    </Style>
+
+    <!-- The document surface. Dock leaves it unpainted, so without this the window shows
+         through wherever a document draws nothing. -->
+    <Style Selector="DocumentControl /template/ Border#PART_Border">
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+    </Style>
+
+    <!-- The line under the strip stays the seam whether the dock has focus or not. The
+         open tab already says which dock is current. -->
+    <Style Selector="DocumentControl:active /template/ Panel#PART_DocumentSeperator">
+        <Setter Property="Background" Value="{DynamicResource LineSeam}" />
+    </Style>
+
+    <Style Selector="DocumentTabStrip" x:DataType="dmc:IDocumentDock">
+        <Setter Property="CloseButtonTheme" Value="{StaticResource DockCloseButton}" />
+        <Setter Property="RightContent" Value="{Binding}" />
+        <Setter Property="RightContentTemplate" Value="{StaticResource DockTabListTemplate}" />
+    </Style>
+
+    <!-- Every row of the tab list runs a dockable, which the flyout's items source alone
+         cannot say. -->
+    <Style Selector="MenuFlyoutPresenter.tabList MenuItem" x:DataType="core:IDockable">
+        <Setter Property="Header" Value="{Binding Title}" />
+        <Setter Property="Command" Value="{Binding Owner.Factory.SetActiveDockable}" />
+        <Setter Property="CommandParameter" Value="{Binding}" />
+    </Style>
+
+    <!-- What a dock with nothing in it says is the tool's, so only its tone is set here. -->
+    <Style Selector="DocumentControl /template/ ContentControl#PART_EmptyContentHost">
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    </Style>
+
+    <!-- The accent marker on the open tab, drawn as the tab's own top border, which is
+         what the design's inset shadow is. -->
+    <Style Selector="DocumentTabStripItem">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="DocumentTabStripItem:active:selected">
+        <Setter Property="BorderThickness" Value="0,2,0,0" />
+    </Style>
+
+    <!-- A dock that does not own focus drops its whole strip to the muted tier, so the
+         open tab there keeps its place without claiming to be the current one. -->
+    <Style Selector="DocumentTabStripItem:not(:active):selected">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRowAlt}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+    </Style>
+
+    <!-- The tab separator runs the full height, not inset. -->
+    <Style Selector="DocumentTabStripItem /template/ Border#PART_TabSeparatorRight">
+        <Setter Property="Margin" Value="0" />
+    </Style>
+
+    <!-- Tools -->
+
+    <Style Selector="ToolControl">
+        <Setter Property="IconTemplate" Value="{StaticResource DockNoIconTemplate}" />
+        <Setter Property="HeaderTemplate" Value="{StaticResource DockToolHeaderTemplate}" />
+        <Setter Property="ModifiedTemplate" Value="{StaticResource DockModifiedTemplate}" />
+
+        <!-- The tab strip moves into the chrome's own strip, so a tool dock is one row of
+             tabs and buttons rather than a title above the content and tabs below it. -->
+        <Setter Property="Template">
+            <ControlTemplate x:DataType="dmc:IToolDock">
+                <Border x:Name="PART_Border"
+                        Background="{DynamicResource SurfaceNest1}"
+                        DockProperties.IsDropArea="True"
+                        DockProperties.IsDockTarget="True">
+                    <DockableControl DataContext="{Binding ActiveDockable}" TrackingMode="Visible">
+                        <DeferredContentControl x:Name="PART_ContentPresenter"
+                                                Content="{Binding}"
+                                                HorizontalAlignment="Stretch"
+                                                VerticalAlignment="Stretch">
+                            <DeferredContentControl.ContentTemplate>
+                                <ControlRecyclingDataTemplate Parent="{Binding #PART_ContentPresenter}" />
+                            </DeferredContentControl.ContentTemplate>
+                        </DeferredContentControl>
+                    </DockableControl>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- A tool tab is a flat label. It takes the content surface when it is the open one
+         and carries no marker, which is what tells it apart from a document tab. -->
+    <Style Selector="ToolTabStripItem">
+        <Setter Property="Height" Value="{DynamicResource HeightTab}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- A tool tab is quieter than a document tab. A document is a thing being worked
+         on and a tool is furniture around it. -->
+    <Style Selector="ToolTabStripItem">
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+    </Style>
+
+    <Style Selector="ToolTabStripItem:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+    </Style>
+
+    <Style Selector="ToolTabStripItem:selected">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingTab}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+    </Style>
+
+    <!-- The strip's own top line belongs to the chrome, which draws the one under it. -->
+    <Style Selector="ToolTabStrip /template/ Border#PART_BorderLeftFill">
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ToolTabStrip /template/ Border#PART_BorderRightFill">
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <!-- A dock holding one tool still draws its tab, which is what names it. Dock hides a
+         lone tab because its own header carries the title, and ours does not. -->
+    <Style Selector="ToolTabStrip:singleitem /template/ ItemsPresenter#PART_ItemsPresenter">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- A lone tab has nothing to be told apart from, so it reads as the title it is. -->
+    <Style Selector="ToolTabStrip:singleitem ToolTabStripItem:selected">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- A floated tool keeps no tab strip while it is alone. The window's own title bar
+         names it instead. -->
+    <Style Selector="ToolChromeControl:floating ToolTabStrip:singleitem /template/ ItemsPresenter#PART_ItemsPresenter">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <Style Selector="ToolChromeControl">
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+        <Setter Property="CloseButtonTheme" Value="{StaticResource DockChromeButton}" />
+        <Setter Property="MaximizeButtonTheme" Value="{StaticResource DockChromeButton}" />
+        <Setter Property="PinButtonTheme" Value="{StaticResource DockChromeButton}" />
+        <Setter Property="MenuButtonTheme" Value="{StaticResource DockChromeButton}" />
+
+        <Setter Property="Template">
+            <ControlTemplate x:DataType="dmc:IToolDock">
+                <Grid RowDefinitions="Auto,*">
+                    <Border x:Name="PART_Border"
+                            Grid.Row="0"
+                            Background="{DynamicResource SurfaceRoot}"
+                            BorderBrush="{DynamicResource LineSeam}"
+                            BorderThickness="0,0,0,1"
+                            ContextFlyout="{TemplateBinding ToolFlyout}">
+                        <!-- The tabs take what is left after the buttons rather than
+                             their own width, so a narrow dock loses a tab and never a
+                             button. -->
+                        <Grid x:Name="PART_Grip"
+                              Height="{DynamicResource HeightTab}"
+                              ColumnDefinitions="*,Auto">
+                            <ToolTabStrip x:Name="PART_TabStrip"
+                                          Grid.Column="0"
+                                          ItemsSource="{Binding VisibleDockables}"
+                                          SelectedItem="{Binding ActiveDockable, Mode=TwoWay}"
+                                          IconTemplate="{StaticResource DockNoIconTemplate}"
+                                          HeaderTemplate="{StaticResource DockToolHeaderTemplate}"
+                                          ModifiedTemplate="{StaticResource DockModifiedTemplate}"
+                                          DockProperties.IsDropArea="True"
+                                          DockProperties.DockAdornerHost="{Binding #PART_Grip}" />
+
+                            <TextBlock x:Name="PART_Title"
+                                       Grid.Column="0"
+                                       IsVisible="False"
+                                       VerticalAlignment="Center"
+                                       Margin="{DynamicResource PaddingTab}"
+                                       Text="{Binding ActiveDockable.Title}" />
+
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,3,0">
+                                <Button x:Name="PART_MenuButton"
+                                        Theme="{TemplateBinding MenuButtonTheme}"
+                                        Flyout="{TemplateBinding ToolFlyout}">
+                                    <ui:Icon Glyph="DotsVerticalRounded"
+                                             Size="{DynamicResource IconSizeStatus}" />
+                                </Button>
+                                <Button x:Name="PART_PinButton"
+                                        Theme="{TemplateBinding PinButtonTheme}"
+                                        Command="{Binding Owner.Factory.PinDockable}"
+                                        CommandParameter="{Binding ActiveDockable}"
+                                        IsVisible="{TemplateBinding IsFloating,
+                                                    Converter={x:Static BoolConverters.Not}}">
+                                    <ui:Icon x:Name="PART_PinIcon"
+                                             Glyph="Minimize"
+                                             Size="{DynamicResource IconSizeStatus}" />
+                                </Button>
+                                <Button x:Name="PART_MaximizeRestoreButton"
+                                        Theme="{TemplateBinding MaximizeButtonTheme}"
+                                        IsVisible="{TemplateBinding IsFloating}">
+                                    <ui:Icon x:Name="PART_MaximizeIcon"
+                                             Glyph="Maximize"
+                                             Size="{DynamicResource IconSizeStatus}" />
+                                </Button>
+                                <Button x:Name="PART_CloseButton"
+                                        Theme="{TemplateBinding CloseButtonTheme}"
+                                        Command="{Binding Owner.Factory.CloseDockable}"
+                                        CommandParameter="{Binding ActiveDockable}">
+                                    <ui:Icon Glyph="X" Size="{DynamicResource IconSizeStatus}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <DeferredContentPresenter x:Name="PART_ContentPresenter"
+                                              Grid.Row="1"
+                                              Background="{TemplateBinding Background}"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Padding="{TemplateBinding Padding}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Dock paints the grip the panel tone and boxes the header in on three sides. The
+         strip is the root tone with one line under it and nothing at its ends. Both
+         states are written, since the packaged one for an active dock carries an
+         activator and would otherwise win. -->
+    <Style Selector="ToolChromeControl /template/ Grid#PART_Grip">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ToolChromeControl:active /template/ Grid#PART_Grip">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ToolChromeControl /template/ Border#PART_Border">
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="ToolChromeControl:floating /template/ Border#PART_Border">
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="ToolChromeControl /template/ TextBlock#PART_Title">
+        <Setter Property="Margin" Value="{DynamicResource PaddingTab}" />
+    </Style>
+
+    <Style Selector="ToolChromeControl /template/ ui|Icon">
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+    </Style>
+
+    <!-- A tool that has been pinned points the other way, since the button puts it
+         back. -->
+    <Style Selector="ToolChromeControl:pinned /template/ ui|Icon#PART_PinIcon">
+        <Setter Property="Glyph" Value="Maximize" />
+    </Style>
+
+    <Style Selector="ToolChromeControl:maximized /template/ ui|Icon#PART_MaximizeIcon">
+        <Setter Property="Glyph" Value="Minimize" />
+    </Style>
+
+    <!-- Floating windows -->
+
+    <!-- A torn out dockable is a real window, so it wears the same drawn frame every
+         Kitbash window does. The selector names a pseudo class so it binds above Dock's
+         own, which sets the desktop frame under the same conditions. -->
+    <Style Selector="HostWindow:toolwindow, HostWindow:documentwindow">
+        <Setter Property="(ui:WindowResize.Grips)" Value="True" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="TransparencyLevelHint" Value="Transparent" />
+        <Setter Property="WindowDecorations" Value="None" />
+        <Setter Property="ExtendClientAreaToDecorationsHint" Value="False" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="{DynamicResource WindowShadowGutter}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="Template" Value="{DynamicResource WindowFrame}" />
+    </Style>
+
+    <!-- The frame's own fill is the root tone. A floated tool is a panel from its strip
+         down, so the surface under its content is the panel one. -->
+    <Style Selector="HostWindow /template/ Border#PART_ContentRoot">
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+    </Style>
+
+    <!-- Pinned -->
+
+    <!-- A tool collapsed to the edge of the layout. The strip is chrome, so it sits on the
+         root tone with a seam facing the content it collapsed out of. -->
+    <Style Selector="ToolPinnedControl">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="Padding" Value="5" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}">
+                    <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="ToolPinnedControl[(DockPanel.Dock)=Left]">
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+    </Style>
+
+    <Style Selector="ToolPinnedControl[(DockPanel.Dock)=Right]">
+        <Setter Property="BorderThickness" Value="1,0,0,0" />
+    </Style>
+
+    <Style Selector="ToolPinnedControl[(DockPanel.Dock)=Top]">
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="ToolPinnedControl[(DockPanel.Dock)=Bottom]">
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+    </Style>
+
+    <!-- A pinned tool reads sideways in a vertical strip, which is Dock's own rotation, so
+         the label is the whole control and the button around it is the target. -->
+    <Style Selector="ToolPinItemControl">
+        <Setter Property="Template">
+            <ControlTemplate x:DataType="core:IDockable">
+                <DockableControl TrackingMode="Pinned">
+                    <LayoutTransformControl x:Name="PART_LayoutTransformControl">
+                        <Border Background="Transparent"
+                                DockProperties.IsDragArea="True"
+                                DockProperties.IsDropArea="True"
+                                DockProperties.IsDockTarget="True"
+                                DockProperties.ShowDockIndicatorOnly="True"
+                                DockProperties.IndicatorDockOperation="Fill">
+                            <Button x:Name="PART_Button"
+                                    Theme="{StaticResource DockPinnedButton}"
+                                    Command="{Binding Owner.Factory.TogglePreviewPinnedDockable}"
+                                    CommandParameter="{Binding}"
+                                    ContextMenu="{TemplateBinding PinContextMenu}"
+                                    Content="{Binding Title}" />
+                        </Border>
+                    </LayoutTransformControl>
+                </DockableControl>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- Drop targets -->
+
+    <!-- The five places a dockable can land, drawn as a plus over the dock under the
+         pointer. Dock finds each part by name and writes its Opacity while a drag runs,
+         so the names are its and the look is ours. -->
+    <Style Selector="DockTarget">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid x:Name="PART_IndicatorGrid" RowDefinitions="*,*" ColumnDefinitions="*,*">
+                    <Panel x:Name="PART_TopIndicator"
+                           Opacity="0"
+                           Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                           IsVisible="{TemplateBinding ShowVerticalTargets}"
+                           DockProperties.IndicatorDockOperation="Top">
+                        <Border Classes="preview" />
+                    </Panel>
+                    <Panel x:Name="PART_BottomIndicator"
+                           Opacity="0"
+                           Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                           IsVisible="{TemplateBinding ShowVerticalTargets}"
+                           DockProperties.IndicatorDockOperation="Bottom">
+                        <Border Classes="preview" />
+                    </Panel>
+                    <Panel x:Name="PART_LeftIndicator"
+                           Opacity="0"
+                           Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                           IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                           DockProperties.IndicatorDockOperation="Left">
+                        <Border Classes="preview" />
+                    </Panel>
+                    <Panel x:Name="PART_RightIndicator"
+                           Opacity="0"
+                           Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                           IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                           DockProperties.IndicatorDockOperation="Right">
+                        <Border Classes="preview" />
+                    </Panel>
+                    <Panel x:Name="PART_CenterIndicator"
+                           Opacity="0"
+                           Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2"
+                           DockProperties.IndicatorDockOperation="Fill">
+                        <Border Classes="preview" />
+                    </Panel>
+
+                    <Panel x:Name="PART_SelectorPanel"
+                           Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2">
+                        <Grid x:Name="PART_SelectorGrid"
+                              RowDefinitions="Auto,Auto,Auto"
+                              ColumnDefinitions="Auto,Auto,Auto"
+                              RowSpacing="5"
+                              ColumnSpacing="5"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                            <Border x:Name="PART_TopSelector"
+                                    Classes="target"
+                                    Grid.Row="0" Grid.Column="1"
+                                    IsVisible="{TemplateBinding ShowVerticalTargets}"
+                                    DockProperties.IndicatorDockOperation="Top">
+                                <Panel>
+                                    <Border Classes="hot" IsVisible="{Binding #PART_TopIndicator.Opacity}" />
+                                    <Border Classes="glyph wide" />
+                                </Panel>
+                            </Border>
+                            <Border x:Name="PART_BottomSelector"
+                                    Classes="target"
+                                    Grid.Row="2" Grid.Column="1"
+                                    IsVisible="{TemplateBinding ShowVerticalTargets}"
+                                    DockProperties.IndicatorDockOperation="Bottom">
+                                <Panel>
+                                    <Border Classes="hot" IsVisible="{Binding #PART_BottomIndicator.Opacity}" />
+                                    <Border Classes="glyph wide" />
+                                </Panel>
+                            </Border>
+                            <Border x:Name="PART_LeftSelector"
+                                    Classes="target"
+                                    Grid.Row="1" Grid.Column="0"
+                                    IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                                    DockProperties.IndicatorDockOperation="Left">
+                                <Panel>
+                                    <Border Classes="hot" IsVisible="{Binding #PART_LeftIndicator.Opacity}" />
+                                    <Border Classes="glyph tall" />
+                                </Panel>
+                            </Border>
+                            <Border x:Name="PART_RightSelector"
+                                    Classes="target"
+                                    Grid.Row="1" Grid.Column="2"
+                                    IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                                    DockProperties.IndicatorDockOperation="Right">
+                                <Panel>
+                                    <Border Classes="hot" IsVisible="{Binding #PART_RightIndicator.Opacity}" />
+                                    <Border Classes="glyph tall" />
+                                </Panel>
+                            </Border>
+                            <Border x:Name="PART_CenterSelector"
+                                    Classes="target"
+                                    Grid.Row="1" Grid.Column="1"
+                                    DockProperties.IndicatorDockOperation="Fill">
+                                <Panel>
+                                    <Border Classes="hot" IsVisible="{Binding #PART_CenterIndicator.Opacity}" />
+                                    <Border Classes="glyph" />
+                                </Panel>
+                            </Border>
+                        </Grid>
+                    </Panel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <!-- The preview covers exactly the area the drop would claim, so it is a wash with
+         an edge rather than an outline. Dock finds the Panel around it by name and is
+         declared to want a Panel, so the fill and the edge sit on a child of it. -->
+    <Style Selector="DockTarget /template/ Border.preview">
+        <Setter Property="Background" Value="{DynamicResource DropPreview}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DropPreviewLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="DockTarget /template/ Border.target">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTarget}" />
+        <Setter Property="Height" Value="{DynamicResource SizeDockTarget}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceDrop}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- The one under the pointer. Avalonia stops tracking what a pointer is over once a
+         drag has captured it, so which target is hit is read from the preview Dock turns
+         on for that same operation rather than from the pointer. -->
+    <Style Selector="DockTarget /template/ Border.hot">
+        <Setter Property="Margin" Value="-1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ShadowDropTarget}" />
+    </Style>
+
+    <Style Selector="DockTarget /template/ Border.glyph">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTargetGlyph}" />
+        <Setter Property="Height" Value="{DynamicResource SizeDockTargetGlyph}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+        <Setter Property="Background" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="DockTarget /template/ Border.glyph.wide">
+        <Setter Property="Height" Value="{DynamicResource SizeDockTargetGlyphShort}" />
+    </Style>
+
+    <Style Selector="DockTarget /template/ Border.glyph.tall">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTargetGlyphShort}" />
+    </Style>
+
+    <!-- A tab strip takes a drop without offering a side to take it on, so it shows the
+         preview and no plus. -->
+    <Style Selector="DockTarget[ShowIndicatorsOnly=True] /template/ Panel#PART_SelectorPanel">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The four targets at the edges of the window, for a drop that splits the whole
+         layout rather than one dock. Same square, standing against the edge it claims. -->
+    <Style Selector="GlobalDockTarget">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <ProportionalStackPanel Orientation="Horizontal">
+                        <Panel x:Name="PART_LeftIndicator"
+                               Opacity="0"
+                               ProportionalStackPanel.Proportion="{x:Static DockSettings.GlobalDockingProportion}"
+                               DockProperties.IndicatorDockOperation="Left">
+                            <Border Classes="preview" />
+                        </Panel>
+                        <Border />
+                        <Panel x:Name="PART_RightIndicator"
+                               Opacity="0"
+                               ProportionalStackPanel.Proportion="{x:Static DockSettings.GlobalDockingProportion}"
+                               DockProperties.IndicatorDockOperation="Right">
+                            <Border Classes="preview" />
+                        </Panel>
+                    </ProportionalStackPanel>
+
+                    <ProportionalStackPanel Orientation="Vertical">
+                        <Panel x:Name="PART_TopIndicator"
+                               Opacity="0"
+                               ProportionalStackPanel.Proportion="{x:Static DockSettings.GlobalDockingProportion}"
+                               DockProperties.IndicatorDockOperation="Top">
+                            <Border Classes="preview" />
+                        </Panel>
+                        <Border />
+                        <Panel x:Name="PART_BottomIndicator"
+                               Opacity="0"
+                               ProportionalStackPanel.Proportion="{x:Static DockSettings.GlobalDockingProportion}"
+                               DockProperties.IndicatorDockOperation="Bottom">
+                            <Border Classes="preview" />
+                        </Panel>
+                    </ProportionalStackPanel>
+
+                    <Panel x:Name="PART_SelectorPanel" Margin="8">
+                        <Border x:Name="PART_TopSelector"
+                                Classes="target"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                IsVisible="{TemplateBinding ShowVerticalTargets}"
+                                DockProperties.IndicatorDockOperation="Top">
+                            <Panel>
+                                <Border Classes="hot" IsVisible="{Binding #PART_TopIndicator.Opacity}" />
+                                <Border Classes="glyph wide" />
+                            </Panel>
+                        </Border>
+                        <Border x:Name="PART_BottomSelector"
+                                Classes="target"
+                                HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                                IsVisible="{TemplateBinding ShowVerticalTargets}"
+                                DockProperties.IndicatorDockOperation="Bottom">
+                            <Panel>
+                                <Border Classes="hot" IsVisible="{Binding #PART_BottomIndicator.Opacity}" />
+                                <Border Classes="glyph wide" />
+                            </Panel>
+                        </Border>
+                        <Border x:Name="PART_LeftSelector"
+                                Classes="target"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                                DockProperties.IndicatorDockOperation="Left">
+                            <Panel>
+                                <Border Classes="hot" IsVisible="{Binding #PART_LeftIndicator.Opacity}" />
+                                <Border Classes="glyph tall" />
+                            </Panel>
+                        </Border>
+                        <Border x:Name="PART_RightSelector"
+                                Classes="target"
+                                HorizontalAlignment="Right" VerticalAlignment="Center"
+                                IsVisible="{TemplateBinding ShowHorizontalTargets}"
+                                DockProperties.IndicatorDockOperation="Right">
+                            <Panel>
+                                <Border Classes="hot" IsVisible="{Binding #PART_RightIndicator.Opacity}" />
+                                <Border Classes="glyph tall" />
+                            </Panel>
+                        </Border>
+                    </Panel>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.preview">
+        <Setter Property="Background" Value="{DynamicResource DropPreview}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DropPreviewLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.target">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTarget}" />
+        <Setter Property="Height" Value="{DynamicResource SizeDockTarget}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceDrop}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.hot">
+        <Setter Property="Margin" Value="-1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BoxShadow" Value="{DynamicResource ShadowDropTarget}" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.glyph">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTargetGlyph}" />
+        <Setter Property="Height" Value="{DynamicResource SizeDockTargetGlyph}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMark}" />
+        <Setter Property="Background" Value="{DynamicResource Accent}" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.glyph.wide">
+        <Setter Property="Height" Value="{DynamicResource SizeDockTargetGlyphShort}" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget /template/ Border.glyph.tall">
+        <Setter Property="Width" Value="{DynamicResource SizeDockTargetGlyphShort}" />
+    </Style>
+
+    <Style Selector="GlobalDockTarget[ShowIndicatorsOnly=True] /template/ Panel#PART_SelectorPanel">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- Floating. A tool alone in a window is a window, so its strip is the title bar
+         height and its title is the window's. -->
+    <Style Selector="ToolChromeControl:floating /template/ Grid#PART_Grip">
+        <Setter Property="Height" Value="{DynamicResource HeightTitleBar}" />
+    </Style>
+
+    <!-- The close on a floating tool closes the window, so it floods red the way every
+         window's does. The same button in a docked strip closes one tool and does not. -->
+    <Style Selector="ToolChromeControl:floating /template/ Button#PART_CloseButton:pointerover /template/ Border#PART_Root">
+        <Setter Property="Background" Value="{DynamicResource CloseHover}" />
+    </Style>
+
+    <Style Selector="ToolChromeControl:floating /template/ TextBlock#PART_Title">
+        <Setter Property="IsVisible" Value="True" />
+        <Setter Property="Foreground" Value="{DynamicResource InkTitle}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="LetterSpacing" Value="{DynamicResource LetterSpacingTitle}" />
+    </Style>
+
+</Styles>

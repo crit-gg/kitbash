@@ -200,7 +200,7 @@ part of the app, and each is the only place those rules are written.
 | Skill | Read it before |
 |---|---|
 | `kitbash-controls` | any `ControlTheme`, button, input, icon or the status bar |
-| `kitbash-surfaces` | panels, the depth ramp, lists, trees, tabs, overlays |
+| `kitbash-surfaces` | panels, the depth ramp, lists, trees, tabs, overlays, docking |
 | `kitbash-toasts` | raising a toast or drawing an alert |
 | `kitbash-windows` | a window or dialog, or work that touches a disk on the UI thread |
 | `kitbash-settings` | a setting, a schema, the settings window, or per user storage |
@@ -247,12 +247,17 @@ Set `updates.feed` to that directory to watch a real update happen. A copy start
 ## Stack
 
 - .NET 10, Avalonia 12.1.1, CommunityToolkit.Mvvm 8.4.2, Tomlyn 2.10.1, Velopack 1.2.0,
-  Humanizer.Core 3.0.10, Microsoft.Extensions.DependencyInjection 10.0.10
+  Humanizer.Core 3.0.10, Microsoft.Extensions.DependencyInjection 10.0.10, Dock 12.1.0
 - Avalonia 12 changed a lot from 11 and most material online still describes 11.
   Read `.claude/avalonia.md` before working on views, styling or window chrome.
 - Velopack is the launcher's alone. Neither library takes it, because a tool never checks
   for its own update. `VelopackApp.Build().Run()` has to stay the first statement in
   `Main`, since Velopack reruns the binary with hook arguments and exits from inside it.
+- Dock for Avalonia 12.1.0 is `Kitbash.Ui`'s, and it is the one third party control package
+  here. It brings `Dock.Serializer.Newtonsoft` with it, and so Newtonsoft.Json 13.0.4, because
+  Dock's own System.Text.Json serializer cannot write a layout that has been through
+  `InitLayout`. A consumer that docks takes a second style include. The `kitbash-surfaces`
+  skill has the rest.
 - Tomlyn 2.10 is a redesign. The old `Toml` static class is gone, replaced by
   `TomlSerializer` with a `System.Text.Json` style API.
 - Humanizer writes the English a person reads: plurals that agree with a count, and a
@@ -282,21 +287,34 @@ been done. `.claude/plans/distribution-and-updates.md` has the rules and records
 things it originally got wrong. **Tool distribution is not built**,
 so `ITool` and the registry are unchanged.
 
-The app is being moved to the Slate design, in the twelve stages under
+The app is being moved to the Slate design, in the thirteen stages under
 `.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
 ones, so the plan runs straight through.
 
-Stages 1 to 11 are done. `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
+Stages 1 to 12 are done, so only the colour picker is left. `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and the control themes built so far: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
 field, the path field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box, the hyperlink, the list row, the tree, the tabs, the toast, the alert, both data
-grids and the pager.
+grids, the pager, the scrollbar and docking.
 
 Stage 8 is done except the colour field, which waits on stage 13 because its swatch has
 nothing to open until the picker exists.
+
+**Docking is built and it is opt in.** `Kitbash.Ui` takes Dock for Avalonia and
+`Themes/KitbashDocking.axaml` is a second line a consumer includes after `KitbashTheme`, so
+the launcher, which docks nothing, carries none of it. Dock's own token layer does most of the
+Slate look and six templates are replaced: the tool chrome and the tool control, so a tool
+dock is one strip of tabs and buttons rather than two rows, both drop targets, the pinned
+strip and its items, the splitter that draws the seam, and the floating window, which wears
+the same drawn frame every Kitbash window has. `IDockLayoutStore` keeps a layout per person
+per machine under the state directory, keyed by scope and view. The gallery's DOCKING section
+is the harness.
+
+**The scrollbar is themed and that is library wide.** Every scrollbar in the app was Fluent's
+until stage 12, which is where it was noticed.
 
 **`ui:PathField` is built**, from the `Theme Slate - Path Field` design, which is outside
 the twelve stages. It holds one path or none, browses for a file or a folder, filters both
