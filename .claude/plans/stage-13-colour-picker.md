@@ -200,9 +200,15 @@ row.
 
 **The eyedropper is built on Linux.** `IScreenColour` in Core, `LinuxScreenColour` over the
 desktop portal's `PickColor`, and the button drawn only where a host supplies one that can
-pick. The portal's reply is a signal to the connection that asked, and `gdbus call` is its own
-connection, so the answer is read off a `gdbus monitor` started first and matched by the
-request's own token. No D-Bus library was taken.
+pick.
+
+**It talks D-Bus itself rather than shelling out, and it has to.** The first attempt ran
+`gdbus call` and read the answer off a `gdbus monitor`, since the reply is a signal rather
+than a return value. That cannot work: the portal destroys a request whose caller has
+disconnected, and `gdbus call` returns the request handle and exits, so the pick was taken
+down the instant it was asked for. The picker appeared to do nothing. `Tmds.DBus.Protocol`
+holds one connection across the call and the signal, and it is already in the graph because
+the Linux secret store brings it.
 
 **Windows has no eyedropper.** There is no portal there, so the gesture would be a full screen
 window over a capture of the desktop, which is what Godot falls back to. `NoScreenColour` is

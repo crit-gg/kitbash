@@ -62,7 +62,11 @@ public static class KitbashCoreServices
             services.TryAddSingleton<IPathRules, LinuxPathRules>();
             services.TryAddSingleton<IBundleEnvironment, AppImageEnvironment>();
             services.TryAddSingleton<IDesktopIntegration, LinuxDesktopIntegration>();
+#if KITBASH_LINUX_SECRETS
             services.TryAddSingleton<IScreenColour, LinuxScreenColour>();
+#else
+            services.TryAddSingleton<IScreenColour, NoScreenColour>();
+#endif
 
             return services;
         }

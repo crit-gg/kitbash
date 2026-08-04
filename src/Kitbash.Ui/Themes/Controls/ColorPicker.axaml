@@ -222,6 +222,9 @@
     </ItemsPanelTemplate>
 
     <ControlTheme x:Key="{x:Type ui:ColorPicker}" TargetType="ui:ColorPicker">
+        <!-- One width in both hosts. The card holds a hex, an expression and four mode
+             names, all of them different lengths, so it is told rather than measured. -->
+        <Setter Property="Width" Value="{DynamicResource WidthColorPicker}" />
         <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
@@ -372,13 +375,16 @@
                                         Maximum="1" />
                             </Panel>
 
+                            <!-- Two borders, since a clip on the one that draws the stroke
+                                 cuts the halves to the outer rectangle and squares the
+                                 corners. The outer draws the edge and the inner clips. -->
                             <Border Grid.Column="1"
                                     Width="{DynamicResource WidthColorChip}"
                                     Height="{DynamicResource HeightColorChip}"
                                     BorderBrush="{DynamicResource LineControlDeep}"
                                     BorderThickness="1"
-                                    CornerRadius="{DynamicResource RadiusControl}"
-                                    ClipToBounds="True">
+                                    CornerRadius="{DynamicResource RadiusControl}">
+                              <Border CornerRadius="{DynamicResource RadiusControl}" ClipToBounds="True">
                                 <Grid ColumnDefinitions="*,*">
                                     <Border Grid.Column="0" Name="PART_Old" ToolTip.Tip="Put the old colour back">
                                         <ui:Icon Name="PART_Revert"
@@ -401,6 +407,7 @@
                                                  IsVisible="False" />
                                     </Border>
                                 </Grid>
+                              </Border>
                             </Border>
                         </Grid>
 

@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
+using Tmds.DBus.Protocol;
 
 namespace Kitbash.Core.Platform.Linux;
 
@@ -8,139 +8,153 @@ namespace Kitbash.Core.Platform.Linux;
 /// X11 and on any desktop that implements it. The portal draws the picker and hands back one
 /// colour.
 /// </summary>
-public sealed partial class LinuxScreenColour : IScreenColour
+public sealed class LinuxScreenColour : IScreenColour
 {
-    /// <summary>
-    /// The portal's own names. Screenshot version 2 is where PickColor arrives, and a
-    /// request answers on the Response signal rather than to the call.
-    /// </summary>
+    /// <summary>The portal's own names. PickColor arrives in version 2 of Screenshot.</summary>
     private const string Bus = "org.freedesktop.portal.Desktop";
     private const string Path = "/org/freedesktop/portal/desktop";
     private const string Screenshot = "org.freedesktop.portal.Screenshot";
-    private const string Tool = "gdbus";
-
-    private readonly IProcessRunner _runner;
-    private readonly IExecutableFinder _finder;
+    private const string Request = "org.freedesktop.portal.Request";
 
     /// <summary>Names one request, so a reply meant for another is not read as ours.</summary>
     private int _asked;
 
-    public LinuxScreenColour(IProcessRunner runner, IExecutableFinder finder)
-    {
-        ArgumentNullException.ThrowIfNull(runner);
-        ArgumentNullException.ThrowIfNull(finder);
-
-        _runner = runner;
-        _finder = finder;
-    }
-
     /// <summary>
-    /// Whether the tool that talks to the portal is installed. Whether the portal itself
-    /// answers is not asked here, since asking costs a round trip on every draw.
+    /// Whether there is a session bus to ask at all. Whether the portal answers on it is not
+    /// asked here, since asking costs a round trip on every draw.
     /// </summary>
-    public bool CanPick => _finder.Find(Tool) is not null;
+    public bool CanPick => DBusAddress.Session is not null;
 
     public async Task<ScreenColour?> PickAsync(CancellationToken cancellation = default)
     {
-        if (!CanPick)
+        if (DBusAddress.Session is not { } address || cancellation.IsCancellationRequested)
         {
             return null;
         }
 
-        var token = string.Create(
-            CultureInfo.InvariantCulture, $"kitbash_{Environment.ProcessId}_{Interlocked.Increment(ref _asked)}");
-
-        using var picked = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-
-        ScreenColour? colour = null;
-
-        // The reply is a signal to the connection that asked, and each run of the tool is its
-        // own connection, so the answer is read off a monitor rather than off the call.
-        var listening = _runner.ReadLinesAsync(
-            ProcessRequest.Command(Tool, "monitor", "--session", "--dest", Bus),
-            line =>
-            {
-                if (!line.Contains(token, StringComparison.Ordinal)
-                    || !line.Contains("Response", StringComparison.Ordinal))
-                {
-                    return;
-                }
-
-                colour = Read(line);
-                picked.Cancel();
-            },
-            picked.Token);
+        // The portal answers on a signal rather than to the call, and it destroys a request
+        // whose caller has gone, so the connection has to outlive the call.
+        using var connection = new DBusConnection(address);
 
         try
         {
-            var asked = await _runner.ReadAsync(
-                ProcessRequest.Command(
-                    Tool,
-                    "call",
-                    "--session",
-                    "--dest", Bus,
-                    "--object-path", Path,
-                    "--method", Screenshot + ".PickColor",
-                    string.Empty,
-                    "{'handle_token': <'" + token + "'>}"),
-                cancellation);
+            await connection.ConnectAsync();
+        }
+        catch (Exception failure)
+        {
+            throw new ScreenColourException("There is no session bus to ask.", failure);
+        }
 
-            if (asked.ExitCode != 0)
+        var token = string.Create(CultureInfo.InvariantCulture, $"kitbash_{Interlocked.Increment(ref _asked)}");
+        var answer = new TaskCompletionSource<ScreenColour?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var listening = await connection.AddMatchAsync<(bool Ours, ScreenColour? Colour)>(
+            new MatchRule
             {
-                await picked.CancelAsync();
+                Type = MessageType.Signal,
+                Sender = Bus,
+                Interface = Request,
+                Member = "Response",
+            },
+            (Message message, object? _) => Read(message, token),
+            (Exception? failure, (bool Ours, ScreenColour? Colour) reply, object? _, object? _) =>
+            {
+                if (failure is not null)
+                {
+                    answer.TrySetException(new ScreenColourException("The desktop portal stopped answering.", failure));
+                }
+                else if (reply.Ours)
+                {
+                    answer.TrySetResult(reply.Colour);
+                }
+            },
+            ObserverFlags.None);
 
-                throw new ScreenColourException(Blame(asked));
+        // A person taking their time is the ordinary case, so nothing here times out, and
+        // the caller's own token is what ends the wait early. It is registered before the
+        // call rather than after, so a token cancelled in between never leaves a picker up.
+        using var dropped = cancellation.Register(() => answer.TrySetResult(null));
+
+        try
+        {
+            await connection.CallMethodAsync(Ask(connection, token));
+        }
+        catch (Exception failure)
+        {
+            throw new ScreenColourException(Said(failure), failure);
+        }
+
+        return await answer.Task;
+    }
+
+    /// <summary>The call itself. The window is left empty, since this is a desktop wide pick.</summary>
+    private static MessageBuffer Ask(DBusConnection connection, string token)
+    {
+        using var writer = connection.GetMessageWriter();
+
+        writer.WriteMethodCallHeader(
+            destination: Bus,
+            path: Path,
+            @interface: Screenshot,
+            member: "PickColor",
+            signature: "sa{sv}");
+
+        writer.WriteString(string.Empty);
+
+        var options = writer.WriteDictionaryStart();
+
+        writer.WriteDictionaryEntryStart();
+        writer.WriteString("handle_token");
+        writer.WriteVariantString(token);
+        writer.WriteDictionaryEnd(options);
+
+        return writer.CreateMessage();
+    }
+
+    /// <summary>
+    /// Reads a Response. The signal is broadcast to every request the portal answers, so the
+    /// path is what says whether this one is ours. A code other than zero is a person
+    /// changing their mind, which is an answer rather than a failure.
+    /// </summary>
+    private static (bool Ours, ScreenColour? Colour) Read(Message message, string token)
+    {
+        if (!message.PathIsSet || message.PathAsString?.EndsWith('/' + token, StringComparison.Ordinal) != true)
+        {
+            return (false, null);
+        }
+
+        var reader = message.GetBodyReader();
+
+        if (reader.ReadUInt32() != 0)
+        {
+            return (true, null);
+        }
+
+        var results = reader.ReadDictionaryStart();
+
+        while (reader.HasNext(results))
+        {
+            var name = reader.ReadString();
+            var value = reader.ReadVariantValue();
+
+            if (name == "color" && value.Count == 3)
+            {
+                return (true, new ScreenColour(
+                    value.GetItem(0).GetDouble(),
+                    value.GetItem(1).GetDouble(),
+                    value.GetItem(2).GetDouble()));
             }
-
-            await listening;
-        }
-        catch (OperationCanceledException) when (picked.IsCancellationRequested && !cancellation.IsCancellationRequested)
-        {
-            // The pick landing is what cancels the monitor, so this is the ordinary path.
-        }
-        catch (OperationCanceledException)
-        {
-            return null;
-        }
-        catch (ProcessStartException exception)
-        {
-            throw new ScreenColourException($"{Tool} could not be started.", exception);
         }
 
-        return colour;
+        return (true, null);
     }
 
     /// <summary>
-    /// What the portal said when it refused. Its own words, since a person copying them into
-    /// a search is better served by those than by anything written here.
+    /// The portal's own words where there are any. A person putting them into a search is
+    /// better served by those than by anything written here.
     /// </summary>
-    private static string Blame(ProcessOutput asked)
-    {
-        var said = string.IsNullOrWhiteSpace(asked.StandardError)
-            ? asked.StandardOutput
-            : asked.StandardError;
-
-        return string.IsNullOrWhiteSpace(said)
-            ? $"The desktop portal refused, and {Tool} exited with {asked.ExitCode}."
-            : said.Trim();
-    }
-
-    /// <summary>
-    /// Reads the colour out of a Response line. A refusal comes back with a code other than
-    /// zero and no colour at all, so a line without one is a person changing their mind.
-    /// </summary>
-    private static ScreenColour? Read(string line)
-    {
-        var match = Colour().Match(line);
-
-        return match.Success
-            && double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var red)
-            && double.TryParse(match.Groups[2].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var green)
-            && double.TryParse(match.Groups[3].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var blue)
-                ? new ScreenColour(red, green, blue)
-                : null;
-    }
-
-    [GeneratedRegex(@"'color':\s*<\(\s*([-\d.eE+]+),\s*([-\d.eE+]+),\s*([-\d.eE+]+)\s*\)>")]
-    private static partial Regex Colour();
+    private static string Said(Exception failure) =>
+        failure is DBusErrorReplyException named
+            ? $"{named.ErrorName}: {named.ErrorMessage}"
+            : failure.Message;
 }

@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The secret store differs per OS and so does its package. These follow the runtime
-       being built for, never the machine doing the build, since release.sh publishes both
-       from one machine. An empty identifier is a plain build and takes both. -->
+  <!-- Two Linux services and one Windows one need a package apiece, and the packages are
+       per OS. These follow the runtime being built for, never the machine doing the build,
+       since release.sh publishes both from one machine. An empty identifier is a plain
+       build and takes all of them. -->
   <PropertyGroup>
     <KitbashWindowsSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashWindowsSecrets>
     <KitbashLinuxSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashLinuxSecrets>
@@ -29,6 +30,12 @@
 
   <ItemGroup Condition="'$(KitbashLinuxSecrets)' == 'true'">
     <PackageReference Include="Ace4896.DBus.Services.Secrets" Version="1.6.0" />
+
+    <!-- The desktop portal, for picking a colour off the screen. A portal request is
+         answered on a signal and dies with the connection that asked, so the connection has
+         to outlive the call, which no command line tool can do. The secret store already
+         brings this, so naming it here only pins the version. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
   </ItemGroup>
 
   <!-- A store cannot compile without its package, so each one goes out with it. -->
@@ -38,6 +45,7 @@
 
   <ItemGroup Condition="'$(KitbashLinuxSecrets)' != 'true'">
     <Compile Remove="Platform/Linux/LinuxSecretStore.cs" />
+    <Compile Remove="Platform/Linux/LinuxScreenColour.cs" />
   </ItemGroup>
 
 </Project>

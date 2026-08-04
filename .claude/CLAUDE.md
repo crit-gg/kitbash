@@ -314,8 +314,9 @@ exposure multiplying in linear space, the third mode being Linear rather than th
 RAW, allowing a channel to be typed past its ramp, the expression the text field falls back
 to, the revert and overbright marks on the chip, and Godot's own hex forms and 146 colour
 names, and all seven of its shapes. **The eyedropper is the desktop's own**: `IScreenColour`
-in Core over the portal's PickColor, drawn only where a host supplies one that can pick, so
-Windows has none. **Two of its features are not built**: palettes as files, and dragging a
+in Core over the portal's PickColor, spoken over `Tmds.DBus.Protocol` because a portal request
+dies with the connection that asked, and drawn only where a host supplies one that can pick,
+so Windows has none. **Two of its features are not built**: palettes as files, and dragging a
 colour between swatches.
 
 **Docking is built and it is opt in.** `Kitbash.Ui` takes Dock for Avalonia and

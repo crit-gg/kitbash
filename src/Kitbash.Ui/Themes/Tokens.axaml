@@ -453,6 +453,7 @@
 
     <!-- The colour picker. Three lanes, each a different thickness, and a knob that stands
          clear of the one it is on so it can be caught. -->
+    <x:Double x:Key="WidthColorPicker">340</x:Double>
     <x:Double x:Key="HeightColorShape">132</x:Double>
     <x:Double x:Key="SizeColorBar">13</x:Double>
     <x:Double x:Key="SizeColorAlpha">11</x:Double>

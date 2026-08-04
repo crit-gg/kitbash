@@ -84,11 +84,16 @@ interface is the whole gesture rather than a pixel read, `CanPick` says whether 
 has one at all, and a caller draws no eyedropper where there is none.
 
 `LinuxScreenColour` calls `org.freedesktop.portal.Screenshot.PickColor`, which arrives in
-version 2 of that interface. **The reply is a signal to the connection that asked**, and each
-run of `gdbus` is its own connection, so the answer is read off `gdbus monitor` started before
-the call and matched by the `handle_token` the call passes. Both go through `IProcessRunner`,
-so no D-Bus library is taken and Core stays on Tomlyn alone. `gdbus` is probed for through
-`IExecutableFinder` rather than assumed.
+version 2 of that interface. **The reply is a signal to the connection that asked, and the
+portal destroys a request whose caller has gone**, so the connection has to outlive the call.
+That is why this talks D-Bus itself through `Tmds.DBus.Protocol` rather than shelling out:
+`gdbus call` returns the request handle and exits, which takes the pick down with it. The
+package is already in the graph, since the Linux secret store brings it, so naming it in the
+project file only pins the version.
+
+The request is named with a `handle_token`, and the signal is matched on the path ending in
+that token, so two picks at once cannot read each other's answer. A response code other than
+zero is a person changing their mind, which comes back as no colour rather than as a failure.
 
 `NoScreenColour` is Windows, which has no portal. The gesture there would be a window over a
 capture of the desktop, which is Godot's own fallback and is not built.

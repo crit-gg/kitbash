@@ -839,7 +839,7 @@
                             <StackPanel Spacing="9">
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="IN A PANEL" Content="applies live" />
-                                <ui:ColorPicker Name="Bench" Width="320" IsInPanel="True" Header="FILL COLOUR" />
+                                <ui:ColorPicker Name="Bench" IsInPanel="True" Header="FILL COLOUR" />
                             </StackPanel>
 
                             <StackPanel Spacing="9" Width="320">
