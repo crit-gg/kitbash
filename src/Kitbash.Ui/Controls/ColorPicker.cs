@@ -10,6 +10,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 
@@ -30,11 +31,11 @@ namespace Kitbash.Ui.Controls;
 [TemplatePart(FieldHuePart, typeof(Border))]
 [TemplatePart(FieldShadePart, typeof(Border))]
 [TemplatePart(FieldHandlePart, typeof(Control))]
-[TemplatePart(WheelPart, typeof(Control))]
-[TemplatePart(WheelHuePart, typeof(Ellipse))]
-[TemplatePart(WheelBloomPart, typeof(Ellipse))]
-[TemplatePart(WheelShadePart, typeof(Ellipse))]
-[TemplatePart(WheelHandlePart, typeof(Control))]
+[TemplatePart(ShapePart, typeof(Control))]
+[TemplatePart(RingPart, typeof(Ellipse))]
+[TemplatePart(RingHandlePart, typeof(Control))]
+[TemplatePart(DiscPart, typeof(Control))]
+[TemplatePart(FlatPart, typeof(ColorSurface))]
 [TemplatePart(BarPart, typeof(Slider))]
 [TemplatePart(AlphaPart, typeof(Slider))]
 [TemplatePart(CheckerPart, typeof(Border))]
@@ -128,11 +129,17 @@ public class ColorPicker : TemplatedControl
     private const string FieldHuePart = "PART_FieldHue";
     private const string FieldShadePart = "PART_FieldShade";
     private const string FieldHandlePart = "PART_FieldHandle";
-    private const string WheelPart = "PART_Wheel";
-    private const string WheelHuePart = "PART_WheelHue";
-    private const string WheelBloomPart = "PART_WheelBloom";
-    private const string WheelShadePart = "PART_WheelShade";
-    private const string WheelHandlePart = "PART_WheelHandle";
+    private const string ShapeRowPart = "PART_ShapeRow";
+    private const string ShapePart = "PART_Shape";
+    private const string RingPart = "PART_Ring";
+    private const string RingHandlePart = "PART_RingHandle";
+    private const string DiscPart = "PART_Disc";
+    private const string DiscHuePart = "PART_DiscHue";
+    private const string DiscBloomPart = "PART_DiscBloom";
+    private const string DiscShadePart = "PART_DiscShade";
+    private const string DiscOkPart = "PART_DiscOk";
+    private const string FlatPart = "PART_Flat";
+    private const string ShapeMarkPart = "PART_ShapeMark";
     private const string BarPart = "PART_Bar";
     private const string AlphaPart = "PART_Alpha";
     private const string CheckerPart = "PART_Checker";
@@ -151,6 +158,15 @@ public class ColorPicker : TemplatedControl
     private const string AddSwatchPart = "PART_AddSwatch";
     private const string ApplyPart = "PART_Apply";
     private const string CancelPart = "PART_Cancel";
+
+    /// <summary>
+    /// Where the hue ring gives way to the square inside it, as a fraction of the radius.
+    /// Godot's WHEEL_RADIUS, and the square is inscribed in that circle.
+    /// </summary>
+    private const double RingInner = 0.84;
+
+    /// <summary>Half the side of a square inscribed in a circle of radius 1.</summary>
+    private const double Root = 0.70710678118654752;
 
     /// <summary>The stops the exposure ramp reaches, either side of nothing. Godot's own.</summary>
     private const double ExposureReach = 10;
@@ -179,11 +195,17 @@ public class ColorPicker : TemplatedControl
     private Border? _fieldHue;
     private Border? _fieldShade;
     private Control? _fieldHandle;
-    private Control? _wheel;
-    private Ellipse? _wheelHue;
-    private Ellipse? _wheelBloom;
-    private Ellipse? _wheelShade;
-    private Control? _wheelHandle;
+    private Control? _shapeRow;
+    private Control? _shape;
+    private Ellipse? _ring;
+    private Control? _ringHandle;
+    private Control? _disc;
+    private Ellipse? _discHue;
+    private Ellipse? _discBloom;
+    private Ellipse? _discShade;
+    private ColorSurface? _discOk;
+    private ColorSurface? _flat;
+    private Icon? _shapeMark;
     private Slider? _bar;
     private Slider? _alpha;
     private Border? _checker;
@@ -223,6 +245,9 @@ public class ColorPicker : TemplatedControl
 
     /// <summary>What the colour was when the pointer went down, so a release can tell.</summary>
     private ColorValue _pressed;
+
+    /// <summary>True while a drag is turning the hue ring rather than picking in the square.</summary>
+    private bool _spinning;
 
     public ColorPicker()
     {
@@ -349,11 +374,17 @@ public class ColorPicker : TemplatedControl
         _fieldHue = e.NameScope.Find<Border>(FieldHuePart);
         _fieldShade = e.NameScope.Find<Border>(FieldShadePart);
         _fieldHandle = e.NameScope.Find<Control>(FieldHandlePart);
-        _wheel = e.NameScope.Find<Control>(WheelPart);
-        _wheelHue = e.NameScope.Find<Ellipse>(WheelHuePart);
-        _wheelBloom = e.NameScope.Find<Ellipse>(WheelBloomPart);
-        _wheelShade = e.NameScope.Find<Ellipse>(WheelShadePart);
-        _wheelHandle = e.NameScope.Find<Control>(WheelHandlePart);
+        _shapeRow = e.NameScope.Find<Control>(ShapeRowPart);
+        _shape = e.NameScope.Find<Control>(ShapePart);
+        _ring = e.NameScope.Find<Ellipse>(RingPart);
+        _ringHandle = e.NameScope.Find<Control>(RingHandlePart);
+        _disc = e.NameScope.Find<Control>(DiscPart);
+        _discHue = e.NameScope.Find<Ellipse>(DiscHuePart);
+        _discBloom = e.NameScope.Find<Ellipse>(DiscBloomPart);
+        _discShade = e.NameScope.Find<Ellipse>(DiscShadePart);
+        _discOk = e.NameScope.Find<ColorSurface>(DiscOkPart);
+        _flat = e.NameScope.Find<ColorSurface>(FlatPart);
+        _shapeMark = e.NameScope.Find<Icon>(ShapeMarkPart);
         _bar = e.NameScope.Find<Slider>(BarPart);
         _alpha = e.NameScope.Find<Slider>(AlphaPart);
         _checker = e.NameScope.Find<Border>(CheckerPart);
@@ -371,6 +402,16 @@ public class ColorPicker : TemplatedControl
         if (e.NameScope.Find<ItemsControl>(ChannelsPart) is { } rows)
         {
             rows.ItemsSource = Channels;
+        }
+
+        // Each item sets its own shape. They live in a flyout, which is its own visual root,
+        // so a click there never bubbles to this control and has to be taken at the item.
+        foreach (var shape in Enum.GetValues<ColorShape>())
+        {
+            if (e.NameScope.Find<MenuItem>("PART_Shape" + shape) is { } item)
+            {
+                item.Click += (_, _) => SetCurrentValue(ShapeProperty, shape);
+            }
         }
 
         Watch();
@@ -465,37 +506,30 @@ public class ColorPicker : TemplatedControl
             return;
         }
 
-        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || _shape is not { IsVisible: true } shape
+            || !Inside(shape, e))
         {
             return;
         }
 
-        if (_field is { IsVisible: true } field && Inside(field, e))
-        {
-            Pick(field, e);
-        }
-        else if (_wheel is { IsVisible: true } wheel && Inside(wheel, e))
-        {
-            Spin(wheel, e);
-        }
+        // The ring is the only shape with two areas, so which one the press landed in is
+        // decided once and held for the whole drag.
+        _spinning = Shape == ColorShape.Wheel && OnRing(shape, e);
+
+        e.Pointer.Capture(shape);
+        Aim(shape, e);
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
 
-        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            && _shape is { } shape
+            && ReferenceEquals(e.Pointer.Captured, shape))
         {
-            return;
-        }
-
-        if (_field is { } field && ReferenceEquals(e.Pointer.Captured, field))
-        {
-            Pick(field, e);
-        }
-        else if (_wheel is { } wheel && ReferenceEquals(e.Pointer.Captured, wheel))
-        {
-            Spin(wheel, e);
+            Aim(shape, e);
         }
     }
 
@@ -503,10 +537,12 @@ public class ColorPicker : TemplatedControl
     {
         base.OnPointerReleased(e);
 
-        if (ReferenceEquals(e.Pointer.Captured, _field) || ReferenceEquals(e.Pointer.Captured, _wheel))
+        if (ReferenceEquals(e.Pointer.Captured, _shape))
         {
             e.Pointer.Capture(null);
         }
+
+        _spinning = false;
 
         // A colour a person landed on is a recent one, which is the end of an interaction
         // rather than every step of it. Godot does the same on the same events.
@@ -515,6 +551,87 @@ public class ColorPicker : TemplatedControl
             Remember();
         }
     }
+
+    /// <summary>Whether a press landed on the hue band rather than inside the square.</summary>
+    private bool OnRing(Control shape, PointerEventArgs e)
+    {
+        var middle = Middle(shape);
+        var at = e.GetPosition(shape);
+        var radius = Math.Min(middle.X, middle.Y);
+        var away = Math.Sqrt(Math.Pow(at.X - middle.X, 2) + Math.Pow(at.Y - middle.Y, 2));
+
+        return away >= radius * RingInner;
+    }
+
+    /// <summary>Reads a pointer against whichever shape is up.</summary>
+    private void Aim(Control shape, PointerEventArgs e)
+    {
+        var at = e.GetPosition(shape);
+        var width = Math.Max(shape.Bounds.Width, 1);
+        var height = Math.Max(shape.Bounds.Height, 1);
+
+        switch (Shape)
+        {
+            case ColorShape.Wheel when _spinning:
+                Turn(Angle(shape, at), _saturation, _value);
+                break;
+
+            case ColorShape.Wheel:
+                var side = Math.Min(width, height) / 2 * RingInner * Root;
+                var corner = Middle(shape) - new Point(side, side);
+
+                Turn(
+                    _hue,
+                    Clamp01((at.X - corner.X) / (side * 2)),
+                    Clamp01(1 - (at.Y - corner.Y) / (side * 2)));
+                break;
+
+            case ColorShape.Circle:
+                Turn(Angle(shape, at), Reach(shape, at), _value);
+                break;
+
+            case ColorShape.OkhslCircle:
+                Shift(Angle(shape, at), Reach(shape, at), _okLightness);
+                break;
+
+            case ColorShape.OkhsRectangle:
+                Shift(at.X / width * 360, Clamp01(1 - at.Y / height), _okLightness);
+                break;
+
+            case ColorShape.OkhlRectangle:
+                Shift(at.X / width * 360, _okSaturation, Clamp01(1 - at.Y / height));
+                break;
+
+            default:
+                Turn(_hue, Clamp01(at.X / width), Clamp01(1 - at.Y / height));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// The hue a point stands at, read the way Godot reads it, which is clockwise from the
+    /// right because the screen's own y runs down the page.
+    /// </summary>
+    private static double Angle(Control shape, Point at)
+    {
+        var middle = Middle(shape);
+        var degrees = Math.Atan2(at.Y - middle.Y, at.X - middle.X) * 180 / Math.PI;
+
+        return degrees < 0 ? degrees + 360 : degrees;
+    }
+
+    /// <summary>How far out of the middle a point is, as a fraction of the disc.</summary>
+    private static double Reach(Control shape, Point at)
+    {
+        var middle = Middle(shape);
+        var radius = Math.Max(Math.Min(middle.X, middle.Y), 1);
+
+        return Math.Clamp(
+            Math.Sqrt(Math.Pow(at.X - middle.X, 2) + Math.Pow(at.Y - middle.Y, 2)) / radius, 0, 1);
+    }
+
+    private static Point Middle(Control shape) =>
+        new(shape.Bounds.Width / 2, shape.Bounds.Height / 2);
 
     /// <summary>The swatch a press landed in, which may be the tile or something inside it.</summary>
     private static Button? Ancestor(Visual from)
@@ -769,14 +886,9 @@ public class ColorPicker : TemplatedControl
             _alpha.ValueChanged += OnAlphaChanged;
         }
 
-        if (_field is not null)
+        if (_shape is not null)
         {
-            _field.PropertyChanged += OnPartResized;
-        }
-
-        if (_wheel is not null)
-        {
-            _wheel.PropertyChanged += OnPartResized;
+            _shape.PropertyChanged += OnPartResized;
         }
 
         if (_hex is not null)
@@ -800,14 +912,9 @@ public class ColorPicker : TemplatedControl
             _alpha.ValueChanged -= OnAlphaChanged;
         }
 
-        if (_field is not null)
+        if (_shape is not null)
         {
-            _field.PropertyChanged -= OnPartResized;
-        }
-
-        if (_wheel is not null)
-        {
-            _wheel.PropertyChanged -= OnPartResized;
+            _shape.PropertyChanged -= OnPartResized;
         }
 
         if (_hex is not null)
@@ -853,13 +960,23 @@ public class ColorPicker : TemplatedControl
             return;
         }
 
-        if (Shape == ColorShape.Wheel)
+        switch (Shape)
         {
-            Turn(_hue, _saturation, e.NewValue);
-        }
-        else
-        {
-            Turn(e.NewValue, _saturation, _value);
+            case ColorShape.Circle:
+                Turn(_hue, _saturation, e.NewValue);
+                break;
+
+            case ColorShape.OkhslCircle or ColorShape.OkhsRectangle:
+                Shift(_okHue, _okSaturation, e.NewValue);
+                break;
+
+            case ColorShape.OkhlRectangle:
+                Shift(_okHue, e.NewValue, _okLightness);
+                break;
+
+            default:
+                Turn(e.NewValue, _saturation, _value);
+                break;
         }
     }
 
@@ -986,33 +1103,6 @@ public class ColorPicker : TemplatedControl
         }
     }
 
-    private void Pick(Control field, PointerEventArgs e)
-    {
-        e.Pointer.Capture(field);
-
-        var at = e.GetPosition(field);
-        var width = Math.Max(field.Bounds.Width, 1);
-        var height = Math.Max(field.Bounds.Height, 1);
-
-        Turn(_hue, Clamp01(at.X / width), Clamp01(1 - at.Y / height));
-    }
-
-    private void Spin(Control wheel, PointerEventArgs e)
-    {
-        e.Pointer.Capture(wheel);
-
-        var at = e.GetPosition(wheel);
-        var radius = Math.Max(Math.Min(wheel.Bounds.Width, wheel.Bounds.Height) / 2, 1);
-        var x = at.X - wheel.Bounds.Width / 2;
-        var y = at.Y - wheel.Bounds.Height / 2;
-
-        // Screen coordinates run down the page, so the angle is negated to turn the way a
-        // colour wheel is read.
-        var hue = Math.Atan2(-y, x) * 180 / Math.PI;
-
-        Turn(hue < 0 ? hue + 360 : hue, Clamp01(Math.Sqrt(x * x + y * y) / radius), _value);
-    }
-
     /// <summary>Paints every part from the colour, and never the other way about.</summary>
     private void Show()
     {
@@ -1037,22 +1127,7 @@ public class ColorPicker : TemplatedControl
                 _old.Background = new SolidColorBrush(Previous.ToColor());
             }
 
-            if (_wheelShade is not null)
-            {
-                _wheelShade.Opacity = 1 - _value;
-            }
-
-            if (_bar is not null)
-            {
-                var wheel = Shape == ColorShape.Wheel;
-
-                // The wheel already carries hue, so the bar beside it is value instead,
-                // full at the top either way.
-                _bar.Background = wheel ? Sweep(hue, Colors.Black, horizontal: false) : Rainbow(horizontal: false);
-                _bar.IsDirectionReversed = !wheel;
-                _bar.Maximum = wheel ? 1 : 360;
-                _bar.Value = wheel ? _value : _hue;
-            }
+            Shapes(hue);
 
             if (_alpha is not null)
             {
@@ -1101,6 +1176,120 @@ public class ColorPicker : TemplatedControl
     /// The hex while the colour has one and the expression otherwise, which is what Godot's
     /// own field does. The value is the whole colour, exposure and all.
     /// </summary>
+    /// <summary>
+    /// Which parts the shape needs, what the bar beside it carries, and the fills that
+    /// follow the colour. Seven shapes over five parts, so the control does it rather than
+    /// a selector for each pair.
+    /// </summary>
+    private void Shapes(Color hue)
+    {
+        var wheel = Shape == ColorShape.Wheel;
+        var disc = Shape is ColorShape.Circle or ColorShape.OkhslCircle;
+        var perceptual = Shape is ColorShape.OkhslCircle;
+        var flat = Shape is ColorShape.OkhsRectangle or ColorShape.OkhlRectangle;
+
+        if (_shapeRow is not null)
+        {
+            _shapeRow.IsVisible = Shape != ColorShape.Sliders;
+        }
+
+        if (_field is not null)
+        {
+            _field.IsVisible = Shape is ColorShape.Rectangle or ColorShape.Wheel;
+        }
+
+        if (_ring is not null)
+        {
+            _ring.IsVisible = wheel;
+        }
+
+        if (_ringHandle is not null)
+        {
+            _ringHandle.IsVisible = wheel;
+        }
+
+        if (_disc is not null)
+        {
+            _disc.IsVisible = disc;
+        }
+
+        if (_discHue is not null)
+        {
+            _discHue.IsVisible = !perceptual;
+        }
+
+        if (_discBloom is not null)
+        {
+            _discBloom.IsVisible = !perceptual;
+        }
+
+        if (_discShade is not null)
+        {
+            _discShade.IsVisible = !perceptual;
+            _discShade.Opacity = 1 - _value;
+        }
+
+        if (_discOk is not null)
+        {
+            _discOk.IsVisible = perceptual;
+            _discOk.Third = _okLightness;
+        }
+
+        if (_flat is not null)
+        {
+            _flat.IsVisible = flat;
+            _flat.Kind = Shape == ColorShape.OkhlRectangle ? ColorShape.OkhlRectangle : ColorShape.OkhsRectangle;
+            _flat.Third = Shape == ColorShape.OkhlRectangle ? _okSaturation : _okLightness;
+        }
+
+        if (_shapeMark is not null)
+        {
+            _shapeMark.Glyph = Shape switch
+            {
+                ColorShape.Wheel or ColorShape.Circle or ColorShape.OkhslCircle => IconGlyph.Crosshair,
+                ColorShape.Sliders => IconGlyph.Columns,
+                _ => IconGlyph.SelectAll,
+            };
+        }
+
+        if (_bar is null)
+        {
+            return;
+        }
+
+        // The bar carries whatever the shape does not. The wheel carries all three itself.
+        _bar.IsVisible = !wheel;
+        _bar.IsDirectionReversed = false;
+        _bar.Maximum = 1;
+
+        switch (Shape)
+        {
+            case ColorShape.Circle:
+                _bar.Background = Sweep(hue, Colors.Black, horizontal: false);
+                _bar.Value = _value;
+                break;
+
+            case ColorShape.OkhslCircle or ColorShape.OkhsRectangle:
+                _bar.Background = Steps(false, 8, step =>
+                    ColorValue.FromOkhsl(_okHue, _okSaturation, 1 - step, 1).ToColor());
+                _bar.Value = _okLightness;
+                break;
+
+            case ColorShape.OkhlRectangle:
+                _bar.Background = Steps(false, 8, step =>
+                    ColorValue.FromOkhsl(_okHue, 1 - step, _okLightness, 1).ToColor());
+                _bar.Value = _okSaturation;
+                break;
+
+            default:
+                _bar.Background = Rainbow(horizontal: false);
+                _bar.IsDirectionReversed = true;
+                _bar.Maximum = 360;
+                _bar.Value = _hue;
+                break;
+        }
+    }
+
     private void ShowHex()
     {
         if (_hex is not null && !_hex.IsFocused)
@@ -1158,21 +1347,92 @@ public class ColorPicker : TemplatedControl
     /// </summary>
     private void Place()
     {
-        if (_field is not null && _fieldHandle is not null)
+        if (_shape is null || _fieldHandle is null)
         {
-            Stand(_fieldHandle, _saturation * _field.Bounds.Width, (1 - _value) * _field.Bounds.Height);
+            return;
         }
 
-        if (_wheel is not null && _wheelHandle is not null)
-        {
-            var radius = Math.Min(_wheel.Bounds.Width, _wheel.Bounds.Height) / 2;
-            var angle = _hue * Math.PI / 180;
+        var middle = new Point(_shape.Bounds.Width / 2, _shape.Bounds.Height / 2);
+        var radius = Math.Min(middle.X, middle.Y);
 
-            Stand(
-                _wheelHandle,
-                radius + Math.Cos(angle) * radius * _saturation,
-                radius - Math.Sin(angle) * radius * _saturation);
+        switch (Shape)
+        {
+            case ColorShape.Wheel:
+                // The square is inscribed in the ring, and the ring's own handle rides the
+                // middle of the band.
+                var side = radius * RingInner * Root;
+                var band = radius * (RingInner + (1 - RingInner) / 2);
+
+                Stand(
+                    _fieldHandle,
+                    middle.X - side + _saturation * side * 2,
+                    middle.Y - side + (1 - _value) * side * 2);
+
+                if (_ringHandle is not null)
+                {
+                    Stand(_ringHandle, middle.X + Cos(_hue) * band, middle.Y + Sin(_hue) * band);
+                }
+
+                break;
+
+            case ColorShape.Circle:
+                Stand(
+                    _fieldHandle,
+                    middle.X + Cos(_hue) * radius * _saturation,
+                    middle.Y + Sin(_hue) * radius * _saturation);
+                break;
+
+            case ColorShape.OkhslCircle:
+                Stand(
+                    _fieldHandle,
+                    middle.X + Cos(_okHue) * radius * _okSaturation,
+                    middle.Y + Sin(_okHue) * radius * _okSaturation);
+                break;
+
+            case ColorShape.OkhsRectangle:
+                Stand(
+                    _fieldHandle,
+                    _okHue / 360 * _shape.Bounds.Width,
+                    (1 - _okSaturation) * _shape.Bounds.Height);
+                break;
+
+            case ColorShape.OkhlRectangle:
+                Stand(
+                    _fieldHandle,
+                    _okHue / 360 * _shape.Bounds.Width,
+                    (1 - _okLightness) * _shape.Bounds.Height);
+                break;
+
+            default:
+                Stand(_fieldHandle, _saturation * _shape.Bounds.Width, (1 - _value) * _shape.Bounds.Height);
+                break;
         }
+
+        // The square inside the ring is laid out here as well, since it is the one shape
+        // where the field is not the whole area.
+        if (_field is not null)
+        {
+            var inscribed = Shape == ColorShape.Wheel;
+
+            _field.Width = inscribed ? radius * RingInner * Root * 2 : double.NaN;
+            _field.Height = _field.Width;
+            _field.HorizontalAlignment = inscribed ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+            _field.VerticalAlignment = inscribed ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+        }
+
+        // The ring is a stroke rather than a fill, so its thickness is the band and its
+        // bounds are pulled in by half of that.
+        if (_ring is not null)
+        {
+            var thickness = radius * (1 - RingInner);
+
+            _ring.StrokeThickness = thickness;
+            _ring.Margin = new Thickness(thickness / 2);
+        }
+
+        static double Cos(double degrees) => Math.Cos(degrees * Math.PI / 180);
+
+        static double Sin(double degrees) => Math.Sin(degrees * Math.PI / 180);
 
         static void Stand(Control handle, double x, double y)
         {
@@ -1190,28 +1450,23 @@ public class ColorPicker : TemplatedControl
     {
         Host();
 
-        if (_wheelHue is not null)
+        // A conic brush starts at the top and sweeps clockwise, and hue zero is on the
+        // right and rises clockwise, so both the disc and the ring take a quarter turn.
+        var turn = Hues();
+
+        if (_discHue is not null)
         {
-            // A conic brush starts at the top and sweeps clockwise, so a quarter turn puts
-            // hue zero on the right where the handle's own angle expects it.
-            var wheel = new ConicGradientBrush { Center = RelativePoint.Center, Angle = 90 };
-
-            // Anticlockwise from the right, which is the way a hue circle is read, and the
-            // first stop again at the end so the sweep meets itself.
-            for (var step = 0; step <= 12; step++)
-            {
-                var offset = (double)step / 12;
-
-                wheel.GradientStops.Add(new GradientStop(
-                    ColorValue.FromHsv(-offset * 360, 1, 1, 1).ToColor(), offset));
-            }
-
-            _wheelHue.Fill = wheel;
+            _discHue.Fill = turn;
         }
 
-        if (_wheelBloom is not null)
+        if (_ring is not null)
         {
-            _wheelBloom.Fill = new RadialGradientBrush
+            _ring.Stroke = turn;
+        }
+
+        if (_discBloom is not null)
+        {
+            _discBloom.Fill = new RadialGradientBrush
             {
                 Center = RelativePoint.Center,
                 GradientOrigin = RelativePoint.Center,
@@ -1223,9 +1478,9 @@ public class ColorPicker : TemplatedControl
             };
         }
 
-        if (_wheelShade is not null)
+        if (_discShade is not null)
         {
-            _wheelShade.Fill = Brushes.Black;
+            _discShade.Fill = Brushes.Black;
         }
 
         if (_fieldShade is not null)
@@ -1257,6 +1512,22 @@ public class ColorPicker : TemplatedControl
         {
             _literalFoot.IsVisible = IsInPanel;
         }
+    }
+
+    /// <summary>The hue turn, for the disc and for the ring around the square.</summary>
+    private static ConicGradientBrush Hues()
+    {
+        var turn = new ConicGradientBrush { Center = RelativePoint.Center, Angle = 90 };
+
+        // The first stop again at the end, so the sweep meets itself.
+        for (var step = 0; step <= 12; step++)
+        {
+            var offset = (double)step / 12;
+
+            turn.GradientStops.Add(new GradientStop(ColorValue.FromHsv(offset * 360, 1, 1, 1).ToColor(), offset));
+        }
+
+        return turn;
     }
 
     /// <summary>The squares behind a colour that is not opaque.</summary>

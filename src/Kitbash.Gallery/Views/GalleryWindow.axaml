@@ -844,10 +844,13 @@
 
                             <StackPanel Spacing="9" Width="320">
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
-                                                        Header="THE SHAPES" Content="three of them" />
+                                                        Header="THE SHAPES" Content="seven of them" />
 
                                 <TextBlock Classes="note"
-                                           Text="A field with the hue beside it, a wheel with hue around it and saturation out from the middle, and the rows on their own. The bar beside the wheel carries value instead, since the wheel already carries hue." />
+                                           Text="Godot's own set, chosen from the menu in the header. A saturation and value square with hue beside it, the same square inside a hue ring, a hue circle with value beside it, the perceptual circle with lightness beside it, two perceptual rectangles, and the rows on their own. The bar always carries whatever the shape does not, and the ring carries all three itself." />
+
+                                <TextBlock Classes="note"
+                                           Text="The three perceptual surfaces are painted a pixel at a time, since OKHSL is not a straight line in sRGB and no gradient can hold it. Godot uses a shader. Measured here: 9042 pixels in 3.2 ms, painted at half the size and scaled up, which cannot be told apart." />
 
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="THE MODES" Content="four of them" />

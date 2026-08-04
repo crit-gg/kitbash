@@ -218,48 +218,84 @@
                                        Foreground="{DynamicResource InkMuted}"
                                        VerticalAlignment="Center" />
 
-                            <ui:Segmented Grid.Column="1" Classes="compact">
-                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
-                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Rectangle}}"
-                                             ToolTip.Tip="Field"
-                                             AutomationProperties.Name="Field">
-                                    <ui:Icon Glyph="SelectAll" Size="{DynamicResource IconSizeField}" />
-                                </RadioButton>
+                            <DropDownButton Grid.Column="1"
+                                               Name="PART_ShapeMenu"
+                                               Classes="icon"
+                                               Height="{DynamicResource HeightControlSmall}"
+                                               ToolTip.Tip="The picker's shape"
+                                               AutomationProperties.Name="The picker's shape">
+                                <ui:Icon Name="PART_ShapeMark"
+                                         Glyph="SelectAll"
+                                         Size="{DynamicResource IconSizeField}" />
 
-                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
-                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Wheel}}"
-                                             ToolTip.Tip="Wheel"
-                                             AutomationProperties.Name="Wheel">
-                                    <ui:Icon Glyph="Crosshair" Size="{DynamicResource IconSizeField}" />
-                                </RadioButton>
-
-                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
-                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Sliders}}"
-                                             ToolTip.Tip="Sliders only"
-                                             AutomationProperties.Name="Sliders only">
-                                    <ui:Icon Glyph="Columns" Size="{DynamicResource IconSizeField}" />
-                                </RadioButton>
-                            </ui:Segmented>
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Name="PART_ShapeRectangle" Header="Saturation and value" />
+                                        <MenuItem Name="PART_ShapeWheel" Header="Hue wheel" />
+                                        <MenuItem Name="PART_ShapeCircle" Header="Hue circle" />
+                                        <MenuItem Name="PART_ShapeOkhslCircle" Header="Perceptual circle" />
+                                        <MenuItem Name="PART_ShapeOkhsRectangle" Header="Perceptual hue and saturation" />
+                                        <MenuItem Name="PART_ShapeOkhlRectangle" Header="Perceptual hue and lightness" />
+                                        <Separator />
+                                        <MenuItem Name="PART_ShapeSliders" Header="Rows only" />
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
                         </Grid>
                     </ui:Popover.Header>
 
                     <StackPanel Margin="{DynamicResource PaddingColorBody}"
                                 Spacing="{DynamicResource SpacingColorBlock}">
 
-                        <!-- The shape, and the bar that carries whatever it does not. -->
+                        <!-- The shape, and the bar that carries whatever it does not. Which
+                             parts are visible is the control's, since seven shapes over five
+                             parts is more than a selector each. -->
                         <Grid Name="PART_ShapeRow"
                               ColumnDefinitions="*,Auto"
                               ColumnSpacing="{DynamicResource SpacingColorRow}"
                               Height="{DynamicResource HeightColorShape}">
-                            <Panel Name="PART_Field" ClipToBounds="False">
-                                <Border Name="PART_FieldHue"
-                                        BorderBrush="{DynamicResource LineControlDeep}"
-                                        BorderThickness="1"
-                                        CornerRadius="{DynamicResource RadiusControl}" />
+                            <Panel Name="PART_Shape" ClipToBounds="False">
+                                <!-- Hue around the ring, for the wheel. -->
+                                <Ellipse Name="PART_Ring"
+                                         Width="{DynamicResource HeightColorShape}"
+                                         Height="{DynamicResource HeightColorShape}"
+                                         HorizontalAlignment="Center"
+                                         IsVisible="False" />
 
-                                <Border Name="PART_FieldShade"
-                                        CornerRadius="{DynamicResource RadiusControl}" />
+                                <!-- The disc, for both circles. The three ellipses draw the
+                                     one in hue, saturation and value, and the surface draws
+                                     the perceptual one a pixel at a time. -->
+                                <Panel Name="PART_Disc"
+                                       Width="{DynamicResource HeightColorShape}"
+                                       Height="{DynamicResource HeightColorShape}"
+                                       HorizontalAlignment="Center"
+                                       IsVisible="False">
+                                    <Ellipse Name="PART_DiscHue" />
+                                    <Ellipse Name="PART_DiscBloom" />
+                                    <Ellipse Name="PART_DiscShade" />
+                                    <ui:ColorSurface Name="PART_DiscOk"
+                                                     Kind="OkhslCircle"
+                                                     IsVisible="False" />
+                                </Panel>
 
+                                <!-- Perceptual hue across, and one of the other two up. -->
+                                <ui:ColorSurface Name="PART_Flat"
+                                                 Kind="OkhsRectangle"
+                                                 IsVisible="False" />
+
+                                <!-- Saturation and value, on its own or inside the ring. -->
+                                <Panel Name="PART_Field" ClipToBounds="False">
+                                    <Border Name="PART_FieldHue"
+                                            BorderBrush="{DynamicResource LineControlDeep}"
+                                            BorderThickness="1"
+                                            CornerRadius="{DynamicResource RadiusControl}" />
+
+                                    <Border Name="PART_FieldShade"
+                                            CornerRadius="{DynamicResource RadiusControl}" />
+                                </Panel>
+
+                                <!-- One handle for whichever shape is up, and a second on the
+                                     ring, which is the only shape with two. -->
                                 <Canvas ClipToBounds="False" IsHitTestVisible="False">
                                     <Border Name="PART_FieldHandle"
                                             Width="{DynamicResource SizeColorHandle}"
@@ -268,27 +304,15 @@
                                             BorderThickness="{DynamicResource ThicknessColorHandle}"
                                             CornerRadius="{DynamicResource RadiusColorHandle}"
                                             BoxShadow="{DynamicResource ShadowColorHandle}" />
-                                </Canvas>
-                            </Panel>
 
-                            <Panel Name="PART_Wheel"
-                                   Width="{DynamicResource HeightColorShape}"
-                                   Height="{DynamicResource HeightColorShape}"
-                                   HorizontalAlignment="Center"
-                                   ClipToBounds="False"
-                                   IsVisible="False">
-                                <Ellipse Name="PART_WheelHue" />
-                                <Ellipse Name="PART_WheelBloom" />
-                                <Ellipse Name="PART_WheelShade" />
-
-                                <Canvas ClipToBounds="False" IsHitTestVisible="False">
-                                    <Border Name="PART_WheelHandle"
+                                    <Border Name="PART_RingHandle"
                                             Width="{DynamicResource SizeColorHandle}"
                                             Height="{DynamicResource SizeColorHandle}"
                                             BorderBrush="{DynamicResource InkKnobPressed}"
                                             BorderThickness="{DynamicResource ThicknessColorHandle}"
                                             CornerRadius="{DynamicResource RadiusColorHandle}"
-                                            BoxShadow="{DynamicResource ShadowColorHandle}" />
+                                            BoxShadow="{DynamicResource ShadowColorHandle}"
+                                            IsVisible="False" />
                                 </Canvas>
                             </Panel>
 
@@ -473,15 +497,6 @@
                 </ui:Popover>
             </ControlTemplate>
         </Setter>
-
-        <!-- The wheel carries hue and saturation, so the field stands down. -->
-        <Style Selector="^[Shape=Wheel] /template/ Panel#PART_Field">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-
-        <Style Selector="^[Shape=Wheel] /template/ Panel#PART_Wheel">
-            <Setter Property="IsVisible" Value="True" />
-        </Style>
 
         <!-- Sliders only drops both, and the bar with them, since the rows are the whole
              of it and a hue bar with no field beside it is half a control. -->

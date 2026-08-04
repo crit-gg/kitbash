@@ -400,11 +400,25 @@ both carry `Color`, so a channel above 1 cannot exist in them, and `ColorView` i
 spectrum and palette card with none of RAW, OKHSL or EV. Both shapes the design draws are
 gradients, and Avalonia has `ConicGradientBrush`, so the wheel needs no bitmap either.
 
-**Three shapes.** A saturation and value field with hue on the bar beside it, a wheel with
-hue around it and saturation out from the middle, and the rows on their own. **In the wheel
-the bar carries value instead of hue**, since the wheel already carries hue. That is a
-departure: the design draws the same rainbow bar in both, which would leave value with
-nowhere to go.
+**Seven shapes, which are Godot's own set.** A saturation and value square with hue on the
+bar beside it, the same square inside a hue ring, a hue circle with value beside it, the
+perceptual circle with lightness beside it, two perceptual rectangles, and the rows on their
+own. **The bar always carries what the shape does not**, and the ring is the one shape that
+carries all three itself, so it has no bar at all.
+
+**Hue runs clockwise from the right**, on the ring and on both circles, because Godot reads
+the angle with the screen's own downward y. Measured off a render rather than reasoned:
+east red, south chartreuse, west cyan, north violet.
+
+**The three perceptual surfaces are painted a pixel at a time.** OKHSL is not a straight line
+in sRGB, so no gradient can hold one and Godot uses a shader. `ui:ColorSurface` paints into a
+bitmap at half the size and lets it scale up, which cannot be told apart and costs a quarter
+of the conversions. Measured: 9042 pixels in 3.2 ms, so a drag of the third component repaints
+inside a frame. It belongs to the picker and nothing else should place one.
+
+**The shape is chosen from a menu rather than a segmented row.** The design draws three icons
+in a row and seven do not fit one, so the header carries a dropdown of the seven names with
+the current shape's mark on the button, which is what Godot does.
 
 **Four value modes, and every one of them carries the EV row.** RGB and HSV read whole
 numbers, Linear reads the colour as light, and OKHSL is the perceptual space, so a hue drag
@@ -463,12 +477,9 @@ likely to fall into.
 lane with it, and `EditsExposure="False"` puts the stops back into the colour before it goes,
 so the value never changes underneath. Both are Godot's `edit_alpha` and `edit_intensity`.
 
-**Four things Godot has and this does not.** The eyedropper, which needs screen capture and is
-platform work of its own. Three of its seven shapes, which are the HSV wheel with a square
-inside it and the two OK rectangles and the OKHSL circle, all of which Godot draws with
-shaders. Saving and loading a palette as a file. Dragging a colour from one swatch to another.
-None of them is refused, they are simply not built, and the stage file records what each would
-take.
+**Three things Godot has and this does not.** The eyedropper, saving and loading a palette as
+a file, and dragging a colour from one swatch to another. None is refused, they are simply not
+built, and the stage file records what each would take.
 
 **The picker owns its own hue.** A grey has no hue and black has no saturation, so both are
 held on the control rather than read back from the colour every time. Without that the field

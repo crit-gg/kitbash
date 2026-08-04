@@ -90,6 +90,11 @@ different problem.
 The rules are in the `kitbash-controls` skill under Colour. What follows is only what this
 stage decided or departed from.
 
+**Against Godot below supersedes this section wherever the two differ.** This one records what
+was built from the design page alone, and the picker was then read against the engine's own
+and changed. The value model, the third mode, the shape set and the wheel are all the later
+section's.
+
 **Avalonia's `Avalonia.Controls.ColorPicker` package was read and refused.** It exists, it is
 first party and it ships `ColorSpectrum` and `ColorSlider`, so the theme what Avalonia ships
 rule points at it. Both carry `Avalonia.Media.Color`, which is four bytes, so a channel above
@@ -185,14 +190,17 @@ interaction ends.
 **The text field takes what Godot's takes**: every hex length it fixes up, and its 146 colour
 names, read out of `core/math/color_names.inc` rather than typed here.
 
+**All seven shapes are built.** The ring's geometry is Godot's: the band runs from 0.42 to 0.5
+of the width and the square inside is inscribed in the inner circle, which puts its half side
+at 0.297 of the width. Hue runs clockwise from the right on the ring and both circles, because
+Godot reads the angle with the screen's own downward y. The three perceptual surfaces are
+painted into a bitmap at half size, 9042 pixels in 3.2 ms measured, since OKHSL cannot be a
+gradient. The shape is chosen from a menu, since seven icons do not fit the design's segmented
+row.
+
 ### Still Godot's and not ours
 
 - **The eyedropper.** Screen capture, one implementation per OS, the portal on Linux.
-- **Three of the seven shapes.** Godot has HSV rectangle, HSV wheel, VHS circle, OKHSL circle,
-  OK HS rectangle, OK HL rectangle and none. This has the rectangle, the circle, which is
-  Godot's VHS circle, and none. The wheel with a square inside it is brushes and cheap. The
-  OKHSL circle and the two OK rectangles are shaders in Godot, so here they would each want a
-  bitmap rendered per change, which is the real cost.
 - **Palettes as files.** Godot saves and loads a preset list, and names it in the picker.
 - **Dragging a colour** from the sample onto a swatch, or between swatches.
 - **The keyboard on the shape.** Godot focuses the field, enters a cursor editing mode on
