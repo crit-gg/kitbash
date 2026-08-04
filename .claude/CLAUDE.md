@@ -215,6 +215,8 @@ the problem:
   still describes 11. Read it before working on views, styling or window chrome.
 - `.claude/dotnet.md` the .NET and toolchain notes
 - `.claude/godot-engines.md` how engine builds are named, downloaded and installed
+- `.claude/plans/tool-distribution.md` where a tool comes from, how it is installed and
+  how it is kept current. Read before touching `ITool`, the registry or the tools page.
 - `.claude/plans/` the twelve design stages and the plans not yet started
 
 **A new rule goes in the skill it belongs to, not here.** This file grows only when a
@@ -360,7 +362,8 @@ Do not assume any of these. Ask before building on one.
   a runtime ResourceFormatLoader was the alternative)
 - How references between data files are expressed (source file path was the
   leading candidate)
-- Where a tool comes from. Compiled into the launcher as now, found on disk under a known
-  directory, or fetched from a remote index. The tools page draws all three states and
-  `ITool` answers none of them, so this decides what `src/tools/` builds into as well
+**Where a tool comes from is no longer one of these.** It is decided and written down in
+`.claude/plans/tool-distribution.md`: a tool comes from a repository, GitHub releases is
+the first kind, and a person installs one by clicking Install. None of it is built, so
+the launcher still compiles its list in and the mock still holds every version.
 

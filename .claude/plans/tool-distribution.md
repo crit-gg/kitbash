@@ -1,0 +1,455 @@
+# Tool distribution
+
+How a tool reaches a machine, where it lives, and how it is kept current.
+
+This replaces **The tool system** in `distribution-and-updates.md`, which assumed one
+catalogue on one server we run. Sources are plural now, and the first one is GitHub
+releases. Everything else on that page still stands, including the two tier model that
+put this half here in the first place.
+
+## Status
+
+**Nothing here is built.** `src/tools/` is empty, the five tools on the launcher's page
+are placeholders in `App.BuildRegistry`, and every version and install state on a card is
+invented in `Kitbash/Mock/MockToolCatalogue.cs`.
+
+## Settled
+
+- **A tool comes from a repository, and repositories are plural.** `IToolRepository` is
+  the seam. GitHub releases is the first implementation.
+- **Repositories are listed in two places.** The global config offers a repository
+  everywhere. A workspace's config offers one in that workspace alone.
+- **A workspace holds a repository list and nothing else.** No payload, no install
+  record, no version.
+- **A tool is installed once for the machine, at one version.** Where it came from does
+  not change that.
+- **Nothing installs or updates itself.** A person clicks Install, and a person clicks
+  Update.
+- **An id carries its source.** The manifest says `foundry` and the launcher stores
+  `github.foundry`.
+- **A collision refuses all but the first.** Two repositories claiming one id means the
+  second is not offered, with a message naming the holder.
+- **One repository, one tool.**
+- **The tag is the version.** A release is a version, and the head of a branch is never
+  one.
+- **A version with no payload for this platform is not offered and is not an update.**
+  Hidden rather than shown disabled.
+- **A repository that cannot be reached changes nothing on screen.** Installed tools are
+  unaffected and uninstalled ones are absent.
+- **An update can be required, and the manifest says so.** Required means the tool will
+  not start until somebody clicks Update, never that anything installs itself.
+- **Nothing a person owns lives in the folder Velopack deletes.**
+
+## Where a tool comes from
+
+### The abstraction is two operations
+
+```
+list the versions this repository offers
+fetch a named file for one version
+```
+
+Resisting a third is the discipline. Everything the launcher does is built out of those
+two, so a repository type is small enough that adding one is an afternoon.
+
+### GitHub releases, first
+
+A release is a version. The tag names it. The payload and the manifest are assets on it.
+
+One call to the releases API lists every version with its assets together, which is why
+this type answers both operations from a single request. Public assets download from
+`https://github.com/<owner>/<repo>/releases/download/<tag>/<name>` with no API involved.
+
+**It is named `github` and not `git`, because a release asset is not a git object.** No
+git command can fetch one. Calling the type `git` would put a generic name over one
+forge's API and mislead the next person who tries to point it at a plain repository.
+
+### What comes later, and why it is different
+
+**A plain git repository** can list versions, since `git ls-remote --tags` works against
+any host over http or ssh and uses the person's own git and credential helper. It cannot
+fetch a release asset, because there is no such thing outside a forge. So a git type has
+to carry its payload in the repository and install by checking out a tag, which is a
+different model with different costs, not a variation on this one. Build it when a host
+that is not a forge actually matters.
+
+**A static index** on a bucket is the arrangement `distribution-and-updates.md`
+originally described, and it is the cheapest of the three. `tools.json` beside the
+launcher's own feed. It is worth having for anything published alongside the launcher.
+
+**Gitea and GitLab** are the same shape as GitHub with different URLs.
+
+## What a tool repository has to look like
+
+This is the contract a tool author satisfies. It is the whole of it.
+
+### One repository, one tool
+
+A repository holding several tools needs a tag prefix per tool, and every tool in it
+releases together. If that is ever wanted it is a prefix rule added then.
+
+### A release per version
+
+The tag is a semantic version with an optional leading `v`. A release marked prerelease
+maps to a prerelease version and is not offered until a preview channel exists.
+
+**A tag that does not parse is skipped rather than failing the repository.** A repository
+with unrelated tags in its history is ordinary.
+
+### The assets
+
+| Asset | What it is |
+|---|---|
+| `kitbash-tool.json` | the manifest, at exactly this name |
+| whatever the manifest names | one payload per platform |
+| whatever the manifest names | the icon, optional |
+
+The fixed manifest name is what lets the launcher find it without guessing. Everything
+else is named by the manifest, so a tool's build can call its archives anything.
+
+**The launcher fetches only the manifest to draw a card.** A few hundred bytes tells it
+the name, the summary, whether this platform has a payload at all, and how large that
+payload is. Nothing large is downloaded until somebody clicks Install.
+
+**A release asset never changes, so a manifest caches forever** under the version it came
+from. Only the list of versions is ever refetched.
+
+### The manifest
+
+```json
+{
+  "manifest": 1,
+  "id": "foundry",
+  "name": "Foundry",
+  "summary": "Data editor for attributes, stats, effects, machines and recipes.",
+  "category": "Content",
+  "icon": "foundry-icon.png",
+  "version": "0.10.0",
+  "payloads": [
+    {
+      "runtime": "linux-x64",
+      "asset": "foundry-0.10.0-linux-x64.tar.gz",
+      "size": 104857600,
+      "sha256": "...",
+      "executable": "Foundry"
+    },
+    {
+      "runtime": "win-x64",
+      "asset": "foundry-0.10.0-win-x64.zip",
+      "size": 109051904,
+      "sha256": "...",
+      "executable": "Foundry.exe"
+    }
+  ]
+}
+```
+
+**JSON rather than TOML**, which is the one place this repository departs from its own
+habit. A manifest is written by a build rather than by a person, and a tool need not be
+.NET, so its author has to emit it with nothing installed. The rule that falls out is
+worth keeping: TOML is what a person edits, JSON is what programs exchange.
+`System.Text.Json` is already in the box, so this adds no package.
+
+`manifest` is a plain integer and the only version here that is not semantic. It
+describes a file format. The launcher reads it before anything else and it is what makes
+a newer tool refusable rather than mysterious.
+
+**`version` must equal the tag.** A release where they disagree is refused rather than
+guessed at, because the two would then have to be reconciled at every later comparison.
+
+`icon` is optional. Without one the card draws the letter mark it draws today.
+
+`executable` is a path inside the payload, and it is what gets run.
+
+**`required` is optional and defaults to false.** A version carrying it refuses every
+version below it. See Updating.
+
+**`runtime` may be `any`**, which is a payload the author says runs on every platform.
+A script is the case that needs it, and without it nothing but a .NET tool could publish
+here. It is the author's claim and the launcher takes it at face value, so a payload
+holding a shell script and marked `any` will be offered on Windows and fail to start
+there. **A concrete match wins over `any`**, so a tool may ship a portable payload and
+replace it on the platforms where it has something better.
+
+## The repository lists
+
+```toml
+[[tools.repositories]]
+type = "github"
+url = "https://github.com/owner/foundry"
+```
+
+The same shape in the global config and in a workspace's. **The type is written rather
+than inferred**, because a self hosted Gitea URL and a plain git URL look identical and
+guessing wrong is the thing the abstraction exists to prevent.
+
+**Availability is derived rather than stored.** A tool is offered in a workspace when its
+repository is in the global list or in that workspace's list. Nothing records which
+workspace a tool belongs to, two workspaces naming one repository both see it, and
+dropping the entry stops it being offered without touching what is installed.
+
+**A workspace config travels in a clone**, so a repository list can name a program nobody
+in the room chose. That is safe because offering costs nothing and the install button is
+the only way in. **The card names the repository it came from**, so the person clicking
+has been told.
+
+### Ids carry their source
+
+The manifest says `foundry`. The launcher stores `github.foundry`. A manifest author does
+not know how their tool will be consumed, so the qualification is the launcher's to add.
+
+The id is a file name, which `SettingsScope.ForTool` already enforces, and
+`github.foundry` is a valid one on both operating systems.
+
+**A collision refuses all but the first discovered.** For that to mean the same thing
+twice running, discovery has a defined order:
+
+1. **An installed tool owns its id permanently.** Whatever is on disk wins, whatever the
+   lists say now.
+2. Then the global list, in the order the file writes it.
+3. Then each workspace list, in the order the file writes it.
+
+The refusal is visible rather than a tool quietly missing, and it names the repository
+holding the id.
+
+## Where a tool lives
+
+```
+<state>/tools/<id>/<version>/
+```
+
+Which is `$XDG_DATA_HOME/kitbash/tools/` on Linux. `IUserDirectories.StateFor` already
+resolves to the data directory there rather than the state directory, deliberately, so
+this is the same place engines already use.
+
+### Windows has to move first
+
+`WindowsUserDirectories` returns `%LocalAppData%\Kitbash\State` and
+`%LocalAppData%\Kitbash\Cache`. The Velopack pack id is `Kitbash`, so
+`%LocalAppData%\Kitbash` is the install root, **and its uninstaller deletes that whole
+directory**. Adding tools under it would mean uninstalling the launcher silently removes
+every tool a person installed, on top of the engines and the workspace list it already
+takes.
+
+**The pack id cannot change.** It names every download, including `Kitbash.AppImage` and
+`Kitbash-win-Setup.exe`, and the redirects on download.kitbash.run point at those names.
+Commit 603430e renamed it for exactly that reason and recorded moving the user
+directories as the fix.
+
+**So the user directories move, and Velopack's folder holds the app alone.**
+
+| | Before | After |
+|---|---|---|
+| Install root | `%LocalAppData%\Kitbash` | unchanged, app only |
+| Configuration | `%AppData%\Kitbash` | unchanged, already outside |
+| State | `%LocalAppData%\Kitbash\State` | `%LocalAppData%\KitbashData\State` |
+| Cache | `%LocalAppData%\Kitbash\Cache` | `%LocalAppData%\KitbashData\Cache` |
+
+Linux does not change. Nothing has been distributed, so there is no migration to write,
+and **this has to land before the tools directory exists** rather than after.
+
+`KitbashData` is the one arbitrary name here. It exists because the plain one is taken,
+and it is free to change until the first release.
+
+### The tools directory already means something else
+
+`ApplicationPaths.StateFileFor` writes per tool state to `<state>/tools/<id>.toml`. Put
+installs at `<state>/tools/<id>/<version>/` and that one directory holds both
+`github.foundry.toml` and `github.foundry/`, which is two purposes in one place.
+
+**Fold the state file into the tool's own folder instead.**
+
+```
+<state>/tools/<id>/state.toml      what the launcher remembers about this tool
+<state>/tools/<id>/<version>/      one directory per installed version
+```
+
+Everything about one tool sits together, and uninstalling deletes the version directories
+while leaving the state, which is what makes reinstalling free. Settings are untouched,
+since those live under Configuration and never held an install.
+
+## A repository that cannot be reached says nothing
+
+**No message, no badge, no error.** A repository that fails to answer changes nothing a
+person sees.
+
+- **An installed tool is unaffected.** It keeps its version, it keeps starting, and its
+  card looks the same. What is on disk is the truth about what runs, and a server having
+  a bad day is not.
+- **A tool that is not installed is absent.** It does not appear in the available list,
+  the same as a repository that offered nothing.
+
+So an unreachable repository and an empty one look identical, on purpose. **The log is
+the only place a failure is recorded**, which keeps it diagnosable without putting a
+network problem in front of somebody who did not cause it and cannot fix it.
+
+## A version with no payload for this platform does not exist
+
+**Not offered, not shown disabled, not explained.** A tool with no payload for this
+machine never reaches the available list, and a new version with no payload for this
+machine is never an update.
+
+**The filter is per version, not per tool.** A tool can carry a Linux payload at 1.0 and
+drop it at 2.0, so what a person is offered is the newest version having a payload for
+this runtime identifier, and versions above it are simply not there.
+
+A payload marked `any` counts as a match, and a payload naming this runtime identifier
+beats it when both are present.
+
+That means the version list is filtered before the newest is picked. Walk back from the
+newest, fetching each manifest until one matches, and stop after a bounded number so a
+repository that never matches costs a fixed amount rather than its whole history.
+Manifests cache forever, so this is paid once per version ever seen.
+
+## Installing
+
+A person clicks Install. Then:
+
+1. Read the manifest for the chosen version. Refuse a `manifest` newer than this launcher
+   understands, and say which.
+2. Find the payload for this runtime identifier. A version reaching here always has one,
+   so its absence is a bug rather than a message.
+3. Download to a temporary file.
+4. Check the size and the SHA256 against the manifest. A mismatch deletes the file and
+   reports it.
+5. Extract to `<version>.incoming`.
+6. Set the executable bit on the file `executable` names, on Unix.
+7. Rename `<version>.incoming` to `<version>`.
+8. Write the active version into `state.toml`.
+
+**Nothing in use is ever overwritten**, so there is no partly updated state to recover
+from. A version directory exists whole or does not exist. A failed download leaves a
+temporary file and nothing else.
+
+**tar.gz for Unix payloads, zip for Windows.** A zip carries a unix file mode in the top
+sixteen bits of an external attributes field, and .NET writing a zip on Windows sets that
+to zero, so a Linux payload zipped by a Windows build extracts with no executable bit and
+nothing anywhere says why. Step 6 covers the file the manifest names. Tar covers every
+helper binary beside it.
+
+### Starting a tool
+
+```
+<executable> --workspace <path to the open workspace>
+```
+
+Working directory is the version directory, so a tool finds its own files beside it. With
+no workspace open the argument is absent.
+
+**That plus the manifest is the whole contract.** Settings, workspace discovery and how a
+tool draws a window are not in it. A .NET tool takes `Kitbash.Core` and `Kitbash.Ui` and
+gets them for free, which is why those exist. Anything else reads a path and does as it
+likes.
+
+## Updating
+
+**Checking is not installing.** Applying an update is a click, always. Checking is one
+API call per repository and it is the only thing that makes an update visible, so the
+launcher checks on its own and never applies.
+
+Cadence: at launch, and no more often than a few hours per repository afterwards. Check
+for updates on the page ignores the cache and asks now.
+
+### A required update blocks the tool rather than installing itself
+
+**The manifest says an update is required.** A version whose manifest carries
+`"required": true` refuses every version below it. If any version between what is
+installed and the newest carries it, the update is required, so a person cannot get past
+one by skipping to the version after it.
+
+**Required still never means automatic.** Nothing installs itself, so a required update
+means **the installed tool will not start until somebody clicks Update**. The card draws
+the blocked state it already has markup for, says why, and offers the update.
+
+A repository that cannot be reached cannot say a version is required, so a tool nothing
+has heard about keeps starting. That falls out of the rule below rather than being a
+separate case.
+
+**One version per machine.** Two workspaces wanting different majors of one tool is not
+solved, and the layout leaves room for it later because several version directories can
+sit side by side under an active pointer.
+
+An old version directory is removed after the active version changes, which can happen
+later or at the next launch. It never happens while anything might be reading it.
+
+### Rate limits are the reason the login matters
+
+GitHub allows 60 unauthenticated requests an hour per address, and 5000 authenticated.
+A handful of repositories checked on a beat runs into 60 quickly. **A conditional request
+answered 304 is documented not to count**, which the cadence should lean on, and which
+should be confirmed rather than assumed.
+
+## Private repositories
+
+`ISecretStore` already exists and its own example is `SecretKey.Parse("github", "octocat")`,
+so a token has a home in the platform keyring on both operating systems. Every operation
+can answer `Unavailable`, which is a machine with no keyring, and that has to stay a
+defined outcome rather than a crash.
+
+A private repository needs the API for the download as well as the listing, since the
+plain `releases/download` URL is not readable without credentials.
+
+## Uninstalling
+
+Delete the version directories. Keep `state.toml`. Keep the tool's settings under
+Configuration, and keep anything under a workspace's `.kitbash/`, which belongs to the
+workspace.
+
+**Never delete a person's data because they removed a program.** Reinstalling should find
+everything as they left it.
+
+A tool that leaves a catalogue is not uninstalled. **What is installed keeps working**,
+because deleting a row on a server must never remove a program from a machine.
+
+## What this changes in the code
+
+- **`App.BuildRegistry` goes.** The registry becomes a scan of `<state>/tools/*/` plus
+  whatever the repositories offer.
+- **`ITool` stops being an interface anyone implements.** It becomes a record the
+  launcher fills from a manifest. `IToolActivation` collapses to starting a process.
+- **The tool model moves out of `Kitbash.Core` into `Kitbash`.** Core is a library that
+  makes writing a .NET tool easy, not the contract every tool obeys, and only the
+  launcher installs anything. Core keeps `SettingsScope.ForTool`, which is only a string.
+- **`MockToolCatalogue` is deleted** and `LauncherViewModel.HasTools` stops being false.
+  The page already draws installed, available, update offered and blocked, so the markup
+  is waiting rather than missing.
+- **`ApplicationPaths`** grows the tools directory and changes the shape of
+  `StateFileFor`.
+- **`WindowsUserDirectories`** moves State and Cache out of the install root.
+- **`.claude/CLAUDE.md`** says `Kitbash.Core` is the shared contract and that tools are
+  registered explicitly. Both need amending.
+
+## Order of work
+
+1. **Move the Windows user directories.** Everything else writes into them.
+2. **The manifest, its reader, and the id rules.** No network.
+3. **Discovery from disk.** Scan, list, and delete the mock. A tool folder placed by hand
+   is simply a tool, which falls out for free.
+4. **Starting a tool as a process.**
+5. **`IToolRepository` and the GitHub implementation.** Listing and offering only.
+6. **Install, then update, then uninstall.**
+7. **The GitHub login**, over `ISecretStore`.
+
+### The cheapest thing that proves it
+
+**A shell script and a manifest, placed by hand in `<state>/tools/hello/1.0.0/`.** Found,
+listed, started. No feed, no download, no installer, and deliberately not a .NET program.
+If the launcher runs a shell script then it installs and starts programs rather than
+hosting managed code, which is the claim the whole two tier model rests on. Steps 1 to 4
+are exactly this and nothing more.
+
+Then the same with the gallery, which is a real .NET application, to find out what a
+hundred megabyte payload feels like to install.
+
+## Open questions
+
+- **Two workspaces on different majors of one tool.** Left unsolved on purpose.
+- **A tool needing a newer launcher.** A manifest version this launcher cannot read is
+  refused, and the tool is kept and disabled rather than deleted. What is missing is the
+  offer of the launcher update that would fix it, since the launcher's own updates are
+  still off.
+
+## What could not be tested here
+
+This machine is Linux. Everything about `%LocalAppData%`, the uninstaller and what it
+removes is reasoning from Velopack's behaviour rather than something watched.

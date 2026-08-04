@@ -486,6 +486,12 @@ repair it from inside the app.
 
 ## The tool system
 
+**Superseded by `tool-distribution.md`.** Sources are plural now and the first one is
+GitHub releases, so the single catalogue described here is one later implementation
+rather than the plan. What survives unchanged: the directory layout, the install being a
+rename, the manifest being the contract, and the payload rules including the executable
+bit. Read that page instead, and this one for the launcher tier alone.
+
 The part that is ours to write. It is small, and the reason it is small is worth saying
 plainly: **the hard part of an updater is replacing a running program with itself, and
 that never happens here.** The launcher installs a tool, and the launcher is not the tool.
@@ -816,7 +822,9 @@ later put something in that directory on the assumption that nobody will find it
   `Kitbash.Core` is a library for writing .NET tools, not the contract.
 - **Semantic versions everywhere**, launcher and tools alike.
 - **One launcher at a time**, in a release build only.
-- **Our own server, unlisted, over HTTPS.** No GitHub Releases, no Velopack Flow.
+- **Our own server, unlisted, over HTTPS**, for the launcher's own feed. No GitHub
+  Releases, no Velopack Flow. A tool comes from somewhere else entirely, and
+  `tool-distribution.md` says where.
 - **Nothing is signed.** One SmartScreen warning at first install, on purpose.
 - **AppImage on Linux, for now.** Kept because Velopack builds nothing else there and
   nothing surveyed covers both operating systems. Revisit when the tool installer lands.

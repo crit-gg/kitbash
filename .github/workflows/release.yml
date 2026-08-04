@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    paths-ignore: ['.github/**', '.gitignore', '.gitattributes']
+    paths-ignore: ['.claude/**', '.github/**', '.gitignore', '.gitattributes']
     branches: ["main"]
 
   workflow_dispatch:
