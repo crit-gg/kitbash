@@ -57,6 +57,13 @@ public sealed class VelopackUpdates : IApplicationUpdates
 
             var stored = _schema.Feed.Read(_settings.Global);
 
+            // Read gives the descriptor's default only for a key that is not there at all,
+            // so a key present and blank is caught here instead.
+            if (string.IsNullOrWhiteSpace(stored))
+            {
+                stored = _schema.Feed.Default;
+            }
+
             return IsAddress(stored) || IsFolder(stored) ? stored : string.Empty;
         }
     }

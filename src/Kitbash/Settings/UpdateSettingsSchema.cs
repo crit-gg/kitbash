@@ -10,22 +10,20 @@ namespace Kitbash.Settings;
 public sealed class UpdateSettingsSchema
 {
     /// <summary>
-    /// The address releases are published to. Blank until there is a server, and this is
-    /// the one line to change when there is.
+    /// The address releases are published to. The trailing slash matters, since Velopack
+    /// resolves every package name against it.
     /// </summary>
-    public const string DefaultFeed = "";
+    public const string DefaultFeed = "https://updates.kitbash.run/kitbash/";
 
     /// <summary>
-    /// Whether Kitbash looks for a newer copy of itself at all. **Off**, because there
-    /// is nowhere to publish to yet, so nothing checks and nothing downloads. Turning it
-    /// on is this and a real <see cref="DefaultFeed"/>. The pipeline that has to exist
-    /// first is in `.claude/plans/distribution-and-updates.md`.
+    /// Whether Kitbash looks for a newer copy of itself at all. Off stops every check
+    /// and every download, whatever a settings file says.
     /// </summary>
     /// <remarks>
     /// A property rather than a const, so the code it turns off does not read as
     /// unreachable and fail the build.
     /// </remarks>
-    public bool IsEnabled => false;
+    public bool IsEnabled => true;
 
     /// <summary>
     /// This takes the version rather than <see cref="IApplicationUpdates"/>, which would
@@ -40,8 +38,8 @@ public sealed class UpdateSettingsSchema
             Key = "updates.feed",
             Name = "Update feed",
             Description =
-                "An https address or a folder holding published releases. Blank never "
-                + "checks, and neither does a copy that was not installed.",
+                "An https address or a folder holding published releases. Blank uses the "
+                + "one built in, and a copy that was not installed never checks.",
             Default = DefaultFeed,
             NeedsRestart = true,
         };
@@ -80,9 +78,10 @@ public sealed class UpdateSettingsSchema
     /// </summary>
     /// <remarks>
     /// No rule, because the value is one of two shapes and the closed rule set describes
-    /// neither pair. A value that is neither counts as blank when it is read. Being on no
-    /// page also means <c>ISettingsWriter</c> refuses it, which is the guard that stops a
-    /// window writing what it never drew.
+    /// neither pair, and a rule would not help anyway since Read applies none. A value
+    /// that is neither shape stops the checking. Being on no page also means
+    /// <c>ISettingsWriter</c> refuses it, which is the guard that stops a window writing
+    /// what it never drew.
     /// </remarks>
     public SettingDescriptor<string> Feed { get; }
 
