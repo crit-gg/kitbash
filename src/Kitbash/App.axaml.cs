@@ -133,7 +133,7 @@ public partial class App : Application
     private static ServiceProvider BuildServices() =>
         new ServiceCollection()
             .AddKitbashPlatform()
-            .AddKitbashWorkspaces()
+            .AddKitbashWorkspaceCreation()
             .AddKitbashGit()
             .AddKitbashEngines()
             .AddKitbashSettingsSchema()
@@ -176,9 +176,13 @@ public partial class App : Application
                 provider.GetRequiredService<IUiDispatcher>(),
                 provider.GetRequiredService<IEngineRequirementReader>(),
                 provider.GetRequiredService<IEngineStore>(),
+                provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineResolver>(),
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IGodotLauncher>(),
+                provider.GetRequiredService<IGodotProjectReader>(),
+                provider.GetRequiredService<IWorkspaceMaker>(),
+                provider.GetRequiredService<IToastService>(),
                 provider.GetRequiredService<IPlatformServices>(),
                 provider.GetRequiredService<ILauncherCloseSettings>(),
                 provider.GetRequiredService<IApplicationShutdown>(),

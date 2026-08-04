@@ -150,7 +150,10 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <DockPanel Background="Transparent" LastChildFill="True">
-                    <Panel DockPanel.Dock="Left" VerticalAlignment="Center">
+                    <!-- The mark follows VerticalContentAlignment, so a row whose label runs
+                         to two lines can put it against the first one. -->
+                    <Panel DockPanel.Dock="Left"
+                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
                         <Border Name="PART_Halo"
                                 Margin="{DynamicResource FocusHaloReach}"
                                 BorderThickness="{DynamicResource FocusHaloThickness}"

@@ -220,6 +220,24 @@ public static class KitbashCoreServices
         return services;
     }
 
+    /// <summary>
+    /// Making a workspace from nothing, which is more than listing one: it writes a Godot
+    /// project and runs git, so it takes both of those as well.
+    /// </summary>
+    public static IServiceCollection AddKitbashWorkspaceCreation(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashWorkspaces();
+        services.AddKitbashGit();
+        services.AddEngineFiles();
+        services.TryAddSingleton<IGitInitializer, GitInitializer>();
+        services.TryAddSingleton<IGodotProjectWriter, GodotProjectWriter>();
+        services.TryAddSingleton<IWorkspaceMaker, WorkspaceMaker>();
+
+        return services;
+    }
+
     /// <summary>Workspace discovery, for callers that do not yet know which workspace they are in.</summary>
     public static IServiceCollection AddKitbashWorkspace(this IServiceCollection services)
     {

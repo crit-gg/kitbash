@@ -113,6 +113,17 @@ in the `kitbash-toasts` skill. `SplitButton` has no `icon`, since it is a label 
 and there is no glyph only form of one. Everything else missing is simply a kind nobody has
 needed yet, and adding one is a small change against the theme that lacks it.
 
+**`ToggleButton` is a button that stays down, and it carries no kinds.** It is the
+secondary button, and `:checked` takes the pressed fill with `InkPrimary` on it, so a
+toggle that is on reads as a control held in rather than as a second kind of button. Its
+live states step up from there through `Neutral`. The values are derived rather than read,
+since the design draws the kind once, as the Create folder button on the new workspace
+dialog. Use it where the answer is a state rather than an action, and a `CheckBox` where
+the answer is a list of them.
+
+`Expander` keys its own header off `ExpanderHeader` rather than this, so the two cannot
+drift into each other.
+
 `SplitButton` and `DropDownButton` are stock Avalonia types with a theme each. `Chip` and
 `StatusPill` are ours.
 
@@ -278,6 +289,17 @@ written twice. A folder field ignores them, and so does a set where any one filt
 extensions, since that one takes anything. Extensions are matched ignoring case on both
 platforms, because a filter describes the shape of a name.
 
+**`FolderName` gives the last segment to the host.** Set it and browsing picks the folder
+that named one goes inside: the dialog opens on the folder above, and a pick becomes that
+folder joined with the name. Blank leaves browsing alone, and it is folder targets only.
+This is `create_dir` from Godot's project dialog, and the new workspace dialog binds it so
+a person browses to the folder they keep projects in. A drop goes the same way, since a
+browse and a drop funnel through one method.
+
+**Typing is never fixed up, only a pick is.** A path rewritten while somebody is halfway
+through typing it fights the keystrokes, so the host owns the segment for a pick and the
+typed text stands as written. Godot draws the same line.
+
 **A typed path is judged when the field is left, and typing over a refusal takes it back.**
 So a half typed path never flashes red and a path being fixed is not red while it is half
 fixed.
@@ -317,6 +339,15 @@ Its theme is in `Themes/Controls/TextBox.axaml` with the other fields, since it 
 and it shares the clear button with the search field. The clear button lives in inner
 content, so it is shown from a plain style outside the theme for the reason the search
 field's is.
+
+**The radio and the checkbox put their mark where `VerticalContentAlignment` says.** The
+default is centre, which is every one line row. A row whose label runs to a title and a
+description below it sets `Top`, so the mark sits against the first line instead of
+floating halfway down the block. The new workspace dialog's renderer rows are the case.
+
+**A row that wants a fill behind a radio wraps it.** Both templates hold a transparent
+background of their own, so a `Background` on the control never reaches the row. Put the
+tint on a `Border` around it, which is also where the row's padding and radius go.
 
 **`ui:Segmented`** is a row of radios with a thumb behind them, and the thumb is the reason
 it is a control. A border holds one child, and a fill on the chosen option would appear and

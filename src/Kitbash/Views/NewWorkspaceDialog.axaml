@@ -1,0 +1,243 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:vm="clr-namespace:Kitbash.ViewModels"
+                 xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                 x:Class="Kitbash.Views.NewWorkspaceDialog"
+                 x:DataType="vm:NewWorkspaceViewModel"
+                 Title="Create new workspace"
+                 Width="584" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Window.Styles>
+        <!-- The label column is wider than the theme's form column, since Version control
+             and Workspace name are longer than a normal field label. -->
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.fieldNote">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="LineHeight" Value="16" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style Selector="Border.seam">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Background" Value="{DynamicResource LineSeam}" />
+        </Style>
+
+        <!-- The status line, always drawn, so the dialog never resizes while a person
+             types. Only its wording and its tone change. -->
+        <Style Selector="Border.status">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Background" Value="{DynamicResource OkSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OkLine}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource OkInk}" />
+        </Style>
+
+        <Style Selector="Border.status.blocked">
+            <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ErrorLine}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource ErrorInk}" />
+        </Style>
+
+        <!-- A renderer row. The tint is the row's, since the radio's own template holds a
+             transparent background and a fill on the control cannot reach it. -->
+        <Style Selector="Border.rendererRow">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="Border.rendererRow.picked">
+            <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="Create new workspace" />
+
+        <StackPanel Grid.Row="1" Margin="16,15,16,16" Spacing="12">
+
+            <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Workspace name" />
+
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                    <TextBox Grid.Column="0" Text="{Binding Name}"
+                             ui:Dialog.TakesFocus="True"
+                             PlaceholderText="New workspace" />
+
+                    <!-- A toggle rather than an action. On means the last segment of the
+                         path is written from the name. -->
+                    <ToggleButton Grid.Column="1" Content="Create folder"
+                                  IsChecked="{Binding CreatesFolder}" />
+                </Grid>
+            </Grid>
+
+            <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Workspace path" />
+
+                <!-- Create folder owns the last segment, so browsing picks the folder the
+                     workspace goes inside and the name is put back on the end. -->
+                <ui:PathField Grid.Column="1" Target="Folder"
+                              Path="{Binding Path}"
+                              FolderName="{Binding FolderName}"
+                              PlaceholderText="Pick a folder"
+                              DialogTitle="Choose a folder" />
+            </Grid>
+
+            <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                <Border Grid.Column="1" Classes="status"
+                        Classes.blocked="{Binding IsBlocked}">
+                    <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                        <ui:Icon Size="{DynamicResource IconSizeCompact}" VerticalAlignment="Center"
+                                 Glyph="Check" IsVisible="{Binding !IsBlocked}" />
+                        <ui:Icon Size="{DynamicResource IconSizeCompact}" VerticalAlignment="Center"
+                                 Glyph="AlertCircle" IsVisible="{Binding IsBlocked}" />
+                        <TextBlock Text="{Binding Status}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Classes="seam" />
+
+            <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Contents"
+                           VerticalAlignment="Top" Height="18" />
+
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <CheckBox Content="Create a Godot project here"
+                              IsChecked="{Binding HasGodotProject}" />
+
+                    <TextBlock Classes="fieldNote" Margin="24,0,0,0" Text="{Binding GodotNote}" />
+                </StackPanel>
+            </Grid>
+
+            <!-- The whole renderer block goes rather than greying, because a renderer with
+                 no project is not a setting waiting to be enabled. -->
+            <StackPanel Spacing="12" IsVisible="{Binding HasGodotProject}">
+                <Border Classes="seam" />
+
+                <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Engine"
+                               VerticalAlignment="Top" Height="26" />
+
+                    <StackPanel Grid.Column="1" Spacing="7">
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding Engines}"
+                                  SelectedItem="{Binding Engine}"
+                                  IsEnabled="{Binding !IsReadingEngines}"
+                                  PlaceholderText="Reading">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:EngineChoiceViewModel">
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+                                        <TextBlock Grid.Column="0" Text="{Binding Title}"
+                                                   VerticalAlignment="Center" />
+
+                                        <ui:Badge Grid.Column="1" Tier="{Binding ChannelTier}"
+                                                  Content="{Binding Channel}"
+                                                  IsVisible="{Binding HasChannel}"
+                                                  VerticalAlignment="Center" />
+
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5"
+                                                    IsVisible="{Binding IsInstalled}"
+                                                    VerticalAlignment="Center">
+                                            <ui:Icon Glyph="Check" Size="{DynamicResource IconSizeCompact}"
+                                                     Foreground="{DynamicResource Ok}"
+                                                     VerticalAlignment="Center" />
+                                            <TextBlock Text="Installed"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       Foreground="{DynamicResource InkSecondary}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <!-- A version that is not installed warns rather than blocks. -->
+                        <TextBlock Classes="fieldNote" Text="{Binding EngineNote}"
+                                   Foreground="{DynamicResource WarnInk}"
+                                   IsVisible="{Binding NeedsInstall}" />
+
+                        <TextBlock Classes="fieldNote" Text="{Binding EngineNote}"
+                                   IsVisible="{Binding !NeedsInstall}" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Classes="seam" />
+
+                <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                    <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Renderer"
+                               VerticalAlignment="Top" Height="26" />
+
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <ItemsControl ItemsSource="{Binding Renderers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RendererChoiceViewModel">
+                                    <Border Classes="rendererRow" Margin="0,0,0,2"
+                                            Classes.picked="{Binding IsChosen}">
+                                        <RadioButton GroupName="Renderer"
+                                                     VerticalContentAlignment="Top"
+                                                     IsChecked="{Binding IsChosen, Mode=TwoWay}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                           FontWeight="{DynamicResource FontWeightMedium}"
+                                                           Foreground="{DynamicResource InkPrimary}" />
+                                                <TextBlock Classes="fieldNote" MaxWidth="392"
+                                                           Text="{Binding Description}" />
+                                            </StackPanel>
+                                        </RadioButton>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Classes="fieldNote" Margin="0,2,0,0"
+                                   Text="The renderer can be changed later in project settings, though scenes may need adjusting." />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+
+            <Border Classes="seam" />
+
+            <!-- Version control stays either way. A workspace with no project is still a
+                 folder full of data files worth keeping in git. -->
+            <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
+                <TextBlock Grid.Column="0" Classes="fieldLabel" Text="Version control"
+                           VerticalAlignment="Top" Height="26" />
+
+                <StackPanel Grid.Column="1" Spacing="7">
+                    <ComboBox HorizontalAlignment="Stretch"
+                              SelectedIndex="{Binding VersionControl}">
+                        <ComboBoxItem Content="None" />
+                        <ComboBoxItem Content="Git" />
+                    </ComboBox>
+
+                    <TextBlock Classes="fieldNote" Text="{Binding VersionControlNote}" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+
+        <ui:DialogFooter Grid.Row="2">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Cancel" ui:Dialog.Role="Cancel" />
+
+                <Button Classes="primary" Content="{Binding CreateLabel}"
+                        IsEnabled="{Binding CanCreate}"
+                        ui:Dialog.Role="Accept" />
+            </StackPanel>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

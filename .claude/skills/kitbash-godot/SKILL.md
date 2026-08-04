@@ -118,6 +118,44 @@ so it has its own async refresh and the strip says it is reading until that land
 runs one at a time and **waits its turn rather than giving up**, since dropping the
 second would leave the strip describing the workspace that was open a moment ago.
 
+### Making a project
+
+`IGodotProjectWriter` writes what Godot's own project dialog writes, and the reference is
+`ProjectDialog::ok_pressed` and `ProjectSettings::_save_settings_text` in the 4.7.1
+source. Read those before changing a byte of it.
+
+Four files. `project.godot`, `icon.svg`, `.editorconfig`, and on request the `.gitignore`
+and `.gitattributes` Godot writes for a project in git. **Every one of them is LF on both
+platforms**, because Godot's `FileAccess::store_line` is, and the `.gitattributes` it
+writes says `* text=auto eol=lf`.
+
+`project.godot` is written by hand rather than through a settings document, since it is
+not TOML and not quite INI. The header, the `config_version=5`, the section order and the
+key order inside each section are all what Godot produces, so a project made here reads
+the same as one made in the editor. The settings are the dialog's own plus
+`EditorNode::get_initial_settings`, which is the stretch mode, the stretch aspect, Jolt
+and the Windows rendering driver.
+
+`config/features` is the engine's major and minor plus the renderer's name, sorted, which
+is why the writer is handed an `EngineTag` rather than working one out. **Nothing here
+needs an engine to run**, so a project can be written for a version that is not installed
+yet.
+
+`icon.svg` is `DefaultProjectIcon` from the editor icon set, copied byte for byte. It is
+not ours to redraw.
+
+Measured on this machine: the generated project imported under real 4.7.1 headless with
+exit 0 and no errors, the icon was imported, and the engine changed nothing in the file it
+was handed. The `icon.svg` written matches `editor/icons/DefaultProjectIcon.svg` exactly.
+
+**Compatibility is the one renderer that writes two keys.** It also overrides the mobile
+default, since the mobile renderer would otherwise take over there. That is Godot's rule
+and it is the only asymmetry between the three.
+
+**The workspace is pinned to the engine it was made with**, through `godot.engine` in the
+team config, so opening it later never picks a different one. The pin is the plain tag,
+never `-mono`, since a project made here has no C# in it.
+
 ### Opening a project
 
 `IGodotLauncher` does three things in order, and reports each one so a dialog can say

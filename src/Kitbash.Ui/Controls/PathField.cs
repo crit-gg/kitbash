@@ -34,6 +34,15 @@ public class PathField : TemplatedControl
     public static readonly StyledProperty<bool> AllowsTypingProperty =
         AvaloniaProperty.Register<PathField, bool>(nameof(AllowsTyping), defaultValue: true);
 
+    /// <summary>
+    /// The last segment of the path, when the host owns it rather than the person. Set it
+    /// and browsing picks the folder that one goes inside: the dialog opens there, and a
+    /// pick or a drop becomes the picked folder joined with this name. Folder targets only,
+    /// and blank leaves browsing alone.
+    /// </summary>
+    public static readonly StyledProperty<string?> FolderNameProperty =
+        AvaloniaProperty.Register<PathField, string?>(nameof(FolderName));
+
     /// <summary>The icon only form, for a column too narrow for the word Browse.</summary>
     public static readonly StyledProperty<bool> IsCompactProperty =
         AvaloniaProperty.Register<PathField, bool>(nameof(IsCompact));
@@ -143,6 +152,13 @@ public class PathField : TemplatedControl
     {
         get => GetValue(AllowsTypingProperty);
         set => SetValue(AllowsTypingProperty, value);
+    }
+
+    /// <inheritdoc cref="FolderNameProperty"/>
+    public string? FolderName
+    {
+        get => GetValue(FolderNameProperty);
+        set => SetValue(FolderNameProperty, value);
     }
 
     /// <inheritdoc cref="IsCompactProperty"/>
@@ -427,9 +443,12 @@ public class PathField : TemplatedControl
             return null;
         }
 
-        var folder = Target is PathTarget.Folder
+        // A name of the host's means the folder being picked is the one above it, which is
+        // also the folder that has to exist while the named one does not yet.
+        var folder = Target is PathTarget.Folder && !OwnsName
             ? Path!.Trim()
-            : System.IO.Path.GetDirectoryName(Path!.Trim());
+            : System.IO.Path.GetDirectoryName(
+                System.IO.Path.TrimEndingDirectorySeparator(Path!.Trim()));
 
         if (string.IsNullOrWhiteSpace(folder))
         {
@@ -502,9 +521,12 @@ public class PathField : TemplatedControl
             ? System.IO.Path.TrimEndingDirectorySeparator(path)
             : path;
 
-        SetCurrentValue(PathProperty, trimmed);
+        SetCurrentValue(PathProperty, OwnsName ? System.IO.Path.Combine(trimmed, FolderName!.Trim()) : trimmed);
         Judge();
     }
+
+    /// <summary>The host named the last segment, so a pick is the folder above it.</summary>
+    private bool OwnsName => Target is PathTarget.Folder && !string.IsNullOrWhiteSpace(FolderName);
 
     /// <summary>Holds a typed path to the filters, and says so in place of the hint.</summary>
     private void Judge()

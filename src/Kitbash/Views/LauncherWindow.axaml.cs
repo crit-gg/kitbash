@@ -142,6 +142,25 @@ public partial class LauncherWindow : ChromelessWindow
         return false;
     }
 
+    private async void OnNewWorkspaceClick(object? sender, RoutedEventArgs e)
+    {
+        // The dropdown goes first, so there is one thing on screen at a time and
+        // cancelling returns to the launcher rather than to the open list.
+        WorkspaceSelector.Flyout?.Hide();
+
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        var dialog = new NewWorkspaceDialog { DataContext = model.NewWorkspace() };
+
+        if (await dialog.ShowDialog<bool>(this) && dialog.Request is { } request)
+        {
+            await model.CreateWorkspaceAsync(request, dialog.NeedsInstall);
+        }
+    }
+
     private async void OnAddWorkspaceClick(object? sender, RoutedEventArgs e)
     {
         WorkspaceSelector.Flyout?.Hide();

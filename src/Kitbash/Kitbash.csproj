@@ -38,4 +38,10 @@
     <ProjectReference Include="..\Kitbash.Ui\Kitbash.Ui.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Views\NewWorkspaceDialog.axaml.cs">
+      <DependentUpon>NewWorkspaceDialog.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

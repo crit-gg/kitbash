@@ -10,6 +10,7 @@ using Kitbash.Core.Settings;
 using Kitbash.Core.Workspaces;
 using Kitbash.Mock;
 using Kitbash.Settings;
+using Kitbash.Ui.Toasts;
 
 namespace Kitbash.ViewModels;
 
@@ -28,9 +29,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IUiDispatcher _dispatcher;
     private readonly IEngineRequirementReader _requirements;
     private readonly IEngineStore _engines;
+    private readonly IEngineCatalogue _catalogue;
     private readonly IEngineResolver _resolver;
     private readonly IGodotSettings _godot;
     private readonly IGodotLauncher _godotLauncher;
+    private readonly IGodotProjectReader _projects;
+    private readonly IWorkspaceMaker _maker;
+    private readonly IToastService _toasts;
     private readonly IPlatformServices _platform;
     private readonly ILauncherCloseSettings _close;
     private readonly IApplicationShutdown _shutdown;
@@ -76,9 +81,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IUiDispatcher dispatcher,
         IEngineRequirementReader requirements,
         IEngineStore engineStore,
+        IEngineCatalogue engineCatalogue,
         IEngineResolver resolver,
         IGodotSettings godot,
         IGodotLauncher godotLauncher,
+        IGodotProjectReader projects,
+        IWorkspaceMaker maker,
+        IToastService toasts,
         IPlatformServices platform,
         ILauncherCloseSettings close,
         IApplicationShutdown shutdown,
@@ -95,9 +104,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(engineStore);
+        ArgumentNullException.ThrowIfNull(engineCatalogue);
         ArgumentNullException.ThrowIfNull(resolver);
         ArgumentNullException.ThrowIfNull(godot);
         ArgumentNullException.ThrowIfNull(godotLauncher);
+        ArgumentNullException.ThrowIfNull(projects);
+        ArgumentNullException.ThrowIfNull(maker);
+        ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(close);
         ArgumentNullException.ThrowIfNull(shutdown);
@@ -112,9 +125,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _dispatcher = dispatcher;
         _requirements = requirements;
         _engines = engineStore;
+        _catalogue = engineCatalogue;
         _resolver = resolver;
         _godot = godot;
         _godotLauncher = godotLauncher;
+        _projects = projects;
+        _maker = maker;
+        _toasts = toasts;
         _platform = platform;
         _close = close;
         _shutdown = shutdown;
@@ -192,6 +209,83 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// </summary>
     public CloneWorkspaceViewModel NewClone() =>
         new(_cloner, _workspaceSettings.DefaultDirectory);
+
+    /// <summary>
+    /// A workspace about to be described, with this machine's usual folder already in it.
+    /// The dialog owns it, the way the clone dialog owns its own.
+    /// </summary>
+    public NewWorkspaceViewModel NewWorkspace() =>
+        new(_maker, _engines, _catalogue, _godot, _workspaceSettings.DefaultDirectory);
+
+    /// <summary>
+    /// Makes a workspace, opens it, and opens its project in the editor when it has one.
+    /// An engine that is not installed is installed first, on the engines page, since that
+    /// is where an install already reports its progress.
+    /// </summary>
+    public async Task CreateWorkspaceAsync(NewWorkspace request, bool needsInstall)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (needsInstall && request.Engine is { } wanted)
+        {
+            // A plain build, since a project made here has no C# in it yet.
+            await InstallEngineAsync(EngineVersionPattern.Parse(wanted.ToString()), mono: false)
+                .ConfigureAwait(true);
+        }
+
+        Workspace made;
+
+        try
+        {
+            made = await _maker.MakeAsync(request).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException
+            or UnauthorizedAccessException or NestedWorkspaceException)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = "The workspace could not be created",
+                Body = exception.Message,
+            });
+
+            return;
+        }
+
+        // Back to the workspace page, since the install above may have left the engines
+        // page open, and the new workspace is what there is to look at now.
+        Page = 0;
+
+        await LoadAsync().ConfigureAwait(true);
+
+        if (request.HasGodotProject)
+        {
+            await OpenNewProjectAsync(made.Root).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>
+    /// Opens the project just made. The engine is resolved the ordinary way, so a version
+    /// whose install did not finish leaves the strip to offer it rather than failing here.
+    /// </summary>
+    private async Task OpenNewProjectAsync(string root)
+    {
+        var project = await Task.Run(() => _projects.Find(root)).ConfigureAwait(true);
+
+        if (project is null)
+        {
+            return;
+        }
+
+        var requirement = await Task.Run(() => _requirements.Read(root)).ConfigureAwait(true);
+        var installed = await _engines.ReadAsync(CancellationToken.None).ConfigureAwait(true);
+        var theDefault = await Task.Run(() => _godot.DefaultEngine).ConfigureAwait(true);
+
+        if (_resolver.Resolve(requirement, installed, theDefault).Engine is { } engine)
+        {
+            await OpenInGodot(engine, project, GodotLaunchMode.Editor).ConfigureAwait(true);
+        }
+    }
 
     /// <summary>Takes a workspace out of the list. The folder on disk is left alone.</summary>
     public Task RemoveWorkspaceAsync(WorkspaceViewModel workspace)

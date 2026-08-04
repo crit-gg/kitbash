@@ -265,6 +265,17 @@
                                                 <Button Classes="ghost"
                                                         HorizontalAlignment="Stretch"
                                                         HorizontalContentAlignment="Left"
+                                                        Click="OnNewWorkspaceClick">
+                                                    <StackPanel Orientation="Horizontal" Spacing="9">
+                                                        <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
+                                                        <TextBlock Text="Create new workspace"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Button>
+
+                                                <Button Classes="ghost"
+                                                        HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left"
                                                         Click="OnAddWorkspaceClick">
                                                     <StackPanel Orientation="Horizontal" Spacing="9">
                                                         <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />

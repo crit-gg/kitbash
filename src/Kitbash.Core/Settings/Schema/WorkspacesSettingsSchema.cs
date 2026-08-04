@@ -12,8 +12,8 @@ public sealed class WorkspacesSettingsSchema
             Key = "workspaces.directory",
             Name = "Workspaces folder",
             Description =
-                "Where Kitbash offers to put a workspace it clones. Blank means it "
-                + "suggests nothing.",
+                "Where Kitbash offers to put a workspace it creates or clones. Blank "
+                + "means it suggests nothing.",
             Default = string.Empty,
             Rules = [new PathShapeRule(PathKind.Directory, mustBeRooted: true, allowEmpty: true)],
         };
@@ -23,7 +23,7 @@ public sealed class WorkspacesSettingsSchema
             Id = "workspaces",
             Title = "Workspaces",
             Home = SettingsHome.Application,
-            Sections = [new SettingsSection("Cloning", [Directory])],
+            Sections = [new SettingsSection("New workspaces", [Directory])],
         };
     }
 

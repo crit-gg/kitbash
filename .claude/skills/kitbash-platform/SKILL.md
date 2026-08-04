@@ -248,3 +248,50 @@ Roots are compared through `IPathRules`, not with string equality, because Windo
 ignores case and Linux does not. A prefix test on its own would also read `game-tools`
 as a child of `game`, so the separator is part of the test.
 
+
+### Making a workspace
+
+`IWorkspaceMaker` is Create new workspace, and it is the only thing here that writes a
+folder a person did not already have. It comes from `AddKitbashWorkspaceCreation`, which
+is its own registration because it pulls in git and the Godot project writer and the
+plain list does not want either.
+
+**`Check` is the whole of the validation and it holds no words.** It answers a
+`NewWorkspaceState` and the application says it in English, the same split
+`GitCloneOutcome` already has. The rules follow `ProjectDialog::_validate_path` in the
+Godot 4 editor, so a folder Godot would refuse is refused here, with one difference:
+**a folder with files in it is an error rather than a warning**, so there is no confirm
+step and no way to create a project over somebody else's. A dot file does not count as
+content, which is Godot's rule and is what lets a repository be initialised first.
+
+Godot's two extra refusals, the home directory and the editor's own directory, are not
+written out. Neither is empty, so the not empty rule already refuses both, and a rule
+that can never fire is a rule that goes stale.
+
+**A folder name has to survive `get_safe_dir_name`.** `FolderNameFor` is Godot's, so
+`: * ? " < > | / \` become a dash, `.` and `..` become `dot` and `twodots`, and a trailing
+period goes. The set is applied on both platforms, so a folder made on Linux still opens
+on Windows.
+
+**Create folder is Godot's `create_dir`, not a Kitbash idea.** The path field holds the
+folder the workspace goes in plus the safe name on the end, the name rewrites that last
+segment while it is still the one the name wrote, toggling it off strips the segment and
+remembers it, and browsing picks the folder above. All four are
+`_update_target_auto_dir`, `_create_dir_toggled`, `_project_path_selected` and
+`_browse_project_path`. The one case Godot cannot reach is a blank path, since its default
+project path setting always holds one and `workspaces.directory` may be empty, and there
+the name alone is put on whatever is picked.
+
+**Everything is written before the workspace joins the list.** The folder, the project,
+the ignore files, then `Add`, then the team config, then git. A failure part way leaves
+nothing in the list, and cancelling the dialog leaves nothing at all, since the dialog
+holds every answer and writes none of them.
+
+**The name and the engine pin go in the team layer, not the personal one.** That is the
+opposite of renaming, and the reason is that nothing is tracked yet and both answers were
+given by whoever is making the workspace for everybody. A config that will not take them
+is swallowed, since the folder name still names the workspace.
+
+`IGitInitializer` runs `git init` and nothing else. The default branch name and the ref
+backend are the person's own configuration. It answers false rather than throwing when
+git is missing or refuses, because a workspace with no repository still works.

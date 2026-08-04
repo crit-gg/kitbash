@@ -132,6 +132,7 @@ Core exposes registration methods rather than a container of its own:
 - `AddKitbashSecrets` where a credential is kept for this person on this machine
 - `AddKitbashApplicationStorage` settings, state and the cache for this machine
 - `AddKitbashWorkspaces` the list of workspaces a person has added
+- `AddKitbashWorkspaceCreation` making one from nothing, which also takes git and Godot
 - `AddKitbashWorkspace` workspace discovery
 - `AddKitbashSettings(paths)` settings for one workspace
 
@@ -358,10 +359,33 @@ over. The gallery is still where the toast service is exercised in full.
 The git strip and the engine strip are both real and both read the open workspace.
 
 **The workspace popover is finished.** Each row's menu opens a folder, copies its path,
-renames it and takes it off the list, and the footer adds a workspace from a folder or
-clones one from git. The clone dialog runs `IGitCloner` and stays open until git has
-finished, so what it hands back is a folder that is really there. Renaming and cloning are
-covered by the `kitbash-platform` and `kitbash-git` skills.
+renames it and takes it off the list, and the footer creates a workspace, adds one from a
+folder or clones one from git. The clone dialog runs `IGitCloner` and stays open until git
+has finished, so what it hands back is a folder that is really there. Renaming and cloning
+are covered by the `kitbash-platform` and `kitbash-git` skills.
+
+**Creating a workspace is built, from the `New Workspace Dialog - Spec` design.**
+`NewWorkspaceDialog` names it, places it, writes a Godot project into it or leaves it
+empty, picks the engine and the renderer, and initialises git. `IWorkspaceMaker` in Core
+does all of it and `IGodotProjectWriter` writes the four files Godot's own project dialog
+writes, byte for byte where it can be. **It is built against `editor/project_manager/project_dialog.cpp`
+in the 4.7.1 source**: the same validation, the same folder name rules, the same auto
+folder behaviour behind Create folder, the same `project.godot` and `icon.svg` and
+`.editorconfig`. It departs in three places, all the design's: the contents checkbox, so
+the same dialog makes an empty workspace, a folder with files in it being an error rather
+than a warning, and version control initialising a repository rather than only writing the
+ignore files. Verified against a real engine: the generated project imported under 4.7.1
+headless with no errors and nothing rewritten. Create folder is `create_dir` exactly, including
+browse: the path field holds the parent plus the safe workspace name, the picker opens on
+the parent, and a pick puts the name back on the end, so a person browses to the folder
+they keep projects in. `ui:PathField.FolderName` is what carries that. **One thing is not
+built**: no download size is shown beside a version that is not installed, since
+`IEngineCatalogue` publishes none.
+
+**`ToggleButton` is themed**, which the Create folder button is the first user of. It is
+the secondary button with `:checked` taking the pressed fill, and it is in the gallery
+beside the six kinds. The radio and the checkbox now put their mark where
+`VerticalContentAlignment` says, so the renderer rows can sit it against the first line.
 
 **The tools section is drawn, its data is invented, and it is hidden.** The set of tools is
 the registry's, and every version, update, install state and blocked state on a card comes
