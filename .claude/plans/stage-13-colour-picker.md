@@ -138,6 +138,67 @@ literal rows and both footers swap with the host, Apply commits to the field and
 dismiss do not, the add tile fills a list that was empty, and the recent row stays away until
 there is one. The gallery window itself was built and rendered, not just compiled.
 
+## Against Godot
+
+The picker was then read against the engine's own, `scene/gui/color_picker.cpp`,
+`scene/gui/color_mode.cpp` and `scene/gui/color_picker_shape.h` in the 4.7.1 source, because
+a colour authored here is a colour that goes into Godot and the two should not disagree.
+Eleven things changed.
+
+**The value model.** Godot keeps `color_normalized` and `intensity` rather than one colour,
+and so does this now. Everything on screen draws the base, and the exposure carries whatever
+is over 1. The two models this stage first wrote and rejected both fail for reasons Godot
+avoids by storing the base rather than deriving it.
+
+**Exposure multiplies in linear space.** `_color_apply_intensity` takes the sRGB transfer off,
+multiplies, and puts it back, so a stop is twice the light. Ours did it in the numbers, which
+made a stop 1.756 where Godot gives 1.19.
+
+**Splitting divides by the largest linear channel and never by less than 1**, so a colour a
+screen can show reads as no stops. A colour of 2.5 reads +2.31 rather than the +1.32 our own
+sRGB peak gave.
+
+**RAW became Linear.** Godot's third mode was RAW until 4.4 and reads `srgb_to_linear` now,
+which the enum still records as `MODE_RAW = 2, MODE_LINEAR = 2`. The design page describes
+the old one. The sRGB floats the design showed are still on the picker, in the literal at the
+foot, which is the line a person actually pastes.
+
+**Allowing greater.** RGB and Linear take a number past the end of their ramp and fold the
+excess into the exposure. Godot does it in `_greater_value_inputted` and drops the exposure
+that was already there, which reads as a bug, so ours adds to it instead. At the ordinary
+exposure of zero the two are identical.
+
+**Alpha reads 0 to 255 in every mode except Linear**, where it reads 0 to 1. The design says
+a percentage in OKHSL, which is neither.
+
+**Hue stops at 359.**
+
+**The text field carries the expression when the colour has no hex**, in Godot's own format.
+
+**The old half of the chip reverts**, with an undo mark while the two differ, and the new half
+carries an overbright mark. Both are drawn in the same two places in `_sample_draw`.
+
+**Presets and recents behave as Godot's do**: saving again moves rather than duplicates, a
+right click removes, the recent row holds nine newest first, and a colour joins it when an
+interaction ends.
+
+**The text field takes what Godot's takes**: every hex length it fixes up, and its 146 colour
+names, read out of `core/math/color_names.inc` rather than typed here.
+
+### Still Godot's and not ours
+
+- **The eyedropper.** Screen capture, one implementation per OS, the portal on Linux.
+- **Three of the seven shapes.** Godot has HSV rectangle, HSV wheel, VHS circle, OKHSL circle,
+  OK HS rectangle, OK HL rectangle and none. This has the rectangle, the circle, which is
+  Godot's VHS circle, and none. The wheel with a square inside it is brushes and cheap. The
+  OKHSL circle and the two OK rectangles are shaders in Godot, so here they would each want a
+  bitmap rendered per change, which is the real cost.
+- **Palettes as files.** Godot saves and loads a preset list, and names it in the picker.
+- **Dragging a colour** from the sample onto a swatch, or between swatches.
+- **The keyboard on the shape.** Godot focuses the field, enters a cursor editing mode on
+  Enter, and moves the cursor with the arrows. Every other control here is already reachable
+  by keyboard, so this is the shape alone.
+
 ## Done when
 
 - The same body renders in a popover and in a panel, and the only difference is the

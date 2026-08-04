@@ -303,7 +303,7 @@
 
                         <!-- Alpha, and the colour against the one it replaces. -->
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource SpacingColorRow}">
-                            <Panel Grid.Column="0" VerticalAlignment="Center" ClipToBounds="False">
+                            <Panel Grid.Column="0" Name="PART_AlphaLane" VerticalAlignment="Center" ClipToBounds="False">
                                 <Border Name="PART_Checker"
                                         Height="{DynamicResource SizeColorAlpha}"
                                         CornerRadius="{DynamicResource RadiusControl}" />
@@ -323,8 +323,26 @@
                                     CornerRadius="{DynamicResource RadiusControl}"
                                     ClipToBounds="True">
                                 <Grid ColumnDefinitions="*,*">
-                                    <Border Grid.Column="0" Name="PART_Old" />
-                                    <Border Grid.Column="1" Name="PART_New" />
+                                    <Border Grid.Column="0" Name="PART_Old" ToolTip.Tip="Put the old colour back">
+                                        <ui:Icon Name="PART_Revert"
+                                                 Glyph="Undo"
+                                                 Size="{DynamicResource IconSizeCompact}"
+                                                 Foreground="{DynamicResource InkKnobPressed}"
+                                                 HorizontalAlignment="Center"
+                                                 VerticalAlignment="Center"
+                                                 IsVisible="False" />
+                                    </Border>
+
+                                    <Border Grid.Column="1" Name="PART_New">
+                                        <ui:Icon Name="PART_Overbright"
+                                                 Glyph="Bolt"
+                                                 Size="{DynamicResource IconSizeCompact}"
+                                                 Foreground="{DynamicResource InkKnobPressed}"
+                                                 HorizontalAlignment="Right"
+                                                 VerticalAlignment="Top"
+                                                 ToolTip.Tip="Brighter than a screen can show"
+                                                 IsVisible="False" />
+                                    </Border>
                                 </Grid>
                             </Border>
                         </Grid>
@@ -336,8 +354,8 @@
                                              IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Rgb}}" />
                                 <RadioButton Content="HSV"
                                              IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Hsv}}" />
-                                <RadioButton Content="RAW"
-                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Raw}}" />
+                                <RadioButton Content="LINEAR"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Linear}}" />
                                 <RadioButton Content="OKHSL"
                                              IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Okhsl}}" />
                             </ui:Segmented>
@@ -376,7 +394,8 @@
                             <WrapPanel Orientation="Horizontal"
                                        ItemSpacing="{DynamicResource SpacingColorSwatch}"
                                        LineSpacing="{DynamicResource SpacingColorSwatch}">
-                                <ItemsControl ItemsSource="{Binding $parent[ui:ColorPicker].Swatches}"
+                                <ItemsControl Name="PART_Swatches"
+                                              ItemsSource="{Binding $parent[ui:ColorPicker].Swatches}"
                                               ItemsPanel="{StaticResource ColorSwatchRow}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="ui:ColorValue">
@@ -467,6 +486,11 @@
         <!-- Sliders only drops both, and the bar with them, since the rows are the whole
              of it and a hue bar with no field beside it is half a control. -->
         <Style Selector="^[Shape=Sliders] /template/ Grid#PART_ShapeRow">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <!-- Alpha is off, so the lane goes with the row. -->
+        <Style Selector="^[EditsAlpha=False] /template/ Panel#PART_AlphaLane">
             <Setter Property="IsVisible" Value="False" />
         </Style>
 

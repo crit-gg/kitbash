@@ -17,6 +17,63 @@ public readonly record struct ColorValue
     private const double ToeK2 = 0.03;
     private const double ToeK3 = (1 + ToeK1) / (1 + ToeK2);
 
+    /// <summary>
+    /// Godot's own colour names, from core/math/color_names.inc, with the underscores taken
+    /// out of the keys. Read rather than typed, so the values cannot drift from the engine's.
+    /// </summary>
+    private static readonly Dictionary<string, uint> Names = new(StringComparer.Ordinal)
+    {
+        ["ALICEBLUE"] = 0xF0F8FFFF, ["ANTIQUEWHITE"] = 0xFAEBD7FF, ["AQUA"] = 0x00FFFFFF,
+        ["AQUAMARINE"] = 0x7FFFD4FF, ["AZURE"] = 0xF0FFFFFF, ["BEIGE"] = 0xF5F5DCFF,
+        ["BISQUE"] = 0xFFE4C4FF, ["BLACK"] = 0x000000FF, ["BLANCHEDALMOND"] = 0xFFEBCDFF,
+        ["BLUE"] = 0x0000FFFF, ["BLUEVIOLET"] = 0x8A2BE2FF, ["BROWN"] = 0xA52A2AFF,
+        ["BURLYWOOD"] = 0xDEB887FF, ["CADETBLUE"] = 0x5F9EA0FF, ["CHARTREUSE"] = 0x7FFF00FF,
+        ["CHOCOLATE"] = 0xD2691EFF, ["CORAL"] = 0xFF7F50FF, ["CORNFLOWERBLUE"] = 0x6495EDFF,
+        ["CORNSILK"] = 0xFFF8DCFF, ["CRIMSON"] = 0xDC143CFF, ["CYAN"] = 0x00FFFFFF,
+        ["DARKBLUE"] = 0x00008BFF, ["DARKCYAN"] = 0x008B8BFF, ["DARKGOLDENROD"] = 0xB8860BFF,
+        ["DARKGRAY"] = 0xA9A9A9FF, ["DARKGREEN"] = 0x006400FF, ["DARKKHAKI"] = 0xBDB76BFF,
+        ["DARKMAGENTA"] = 0x8B008BFF, ["DARKOLIVEGREEN"] = 0x556B2FFF, ["DARKORANGE"] = 0xFF8C00FF,
+        ["DARKORCHID"] = 0x9932CCFF, ["DARKRED"] = 0x8B0000FF, ["DARKSALMON"] = 0xE9967AFF,
+        ["DARKSEAGREEN"] = 0x8FBC8FFF, ["DARKSLATEBLUE"] = 0x483D8BFF, ["DARKSLATEGRAY"] = 0x2F4F4FFF,
+        ["DARKTURQUOISE"] = 0x00CED1FF, ["DARKVIOLET"] = 0x9400D3FF, ["DEEPPINK"] = 0xFF1493FF,
+        ["DEEPSKYBLUE"] = 0x00BFFFFF, ["DIMGRAY"] = 0x696969FF, ["DODGERBLUE"] = 0x1E90FFFF,
+        ["FIREBRICK"] = 0xB22222FF, ["FLORALWHITE"] = 0xFFFAF0FF, ["FORESTGREEN"] = 0x228B22FF,
+        ["FUCHSIA"] = 0xFF00FFFF, ["GAINSBORO"] = 0xDCDCDCFF, ["GHOSTWHITE"] = 0xF8F8FFFF,
+        ["GOLD"] = 0xFFD700FF, ["GOLDENROD"] = 0xDAA520FF, ["GRAY"] = 0xBEBEBEFF,
+        ["GREEN"] = 0x00FF00FF, ["GREENYELLOW"] = 0xADFF2FFF, ["HONEYDEW"] = 0xF0FFF0FF,
+        ["HOTPINK"] = 0xFF69B4FF, ["INDIANRED"] = 0xCD5C5CFF, ["INDIGO"] = 0x4B0082FF,
+        ["IVORY"] = 0xFFFFF0FF, ["KHAKI"] = 0xF0E68CFF, ["LAVENDER"] = 0xE6E6FAFF,
+        ["LAVENDERBLUSH"] = 0xFFF0F5FF, ["LAWNGREEN"] = 0x7CFC00FF, ["LEMONCHIFFON"] = 0xFFFACDFF,
+        ["LIGHTBLUE"] = 0xADD8E6FF, ["LIGHTCORAL"] = 0xF08080FF, ["LIGHTCYAN"] = 0xE0FFFFFF,
+        ["LIGHTGOLDENROD"] = 0xFAFAD2FF, ["LIGHTGRAY"] = 0xD3D3D3FF, ["LIGHTGREEN"] = 0x90EE90FF,
+        ["LIGHTPINK"] = 0xFFB6C1FF, ["LIGHTSALMON"] = 0xFFA07AFF, ["LIGHTSEAGREEN"] = 0x20B2AAFF,
+        ["LIGHTSKYBLUE"] = 0x87CEFAFF, ["LIGHTSLATEGRAY"] = 0x778899FF, ["LIGHTSTEELBLUE"] = 0xB0C4DEFF,
+        ["LIGHTYELLOW"] = 0xFFFFE0FF, ["LIME"] = 0x00FF00FF, ["LIMEGREEN"] = 0x32CD32FF,
+        ["LINEN"] = 0xFAF0E6FF, ["MAGENTA"] = 0xFF00FFFF, ["MAROON"] = 0xB03060FF,
+        ["MEDIUMAQUAMARINE"] = 0x66CDAAFF, ["MEDIUMBLUE"] = 0x0000CDFF, ["MEDIUMORCHID"] = 0xBA55D3FF,
+        ["MEDIUMPURPLE"] = 0x9370DBFF, ["MEDIUMSEAGREEN"] = 0x3CB371FF, ["MEDIUMSLATEBLUE"] = 0x7B68EEFF,
+        ["MEDIUMSPRINGGREEN"] = 0x00FA9AFF, ["MEDIUMTURQUOISE"] = 0x48D1CCFF, ["MEDIUMVIOLETRED"] = 0xC71585FF,
+        ["MIDNIGHTBLUE"] = 0x191970FF, ["MINTCREAM"] = 0xF5FFFAFF, ["MISTYROSE"] = 0xFFE4E1FF,
+        ["MOCCASIN"] = 0xFFE4B5FF, ["NAVAJOWHITE"] = 0xFFDEADFF, ["NAVYBLUE"] = 0x000080FF,
+        ["OLDLACE"] = 0xFDF5E6FF, ["OLIVE"] = 0x808000FF, ["OLIVEDRAB"] = 0x6B8E23FF,
+        ["ORANGE"] = 0xFFA500FF, ["ORANGERED"] = 0xFF4500FF, ["ORCHID"] = 0xDA70D6FF,
+        ["PALEGOLDENROD"] = 0xEEE8AAFF, ["PALEGREEN"] = 0x98FB98FF, ["PALETURQUOISE"] = 0xAFEEEEFF,
+        ["PALEVIOLETRED"] = 0xDB7093FF, ["PAPAYAWHIP"] = 0xFFEFD5FF, ["PEACHPUFF"] = 0xFFDAB9FF,
+        ["PERU"] = 0xCD853FFF, ["PINK"] = 0xFFC0CBFF, ["PLUM"] = 0xDDA0DDFF,
+        ["POWDERBLUE"] = 0xB0E0E6FF, ["PURPLE"] = 0xA020F0FF, ["REBECCAPURPLE"] = 0x663399FF,
+        ["RED"] = 0xFF0000FF, ["ROSYBROWN"] = 0xBC8F8FFF, ["ROYALBLUE"] = 0x4169E1FF,
+        ["SADDLEBROWN"] = 0x8B4513FF, ["SALMON"] = 0xFA8072FF, ["SANDYBROWN"] = 0xF4A460FF,
+        ["SEAGREEN"] = 0x2E8B57FF, ["SEASHELL"] = 0xFFF5EEFF, ["SIENNA"] = 0xA0522DFF,
+        ["SILVER"] = 0xC0C0C0FF, ["SKYBLUE"] = 0x87CEEBFF, ["SLATEBLUE"] = 0x6A5ACDFF,
+        ["SLATEGRAY"] = 0x708090FF, ["SNOW"] = 0xFFFAFAFF, ["SPRINGGREEN"] = 0x00FF7FFF,
+        ["STEELBLUE"] = 0x4682B4FF, ["TAN"] = 0xD2B48CFF, ["TEAL"] = 0x008080FF,
+        ["THISTLE"] = 0xD8BFD8FF, ["TOMATO"] = 0xFF6347FF, ["TRANSPARENT"] = 0xFFFFFF00,
+        ["TURQUOISE"] = 0x40E0D0FF, ["VIOLET"] = 0xEE82EEFF, ["WEBGRAY"] = 0x808080FF,
+        ["WEBGREEN"] = 0x008000FF, ["WEBMAROON"] = 0x800000FF, ["WEBPURPLE"] = 0x800080FF,
+        ["WHEAT"] = 0xF5DEB3FF, ["WHITE"] = 0xFFFFFFFF, ["WHITESMOKE"] = 0xF5F5F5FF,
+        ["YELLOW"] = 0xFFFF00FF, ["YELLOWGREEN"] = 0x9ACD32FF,
+    };
+
     public ColorValue(float r, float g, float b, float a)
     {
         R = r;
@@ -43,6 +100,12 @@ public readonly record struct ColorValue
 
     /// <summary>True while every channel is inside the range a screen can show.</summary>
     public bool IsInRange => R is >= 0 and <= 1 && G is >= 0 and <= 1 && B is >= 0 and <= 1;
+
+    /// <summary>Brighter than a screen can show, which is what a mark on the sample says.</summary>
+    public bool IsOverbright => R > 1 || G > 1 || B > 1;
+
+    /// <summary>False when the colour has no hex, which is any channel outside 0 to 1.</summary>
+    public bool HasHex => !IsOverbright && R >= 0 && G >= 0 && B >= 0;
 
     public static ColorValue FromColor(Color color) =>
         new(color.R / 255.0, color.G / 255.0, color.B / 255.0, color.A / 255.0);
@@ -118,20 +181,40 @@ public readonly record struct ColorValue
         return new ColorValue(ToGamma(lr), ToGamma(lg), ToGamma(lb), alpha);
     }
 
-    /// <summary>Eight digits with alpha, the form the picker reads back.</summary>
+    /// <summary>
+    /// A hex code, a name such as red, or a Color expression. The forms and the names are
+    /// Godot's, so anything its own colour field accepts is accepted here.
+    /// </summary>
     public static bool TryParse(string? text, out ColorValue color)
     {
         color = default;
 
-        var digits = text?.Trim().TrimStart('#');
+        var trimmed = text?.Trim() ?? string.Empty;
 
-        if (string.IsNullOrEmpty(digits))
+        if (trimmed.Length == 0)
         {
             return false;
         }
 
-        // Three and four digit forms double each digit, which is the CSS rule and the one
-        // every colour field on every platform accepts.
+        if (trimmed.StartsWith("Color", StringComparison.OrdinalIgnoreCase))
+        {
+            return TryParseExpression(trimmed, out color);
+        }
+
+        var digits = trimmed.TrimStart('#');
+
+        // The odd lengths are the ones Godot fixes up, so a code pasted from software that
+        // writes them lands on the colour a person meant.
+        digits = digits.Length switch
+        {
+            1 => new string(digits[0], 6),
+            2 => string.Concat(Enumerable.Repeat(digits, 3)),
+            3 or 4 => string.Concat(digits.Select(digit => new string(digit, 2))),
+            5 => digits[..4],
+            7 => digits[..6],
+            _ => digits,
+        };
+
         if (digits.Length is 3 or 4)
         {
             digits = string.Concat(digits.Select(digit => new string(digit, 2)));
@@ -140,7 +223,7 @@ public readonly record struct ColorValue
         if (digits.Length is not (6 or 8)
             || !uint.TryParse(digits, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var packed))
         {
-            return false;
+            return TryParseName(trimmed, out color);
         }
 
         var alpha = digits.Length == 8 ? (packed & 0xFF) / 255.0 : 1.0;
@@ -158,6 +241,30 @@ public readonly record struct ColorValue
 
         return true;
     }
+
+    /// <summary>
+    /// The same colour as light, which is the space an exposure multiplies in. The transfer
+    /// is sRGB's own and it is not clamped, so a channel over 1 goes through it as well.
+    /// </summary>
+    public ColorValue ToLinear() => new(ToLinear(R), ToLinear(G), ToLinear(B), A);
+
+    /// <summary>The way back from light to the numbers a colour is written with.</summary>
+    public ColorValue ToSrgb() => new(ToGamma(R), ToGamma(G), ToGamma(B), A);
+
+    /// <summary>
+    /// What Godot writes in a script. Alpha is left out while it is 1, which is what Godot
+    /// does, and three decimals is its own precision.
+    /// </summary>
+    public string ToExpression() =>
+        A < 1
+            ? string.Create(CultureInfo.InvariantCulture, $"Color({R:0.###}, {G:0.###}, {B:0.###}, {A:0.###})")
+            : string.Create(CultureInfo.InvariantCulture, $"Color({R:0.###}, {G:0.###}, {B:0.###})");
+
+    /// <summary>
+    /// The hex while there is one and the expression otherwise, which is the rule Godot's
+    /// own field follows. A colour over 1 has no hex.
+    /// </summary>
+    public string ToText() => HasHex ? ToHex() : ToExpression();
 
     /// <summary>What a brush is painted with. A channel over range is clamped on the way out.</summary>
     public Color ToColor() =>
@@ -231,6 +338,67 @@ public readonly record struct ColorValue
         }
 
         return (hue, saturation, Toe(light));
+    }
+
+    /// <summary>Color(r, g, b) or Color(r, g, b, a), which is what the picker writes out.</summary>
+    private static bool TryParseExpression(string text, out ColorValue color)
+    {
+        color = default;
+
+        var open = text.IndexOf('(');
+        var close = text.LastIndexOf(')');
+
+        if (open < 0 || close < open)
+        {
+            return false;
+        }
+
+        var parts = text[(open + 1)..close].Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length is not (3 or 4))
+        {
+            return false;
+        }
+
+        var channels = new double[4];
+
+        channels[3] = 1;
+
+        for (var part = 0; part < parts.Length; part++)
+        {
+            if (!double.TryParse(parts[part], NumberStyles.Float, CultureInfo.InvariantCulture, out channels[part]))
+            {
+                return false;
+            }
+        }
+
+        color = new ColorValue(channels[0], channels[1], channels[2], channels[3]);
+
+        return true;
+    }
+
+    /// <summary>
+    /// One of Godot's 146 names. Spaces, dashes, underscores, apostrophes and dots are
+    /// dropped and case is ignored, which is Godot's own normalising.
+    /// </summary>
+    private static bool TryParseName(string text, out ColorValue color)
+    {
+        var key = new string([.. text.Where(letter => !" -_'.".Contains(letter))]).ToUpperInvariant();
+
+        if (!Names.TryGetValue(key, out var packed))
+        {
+            color = default;
+
+            return false;
+        }
+
+        color = new ColorValue(
+            ((packed >> 24) & 0xFF) / 255.0,
+            ((packed >> 16) & 0xFF) / 255.0,
+            ((packed >> 8) & 0xFF) / 255.0,
+            (packed & 0xFF) / 255.0);
+
+        return true;
     }
 
     private static byte Byte(double channel) =>

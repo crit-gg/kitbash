@@ -306,8 +306,16 @@ card with a Cancel and Apply footer, `IsInPanel` drops the frame and applies liv
 `ui:ColorField` is the well that opens it, which is what stage 8 was waiting for. Its value
 is `ColorValue`, four floats, so a channel above 1 survives every mode, and the EV row is
 what takes it there. Avalonia's own ColorPicker package was read and refused, since its
-`Color` is four bytes. **There is no eyedropper**, which needs screen capture and is its own
-platform work.
+`Color` is four bytes.
+
+**It is built against Godot's own picker and the numbers agree with it.** `scene/gui/color_picker.cpp`
+in the 4.7.1 source is the reference: the base colour and stops rather than one colour, the
+exposure multiplying in linear space, the third mode being Linear rather than the design's
+RAW, allowing a channel to be typed past its ramp, the expression the text field falls back
+to, the revert and overbright marks on the chip, and Godot's own hex forms and 146 colour
+names. **Four of its features are not built**: the eyedropper, three of its seven shapes,
+palettes as files, and dragging a colour between swatches. The stage file lists what each
+would take.
 
 **Docking is built and it is opt in.** `Kitbash.Ui` takes Dock for Avalonia and
 `Themes/KitbashDocking.axaml` is a second line a consumer includes after `KitbashTheme`, so

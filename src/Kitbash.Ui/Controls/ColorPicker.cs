@@ -11,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 
 namespace Kitbash.Ui.Controls;
 
@@ -85,6 +86,20 @@ public class ColorPicker : TemplatedControl
         AvaloniaProperty.Register<ColorPicker, IList<ColorValue>?>(nameof(Recent));
 
     /// <summary>
+    /// Whether alpha can be edited. Turning it off drops the alpha lane and the alpha row,
+    /// and leaves whatever alpha the colour arrived with.
+    /// </summary>
+    public static readonly StyledProperty<bool> EditsAlphaProperty =
+        AvaloniaProperty.Register<ColorPicker, bool>(nameof(EditsAlpha), true);
+
+    /// <summary>
+    /// Whether the exposure can be edited. Turning it off puts the stops back into the
+    /// colour and drops the row, so a host that has no use for HDR sees none of it.
+    /// </summary>
+    public static readonly StyledProperty<bool> EditsExposureProperty =
+        AvaloniaProperty.Register<ColorPicker, bool>(nameof(EditsExposure), true);
+
+    /// <summary>
     /// True when the picker is part of a panel rather than floating over one. It drops the
     /// frame, the shadow and the two buttons, and the footer reads the literal back. It is a
     /// property rather than a class because the frame it has to reach is inside the template.
@@ -103,6 +118,10 @@ public class ColorPicker : TemplatedControl
     /// <summary>The add tile was clicked, carrying the colour that was added.</summary>
     public static readonly RoutedEvent<ColorEventArgs> SwatchAddedEvent =
         RoutedEvent.Register<ColorPicker, ColorEventArgs>(nameof(SwatchAdded), RoutingStrategies.Bubble);
+
+    /// <summary>A saved colour was right clicked, carrying the colour that was taken off.</summary>
+    public static readonly RoutedEvent<ColorEventArgs> SwatchRemovedEvent =
+        RoutedEvent.Register<ColorPicker, ColorEventArgs>(nameof(SwatchRemoved), RoutingStrategies.Bubble);
 
     private const string FramePart = "PART_Frame";
     private const string FieldPart = "PART_Field";
@@ -125,16 +144,35 @@ public class ColorPicker : TemplatedControl
     private const string ChannelsPart = "PART_Channels";
     private const string RecentPart = "PART_Recent";
     private const string ActionsPart = "PART_Actions";
+    private const string SwatchesPart = "PART_Swatches";
+    private const string OverbrightPart = "PART_Overbright";
+    private const string RevertPart = "PART_Revert";
     private const string CopyPart = "PART_Copy";
     private const string AddSwatchPart = "PART_AddSwatch";
     private const string ApplyPart = "PART_Apply";
     private const string CancelPart = "PART_Cancel";
 
-    /// <summary>The stops the exposure row reaches, either side of nothing.</summary>
+    /// <summary>The stops the exposure ramp reaches, either side of nothing. Godot's own.</summary>
     private const double ExposureReach = 10;
 
-    /// <summary>Two to the power of the reach, which is as far as a raw channel goes.</summary>
-    private const double RawCeiling = 1024;
+    /// <summary>How many colours the recent row holds, which is Godot's own count.</summary>
+    private const int RecentKept = 9;
+
+    /// <summary>How far the exposure can be typed past the end of its ramp.</summary>
+    private const double ExposureCeiling = 32;
+
+    /// <summary>
+    /// Hue stops one short of the turn, since 360 and 0 are the same colour and a spinbox
+    /// that reaches both has a value it can never step off. Godot's max is 359 as well.
+    /// </summary>
+    private const double HueReach = 359;
+
+    /// <summary>
+    /// How far a channel can be typed past the end of its ramp. The excess is moved into
+    /// the exposure as soon as it is typed, so these only bound the field itself.
+    /// </summary>
+    private const double ByteCeiling = 255 * 64;
+    private const double LinearCeiling = 64;
 
     private Popover? _frame;
     private Control? _field;
@@ -156,6 +194,15 @@ public class ColorPicker : TemplatedControl
     private TextBlock? _literalFoot;
     private Control? _recent;
     private Control? _actions;
+    private Control? _swatches;
+    private Control? _overbright;
+    private Control? _revert;
+
+    /// <summary>
+    /// The colour with the exposure taken out of it, which is what every control here draws
+    /// and edits. Its three channels are inside 0 to 1, and the exposure carries the rest.
+    /// </summary>
+    private ColorValue _base = new(1, 1, 1, 1);
 
     /// <summary>
     /// Where the picker is standing in hue, saturation and value. A grey has no hue and
@@ -166,8 +213,16 @@ public class ColorPicker : TemplatedControl
     private double _saturation;
     private double _value = 1;
 
+    /// <summary>The same for the perceptual space, which has its own hue and saturation.</summary>
+    private double _okHue;
+    private double _okSaturation;
+    private double _okLightness = 1;
+
     /// <summary>True while the picker is writing to its own parts, so nothing echoes back.</summary>
     private bool _quiet;
+
+    /// <summary>What the colour was when the pointer went down, so a release can tell.</summary>
+    private ColorValue _pressed;
 
     public ColorPicker()
     {
@@ -194,6 +249,13 @@ public class ColorPicker : TemplatedControl
     {
         add => AddHandler(SwatchAddedEvent, value);
         remove => RemoveHandler(SwatchAddedEvent, value);
+    }
+
+    /// <inheritdoc cref="SwatchRemovedEvent"/>
+    public event EventHandler<ColorEventArgs>? SwatchRemoved
+    {
+        add => AddHandler(SwatchRemovedEvent, value);
+        remove => RemoveHandler(SwatchRemovedEvent, value);
     }
 
     /// <inheritdoc cref="ColorProperty"/>
@@ -259,6 +321,20 @@ public class ColorPicker : TemplatedControl
         set => SetValue(IsInPanelProperty, value);
     }
 
+    /// <inheritdoc cref="EditsAlphaProperty"/>
+    public bool EditsAlpha
+    {
+        get => GetValue(EditsAlphaProperty);
+        set => SetValue(EditsAlphaProperty, value);
+    }
+
+    /// <inheritdoc cref="EditsExposureProperty"/>
+    public bool EditsExposure
+    {
+        get => GetValue(EditsExposureProperty);
+        set => SetValue(EditsExposureProperty, value);
+    }
+
     /// <summary>The rows under the shape. The picker owns them and rebuilds them per mode.</summary>
     public ObservableCollection<ColorChannel> Channels { get; }
 
@@ -288,6 +364,9 @@ public class ColorPicker : TemplatedControl
         _literalFoot = e.NameScope.Find<TextBlock>(LiteralFootPart);
         _recent = e.NameScope.Find<Control>(RecentPart);
         _actions = e.NameScope.Find<Control>(ActionsPart);
+        _swatches = e.NameScope.Find<Control>(SwatchesPart);
+        _overbright = e.NameScope.Find<Control>(OverbrightPart);
+        _revert = e.NameScope.Find<Control>(RevertPart);
 
         if (e.NameScope.Find<ItemsControl>(ChannelsPart) is { } rows)
         {
@@ -306,15 +385,14 @@ public class ColorPicker : TemplatedControl
 
         if (change.Property == ColorProperty)
         {
-            // A colour handed in from outside brings its own exposure with it, since a
-            // channel above 1 is already that many stops over.
-            if (!_quiet)
+            // An edit from inside has already done all of this. What is left is a colour
+            // handed in from outside, which is split into a base and the stops over it.
+            if (_quiet)
             {
-                var peak = Color.Peak;
-
-                SetCurrentValue(ExposureProperty, peak > 1 ? Math.Log2(peak) : 0);
+                return;
             }
 
+            Split();
             Read();
             Show();
         }
@@ -331,6 +409,24 @@ public class ColorPicker : TemplatedControl
         {
             Host();
         }
+        else if (change.Property == EditsAlphaProperty)
+        {
+            Build();
+            Show();
+        }
+        else if (change.Property == EditsExposureProperty)
+        {
+            // The stops go back into the colour rather than being dropped, so turning the
+            // row off never changes the value.
+            if (!EditsExposure)
+            {
+                _base = Color;
+                SetCurrentValue(ExposureProperty, 0d);
+            }
+
+            Build();
+            Show();
+        }
         else if (change.Property == SwatchesProperty || change.Property == RecentProperty)
         {
             Rewatch(change.OldValue as IList<ColorValue>, change.NewValue as IList<ColorValue>);
@@ -341,6 +437,33 @@ public class ColorPicker : TemplatedControl
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         base.OnPointerPressed(e);
+
+        _pressed = Color;
+
+        // A right click takes a saved colour off the list, which is Godot's own gesture.
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed
+            && _swatches is not null
+            && e.Source is Visual clicked
+            && clicked.GetVisualAncestors().Contains(_swatches)
+            && Ancestor(clicked) is { DataContext: ColorValue saved })
+        {
+            Forget(saved);
+            e.Handled = true;
+
+            return;
+        }
+
+        // A press on the old half of the chip puts that colour back, which is what the
+        // revert mark on it says.
+        if (_old is not null
+            && e.Source is Visual source
+            && (ReferenceEquals(source, _old) || source.GetVisualAncestors().Contains(_old)))
+        {
+            SetCurrentValue(ColorProperty, Previous);
+            e.Handled = true;
+
+            return;
+        }
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
@@ -384,6 +507,27 @@ public class ColorPicker : TemplatedControl
         {
             e.Pointer.Capture(null);
         }
+
+        // A colour a person landed on is a recent one, which is the end of an interaction
+        // rather than every step of it. Godot does the same on the same events.
+        if (!_pressed.Equals(Color))
+        {
+            Remember();
+        }
+    }
+
+    /// <summary>The swatch a press landed in, which may be the tile or something inside it.</summary>
+    private static Button? Ancestor(Visual from)
+    {
+        for (Visual? step = from; step is not null; step = step.GetVisualParent())
+        {
+            if (step is Button button)
+            {
+                return button;
+            }
+        }
+
+        return null;
     }
 
     private static bool Inside(Control part, PointerEventArgs e)
@@ -408,43 +552,53 @@ public class ColorPicker : TemplatedControl
         switch (Mode)
         {
             case ColorValueMode.Hsv:
-                Add("H", 360, 1, "0", value => Turn(value, _saturation, _value));
+                Add("H", HueReach, 1, "0", value => Turn(value, _saturation, _value));
                 Add("S", 100, 1, "0", value => Turn(_hue, value / 100, _value));
                 Add("V", 100, 1, "0", value => Turn(_hue, _saturation, value / 100));
-                Add("A", 255, 1, "0", value => Write(Color.WithAlpha(value / 255)));
+                Alpha(255, 1, "0");
                 break;
 
-            case ColorValueMode.Raw:
-                Add("R", 1, 0.01, "0.000", value => Write(new ColorValue(value, Color.G, Color.B, Color.A)), RawCeiling);
-                Add("G", 1, 0.01, "0.000", value => Write(new ColorValue(Color.R, value, Color.B, Color.A)), RawCeiling);
-                Add("B", 1, 0.01, "0.000", value => Write(new ColorValue(Color.R, Color.G, value, Color.A)), RawCeiling);
-                Add("A", 1, 0.01, "0.000", value => Write(Color.WithAlpha(value)));
+            case ColorValueMode.Linear:
+                Add("R", 1, 0.001, "0.000", value => Light(0, value), LinearCeiling);
+                Add("G", 1, 0.001, "0.000", value => Light(1, value), LinearCeiling);
+                Add("B", 1, 0.001, "0.000", value => Light(2, value), LinearCeiling);
+                Alpha(1, 0.001, "0.000");
                 break;
 
             case ColorValueMode.Okhsl:
-                Add("H", 360, 1, "0", value => Shift(value, Okhsl().Saturation, Okhsl().Lightness));
-                Add("S", 100, 1, "0", value => Shift(Okhsl().Hue, value / 100, Okhsl().Lightness));
-                Add("L", 100, 1, "0", value => Shift(Okhsl().Hue, Okhsl().Saturation, value / 100));
-                Add("A", 100, 1, "0", value => Write(Color.WithAlpha(value / 100)));
+                Add("H", HueReach, 1, "0", value => Shift(value, _okSaturation, _okLightness));
+                Add("S", 100, 1, "0", value => Shift(_okHue, value / 100, _okLightness));
+                Add("L", 100, 1, "0", value => Shift(_okHue, _okSaturation, value / 100));
+                Alpha(255, 1, "0");
                 break;
 
             default:
-                Add("R", 255, 1, "0", value => Write(new ColorValue(value / 255, Color.G, Color.B, Color.A)));
-                Add("G", 255, 1, "0", value => Write(new ColorValue(Color.R, value / 255, Color.B, Color.A)));
-                Add("B", 255, 1, "0", value => Write(new ColorValue(Color.R, Color.G, value / 255, Color.A)));
-                Add("A", 255, 1, "0", value => Write(Color.WithAlpha(value / 255)));
+                Add("R", 255, 1, "0", value => Paint(0, value / 255), ByteCeiling);
+                Add("G", 255, 1, "0", value => Paint(1, value / 255), ByteCeiling);
+                Add("B", 255, 1, "0", value => Paint(2, value / 255), ByteCeiling);
+                Alpha(255, 1, "0");
                 break;
         }
 
-        // Every mode carries it, so a value above 1 can be reached from any of them.
-        var exposure = new ColorChannel("EV", -ExposureReach, ExposureReach, 0.1, "+0.00;-0.00;+0.00")
+        // Every mode carries it, so a value above 1 can be reached from any of them. Godot
+        // calls this the intensity and the design calls it EV, and it is the same number.
+        if (EditsExposure)
         {
-            RampMinimum = -ExposureReach,
-            RampMaximum = ExposureReach,
-            Edited = Expose,
-        };
+            Channels.Add(new ColorChannel("EV", -ExposureCeiling, ExposureCeiling, 1, "+0.00;-0.00;+0.00")
+            {
+                RampMinimum = -ExposureReach,
+                RampMaximum = ExposureReach,
+                Edited = Expose,
+            });
+        }
 
-        Channels.Add(exposure);
+        void Alpha(double ramp, double step, string format)
+        {
+            if (EditsAlpha)
+            {
+                Add("A", ramp, step, format, value => Write(_base.WithAlpha(value / ramp)));
+            }
+        }
 
         void Add(string label, double ramp, double step, string format, Action<double> edit, double? ceiling = null)
         {
@@ -456,7 +610,25 @@ public class ColorPicker : TemplatedControl
         }
     }
 
-    private (double Hue, double Saturation, double Lightness) Okhsl() => Color.ToOkhsl();
+    /// <summary>One channel of the base colour, as it is written.</summary>
+    private void Paint(int channel, double value) =>
+        Write(new ColorValue(
+            channel == 0 ? value : _base.R,
+            channel == 1 ? value : _base.G,
+            channel == 2 ? value : _base.B,
+            _base.A));
+
+    /// <summary>One channel of the base colour, as light.</summary>
+    private void Light(int channel, double value)
+    {
+        var linear = _base.ToLinear();
+
+        Write(new ColorValue(
+            channel == 0 ? value : linear.R,
+            channel == 1 ? value : linear.G,
+            channel == 2 ? value : linear.B,
+            linear.A).ToSrgb());
+    }
 
     private void Turn(double hue, double saturation, double value)
     {
@@ -464,28 +636,55 @@ public class ColorPicker : TemplatedControl
         _saturation = Clamp01(saturation);
         _value = Clamp01(value);
 
-        Write(ColorValue.FromHsv(_hue, _saturation, _value, Color.A));
+        Write(ColorValue.FromHsv(_hue, _saturation, _value, _base.A));
     }
 
-    private void Shift(double hue, double saturation, double lightness) =>
-        Write(ColorValue.FromOkhsl(hue, saturation, lightness, Color.A));
+    private void Shift(double hue, double saturation, double lightness)
+    {
+        _okHue = hue;
+        _okSaturation = Clamp01(saturation);
+        _okLightness = Clamp01(lightness);
+
+        Write(ColorValue.FromOkhsl(_okHue, _okSaturation, _okLightness, _base.A));
+    }
 
     private void Expose(double stops)
     {
-        var factor = Math.Pow(2, stops - Exposure);
-
-        SetCurrentValue(ExposureProperty, stops);
-        Write(Color.Scaled(factor));
+        SetCurrentValue(ExposureProperty, Math.Clamp(stops, -ExposureCeiling, ExposureCeiling));
+        Compose();
+        Show();
     }
 
-    /// <summary>An edit from inside, which keeps the exposure the person set.</summary>
+    /// <summary>
+    /// An edit to the base colour. A channel over 1 is not held there: the excess moves into
+    /// the exposure, which is what keeps every other control able to draw the colour.
+    /// </summary>
     private void Write(ColorValue color)
+    {
+        if (color.IsOverbright)
+        {
+            var linear = color.ToLinear();
+            var over = Math.Max(1, Math.Max(linear.R, Math.Max(linear.G, linear.B)));
+
+            color = new ColorValue(linear.R / over, linear.G / over, linear.B / over, linear.A).ToSrgb();
+            SetCurrentValue(ExposureProperty, Math.Clamp(Exposure + Math.Log2(over), -ExposureCeiling, ExposureCeiling));
+        }
+
+        _base = color;
+
+        Compose();
+        Read();
+        Show();
+    }
+
+    /// <summary>Puts the exposure back on the base colour, which is the value a host reads.</summary>
+    private void Compose()
     {
         _quiet = true;
 
         try
         {
-            SetCurrentValue(ColorProperty, color);
+            SetCurrentValue(ColorProperty, Lit(_base, Exposure));
         }
         finally
         {
@@ -493,11 +692,44 @@ public class ColorPicker : TemplatedControl
         }
     }
 
-    /// <summary>Takes the standing hue, saturation and value from the colour.</summary>
+    /// <summary>
+    /// Takes the base colour and the stops out of a colour handed in. The multiplier is
+    /// never below 1, so a colour a screen can show always reads as no stops at all.
+    /// </summary>
+    private void Split()
+    {
+        var linear = Color.ToLinear();
+        var over = Math.Max(1, Math.Max(linear.R, Math.Max(linear.G, linear.B)));
+
+        _base = new ColorValue(linear.R / over, linear.G / over, linear.B / over, linear.A).ToSrgb();
+
+        SetCurrentValue(ExposureProperty, Math.Log2(over));
+    }
+
+    /// <summary>
+    /// A colour under so many stops of exposure. The multiply is in light rather than in the
+    /// numbers, which is what makes one stop twice as bright.
+    /// </summary>
+    private static ColorValue Lit(ColorValue color, double stops)
+    {
+        if (stops == 0)
+        {
+            return color;
+        }
+
+        var linear = color.ToLinear();
+        var factor = Math.Pow(2, stops);
+
+        return new ColorValue(linear.R * factor, linear.G * factor, linear.B * factor, linear.A).ToSrgb();
+    }
+
+    /// <summary>Takes the standing hue, saturation and value from the base colour.</summary>
     private void Read()
     {
-        var (hue, saturation, value) = Color.ToHsv();
+        var (hue, saturation, value) = _base.ToHsv();
 
+        // A grey has no hue and black has no saturation, so neither is taken from a colour
+        // that cannot carry it. Godot caches the same two, for the same reason.
         if (saturation > 0)
         {
             _hue = hue;
@@ -509,6 +741,20 @@ public class ColorPicker : TemplatedControl
         }
 
         _value = value;
+
+        var (okHue, okSaturation, okLightness) = _base.ToOkhsl();
+
+        if (okSaturation > 0)
+        {
+            _okHue = okHue;
+        }
+
+        if (okLightness is > 0 and < 1)
+        {
+            _okSaturation = okSaturation;
+        }
+
+        _okLightness = okLightness;
     }
 
     private void Watch()
@@ -688,18 +934,56 @@ public class ColorPicker : TemplatedControl
     {
         if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
         {
-            await clipboard.SetValueAsync(DataFormat.Text, Color.ToHex());
+            await clipboard.SetValueAsync(DataFormat.Text, Color.ToText());
         }
     }
 
+    /// <summary>
+    /// Saves today's colour. One that is already saved moves to the end rather than landing
+    /// twice, which is what Godot's own preset list does.
+    /// </summary>
     private void Keep()
     {
-        if (Swatches is { IsReadOnly: false } swatches && !swatches.Contains(Color))
+        if (Swatches is { IsReadOnly: false } swatches)
         {
+            swatches.Remove(Color);
             swatches.Add(Color);
         }
 
         RaiseEvent(new ColorEventArgs(SwatchAddedEvent, Color));
+        Show();
+    }
+
+    /// <summary>
+    /// Puts the colour at the front of the recent row. The row holds nine, which is Godot's
+    /// own count, and the oldest falls off the end.
+    /// </summary>
+    private void Remember()
+    {
+        if (Recent is not { IsReadOnly: false } recent)
+        {
+            return;
+        }
+
+        recent.Remove(Color);
+        recent.Insert(0, Color);
+
+        while (recent.Count > RecentKept)
+        {
+            recent.RemoveAt(recent.Count - 1);
+        }
+
+        Show();
+    }
+
+    /// <summary>Takes a saved colour off the list, which is what a right click does.</summary>
+    private void Forget(ColorValue color)
+    {
+        if (Swatches is { IsReadOnly: false } swatches && swatches.Remove(color))
+        {
+            RaiseEvent(new ColorEventArgs(SwatchRemovedEvent, color));
+            Show();
+        }
     }
 
     private void Pick(Control field, PointerEventArgs e)
@@ -736,7 +1020,6 @@ public class ColorPicker : TemplatedControl
 
         try
         {
-            var opaque = new ColorValue(Color.R, Color.G, Color.B, 1).ToColor();
             var hue = ColorValue.FromHsv(_hue, 1, 1, 1).ToColor();
 
             if (_fieldHue is not null)
@@ -774,7 +1057,17 @@ public class ColorPicker : TemplatedControl
             if (_alpha is not null)
             {
                 _alpha.Background = Fade();
-                _alpha.Value = Color.A;
+                _alpha.Value = _base.A;
+            }
+
+            if (_overbright is not null)
+            {
+                _overbright.IsVisible = Color.IsOverbright;
+            }
+
+            if (_revert is not null)
+            {
+                _revert.IsVisible = !Previous.Equals(Color);
             }
 
             if (_recent is not null)
@@ -804,24 +1097,25 @@ public class ColorPicker : TemplatedControl
         }
     }
 
+    /// <summary>
+    /// The hex while the colour has one and the expression otherwise, which is what Godot's
+    /// own field does. The value is the whole colour, exposure and all.
+    /// </summary>
     private void ShowHex()
     {
         if (_hex is not null && !_hex.IsFocused)
         {
-            _hex.Text = Color.ToHex();
+            _hex.Text = Color.ToText();
         }
     }
 
     /// <summary>The line a person copies into Godot, which is where this colour is going.</summary>
-    private string Literal() =>
-        string.Create(
-            CultureInfo.InvariantCulture,
-            $"Color({Color.R:0.###}, {Color.G:0.###}, {Color.B:0.###}, {Color.A:0.###})");
+    private string Literal() => Color.ToExpression();
 
     /// <summary>Puts today's numbers and ramps into the rows.</summary>
     private void Fill()
     {
-        var (okHue, okSaturation, okLightness) = Color.ToOkhsl();
+        var linear = _base.ToLinear();
 
         foreach (var channel in Channels)
         {
@@ -829,25 +1123,24 @@ public class ColorPicker : TemplatedControl
             {
                 ("EV", _) => (Exposure, Token("SurfaceWell", "InkTitle")),
 
-                ("R", ColorValueMode.Raw) => (Color.R, Along(0)),
-                ("G", ColorValueMode.Raw) => (Color.G, Along(1)),
-                ("B", ColorValueMode.Raw) => (Color.B, Along(2)),
-                ("A", ColorValueMode.Raw) => (Color.A, Fade()),
+                ("R", ColorValueMode.Linear) => (linear.R, Along(0)),
+                ("G", ColorValueMode.Linear) => (linear.G, Along(1)),
+                ("B", ColorValueMode.Linear) => (linear.B, Along(2)),
+                ("A", ColorValueMode.Linear) => (_base.A, Fade()),
 
-                ("R", _) => (Color.R * 255, Along(0)),
-                ("G", _) => (Color.G * 255, Along(1)),
-                ("B", _) => (Color.B * 255, Along(2)),
+                ("R", _) => (_base.R * 255, Along(0)),
+                ("G", _) => (_base.G * 255, Along(1)),
+                ("B", _) => (_base.B * 255, Along(2)),
 
-                ("H", ColorValueMode.Okhsl) => (okHue, Curve(step => ColorValue.FromOkhsl(step * 360, okSaturation, okLightness, 1))),
-                ("S", ColorValueMode.Okhsl) => (okSaturation * 100, Curve(step => ColorValue.FromOkhsl(okHue, step, okLightness, 1))),
-                ("L", ColorValueMode.Okhsl) => (okLightness * 100, Curve(step => ColorValue.FromOkhsl(okHue, okSaturation, step, 1))),
-                ("A", ColorValueMode.Okhsl) => (Color.A * 100, Fade()),
+                ("H", ColorValueMode.Okhsl) => (_okHue, Curve(step => ColorValue.FromOkhsl(step * 360, _okSaturation, _okLightness, 1))),
+                ("S", ColorValueMode.Okhsl) => (_okSaturation * 100, Curve(step => ColorValue.FromOkhsl(_okHue, step, _okLightness, 1))),
+                ("L", ColorValueMode.Okhsl) => (_okLightness * 100, Curve(step => ColorValue.FromOkhsl(_okHue, _okSaturation, step, 1))),
 
                 ("H", _) => (_hue, Rainbow(horizontal: true)),
                 ("S", _) => (_saturation * 100, Line(ColorValue.FromHsv(_hue, 0, _value, 1), ColorValue.FromHsv(_hue, 1, _value, 1))),
                 ("V", _) => (_value * 100, Line(ColorValue.FromHsv(_hue, _saturation, 0, 1), ColorValue.FromHsv(_hue, _saturation, 1, 1))),
 
-                _ => (Color.A * 255, Fade()),
+                _ => (_base.A * 255, Fade()),
             };
 
             channel.IsQuiet = true;
@@ -1017,15 +1310,31 @@ public class ColorPicker : TemplatedControl
     private IBrush? Resource(string key) =>
         this.TryFindResource(key, out var found) ? found as IBrush : null;
 
-    /// <summary>One colour channel swept from nothing to all of it, with the others held.</summary>
-    private LinearGradientBrush Along(int channel) =>
-        Line(
-            new ColorValue(channel == 0 ? 0 : Color.R, channel == 1 ? 0 : Color.G, channel == 2 ? 0 : Color.B, 1),
-            new ColorValue(channel == 0 ? 1 : Color.R, channel == 1 ? 1 : Color.G, channel == 2 ? 1 : Color.B, 1));
+    /// <summary>
+    /// One colour channel swept from nothing to all of it, with the others held. In the
+    /// linear mode the sweep is in light, which is where that mode's numbers are even.
+    /// </summary>
+    private LinearGradientBrush Along(int channel)
+    {
+        if (Mode == ColorValueMode.Linear)
+        {
+            var linear = _base.ToLinear();
+
+            return Curve(step => new ColorValue(
+                channel == 0 ? step : linear.R,
+                channel == 1 ? step : linear.G,
+                channel == 2 ? step : linear.B,
+                1).ToSrgb());
+        }
+
+        return Line(
+            new ColorValue(channel == 0 ? 0 : _base.R, channel == 1 ? 0 : _base.G, channel == 2 ? 0 : _base.B, 1),
+            new ColorValue(channel == 0 ? 1 : _base.R, channel == 1 ? 1 : _base.G, channel == 2 ? 1 : _base.B, 1));
+    }
 
     private LinearGradientBrush Fade()
     {
-        var opaque = new ColorValue(Color.R, Color.G, Color.B, 1).ToColor();
+        var opaque = new ColorValue(_base.R, _base.G, _base.B, 1).ToColor();
 
         return Sweep(
             Avalonia.Media.Color.FromArgb(0, opaque.R, opaque.G, opaque.B), opaque, horizontal: true);

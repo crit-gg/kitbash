@@ -368,10 +368,31 @@ there is alpha to spell out.
 <ui:ColorPicker IsInPanel="True" Color="{Binding Tint}" />
 ```
 
+**It is built against Godot's own picker**, `scene/gui/color_picker.cpp` and `color_mode.cpp`
+in the 4.7.1 source, and the numbers are meant to agree with it. Read those before changing
+any of the value handling here.
+
 **The value is `ColorValue`, four floats, and red, green and blue may go above 1.** It is not
 `Avalonia.Media.Color`, which is four bytes and cannot hold an HDR value at all. Alpha is 0 to 1 and never leaves it. The type carries hex, HSV and
 Ottosson's OKHSL, all measured as exact round trips here apart from hex, which quantises to
 8 bits by definition.
+
+**The picker holds a base colour and stops, not one colour.** `Color` is what a host reads and
+writes, and inside it is split into a base whose channels are all inside 0 to 1 and an
+`Exposure` in stops. Every control draws the base, so the field, the wheel, the ramps, the hex
+and all four modes always have a colour a screen can show, and the exposure row carries the
+rest. This is Godot's `color_normalized` and `intensity` under the design's own names.
+
+**The multiply is in light rather than in the numbers.** One stop is twice as bright, so the
+exposure is applied by taking the sRGB transfer off, multiplying by two to the power of the
+stops, and putting it back. Doubling 0.878 gives 1.19 and not 1.756, which is what Godot
+gives. Splitting a colour the other way divides by the largest linear channel and never by
+less than 1, so a colour a screen can show always reads as no stops at all.
+
+**A channel typed past the end of its ramp moves the excess into the exposure.** Typing 400
+into red leaves the colour at 1.569, the row reading 255 and the exposure at +1.49. Godot
+calls this allowing greater, and only RGB and Linear do it, since hue and the two saturations
+have nothing past their end.
 
 **Avalonia's own `ColorPicker` package was read and refused**, which is a departure from the
 theme what Avalonia ships rule and the reason is the value: `ColorSpectrum` and `ColorSlider`
@@ -386,16 +407,34 @@ departure: the design draws the same rainbow bar in both, which would leave valu
 nowhere to go.
 
 **Four value modes, and every one of them carries the EV row.** RGB and HSV read whole
-numbers, RAW reads the floats, and OKHSL is the perceptual space, so a hue drag there keeps
-its lightness where the same drag in HSV does not. Alpha reads in the unit of its mode,
-which is 0 to 255 in RGB and HSV, 0 to 1 in RAW and a percentage in OKHSL, as the design
-draws it.
+numbers, Linear reads the colour as light, and OKHSL is the perceptual space, so a hue drag
+there keeps its lightness where the same drag in HSV does not. Hue stops at 359, since 360 is
+the same colour. Alpha is 0 to 255 everywhere except Linear, where it is 0 to 1. All of that
+is Godot's.
 
-**EV is stops, and it multiplies.** Moving it scales the three channels by two to the power
-of the change, and a colour handed in from outside brings its own stops with it, so a value
-of 2.5 arrives reading +1.32 and one inside the range reads +0.00. It is the only control
-that takes a colour above 1 on purpose, and RAW is the only mode that shows the result
-without clamping.
+**Linear is not the design's RAW.** The design page says RAW floats, which is what Godot's
+third mode was called before 4.4 and what its numbers were. Godot renamed it Linear and made
+it read `srgb_to_linear`, so 0.878 in the numbers a colour is written with is 0.744 there.
+The mode follows Godot. The sRGB floats are still on the picker, in the literal at the foot,
+which is the line a person pastes into a script.
+
+**EV is Godot's intensity row under the design's name.** It reaches ten stops either way on
+the ramp and can be typed past that, and its arrows step whole stops.
+
+**The text field carries the hex while there is one and the expression otherwise.** A colour
+with a channel above 1 or below 0 has no hex, so the field reads `Color(1.569, 0.663, 0.29)`
+instead, and it takes that form back. This is Godot's own rule and its own formatting, three
+decimals with alpha left out while it is 1.
+
+**It also takes everything else Godot's field takes.** Hex of one, two, three, four, five,
+six, seven or eight digits with or without the hash, all fixed up the way Godot fixes them,
+and any of its 146 colour names, spaces and case ignored. The names are read out of
+`core/math/color_names.inc` rather than typed here, so they cannot drift from the engine's.
+
+**The old half of the chip puts the old colour back.** It carries an undo mark while the two
+differ and nothing while they agree, and the new half carries a bolt while the colour is
+brighter than a screen can show. Both are Godot's, which draws a revert icon and an overbright
+indicator in the same two places.
 
 **A channel row carries a number and a position separately.** The spinbox is the number, and
 its maximum reaches 1024 in RAW. The ramp is the position, 0 to 1, and it is a separate
@@ -411,14 +450,25 @@ rather than chosen from a palette. The two that do come from the palette, the ex
 and the checkerboard, are looked up by key, so their hex still lives in `Tokens.axaml` and
 the rule that nothing else writes a colour still holds.
 
-**Swatches and recents start empty and the picker never seeds them.** They are `IList` in,
-and the add tile appends to a list that can be written to and raises `SwatchAdded` either
-way, so an application can persist them. Filling them with the theme's own palette is the
-mock data trap this control is most likely to fall into.
+**Swatches and recents start empty and the picker never seeds them.** They are `IList` in, and
+the picker keeps them the way Godot keeps its presets: saving a colour that is already saved
+moves it to the end rather than landing twice, a right click takes one off, and the recent row
+holds nine, newest first. A colour joins the recents when an interaction ends rather than while
+it runs, which is the pointer coming up, so dragging across the field leaves one entry and not
+two hundred. `SwatchAdded` and `SwatchRemoved` carry the colour, so an application can persist
+them. Filling them with the theme's own palette is the mock data trap this control is most
+likely to fall into.
 
-**The eyedropper is not built.** It needs screen capture, which Avalonia has no API for and
-which goes through the desktop portal on Linux, so it is a platform service and its own
-piece of work. There is no button for it rather than a button that does nothing.
+**A host can drop the alpha row and the exposure row.** `EditsAlpha="False"` takes the alpha
+lane with it, and `EditsExposure="False"` puts the stops back into the colour before it goes,
+so the value never changes underneath. Both are Godot's `edit_alpha` and `edit_intensity`.
+
+**Four things Godot has and this does not.** The eyedropper, which needs screen capture and is
+platform work of its own. Three of its seven shapes, which are the HSV wheel with a square
+inside it and the two OK rectangles and the OKHSL circle, all of which Godot draws with
+shaders. Saving and loading a palette as a file. Dragging a colour from one swatch to another.
+None of them is refused, they are simply not built, and the stage file records what each would
+take.
 
 **The picker owns its own hue.** A grey has no hue and black has no saturation, so both are
 held on the control rather than read back from the colour every time. Without that the field

@@ -853,13 +853,13 @@
                                                         Header="THE MODES" Content="four of them" />
 
                                 <TextBlock Classes="note"
-                                           Text="RGB and HSV read whole numbers, RAW reads the floats themselves, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the EV row, which multiplies the colour by stops, so a value above 1 can be reached and read back from any of them." />
+                                           Text="RGB and HSV read whole numbers, LINEAR reads the colour as light, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the EV row, which multiplies in light, so one stop is twice as bright. Type 400 into red and the excess moves into the EV row, which is what Godot does." />
 
                                 <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                         Header="SWATCHES" Content="empty until they are not" />
 
                                 <TextBlock Classes="note"
-                                           Text="Nothing is seeded. The add tile keeps today's colour and the gallery holds the list, which is where an application would put its own." />
+                                           Text="Nothing is seeded. The add tile keeps today's colour, a right click takes one off, and the recent row fills itself as colours are picked. The gallery holds both lists, which is where an application would put its own." />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
