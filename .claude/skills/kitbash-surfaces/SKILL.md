@@ -478,15 +478,27 @@ pointer reaches it. A target that never lights is the refusal.
 
 #### Floating and pinned
 
-**A torn out dockable wears the same drawn frame every Kitbash window has.** The frame is
-keyed as `WindowFrame` in `Themes/Controls/WindowChrome.axaml` so `HostWindow`, which cannot
-derive from `ChromelessWindow`, can still take it, and `ui:WindowResize.Grips` wires the eight
-resize borders for any window that carries them. The selector names a pseudo class,
-`HostWindow:toolwindow`, because Dock sets the desktop frame under the same conditions from a
-style that carries one and would otherwise win.
+**A torn out dockable floats in `ui:KitbashHostWindow`**, which a tool's factory returns from
+its `HostWindowLocator`. It follows the same choice about who draws a frame that every other
+Kitbash window follows, so a person who asked the desktop for their frames gets one here too,
+and a tool passes the flag in from `IWindowSettings`.
 
-The tool chrome inside is the title bar: at `HeightTitleBar` while floating, with the title in
-the window title's own type, and the close floods red there and only there.
+**Four window properties are written as local values rather than left to a style**, because
+Dock hands the desktop the frame from a style carrying an activator and a plain style will not
+beat one. Everything else, the shadow gutter, the corner and the frame template, comes from the
+`chromeless` class the window sets on itself and the styles already in
+`Themes/Controls/WindowChrome.axaml`.
+
+**Where Kitbash draws the frame, the tool chrome is the title bar**: at `HeightTitleBar`, with
+the title in the window title's own type, no tab strip while the tool is alone, and a close
+that floods red. **Where the desktop draws it, none of that applies** and the strip stays an
+ordinary 28px dock strip whose tab is what names the tool, since the window already has a
+title bar of its own above it. Those four rules are scoped by `HostWindow.chromeless`.
+
+**Every word a dock's menus say is overridden.** Dock's strings carry an access key marker,
+which draws as a stray underscore because Kitbash menus do not use access keys, and several
+are title case where the house style is a sentence. All eighteen are replaced by key in
+`Docking.axaml`.
 
 **A pinned tool is a label turned on its side.** The strip sits on the root tone with a seam
 facing the content it collapsed out of, chosen from `DockPanel.Dock`, since Dock gives the

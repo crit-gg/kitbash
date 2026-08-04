@@ -141,9 +141,10 @@ them.
 one it might accept sitting at rest until the pointer reaches it, so a target that never
 lights is the refusal. The greyed square in the design has nothing to draw it for.
 
-**The floating tool window wears the drawn frame** by pointing at it as a keyed template
-rather than by deriving from `ChromelessWindow`, which `HostWindow` cannot do. The resize
-grips moved into `ui:WindowResize` so both use one implementation.
+**The floating tool window is `ui:KitbashHostWindow`**, which follows `window.nativeChrome`
+the way every other window does rather than always drawing its own frame. The resize grips
+moved into `ui:WindowResize` so it and `ChromelessWindow` use one implementation, and the
+frame's selectors became `:is(Window)` so a window that keys on its own type can wear it.
 
 **The layout is serialised with Newtonsoft, not System.Text.Json.** Dock's own System.Text.Json
 serializer cannot write a layout that has been through `InitLayout`, measured at 12.1.0.

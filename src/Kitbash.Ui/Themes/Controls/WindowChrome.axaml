@@ -268,9 +268,11 @@
         <Setter Property="Stroke" Value="{DynamicResource InkCaption}" />
     </Style>
 
-    <!-- The frame for windows that draw their own title bar. -->
+    <!-- The frame for windows that draw their own title bar. A bare type selector matches
+         the style key exactly, so these say :is(Window) rather than Window: Dock's floating
+         window keys on its own type and would otherwise miss the frame. -->
 
-    <Style Selector="Window.chromeless">
+    <Style Selector=":is(Window).chromeless">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="TransparencyLevelHint" Value="Transparent" />
         <Setter Property="WindowDecorations" Value="None" />
@@ -284,28 +286,28 @@
     <!-- The outer edge is a step lighter than any line inside the window, because the
          desktop sits behind it. Inactive drops it to the seam tone, which is the same
          tier drop the title bar takes. -->
-    <Style Selector="Window.chromeless.inactive /template/ Border#PART_ContentRoot">
+    <Style Selector=":is(Window).chromeless.inactive /template/ Border#PART_ContentRoot">
         <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
     </Style>
 
     <!-- Maximized fills the work area, so the rounding, the border, the grips, the
          shadow and the gutter it falls into all go. A shadow here would only darken the
          edge of the screen, and the gutter would leave a transparent strip. -->
-    <Style Selector="Window.chromeless[WindowState=Maximized]">
+    <Style Selector=":is(Window).chromeless[WindowState=Maximized]">
         <Setter Property="CornerRadius" Value="0" />
         <Setter Property="Padding" Value="0" />
     </Style>
 
-    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border#PART_ContentRoot">
+    <Style Selector=":is(Window).chromeless[WindowState=Maximized] /template/ Border#PART_ContentRoot">
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
-    <Style Selector="Window.chromeless[WindowState=Maximized] /template/ Border.resizeGrip">
+    <Style Selector=":is(Window).chromeless[WindowState=Maximized] /template/ Border.resizeGrip">
         <Setter Property="IsVisible" Value="False" />
         <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
 
-    <Style Selector="Window.chromeless[CanResize=False] /template/ Border.resizeGrip">
+    <Style Selector=":is(Window).chromeless[CanResize=False] /template/ Border.resizeGrip">
         <Setter Property="IsVisible" Value="False" />
         <Setter Property="IsHitTestVisible" Value="False" />
     </Style>

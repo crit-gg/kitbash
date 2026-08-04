@@ -913,6 +913,12 @@ another has to be a `DynamicResource`, which resolves through the tree at run ti
 Replacing a template with a part of a different type is a build error, so a part declared
 `Panel` cannot become a `Border` however little the control cares.
 
+**A bare type selector matches the style key exactly.** `Window.chromeless` reaches a `Window`
+and a subclass that forces its style key back to `Window`, and nothing else. `:is(Window)` is
+what matches every subclass. A subclass of a themed control also has to override
+`StyleKeyOverride`, or it looks for a control theme keyed on its own type, finds none and draws
+nothing at all.
+
 **A property condition goes after any pseudo class in a selector, and an attached property is
 written two different ways.** `^:vertical[(ui|ScrollLane.Kind)=Well]` parses and swapping the
 two halves does not. In a selector the namespace separator is a pipe, the way a type selector

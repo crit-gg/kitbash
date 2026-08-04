@@ -68,6 +68,46 @@
             <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="Transparent" />
             <SolidColorBrush x:Key="DockChromeGripBrush" Color="Transparent" />
 
+            <!-- What a dock's own menus say. Dock's strings carry an access key marker,
+                 which Kitbash menus do not use and which draws as a stray underscore, and
+                 several are title case where everything else here is a sentence. -->
+            <x:String x:Key="DocumentTabStripItemFloatString">Float</x:String>
+            <x:String x:Key="DocumentTabStripItemFloatAllString">Float all</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseString">Close</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseOtherTabsString">Close the others</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseAllTabsString">Close all</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseTabsLeftString">Close to the left</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseTabsRightString">Close to the right</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseTabsAboveString">Close above</x:String>
+            <x:String x:Key="DocumentTabStripItemCloseTabsBelowString">Close below</x:String>
+            <x:String x:Key="DocumentTabStripItemNewHorizontalDockString">Split across</x:String>
+            <x:String x:Key="DocumentTabStripItemNewVerticalDockString">Split down</x:String>
+            <x:String x:Key="DocumentTabStripItemTabLayoutString">Tabs</x:String>
+            <x:String x:Key="DocumentTabStripItemTabLayoutLeftString">Tabs on the left</x:String>
+            <x:String x:Key="DocumentTabStripItemTabLayoutTopString">Tabs on the top</x:String>
+            <x:String x:Key="DocumentTabStripItemTabLayoutRightString">Tabs on the right</x:String>
+            <x:String x:Key="DocumentTabStripItemLayoutModeString">Layout</x:String>
+            <x:String x:Key="DocumentTabStripItemLayoutModeTabbedString">Tabbed</x:String>
+            <x:String x:Key="DocumentTabStripItemLayoutModeMdiString">Free windows</x:String>
+
+            <x:String x:Key="ToolPinItemControlFloatString">Float</x:String>
+            <x:String x:Key="ToolPinItemControlShowString">Show</x:String>
+            <x:String x:Key="ToolPinItemControlDockAsDocumentString">Dock as a document</x:String>
+            <x:String x:Key="ToolPinItemControlCloseString">Close</x:String>
+
+            <x:String x:Key="ToolChromeControlFloatString">Float</x:String>
+            <x:String x:Key="ToolChromeControlDockString">Put back</x:String>
+            <x:String x:Key="ToolChromeControlAutoHideString">Collapse to the edge</x:String>
+            <x:String x:Key="ToolChromeControlDockAsDocumentString">Dock as a document</x:String>
+            <x:String x:Key="ToolChromeControlCloseString">Close</x:String>
+
+            <x:String x:Key="ToolTabStripItemFloatString">Float</x:String>
+            <x:String x:Key="ToolTabStripItemFloatAllString">Float all</x:String>
+            <x:String x:Key="ToolTabStripItemDockString">Put back</x:String>
+            <x:String x:Key="ToolTabStripItemAutoHideString">Collapse to the edge</x:String>
+            <x:String x:Key="ToolTabStripItemDockAsDocumentString">Dock as a document</x:String>
+            <x:String x:Key="ToolTabStripItemCloseString">Close</x:String>
+
             <!-- Density. -->
             <StaticResource x:Key="DockFontSizeNormal" ResourceKey="FontSizeBody" />
             <StaticResource x:Key="DockHeaderHeight" ResourceKey="HeightTab" />
@@ -414,9 +454,10 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
 
-    <!-- A floated tool keeps no tab strip while it is alone. The window's own title bar
-         names it instead. -->
-    <Style Selector="ToolChromeControl:floating ToolTabStrip:singleitem /template/ ItemsPresenter#PART_ItemsPresenter">
+    <!-- A floated tool keeps no tab strip while it is alone, because the title bar our
+         own frame draws names it. Under the desktop's frame there is no such title bar
+         inside the window, so the strip stays and the tab is what names it. -->
+    <Style Selector="HostWindow.chromeless ToolChromeControl:floating ToolTabStrip:singleitem /template/ ItemsPresenter#PART_ItemsPresenter">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
@@ -547,22 +588,12 @@
 
     <!-- Floating windows -->
 
-    <!-- A torn out dockable is a real window, so it wears the same drawn frame every
-         Kitbash window does. The selector names a pseudo class so it binds above Dock's
-         own, which sets the desktop frame under the same conditions. -->
-    <Style Selector="HostWindow:toolwindow, HostWindow:documentwindow">
-        <Setter Property="(ui:WindowResize.Grips)" Value="True" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="TransparencyLevelHint" Value="Transparent" />
-        <Setter Property="WindowDecorations" Value="None" />
-        <Setter Property="ExtendClientAreaToDecorationsHint" Value="False" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="{DynamicResource WindowShadowGutter}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
-        <Setter Property="Template" Value="{DynamicResource WindowFrame}" />
-    </Style>
+    <!-- A torn out dockable is a real window, so it wears the same frame every other
+         Kitbash window does and follows the same choice about who draws it. That is
+         ui:KitbashHostWindow, which a tool's factory returns from its HostWindowLocator,
+         and the chromeless class it carries is what picks the drawn frame up.
 
-    <!-- The frame's own fill is the root tone. A floated tool is a panel from its strip
+         The frame's own fill is the root tone. A floated tool is a panel from its strip
          down, so the surface under its content is the panel one. -->
     <Style Selector="HostWindow /template/ Border#PART_ContentRoot">
         <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
@@ -918,19 +949,20 @@
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
-    <!-- Floating. A tool alone in a window is a window, so its strip is the title bar
-         height and its title is the window's. -->
-    <Style Selector="ToolChromeControl:floating /template/ Grid#PART_Grip">
+    <!-- Floating, and only where Kitbash draws the frame. A tool alone in a window we
+         drew is the window, so its strip is the title bar height and its title is the
+         window's. -->
+    <Style Selector="HostWindow.chromeless ToolChromeControl:floating /template/ Grid#PART_Grip">
         <Setter Property="Height" Value="{DynamicResource HeightTitleBar}" />
     </Style>
 
     <!-- The close on a floating tool closes the window, so it floods red the way every
          window's does. The same button in a docked strip closes one tool and does not. -->
-    <Style Selector="ToolChromeControl:floating /template/ Button#PART_CloseButton:pointerover /template/ Border#PART_Root">
+    <Style Selector="HostWindow.chromeless ToolChromeControl:floating /template/ Button#PART_CloseButton:pointerover /template/ Border#PART_Root">
         <Setter Property="Background" Value="{DynamicResource CloseHover}" />
     </Style>
 
-    <Style Selector="ToolChromeControl:floating /template/ TextBlock#PART_Title">
+    <Style Selector="HostWindow.chromeless ToolChromeControl:floating /template/ TextBlock#PART_Title">
         <Setter Property="IsVisible" Value="True" />
         <Setter Property="Foreground" Value="{DynamicResource InkTitle}" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />

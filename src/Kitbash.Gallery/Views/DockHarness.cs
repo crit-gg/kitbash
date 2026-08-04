@@ -1,8 +1,8 @@
-using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
 using Dock.Model.Mvvm;
 using Dock.Model.Mvvm.Controls;
+using Kitbash.Ui.Docking;
 
 namespace Kitbash.Gallery.Views;
 
@@ -26,6 +26,12 @@ public sealed class HarnessTool : Tool
 public sealed class DockHarness : Factory
 {
     private IDockable? _first;
+
+    /// <summary>
+    /// Whether a floated tool takes the desktop's frame. A real app reads this from
+    /// IWindowSettings.
+    /// </summary>
+    public bool NativeChrome { get; set; }
 
     /// <summary>The dockables the layout was built from, by id.</summary>
     private readonly Dictionary<string, IDockable> _built = [];
@@ -123,13 +129,14 @@ public sealed class DockHarness : Factory
 
     /// <summary>
     /// Where a torn out dockable goes. Dock builds no window without this, so a tool that
-    /// wants tearing out registers one the way the harness does.
+    /// wants tearing out registers one the way the harness does. A real app reads the flag
+    /// from IWindowSettings.
     /// </summary>
     public override void InitLayout(IDockable layout)
     {
         HostWindowLocator = new Dictionary<string, Func<IHostWindow?>>
         {
-            [nameof(IDockWindow)] = () => new HostWindow()
+            [nameof(IDockWindow)] = () => new KitbashHostWindow(NativeChrome)
         };
 
         base.InitLayout(layout);

@@ -72,12 +72,17 @@ corner radius, the eight resize grips and the whole title bar, and
                    Icon="avares://Kitbash/Assets/Icons/icon_64x64.png" />
 ```
 
-**The frame itself is keyed as `WindowFrame`, so a window that cannot derive from
-`ChromelessWindow` can still wear it.** Dock's floating tool window is the one that does:
-a `Style` points its `Template` at the key through a `DynamicResource`, since a
-`StaticResource` cannot reach another document's resources. Anything taking the frame that
-way also needs `ui:WindowResize.Grips`, which is what turns a press on one of the eight
-named borders into a resize. `ChromelessWindow` sets it in its own constructor.
+**The frame is `:is(Window).chromeless`, and the `:is` is load bearing.** A bare type
+selector matches the style key exactly, so `Window.chromeless` would reach `ChromelessWindow`,
+which forces its style key back to `Window`, and nothing else. Dock's floating tool window
+keys on its own type and would silently miss the frame.
+
+**A window that cannot derive from `ChromelessWindow` wears the frame by setting the class.**
+`ui:KitbashHostWindow` is the one that does. Anything taking it that way also needs
+`ui:WindowResize.Grips`, which is what turns a press on one of the eight named borders into a
+resize. `ChromelessWindow` sets it in its own constructor. The template is also keyed as
+`WindowFrame` for a window that wants to point at it directly, through a `DynamicResource`,
+since a `StaticResource` cannot reach another document's resources.
 
 **`ChromelessWindow` is `Focusable`, and that is load bearing.** It is what drops a text
 field's focus when a person clicks empty space, because Avalonia moves focus up from
