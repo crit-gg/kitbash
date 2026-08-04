@@ -530,6 +530,20 @@
         <Setter Property="Theme" Value="{StaticResource SegmentedOption}" />
     </Style>
 
+    <!-- The short row, for a segmented control that sits inside another piece of chrome
+         rather than in a form. The colour picker's two rows are both this. -->
+    <Style Selector="ui|Segmented.compact">
+        <Setter Property="Height" Value="{DynamicResource HeightControlSmall}" />
+    </Style>
+
+    <!-- No height of its own, so an option fills whatever the row is left with. The thumb
+         reads the option it is standing on, so it follows without being told. -->
+    <Style Selector="ui|Segmented.compact RadioButton">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="7,0" />
+    </Style>
+
     <!-- The clock's column headings and the time a field reads back. Classes rather than
          inline values, because both sit inside a control template that a theme cannot
          reach with a descendant selector. -->

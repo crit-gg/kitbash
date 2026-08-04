@@ -1,0 +1,566 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <!-- The colour picker and the field that opens it.
+
+         Every gradient here is built in code rather than written as a brush, because a hue
+         ramp is a colour computed from the value being edited rather than a palette entry.
+         The two that do come from the palette, the exposure ramp and the checkerboard, are
+         looked up by key so their hex still lives in Tokens.axaml. -->
+
+    <Styles.Resources>
+
+    <!-- A lane with a gradient in it and a flat handle on top. Three shapes: the channel
+         ramp, the taller alpha lane, and the vertical bar beside the shape. -->
+    <ControlTheme x:Key="ColorLaneKnob" TargetType="Thumb">
+        <Setter Property="Width" Value="{DynamicResource WidthColorKnob}" />
+        <Setter Property="Height" Value="{DynamicResource HeightColorKnobRamp}" />
+        <Setter Property="Background" Value="{DynamicResource InkTitle}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceRoot}" />
+        <Setter Property="Cursor" Value="Arrow" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusMark}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="ColorLane" TargetType="Slider">
+        <Setter Property="Height" Value="{DynamicResource SizeColorRamp}" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+
+        <!-- The handle stands clear of the lane at both ends, so nothing may clip. -->
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel ClipToBounds="False">
+                    <Border Name="PART_Lane"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+
+                    <Track Name="PART_Track"
+                           Minimum="{TemplateBinding Minimum}"
+                           Maximum="{TemplateBinding Maximum}"
+                           Value="{TemplateBinding Value, Mode=TwoWay}"
+                           IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
+                           Orientation="{TemplateBinding Orientation}"
+                           ClipToBounds="False">
+                        <Thumb Name="PART_Thumb" Theme="{StaticResource ColorLaneKnob}" />
+                    </Track>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^.alpha">
+            <Setter Property="Height" Value="{DynamicResource SizeColorAlpha}" />
+        </Style>
+
+        <Style Selector="^.alpha /template/ Thumb#PART_Thumb">
+            <Setter Property="Height" Value="{DynamicResource HeightColorKnobAlpha}" />
+        </Style>
+
+        <!-- The bar beside the shape. Vertical, so the handle lies across it. -->
+        <Style Selector="^.bar">
+            <Setter Property="Height" Value="NaN" />
+            <Setter Property="Width" Value="{DynamicResource SizeColorBar}" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+        </Style>
+
+        <Style Selector="^.bar /template/ Thumb#PART_Thumb">
+            <Setter Property="Width" Value="{DynamicResource WidthColorKnobBar}" />
+            <Setter Property="Height" Value="{DynamicResource HeightColorKnobBar}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Thumb#PART_Thumb">
+            <Setter Property="Background" Value="{DynamicResource MarkOff}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- One saved colour. A button, because clicking it is the whole of what it does. -->
+    <ControlTheme x:Key="ColorSwatch" TargetType="Button">
+        <Setter Property="Width" Value="{DynamicResource SizeColorSwatch}" />
+        <Setter Property="Height" Value="{DynamicResource SizeColorSwatch}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Halo"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+
+                    <Border Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Root">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The tile that saves today's colour. The dashes say it holds nothing yet. -->
+    <ControlTheme x:Key="ColorSwatchAdd" TargetType="Button" BasedOn="{StaticResource ColorSwatch}">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Halo"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+
+                    <Border Name="PART_Root"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Background="Transparent">
+                        <ui:Icon Glyph="Plus"
+                                 Size="{DynamicResource IconSizeCheck}"
+                                 Foreground="{TemplateBinding Foreground}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- One channel: a letter, a ramp and the spinbox from the value editors, unchanged. -->
+    <DataTemplate x:Key="ColorChannelRow" x:DataType="ui:ColorChannel">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource SpacingColorRow}">
+            <TextBlock Grid.Column="0"
+                       Text="{Binding Label}"
+                       Width="{DynamicResource WidthColorLabel}"
+                       FontFamily="{DynamicResource FontFamilyMono}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       FontWeight="{DynamicResource FontWeightMedium}"
+                       Foreground="{DynamicResource InkSecondary}"
+                       VerticalAlignment="Center" />
+
+            <Slider Grid.Column="1"
+                    Theme="{StaticResource ColorLane}"
+                    Minimum="0"
+                    Maximum="1"
+                    Value="{Binding Position, Mode=TwoWay}"
+                    Background="{Binding Ramp}"
+                    VerticalAlignment="Center" />
+
+            <NumericUpDown Grid.Column="2"
+                           Value="{Binding Value, Mode=TwoWay}"
+                           Minimum="{Binding Minimum}"
+                           Maximum="{Binding Maximum}"
+                           Increment="{Binding Increment}"
+                           FormatString="{Binding Format}"
+                           MinWidth="{DynamicResource WidthColorSpin}"
+                           HorizontalAlignment="Right" />
+        </Grid>
+    </DataTemplate>
+
+    <!-- A row of colours that wraps. -->
+    <ItemsPanelTemplate x:Key="ColorSwatchRow">
+        <WrapPanel Orientation="Horizontal"
+                   ItemSpacing="{DynamicResource SpacingColorSwatch}"
+                   LineSpacing="{DynamicResource SpacingColorSwatch}" />
+    </ItemsPanelTemplate>
+
+    <ControlTheme x:Key="{x:Type ui:ColorPicker}" TargetType="ui:ColorPicker">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- The shell from the overlays, so a picker and a workspace list are the
+                     same card and the panel case is the shell's own class. -->
+                <ui:Popover Name="PART_Frame">
+                    <ui:Popover.Header>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding $parent[ui:ColorPicker].Header}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontWeight="{DynamicResource FontWeightStrong}"
+                                       LetterSpacing="{DynamicResource LetterSpacingLabel}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       VerticalAlignment="Center" />
+
+                            <ui:Segmented Grid.Column="1" Classes="compact">
+                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Rectangle}}"
+                                             ToolTip.Tip="Field"
+                                             AutomationProperties.Name="Field">
+                                    <ui:Icon Glyph="SelectAll" Size="{DynamicResource IconSizeField}" />
+                                </RadioButton>
+
+                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Wheel}}"
+                                             ToolTip.Tip="Wheel"
+                                             AutomationProperties.Name="Wheel">
+                                    <ui:Icon Glyph="Crosshair" Size="{DynamicResource IconSizeField}" />
+                                </RadioButton>
+
+                                <RadioButton Width="{DynamicResource SizeColorSwatch}"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Shape, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorShape.Sliders}}"
+                                             ToolTip.Tip="Sliders only"
+                                             AutomationProperties.Name="Sliders only">
+                                    <ui:Icon Glyph="Columns" Size="{DynamicResource IconSizeField}" />
+                                </RadioButton>
+                            </ui:Segmented>
+                        </Grid>
+                    </ui:Popover.Header>
+
+                    <StackPanel Margin="{DynamicResource PaddingColorBody}"
+                                Spacing="{DynamicResource SpacingColorBlock}">
+
+                        <!-- The shape, and the bar that carries whatever it does not. -->
+                        <Grid Name="PART_ShapeRow"
+                              ColumnDefinitions="*,Auto"
+                              ColumnSpacing="{DynamicResource SpacingColorRow}"
+                              Height="{DynamicResource HeightColorShape}">
+                            <Panel Name="PART_Field" ClipToBounds="False">
+                                <Border Name="PART_FieldHue"
+                                        BorderBrush="{DynamicResource LineControlDeep}"
+                                        BorderThickness="1"
+                                        CornerRadius="{DynamicResource RadiusControl}" />
+
+                                <Border Name="PART_FieldShade"
+                                        CornerRadius="{DynamicResource RadiusControl}" />
+
+                                <Canvas ClipToBounds="False" IsHitTestVisible="False">
+                                    <Border Name="PART_FieldHandle"
+                                            Width="{DynamicResource SizeColorHandle}"
+                                            Height="{DynamicResource SizeColorHandle}"
+                                            BorderBrush="{DynamicResource InkKnobPressed}"
+                                            BorderThickness="{DynamicResource ThicknessColorHandle}"
+                                            CornerRadius="{DynamicResource RadiusColorHandle}"
+                                            BoxShadow="{DynamicResource ShadowColorHandle}" />
+                                </Canvas>
+                            </Panel>
+
+                            <Panel Name="PART_Wheel"
+                                   Width="{DynamicResource HeightColorShape}"
+                                   Height="{DynamicResource HeightColorShape}"
+                                   HorizontalAlignment="Center"
+                                   ClipToBounds="False"
+                                   IsVisible="False">
+                                <Ellipse Name="PART_WheelHue" />
+                                <Ellipse Name="PART_WheelBloom" />
+                                <Ellipse Name="PART_WheelShade" />
+
+                                <Canvas ClipToBounds="False" IsHitTestVisible="False">
+                                    <Border Name="PART_WheelHandle"
+                                            Width="{DynamicResource SizeColorHandle}"
+                                            Height="{DynamicResource SizeColorHandle}"
+                                            BorderBrush="{DynamicResource InkKnobPressed}"
+                                            BorderThickness="{DynamicResource ThicknessColorHandle}"
+                                            CornerRadius="{DynamicResource RadiusColorHandle}"
+                                            BoxShadow="{DynamicResource ShadowColorHandle}" />
+                                </Canvas>
+                            </Panel>
+
+                            <Slider Grid.Column="1"
+                                    Name="PART_Bar"
+                                    Classes="bar"
+                                    Theme="{StaticResource ColorLane}"
+                                    Orientation="Vertical"
+                                    Minimum="0"
+                                    Maximum="360" />
+                        </Grid>
+
+                        <!-- Alpha, and the colour against the one it replaces. -->
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource SpacingColorRow}">
+                            <Panel Grid.Column="0" VerticalAlignment="Center" ClipToBounds="False">
+                                <Border Name="PART_Checker"
+                                        Height="{DynamicResource SizeColorAlpha}"
+                                        CornerRadius="{DynamicResource RadiusControl}" />
+
+                                <Slider Name="PART_Alpha"
+                                        Classes="alpha"
+                                        Theme="{StaticResource ColorLane}"
+                                        Minimum="0"
+                                        Maximum="1" />
+                            </Panel>
+
+                            <Border Grid.Column="1"
+                                    Width="{DynamicResource WidthColorChip}"
+                                    Height="{DynamicResource HeightColorChip}"
+                                    BorderBrush="{DynamicResource LineControlDeep}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource RadiusControl}"
+                                    ClipToBounds="True">
+                                <Grid ColumnDefinitions="*,*">
+                                    <Border Grid.Column="0" Name="PART_Old" />
+                                    <Border Grid.Column="1" Name="PART_New" />
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <!-- Which numbers, and the hex those numbers spell. -->
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <ui:Segmented Grid.Column="0" Classes="compact">
+                                <RadioButton Content="RGB"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Rgb}}" />
+                                <RadioButton Content="HSV"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Hsv}}" />
+                                <RadioButton Content="RAW"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Raw}}" />
+                                <RadioButton Content="OKHSL"
+                                             IsChecked="{Binding $parent[ui:ColorPicker].Mode, Mode=TwoWay, Converter={x:Static ui:Matches.Instance}, ConverterParameter={x:Static ui:ColorValueMode.Okhsl}}" />
+                            </ui:Segmented>
+
+                            <TextBox Grid.Column="2"
+                                     Name="PART_Hex"
+                                     Height="{DynamicResource HeightControlSmall}"
+                                     MinWidth="0"
+                                     Padding="{DynamicResource PaddingColorHex}"
+                                     FontFamily="{DynamicResource FontFamilyMono}"
+                                     FontSize="{DynamicResource FontSizeSmall}"
+                                     VerticalContentAlignment="Center">
+                                <TextBox.InnerRightContent>
+                                    <Button Name="PART_Copy"
+                                            Classes="icon"
+                                            ToolTip.Tip="Copy the hex"
+                                            AutomationProperties.Name="Copy the hex">
+                                        <ui:Icon Glyph="Copy" Size="{DynamicResource IconSizeAlert}" />
+                                    </Button>
+                                </TextBox.InnerRightContent>
+                            </TextBox>
+                        </Grid>
+
+                        <ItemsControl Name="PART_Channels"
+                                      ItemTemplate="{StaticResource ColorChannelRow}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="{DynamicResource SpacingColorSection}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <StackPanel Spacing="{DynamicResource SpacingColorSection}">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="SWATCHES" />
+
+                            <WrapPanel Orientation="Horizontal"
+                                       ItemSpacing="{DynamicResource SpacingColorSwatch}"
+                                       LineSpacing="{DynamicResource SpacingColorSwatch}">
+                                <ItemsControl ItemsSource="{Binding $parent[ui:ColorPicker].Swatches}"
+                                              ItemsPanel="{StaticResource ColorSwatchRow}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="ui:ColorValue">
+                                            <Button Theme="{StaticResource ColorSwatch}"
+                                                    Background="{Binding Converter={x:Static ui:ColorBrush.Instance}}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Button Name="PART_AddSwatch"
+                                        Theme="{StaticResource ColorSwatchAdd}"
+                                        ToolTip.Tip="Save this colour"
+                                        AutomationProperties.Name="Save this colour" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Name="PART_Recent" Spacing="{DynamicResource SpacingColorSection}">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="RECENT" />
+
+                            <ItemsControl ItemsSource="{Binding $parent[ui:ColorPicker].Recent}"
+                                          ItemsPanel="{StaticResource ColorSwatchRow}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="ui:ColorValue">
+                                        <Button Theme="{StaticResource ColorSwatch}"
+                                                Background="{Binding Converter={x:Static ui:ColorBrush.Instance}}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- What will be written, in a well, for the floating case. In a
+                             panel the same line is the footer instead. -->
+                        <Border Name="PART_LiteralWell"
+                                Height="{DynamicResource HeightControlSmall}"
+                                Padding="{DynamicResource PaddingColorLiteral}"
+                                Background="{DynamicResource SurfaceWell}"
+                                BorderBrush="{DynamicResource LineSeam}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusControl}">
+                            <TextBlock Name="PART_Literal"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkSecondary}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </StackPanel>
+
+                    <ui:Popover.Footer>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Name="PART_LiteralFoot"
+                                       Margin="{DynamicResource PaddingColorLiteral}"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"
+                                       IsVisible="False" />
+
+                            <StackPanel Grid.Column="1"
+                                        Name="PART_Actions"
+                                        Orientation="Horizontal"
+                                        Spacing="{DynamicResource SpacingColorRow}">
+                                <Button Name="PART_Cancel"
+                                        Theme="{StaticResource CompactButton}"
+                                        Content="Cancel" />
+                                <Button Name="PART_Apply"
+                                        Theme="{StaticResource CompactButton}"
+                                        Classes="primary"
+                                        Content="Apply" />
+                            </StackPanel>
+                        </Grid>
+                    </ui:Popover.Footer>
+                </ui:Popover>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- The wheel carries hue and saturation, so the field stands down. -->
+        <Style Selector="^[Shape=Wheel] /template/ Panel#PART_Field">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="^[Shape=Wheel] /template/ Panel#PART_Wheel">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- Sliders only drops both, and the bar with them, since the rows are the whole
+             of it and a hue bar with no field beside it is half a control. -->
+        <Style Selector="^[Shape=Sliders] /template/ Grid#PART_ShapeRow">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <!-- In a panel the value applies live, so there is nothing to commit. The two
+             halves of that swap are inside the frame's own footer, where a template
+             selector does not reach, so the control shows and hides them itself. -->
+        <Style Selector="^[IsInPanel=True] /template/ Border#PART_LiteralWell">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ControlTheme>
+
+    <!-- The value editor. A well with the swatch inside it behind a hairline, which is the
+         adorner rule, and the whole well opens the picker. -->
+    <ControlTheme x:Key="{x:Type ui:ColorField}" TargetType="ui:ColorField">
+        <Setter Property="Height" Value="{DynamicResource HeightControl}" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingListRow}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceWell}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="ClipToBounds" Value="False" />
+        <Setter Property="Cursor" Value="Arrow" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Halo"
+                            Margin="{DynamicResource FocusHaloReach}"
+                            BorderThickness="{DynamicResource FocusHaloThickness}"
+                            BorderBrush="Transparent"
+                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            IsHitTestVisible="False" />
+
+                    <Border Name="PART_Frame"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource SpacingColorRow}">
+                            <Border Name="PART_Swatch"
+                                    Width="{DynamicResource SizeCheck}"
+                                    Height="{DynamicResource SizeCheck}"
+                                    BorderBrush="{DynamicResource LineControlDeep}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource RadiusBox}"
+                                    VerticalAlignment="Center" />
+
+                            <TextBlock Name="PART_Text"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeBody}"
+                                       FontWeight="{DynamicResource FontWeightMedium}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Frame">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Swatch">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWell}" />
+        </Style>
+
+        <Style Selector="^:pressed /template/ Border#PART_Frame">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellFocus}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        </Style>
+
+        <Style Selector="^:focus-visible /template/ Border#PART_Halo">
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Frame">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Swatch">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineWellOff}" />
+        </Style>
+    </ControlTheme>
+
+    </Styles.Resources>
+
+</Styles>

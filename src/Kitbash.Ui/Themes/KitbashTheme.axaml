@@ -43,6 +43,8 @@
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/TextBox.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Choices.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Pickers.axaml" />
+    <!-- After the buttons, the panel and the fields, since it draws with all three. -->
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/ColorPicker.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Grid.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/ScrollBar.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Surfaces.axaml" />

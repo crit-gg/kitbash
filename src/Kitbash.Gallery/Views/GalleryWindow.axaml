@@ -776,6 +776,19 @@
                                            FormatString="0.0" HorizontalAlignment="Left" IsEnabled="False" />
                         </Grid>
 
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="COLOUR" Content="the swatch opens the picker" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="14">
+                            <ui:ColorField Name="Tint" Header="FILL COLOUR" />
+                            <ui:ColorField Color="{Binding #Tint.Color, Mode=OneWay}" Classes="forceHover" />
+                            <ui:ColorField Color="{Binding #Tint.Color, Mode=OneWay}" Classes="forceFocus" />
+                            <ui:ColorField Color="{Binding #Tint.Color, Mode=OneWay}" IsEnabled="False" />
+                        </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="The field holds one colour and opens the picker on it. Apply commits, and dismissing the popover leaves the field as it was. Six digits while the colour is opaque and eight when there is alpha to spell out." />
+
                         <TextBlock Classes="note"
                                    Text="The stepper sits inside the well behind a hairline rather than floating outside it, which is the rule every value editor follows. Nothing is built for it: a spinbox is a NumericUpDown over a ButtonSpinner over a text field, and only the frame is themed." />
 
@@ -812,6 +825,43 @@
 
                         <TextBlock Classes="note"
                                    Text="The calendar opens on the date the field holds, or on today when it holds none, and the field is only emptied by the Clear button in the popover. The clock follows the culture too. Avalonia defaults to twelve hours whatever the culture says, so it is asked instead: en-US reads 2:05 PM with a period column and hours 1 to 12, and de-DE reads 14:05 with hours 0 to 23. Its popover carries Set and Cancel as well as Now, because a working presenter only writes the time when it is accepted, where the design's popover is a picture." />
+                    </StackPanel>
+                </Border>
+
+                <!-- section -->
+                <TextBlock Classes="section" Text="COLOUR PICKER" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="One body and two hosts. Floating it is a card with a shadow and a Cancel and Apply footer, dropped into a panel it gives up all three and the value applies live, and the footer reads back the line that will be written. Both are the same control and the same template." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="22">
+                            <StackPanel Spacing="9">
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="IN A PANEL" Content="applies live" />
+                                <ui:ColorPicker Name="Bench" Width="320" IsInPanel="True" Header="FILL COLOUR" />
+                            </StackPanel>
+
+                            <StackPanel Spacing="9" Width="320">
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="THE SHAPES" Content="three of them" />
+
+                                <TextBlock Classes="note"
+                                           Text="A field with the hue beside it, a wheel with hue around it and saturation out from the middle, and the rows on their own. The bar beside the wheel carries value instead, since the wheel already carries hue." />
+
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="THE MODES" Content="four of them" />
+
+                                <TextBlock Classes="note"
+                                           Text="RGB and HSV read whole numbers, RAW reads the floats themselves, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the EV row, which multiplies the colour by stops, so a value above 1 can be reached and read back from any of them." />
+
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="SWATCHES" Content="empty until they are not" />
+
+                                <TextBlock Classes="note"
+                                           Text="Nothing is seeded. The add tile keeps today's colour and the gallery holds the list, which is where an application would put its own." />
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

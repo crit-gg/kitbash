@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -12,6 +13,9 @@ namespace Kitbash.Gallery.Views;
 
 public partial class GalleryWindow : ChromelessWindow
 {
+    /// <summary>How many colours the recent row keeps.</summary>
+    private const int RecentKept = 8;
+
     private readonly List<Control> _chips = [];
     private readonly List<Node> _big = [];
 
@@ -50,6 +54,7 @@ public partial class GalleryWindow : ChromelessWindow
         BuildTrees();
         BuildGrids();
         BuildDock();
+        BuildColours();
 
         _chips.AddRange(Chips.Children);
 
@@ -59,6 +64,37 @@ public partial class GalleryWindow : ChromelessWindow
         }
 
         ShowValue();
+    }
+
+    /// <summary>
+    /// Both pickers share one set of saved colours, which is where an application would put
+    /// its own. They start empty, since the palette is not the picker's to invent.
+    /// </summary>
+    private void BuildColours()
+    {
+        var swatches = new ObservableCollection<ColorValue>();
+        var recent = new ObservableCollection<ColorValue>();
+
+        Bench.Swatches = swatches;
+        Bench.Recent = recent;
+        Tint.Swatches = swatches;
+        Tint.Recent = recent;
+
+        // A colour that was picked on purpose is a recent one. The picker reports the add
+        // and the list is the gallery's, the way a tool's would be its own.
+        Tint.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ColorField.ColorProperty && e.NewValue is ColorValue picked)
+            {
+                recent.Remove(picked);
+                recent.Insert(0, picked);
+
+                while (recent.Count > RecentKept)
+                {
+                    recent.RemoveAt(recent.Count - 1);
+                }
+            }
+        };
     }
 
     /// <summary>

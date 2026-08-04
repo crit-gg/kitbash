@@ -287,21 +287,27 @@ been done. `.claude/plans/distribution-and-updates.md` has the rules and records
 things it originally got wrong. **Tool distribution is not built**,
 so `ITool` and the registry are unchanged.
 
-The app is being moved to the Slate design, in the thirteen stages under
-`.claude/plans/`. **The numbers are the order**, and every stage depends only on lower
-ones, so the plan runs straight through.
+The app was moved to the Slate design in the thirteen stages under `.claude/plans/`. **The
+numbers are the order**, and every stage depended only on lower ones, so the plan ran
+straight through. Each stage file records what it built and where it departed from the
+design.
 
-Stages 1 to 12 are done, so only the colour picker is left. `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
-settings window, and the control themes built so far: five button kinds, the split
+settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
 panel, the expander, the splitter, the collapsing sidebar, the text fields, the search
 field, the path field, the checkbox, the radio, the toggle, the segmented row, the slider, the spinbox, the
 combo box, the hyperlink, the list row, the tree, the tabs, the toast, the alert, both data
-grids, the pager, the scrollbar and docking.
+grids, the pager, the scrollbar, docking, and the colour picker.
 
-Stage 8 is done except the colour field, which waits on stage 13 because its swatch has
-nothing to open until the picker exists.
+**The colour picker is built and it is one body in two hosts.** `ui:ColorPicker` floats as a
+card with a Cancel and Apply footer, `IsInPanel` drops the frame and applies live, and
+`ui:ColorField` is the well that opens it, which is what stage 8 was waiting for. Its value
+is `ColorValue`, four floats, so a channel above 1 survives every mode, and the EV row is
+what takes it there. Avalonia's own ColorPicker package was read and refused, since its
+`Color` is four bytes. **There is no eyedropper**, which needs screen capture and is its own
+platform work.
 
 **Docking is built and it is opt in.** `Kitbash.Ui` takes Dock for Avalonia and
 `Themes/KitbashDocking.axaml` is a second line a consumer includes after `KitbashTheme`, so

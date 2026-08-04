@@ -959,6 +959,13 @@ declare it later.
 - A binding converts a double to a bool the way `Convert.ToBoolean` does, so `IsVisible` bound
   to an `Opacity` is true at anything other than zero. Useful when a library writes an opacity
   and offers nothing else to style on.
+- A `/template/` selector does not reach content a template placed into another control's
+  property. Measured on the colour picker, whose template root is a `ui:Popover`: a style on
+  `Border#PART_LiteralWell` in the body applied, and the same style on `StackPanel#PART_Actions`
+  inside `ui:Popover.Footer` did not. Set those from the control instead.
+- `ConicGradientBrush` starts at the top and sweeps clockwise, so a hue wheel drawn the way a
+  colour wheel is read, hue zero on the right and rising anticlockwise, takes `Angle="90"` and
+  stops of the negated hue.
 - An `ItemsControl` makes a `ContentPresenter` per item unless `NeedsContainerOverride`
   and `CreateContainerForItemOverride` say otherwise, so a control that reads its own
   containers, such as `Segmented` reading which `RadioButton` is checked, works with items

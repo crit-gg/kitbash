@@ -346,6 +346,84 @@ load the thumb is at 0 and 47.33 wide, the frame an option is picked it has not 
 takes 110 in the frame it grew, and a row taken out of the tree and put back is exact in the
 frame it returns.
 
+### Colour
+
+**`ui:ColorPicker` is one body and two hosts.** Floating it is a card with a shadow and a
+Cancel and Apply footer. `IsInPanel="True"` drops the frame, the shadow and the buttons, the
+value applies live, and the footer reads the literal back. Everything else is the same
+template. The design is the Value editors section of `Theme Slate`.
+
+**It is a property rather than a class**, unlike `ui:Popover.inPanel`, because the frame it
+has to reach is a `ui:Popover` inside its own template and a class on the picker cannot be
+handed down to it. The picker sets the shell's class itself.
+
+**`ui:ColorField` is the value editor.** A 26px well holding a 14px swatch and the hex in
+mono, and clicking it opens the picker in a popover. It is a `Button`, so the click, the
+focus and the flyout are all Avalonia's. The edit commits on Apply, so dismissing the
+popover leaves the field as it was. Six digits while the colour is opaque and eight when
+there is alpha to spell out.
+
+```xml
+<ui:ColorField Color="{Binding Tint}" Header="FILL COLOUR" Swatches="{Binding Saved}" />
+<ui:ColorPicker IsInPanel="True" Color="{Binding Tint}" />
+```
+
+**The value is `ColorValue`, four floats, and red, green and blue may go above 1.** It is not
+`Avalonia.Media.Color`, which is four bytes and cannot hold an HDR value at all. Alpha is 0 to 1 and never leaves it. The type carries hex, HSV and
+Ottosson's OKHSL, all measured as exact round trips here apart from hex, which quantises to
+8 bits by definition.
+
+**Avalonia's own `ColorPicker` package was read and refused**, which is a departure from the
+theme what Avalonia ships rule and the reason is the value: `ColorSpectrum` and `ColorSlider`
+both carry `Color`, so a channel above 1 cannot exist in them, and `ColorView` is a tabbed
+spectrum and palette card with none of RAW, OKHSL or EV. Both shapes the design draws are
+gradients, and Avalonia has `ConicGradientBrush`, so the wheel needs no bitmap either.
+
+**Three shapes.** A saturation and value field with hue on the bar beside it, a wheel with
+hue around it and saturation out from the middle, and the rows on their own. **In the wheel
+the bar carries value instead of hue**, since the wheel already carries hue. That is a
+departure: the design draws the same rainbow bar in both, which would leave value with
+nowhere to go.
+
+**Four value modes, and every one of them carries the EV row.** RGB and HSV read whole
+numbers, RAW reads the floats, and OKHSL is the perceptual space, so a hue drag there keeps
+its lightness where the same drag in HSV does not. Alpha reads in the unit of its mode,
+which is 0 to 255 in RGB and HSV, 0 to 1 in RAW and a percentage in OKHSL, as the design
+draws it.
+
+**EV is stops, and it multiplies.** Moving it scales the three channels by two to the power
+of the change, and a colour handed in from outside brings its own stops with it, so a value
+of 2.5 arrives reading +1.32 and one inside the range reads +0.00. It is the only control
+that takes a colour above 1 on purpose, and RAW is the only mode that shows the result
+without clamping.
+
+**A channel row carries a number and a position separately.** The spinbox is the number, and
+its maximum reaches 1024 in RAW. The ramp is the position, 0 to 1, and it is a separate
+property so a slider cannot clamp a value that is past the end of its own ramp. **A ramp
+sweeps the channel it is on with the others held**, so the red ramp runs from no red to all
+red at today's green and blue, where the design draws black to the colour.
+
+**The spinbox is the value editors' own, unchanged.** If it needs changing, change it there
+so a channel row and a property panel agree.
+
+**Every gradient is built in code**, because a hue is computed from the value being edited
+rather than chosen from a palette. The two that do come from the palette, the exposure ramp
+and the checkerboard, are looked up by key, so their hex still lives in `Tokens.axaml` and
+the rule that nothing else writes a colour still holds.
+
+**Swatches and recents start empty and the picker never seeds them.** They are `IList` in,
+and the add tile appends to a list that can be written to and raises `SwatchAdded` either
+way, so an application can persist them. Filling them with the theme's own palette is the
+mock data trap this control is most likely to fall into.
+
+**The eyedropper is not built.** It needs screen capture, which Avalonia has no API for and
+which goes through the desktop portal on Linux, so it is a platform service and its own
+piece of work. There is no button for it rather than a button that does nothing.
+
+**The picker owns its own hue.** A grey has no hue and black has no saturation, so both are
+held on the control rather than read back from the colour every time. Without that the field
+handle jumps to the left edge as a drag passes through black.
+
 **The pickers read the culture and nothing here writes a date or a time format.** Measured
 across four: en-US reads 7/28/2026 and starts its week on Sunday, de-DE reads 28.07.2026 and
 starts on Monday, ja-JP reads 2026/07/28. The design's Mo Tu We is one locale rather than a

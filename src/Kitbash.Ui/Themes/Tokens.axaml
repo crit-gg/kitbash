@@ -114,9 +114,10 @@
          where a muted icon disappears and a secondary one shouts. -->
     <SolidColorBrush x:Key="InkRail" Color="#9ba6b0" />
 
-    <!-- The brightest ink in the system, and the only pure white. It belongs to a knob
-         being dragged and to nothing else: a slider knob goes InkChip, InkPrimary, then
-         this, so the thing under the finger is always the brightest thing on the row. -->
+    <!-- The brightest ink in the system, and the only pure white. A slider knob goes InkChip,
+         InkPrimary, then this, so the thing under the finger is always the brightest thing on
+         the row. The colour picker's field handle takes it at rest, since it rides over the
+         colour being picked rather than beside it. -->
     <SolidColorBrush x:Key="InkKnobPressed" Color="#ffffff" />
 
     <!-- Disabled comes in two weights. InkDisabled is text. MarkOff is a glyph or a knob,
@@ -449,5 +450,49 @@
     <!-- The check inside a 14px box. It fills the box almost entirely, which is what makes
          a ticked box read as ticked at a glance rather than as a box with something in it. -->
     <x:Double x:Key="IconSizeCheck">11</x:Double>
+
+    <!-- The colour picker. Three lanes, each a different thickness, and a knob that stands
+         clear of the one it is on so it can be caught. -->
+    <x:Double x:Key="HeightColorShape">132</x:Double>
+    <x:Double x:Key="SizeColorBar">13</x:Double>
+    <x:Double x:Key="SizeColorAlpha">11</x:Double>
+    <x:Double x:Key="SizeColorRamp">9</x:Double>
+    <x:Double x:Key="WidthColorKnob">5</x:Double>
+    <x:Double x:Key="HeightColorKnobRamp">13</x:Double>
+    <x:Double x:Key="HeightColorKnobAlpha">15</x:Double>
+    <x:Double x:Key="WidthColorKnobBar">19</x:Double>
+    <x:Double x:Key="HeightColorKnobBar">5</x:Double>
+
+    <!-- The one on the field and the wheel, which is round and rides over the colour rather
+         than beside it. -->
+    <x:Double x:Key="SizeColorHandle">11</x:Double>
+    <CornerRadius x:Key="RadiusColorHandle">6</CornerRadius>
+    <Thickness x:Key="ThicknessColorHandle">1.5</Thickness>
+    <BoxShadows x:Key="ShadowColorHandle">0 1 3 #99000000</BoxShadows>
+
+    <!-- How far in from the wheel's edge the hue ring gives way to the disc. -->
+    <Thickness x:Key="InsetColorWheel">15</Thickness>
+
+    <x:Double x:Key="SizeColorSwatch">19</x:Double>
+    <x:Double x:Key="WidthColorChip">64</x:Double>
+    <x:Double x:Key="HeightColorChip">20</x:Double>
+    <x:Double x:Key="WidthColorSpin">62</x:Double>
+    <x:Double x:Key="WidthColorLabel">18</x:Double>
+
+    <!-- The squares behind a colour that is not opaque. The two carry SurfaceNest3's and
+         LineControl's values and are a different role, since neither is a surface a control
+         sits on nor a seam between two of them. -->
+    <x:Double x:Key="SizeColorChecker">8</x:Double>
+    <SolidColorBrush x:Key="CheckerLight" Color="#3d4045" />
+    <SolidColorBrush x:Key="CheckerDark" Color="#31343a" />
+
+    <Thickness x:Key="PaddingColorBody">11,11,11,12</Thickness>
+    <Thickness x:Key="PaddingColorHead">11,9</Thickness>
+    <Thickness x:Key="PaddingColorHex">8,0,3,0</Thickness>
+    <Thickness x:Key="PaddingColorLiteral">8,0</Thickness>
+    <x:Double x:Key="SpacingColorBlock">10</x:Double>
+    <x:Double x:Key="SpacingColorRow">9</x:Double>
+    <x:Double x:Key="SpacingColorSection">7</x:Double>
+    <x:Double x:Key="SpacingColorSwatch">6</x:Double>
 
 </ResourceDictionary>

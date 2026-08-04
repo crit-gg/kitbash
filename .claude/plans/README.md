@@ -122,9 +122,11 @@ want the same shell, so it is not the launcher's.
 
 Six things in this plan have no built in type and stay hand built: the chip, the status
 pill and the badge in stage 4, the range slider in stage 8, the toast in stage 10 and the
-colour picker in stage 13. The toast is hand built by decision rather than by absence.
-Libraries exist and none is taken, because a toast here is a control with an injected
-service behind it rather than a global. Stage 12's docking surface comes from Dock.
+colour picker in stage 13. Two of those are hand built by decision rather than by absence.
+Toast libraries exist and none is taken, because a toast here is a control with an injected
+service behind it rather than a global. Avalonia does ship a colour picker, in a package of
+its own, and stage 13 records why none of it is taken: its value is four bytes and this one
+holds four floats. Stage 12's docking surface comes from Dock.
 
 `ui:Tree` in stage 9 is ours because the built in type cannot do the one thing that
 matters. It is a `ListBox` subclass, since `TreeView` does not virtualise and there is no
