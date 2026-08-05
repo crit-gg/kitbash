@@ -30,6 +30,31 @@ public sealed record GitCommand(IReadOnlyList<string> Arguments)
 
     public GitCommand Reading(string input) => this with { StandardInput = input };
 
+    /// <summary>
+    /// The same, with the paths handed over through git's input rather than as arguments.
+    /// Every operating system caps a command line and a selection can be any size, so a
+    /// gesture over enough files would otherwise fail on how it was spelled. Not every
+    /// subcommand takes these, and git clean is the one that does not.
+    /// </summary>
+    public GitCommand Over(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+
+        var arguments = new List<string>(Arguments)
+        {
+            "--pathspec-from-file=-",
+
+            // Separated by the null byte, which is the only separator a path cannot hold.
+            "--pathspec-file-nul",
+        };
+
+        return this with
+        {
+            Arguments = arguments,
+            StandardInput = string.Concat(paths.Select(p => p + '\0')),
+        };
+    }
+
     public GitCommand OverTheNetwork() => this with { Network = true, Limit = NetworkLimit };
 
     public GitCommand Within(TimeSpan limit) => this with { Limit = limit };

@@ -56,6 +56,28 @@ public class PatchTests
         Assert.Equal(raw, _writer.Write(patch));
     }
 
+    // A patch built from these hunks is handed back to git apply, and full blob names are
+    // what let it be sure which version it is patching.
+    [Fact]
+    public async Task APatchCarriesFullBlobNames()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", TestRepository.Lines(20)));
+        repository.Write("one.txt", TestRepository.Lines(20, (10, "CHANGED")));
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(patch);
+
+        var index = Assert.Single(patch.Header, h => h.StartsWith("index ", StringComparison.Ordinal));
+        var names = index["index ".Length..].Split(' ')[0].Split("..");
+
+        Assert.All(names, n => Assert.Equal(40, n.Length));
+    }
+
     [Fact]
     public void ARenameIsReadWithBothOfItsPaths()
     {

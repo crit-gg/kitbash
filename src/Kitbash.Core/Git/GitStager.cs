@@ -20,7 +20,7 @@ public sealed class GitStager : IGitStager
 
     public Task<GitResult> StageAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
-        Run(root, cancellation, ["add", "--all", "--"], paths);
+        Over(root, cancellation, paths, "add", "--all");
 
     public Task<GitResult> StageAllAsync(string root, CancellationToken cancellation = default) =>
         _git.RunAsync(root, GitCommand.Of("add", "--all", "--", "."), cancellation);
@@ -29,19 +29,20 @@ public sealed class GitStager : IGitStager
     // outright on a repository that has no commits yet.
     public Task<GitResult> UnstageAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
-        Run(root, cancellation, ["reset", "--quiet", "--"], paths);
+        Over(root, cancellation, paths, "reset", "--quiet");
 
     public Task<GitResult> DiscardAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
-        Run(root, cancellation, ["restore", "--worktree", "--"], paths);
+        Over(root, cancellation, paths, "restore", "--worktree");
 
+    // The one that takes its paths as arguments, since git clean has no pathspec file.
     public Task<GitResult> DeleteUntrackedAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
         Run(root, cancellation, ["clean", "--force", "-d", "--"], paths);
 
     public Task<GitResult> BeginTrackingAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
-        Run(root, cancellation, ["add", "--intent-to-add", "--"], paths);
+        Over(root, cancellation, paths, "add", "--intent-to-add");
 
     public Task<GitResult> StageHunksAsync(
         string root,
@@ -96,6 +97,23 @@ public sealed class GitStager : IGitStager
         arguments.Add("-");
 
         return _git.RunAsync(root, new GitCommand(arguments).Reading(text), cancellation);
+    }
+
+    /// <summary>
+    /// Runs a subcommand over paths handed in through git's input, so a selection of any
+    /// size works.
+    /// </summary>
+    private Task<GitResult> Over(
+        string root,
+        CancellationToken cancellation,
+        IReadOnlyList<string> paths,
+        params string[] arguments)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+
+        return paths.Count == 0
+            ? Task.FromResult(GitResult.Skipped)
+            : _git.RunAsync(root, GitCommand.Of(arguments).Over(paths), cancellation);
     }
 
     private Task<GitResult> Run(

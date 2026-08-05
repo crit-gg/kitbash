@@ -291,6 +291,71 @@ public class StagingTests
         Assert.Equal("", Staged(repository));
     }
 
+    // Paths go to git through its input, separated by the null byte, so a name holding a
+    // space or a newline is one path rather than two.
+    [Fact]
+    public async Task APathWithASpaceAndOneWithANewlineAreEachOnePath()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Windows has no newline in a file name");
+
+        repository.Commit("start", ("plain.txt", "one\n"));
+
+        repository.Write("a name with spaces.txt", "two\n");
+        repository.Write("odd\nname.txt", "three\n");
+
+        var staged = await repository.Stager.StageAsync(
+            repository.Root, ["a name with spaces.txt", "odd\nname.txt"], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+
+        var files = await repository.Files.ReadAsync(repository.Root, false, Stop);
+
+        Assert.Equal(2, files.Count);
+        Assert.All(files, f => Assert.Equal(GitChangeKind.Added, f.Staged));
+
+        var back = await repository.Stager.UnstageAsync(
+            repository.Root, ["odd\nname.txt"], Stop);
+
+        Assert.True(back.Succeeded, back.Message);
+        Assert.True(
+            Assert.Single(
+                await repository.Files.ReadAsync(repository.Root, false, Stop),
+                f => f.Path == "odd\nname.txt").IsUntracked);
+    }
+
+    // Every operating system caps a command line. A selection large enough to pass it is
+    // what the pathspec file exists for.
+    [Fact]
+    public async Task ASelectionTooLargeForACommandLineStillStages()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+
+        // Long names, so the whole set is well past what a command line takes.
+        List<string> paths = [];
+
+        for (var i = 0; i < 3000; i++)
+        {
+            var path = $"generated/{i:D5}/a-rather-long-file-name-so-the-set-is-large-{i:D5}.txt";
+
+            repository.Write(path, "line\n");
+            paths.Add(path);
+        }
+
+        Assert.True(
+            paths.Sum(p => p.Length + 1) > 200_000,
+            "the set is not large enough to prove anything");
+
+        var staged = await repository.Stager.StageAsync(repository.Root, paths, Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+        Assert.Equal(3000, (await repository.Files.ReadAsync(repository.Root, false, Stop)).Count);
+    }
+
     [Fact]
     public async Task StagingNothingIsNotAnError()
     {

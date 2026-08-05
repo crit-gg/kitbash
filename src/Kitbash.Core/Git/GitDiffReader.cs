@@ -178,6 +178,10 @@ public sealed class GitDiffReader : IGitDiffReader
         arguments.Add("--no-ext-diff");
         arguments.Add("--no-textconv");
         arguments.Add("--no-color");
+
+        // Full blob names rather than abbreviated ones, so git apply can be sure which
+        // version a patch built from this is patching.
+        arguments.Add("--full-index");
         arguments.Add("--unified=" + options.Context.ToString(CultureInfo.InvariantCulture));
 
         if (options.DetectRenames)

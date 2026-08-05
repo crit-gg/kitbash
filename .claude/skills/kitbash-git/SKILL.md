@@ -25,6 +25,12 @@ options:
 - UTF 8 for input and output. Git speaks UTF 8 whatever the machine, and .NET otherwise
   decodes with the console encoding, which on Windows is the OEM code page
 
+**Paths go in through git's input too, not as arguments.** `GitCommand.Over(paths)` adds
+`--pathspec-from-file=-` and `--pathspec-file-nul` and writes them null separated, so a
+selection of any size works and a name holding a space or a newline is one path rather than
+two. **`git clean` is the one subcommand with no pathspec file**, so it still takes its
+paths as arguments. Measured: add, reset, restore, checkout and stash all take them.
+
 **A patch and a commit message go in through git's input, never in an argument.** Every
 operating system caps a command line and a real patch passes it. `ProcessRequest` carries
 `StandardInput` for this, and `ProcessRunner` writes it while the output pipes are being
@@ -140,6 +146,8 @@ the reader drops is a hunk that cannot be staged. That is what the tests assert.
   takes the `a/` and `b/` off by position and a repository can turn either off.
 - `--no-ext-diff` and `--no-textconv`, or a configured tool answers instead of git and
   gives text that cannot be applied back.
+- `--full-index`, so the blob names are whole rather than abbreviated. That is what lets
+  `git apply` be sure which version a patch built from these hunks is patching.
 
 **A merge commit needs `--diff-merges=first-parent`.** Measured on git 2.55: `diff-tree`
 writes nothing at all for a merge by default, and the plain `--first-parent` does not

@@ -131,10 +131,8 @@ public sealed class GitConflictReader : IGitConflictReader
             return Task.FromResult(GitResult.Skipped);
         }
 
-        var arguments = new List<string> { "add", "--" };
-        arguments.AddRange(paths);
-
-        return _git.RunAsync(root, new GitCommand(arguments), cancellation);
+        return _git.RunAsync(
+            root, GitCommand.Of("add").Over(paths), cancellation);
     }
 
     public async Task<GitResult> TakeAsync(
@@ -150,17 +148,11 @@ public sealed class GitConflictReader : IGitConflictReader
             return GitResult.Skipped;
         }
 
-        var arguments = new List<string>
-        {
-            "checkout",
-            side == GitConflictSide.Ours ? "--ours" : "--theirs",
-            "--",
-        };
+        var command = GitCommand
+            .Of("checkout", side == GitConflictSide.Ours ? "--ours" : "--theirs")
+            .Over(paths);
 
-        arguments.AddRange(paths);
-
-        var taken = await _git.RunAsync(root, new GitCommand(arguments), cancellation)
-            .ConfigureAwait(false);
+        var taken = await _git.RunAsync(root, command, cancellation).ConfigureAwait(false);
 
         // Taking a side writes the working tree. The index still holds three versions until
         // the path is added, and git counts it as conflicted until then.
