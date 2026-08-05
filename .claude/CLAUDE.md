@@ -208,6 +208,7 @@ part of the app, and each is the only place those rules are written.
 | `kitbash-platform` | the filesystem, the environment, a path or a process |
 | `kitbash-godot` | engine matching or launching a project |
 | `kitbash-git` | anything that runs git |
+| `kitbash-updates` | `Program.cs`, the update path, `build/release.sh` or the release workflow |
 
 Deeper reference, read when a skill sends you there or when the framework itself is
 the problem:
@@ -274,18 +275,18 @@ Scaffolding, on the Slate design. The launcher lists the three placeholder tools
 registry holds and opening one reports that it is not built. No tool is implemented, and
 no file format or Godot integration work has started.
 
-**The launcher can install and update itself, and updates are off.** Velopack packages it,
+**The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes both runtimes and packs both from one machine, and at start
 the app checks its feed and replaces itself over a progress dialog before drawing anything.
-All of that is built and measured. **`UpdateSettingsSchema.IsEnabled` is false**, because
-there is nowhere to publish to yet, so nothing checks and the settings window offers no
-feed. Releases will go to Backblaze B2 from a GitHub workflow that versions them itself.
+A push to main publishes to the Backblaze bucket behind `updates.kitbash.run` through
+`.github/workflows/release.yml`, which works the version out from git rather than from a
+tracked file. **A single launcher guard was designed and decided against**, and the
+`kitbash-updates` skill records why and what would reopen it.
 
-The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash`, and
-Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there any
-more**: state and cache moved to `%LocalAppData%\KitbashData`, which is what had to happen
-before tools could be installed. `.claude/plans/distribution-and-updates.md` has the rules
-and records five things it originally got wrong.
+The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash` and
+Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there**:
+state and cache are under `%LocalAppData%\KitbashData`, which is what had to happen before
+tools could be installed.
 
 The app was moved to the Slate design in the thirteen stages under `.claude/plans/`. **The
 numbers are the order**, and every stage depended only on lower ones, so the plan ran
@@ -428,7 +429,5 @@ Do not assume any of these. Ask before building on one.
 - How references between data files are expressed (source file path was the
   leading candidate)
 **Where a tool comes from is no longer one of these.** It is decided and written down in
-`.claude/plans/tool-distribution.md`: a tool comes from a repository, GitHub releases is
-the first kind, and a person installs one by clicking Install. None of it is built, so
-the launcher still compiles its list in and the mock still holds every version.
+`.claude/plans/tool-distribution.md`, and it is built apart from the GitHub login.
 
