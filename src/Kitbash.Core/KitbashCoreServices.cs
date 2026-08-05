@@ -83,6 +83,12 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IExecutableFinder, ExecutableFinder>();
         services.TryAddSingleton<IDesktopLauncherResolver, DesktopLauncherResolver>();
         services.TryAddSingleton(CreatePlatform);
+        services.TryAddSingleton<ISingleInstance>(provider => new SingleInstance(
+            ApplicationPaths.ApplicationName,
+            provider.GetRequiredService<IUserDirectories>(),
+            provider.GetRequiredService<IFileSystem>(),
+            provider.GetRequiredService<IEnvironment>()));
+
         return services;
     }
 

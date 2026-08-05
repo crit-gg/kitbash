@@ -163,6 +163,72 @@ and tools alike, so a comparison is the same comparison wherever it happens. The
 manifest's own version is the one exception and it is a file format number rather than a
 product version.
 
+## One launcher at a time
+
+**Built.** `ISingleInstance` in Core, taken by the launcher in
+`App.OnFrameworkInitializationCompleted` before the update check and before any window. A
+later copy asks the first to come forward and exits without drawing.
+
+The launcher is the only writer of things that have no merge, and two launchers means the
+second can undo the first. Two of the three original reasons have since softened, and they
+are recorded because they decide how much this guard is load bearing:
+
+- **Application state** used to be rewritten from the model on every write. It goes through
+  `TomlDocument` now, one edit per key against a file that is read again first, so two
+  launchers writing different keys both land. What is left is arrays read whole and written
+  back, `workspaces.known` and the imported engine list.
+- **The launcher update** is already guarded by Velopack's own `.velopack_lock`.
+- **The tool directory** is guarded where it happens: the staging directory and the part
+  file carry the process id, so two installs of one tool cannot share either.
+
+### A file lock, not a named mutex
+
+The mutex prefix means opposite things on the two platforms. Linux needs `Global\` for a
+named mutex to be visible across processes at all, and on Windows `Global\` is machine wide
+and would stop a second person signed in from opening the launcher. `FileShare.None` is
+exclusive on both, so it is one piece of code, and **the kernel drops the handle when the
+process dies**, which a pid file does not: a stale one locks somebody out of their own
+launcher.
+
+The lock is `instance.lock` under a fourth kind of user directory, `IUserDirectories.RuntimeFor`.
+`$XDG_RUNTIME_DIR` on Linux, which **can be unset** over ssh or a login that does not go
+through systemd, so it falls back to the cache directory. Local application data on Windows,
+**never the configuration directory**, which roams and would take a lock to another machine.
+
+### The handoff
+
+A named pipe, which is a unix domain socket underneath on Linux. **The name carries the user
+name**, because a pipe is machine wide on Windows and a socket in the shared temp directory on
+Linux, so two people signed in would otherwise collide. Another local user can therefore
+connect to it, and all they can do is ask the window to come forward.
+
+**A copy that cannot hand over opens instead of exiting.** The first copy takes the lock
+before it starts listening, so a copy started in that gap waits two seconds and then carries
+on. Two launchers is a survivable state and an app that will not open is not.
+
+**Coming forward is `Window.Activate`, and X11 rules apply.** `UsePlatformDetect` selects X11
+on Linux, so under a Wayland session the app is an XWayland client and the compositor treats
+the raise as an X11 one. **The original design carried an `XDG_ACTIVATION_TOKEN` from the
+second copy and nothing does, because a native Wayland client is the only thing that needs
+one.** If `Avalonia.Wayland` is ever adopted, the token has to be captured by the second copy
+at start, since it cannot be recovered later, and the wire format grows a field then.
+
+### Several copies on purpose
+
+**`KITBASH_MANY_LAUNCHERS` set to anything turns the guard off.** This departs from the
+original design, which was `#if !DEBUG`: a compile time exemption means the behaviour a
+person sees can never be exercised in a debug build, and this is a behaviour worth watching.
+So the guard runs in every build and a developer who wants two side by side sets the
+variable.
+
+Measured on this machine, across real processes: three later copies each handing over and
+exiting while the first was told each time, a first copy that exited normally leaving the
+lock free for the next, **a first copy killed with SIGKILL leaving it free as well**, the
+override letting a second copy through, and an unset `XDG_RUNTIME_DIR` putting the lock in
+the cache directory. Through two real launchers headless: the second drew no window and the
+first raised its own. **Whether a compositor honours the raise is the compositor's business
+and was not measured here.**
+
 ## Two decisions that stand, with what they cost
 
 ### Nothing is signed

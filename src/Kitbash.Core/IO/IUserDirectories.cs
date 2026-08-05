@@ -17,4 +17,10 @@ public interface IUserDirectories
 
     /// <summary>Anything that can be built again. Safe to delete at any time.</summary>
     string CacheFor(string application);
+
+    /// <summary>
+    /// For things that mean nothing once this login ends, such as a lock held while the
+    /// app runs. Per user, and never the configuration directory, which roams on Windows.
+    /// </summary>
+    string RuntimeFor(string application);
 }

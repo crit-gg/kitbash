@@ -46,11 +46,57 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.ShutdownRequested += (_, _) => _services?.Dispose();
 
+            // Before the update and before any window. A copy that is not the first has
+            // already asked the first to come forward, so it leaves without drawing.
+            if (!Hold())
+            {
+                desktop.Shutdown();
+
+                return;
+            }
+
             _ = StartAsync(desktop);
         }
 
         base.OnFrameworkInitializationCompleted();
     }
+
+    /// <summary>
+    /// Takes the single launcher lock, and listens for a later copy asking this one to
+    /// come forward. False means this copy is the later one and should go.
+    /// </summary>
+    private bool Hold()
+    {
+        if (_services?.GetService<ISingleInstance>() is not { } instance)
+        {
+            return true;
+        }
+
+        instance.AskedToComeForward += (_, _) => ComeForward();
+
+        return instance.TryHold();
+    }
+
+    /// <summary>
+    /// Brings the launcher to the front for somebody who started a second copy. The event
+    /// arrives on a background thread, so the window is touched through the dispatcher.
+    /// </summary>
+    private void ComeForward() =>
+        _services?.GetService<IUiDispatcher>()?.Post(() =>
+        {
+            if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+            {
+                return;
+            }
+
+            if (window.WindowState is WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+
+            window.Show();
+            window.Activate();
+        });
 
     /// <summary>
     /// Updates first, then opens. **Every path through this ends with a window**, because

@@ -280,8 +280,8 @@ no file format or Godot integration work has started.
 the app checks its feed and replaces itself over a progress dialog before drawing anything.
 A push to main publishes to the Backblaze bucket behind `updates.kitbash.run` through
 `.github/workflows/release.yml`, which works the version out from git rather than from a
-tracked file. **A single launcher guard was designed and decided against**, and the
-`kitbash-updates` skill records why and what would reopen it.
+tracked file. **One launcher at a time is enforced**, and a second copy brings the first
+forward rather than opening. `KITBASH_MANY_LAUNCHERS` turns that off for working on the app.
 
 The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash` and
 Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there**:

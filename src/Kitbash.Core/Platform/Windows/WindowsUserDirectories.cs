@@ -33,6 +33,10 @@ internal sealed class WindowsUserDirectories : IUserDirectories
     public string CacheFor(string application) =>
         Path.Combine(Local, Named(application) + DataSuffix, "Cache");
 
+    // Local rather than roaming, so a lock cannot follow a person to another machine.
+    public string RuntimeFor(string application) =>
+        Path.Combine(Local, Named(application) + DataSuffix, "Runtime");
+
     // The variables are set on every supported version. The fallback is the layout
     // they would name, so a stripped environment still lands in the right place.
     private string Roaming => Folder("APPDATA", "Roaming");

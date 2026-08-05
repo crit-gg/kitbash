@@ -8,7 +8,8 @@ namespace Kitbash.Core.Settings;
 /// </summary>
 public sealed class ApplicationPaths
 {
-    private const string ApplicationName = "Kitbash";
+    /// <summary>The one name every user directory is built from.</summary>
+    public const string ApplicationName = "Kitbash";
     private const string GlobalFileName = "kitbash.toml";
     private const string ToolStateFileName = "state.toml";
     private const string ToolsDirectoryName = "tools";

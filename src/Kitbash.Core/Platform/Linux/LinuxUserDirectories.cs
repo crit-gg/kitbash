@@ -27,6 +27,20 @@ internal sealed class LinuxUserDirectories : IUserDirectories
     public string CacheFor(string application) =>
         Resolve("XDG_CACHE_HOME", ".cache", application);
 
+    // XDG_RUNTIME_DIR has no defined fallback, and the spec says so: a login that does not
+    // go through a session manager, such as ssh, leaves it unset. The cache directory is
+    // the next best per user place, and a lock there works the same way.
+    public string RuntimeFor(string application)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(application);
+
+        var configured = _environment.GetVariable("XDG_RUNTIME_DIR");
+
+        return !string.IsNullOrWhiteSpace(configured) && Path.IsPathRooted(configured)
+            ? Path.Combine(configured, application.ToLowerInvariant())
+            : CacheFor(application);
+    }
+
     private string Resolve(string variable, string fallback, string application)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(application);
