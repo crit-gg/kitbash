@@ -1,0 +1,205 @@
+using System.Globalization;
+using Avalonia;
+using Avalonia.Media;
+using Avalonia.VisualTree;
+using AvaloniaEdit.Editing;
+using AvaloniaEdit.Rendering;
+
+namespace Kitbash.Ui.Controls;
+
+/// <summary>
+/// What every gutter beside a diff shares. Each draws one thing per line that can be seen,
+/// and asks the editor above it for the line rather than holding one of its own.
+/// </summary>
+public abstract class TextDiffMargin : AbstractMargin
+{
+    protected TextDiffMargin()
+    {
+        ClipToBounds = true;
+    }
+
+    protected TextDiff? Owner => this.FindAncestorOfType<TextDiff>();
+
+    /// <summary>
+    /// Walks the lines on screen, handing each one its diff line and the middle of the row it
+    /// was drawn on. Skips a line the editor has thrown away mid scroll.
+    /// </summary>
+    protected void EachVisible(Action<TextDiffLine, VisualLine, double> draw)
+    {
+        ArgumentNullException.ThrowIfNull(draw);
+
+        var owner = Owner;
+        var view = TextView;
+
+        if (owner is null || view is not { VisualLinesValid: true })
+        {
+            return;
+        }
+
+        foreach (var line in view.VisualLines)
+        {
+            if (line.IsDisposed || line.FirstDocumentLine is not { IsDeleted: false } document)
+            {
+                continue;
+            }
+
+            if (owner.At(document.LineNumber) is not { } info)
+            {
+                continue;
+            }
+
+            var middle =
+                line.GetTextLineVisualYPosition(line.TextLines[0], VisualYPosition.LineMiddle)
+                - view.VerticalOffset;
+
+            draw(info, line, middle);
+        }
+    }
+
+    protected FormattedText Text(string text, IBrush? brush, double size) =>
+        new(
+            text,
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            Owner is { } owner
+                ? new Typeface(owner.FontFamily, owner.FontStyle, owner.FontWeight)
+                : Typeface.Default,
+            size,
+            brush);
+}
+
+/// <summary>
+/// The line's own number in its file, which is what a person matches against their editor.
+/// Right aligned, so the digits line up however many there are.
+/// </summary>
+public sealed class TextDiffNumberMargin : TextDiffMargin
+{
+    /// <summary>The gap between the digits and the mark beside them.</summary>
+    private const double Gap = 10;
+
+    public override void Render(DrawingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var owner = Owner;
+
+        if (owner is null)
+        {
+            return;
+        }
+
+        var size = owner.FontSize;
+        var ink = owner.NumberInk;
+
+        EachVisible((info, _, middle) =>
+        {
+            if (info.Number is not { } number)
+            {
+                return;
+            }
+
+            var text = Text(number.ToString(CultureInfo.InvariantCulture), ink, size);
+
+            context.DrawText(text, new Point(Bounds.Width - Gap - text.Width, middle - (text.Height * 0.5)));
+        });
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var owner = Owner;
+
+        if (owner is null)
+        {
+            return new Size(0, 0);
+        }
+
+        // Measured against the widest number in the file, so the gutter does not resize as
+        // the document is scrolled past line 99.
+        var widest = Math.Max(owner.WidestNumber, 1);
+        var text = Text(widest.ToString(CultureInfo.InvariantCulture), Brushes.White, owner.FontSize);
+
+        return new Size(text.Width + (Gap * 2), 0);
+    }
+}
+
+/// <summary>
+/// The bar down the left of a row. The one part carrying its kind's colour at full strength,
+/// so what happened to a line is readable without reading the line.
+/// </summary>
+public sealed class TextDiffMarkMargin : TextDiffMargin
+{
+    public override void Render(DrawingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var owner = Owner;
+        var view = TextView;
+
+        if (owner is null || view is null)
+        {
+            return;
+        }
+
+        EachVisible((info, line, _) =>
+        {
+            if (owner.Style(info.Kind)?.Mark is not { } mark)
+            {
+                return;
+            }
+
+            var top = line.GetTextLineVisualYPosition(line.TextLines[0], VisualYPosition.LineTop)
+                - view.VerticalOffset;
+            var bottom = line.GetTextLineVisualYPosition(line.TextLines[^1], VisualYPosition.LineBottom)
+                - view.VerticalOffset;
+
+            context.FillRectangle(mark, new Rect(0, top, Bounds.Width, bottom - top));
+        });
+    }
+
+    protected override Size MeasureOverride(Size availableSize) =>
+        new(Owner?.MarkWidth ?? 0, 0);
+}
+
+/// <summary>The plus or minus beside a line, in the ink of its own kind.</summary>
+public sealed class TextDiffSymbolMargin : TextDiffMargin
+{
+    public override void Render(DrawingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var owner = Owner;
+
+        if (owner is null)
+        {
+            return;
+        }
+
+        var size = owner.FontSize;
+
+        EachVisible((info, _, middle) =>
+        {
+            if (info.Symbol.Length == 0)
+            {
+                return;
+            }
+
+            var text = Text(info.Symbol, owner.Style(info.Kind)?.Ink, size);
+
+            context.DrawText(
+                text,
+                new Point((Bounds.Width - text.Width) * 0.5, middle - (text.Height * 0.5)));
+        });
+    }
+
+    protected override Size MeasureOverride(Size availableSize)
+    {
+        var owner = Owner;
+
+        if (owner is null)
+        {
+            return new Size(0, 0);
+        }
+
+        return new Size(Text("+", Brushes.White, owner.FontSize).Width * 3, 0);
+    }
+}

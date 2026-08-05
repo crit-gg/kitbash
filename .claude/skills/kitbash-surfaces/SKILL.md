@@ -178,19 +178,39 @@ not. The design says the same thing its own way, with `overflow:hidden` on the d
 
 ### The text diff
 
-`ui:TextDiff` reads a diff as lines. It is a `ListBox`, the way the tree and both grids are,
-so virtualisation, selection and recycling are the ones from stage 9 rather than a second
-set. **AvaloniaEdit was read and refused**: SourceGit builds its diff on a full code editor,
-and what a diff needs is a read only viewer with line selection, which the list already is.
+`ui:TextDiff` reads a diff as text. It is a read only `AvaloniaEdit` `TextEditor`, the way
+SourceGit's is, so selecting and copying across lines is the editor's own. **The editor is a
+substrate, not a look.** Its own line numbers are off and its rendering is replaced: three
+gutters, a background renderer and a colouriser are what draw a diff.
+
+`Avalonia.AvaloniaEdit` is MIT, published by the Avalonia team, and depends on `Avalonia`
+alone. TextMate is a separate package and is not taken.
+
+**Why an editor and not a list.** A list gives row selection, and a diff needs character
+selection: dragging through half of one line and into the next, and copying exactly that. That
+cannot be added to a list afterwards. Row selection is still there, as `SelectedLines`, which
+is what staging a run of lines is picked with.
 
 **A diff is a document, not a list of things.** Rows are flush against each other and against
 the frame: no radius, no gap, no rule. What tells one line from the next is the mark down its
 left, which is the one part of a row carrying colour at full strength.
 
+**The document is the file's text and nothing else.** No `+`, no `-`, no line number in it.
+Those are drawn in the gutters beside it, so what a person selects and copies is the code.
+
 **Eight kinds and the theme is the only place they are written.** `Context`, `Added` and
 `Removed` are what every diff has. `Ours`, `Theirs`, `Chosen` and `Settled` are what a merge
-adds, and `Heading` is the row over a run. Each sets four things together, the row's fill,
-the mark, the ink and what a changed word sits on, and a row wears exactly one.
+adds, and `Heading` is the row over a run. A kind is a `TextDiffKindStyle`, four things held
+together: the fill, the mark, the ink and what a changed word sits on.
+
+**Three gutters, each measuring itself off the font.** The number is measured against the
+widest number in the file, so the gutter does not resize as the document scrolls past line 99.
+The mark is `WidthDiffMark` wide. The symbol is the plus or minus in its kind's ink.
+
+**The row height is a factor, not a number of pixels.** `FactorDiffLine` multiplies the font's
+own line height, since the gutters are drawn against the same metrics. 1.33 over
+`FontSizeControl` is the design's 21px row. Deliberately not in the density set: a diff is read
+as a document and the design draws the same row at both.
 
 **The changed words inside a line are worked out and lit.** `TextDiffWords` trims the shared
 ends, runs a longest common subsequence over what is left, and joins runs that touch. Two
@@ -204,18 +224,19 @@ is one replacement, paired off in the order they were written. It is on the word
 than on the control, since what builds the lines is usually a view model with no control to
 ask. A caller that wants no marking simply does not call it.
 
-**A line with nothing marked is one piece of text, not a list of runs.** Building runs for
-every row of a large diff is waste, so the row only assembles them when there is something to
-assemble. When it does, it works the line out a character at a time and joins the result,
-since a coloured run and a changed run do not line up and either may split the other.
+**The ink and the marked words are both run properties, not drawing.** `TextDiffColouriser`
+changes a part of the line and the editor lays it out once. Only the row fill is drawn by
+hand, since it has to span the whole width of the view rather than the width of the text.
 
 **The seam for syntax colouring is `ITextDiffColouring`, and the library ships none.** A
 grammar engine is a dependency and Godot's own formats would need one written anyway. The
-control asks per line as it is realised, so anything supplied has to be cheap.
+control asks per line as it is built, so anything supplied has to be cheap. A grammar runs
+before the changed words, so a marked word keeps its colour and only gains a background.
 
-**The sizes are deliberately not in the density set.** A diff is read as a document and the
-design draws the same 21px row at both densities, the way the title bar is one size whatever
-is inside it.
+**The theme is `BasedOn` the editor's own `ControlTheme`.** `AvaloniaEdit.xaml` is included
+before the resources in `KitbashTheme.axaml` for that reason. Do not reach for
+`StyleKeyOverride` here: it makes a type selector match the base type, so `Selector="ui|TextDiff"`
+silently stops matching and every token goes missing at once.
 
 ### Grids
 

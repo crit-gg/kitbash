@@ -264,7 +264,7 @@ public partial class GalleryWindow : ChromelessWindow
     {
         var lines = DiffSample();
 
-        SampleDiff.ItemsSource = marked ? new TextDiffWords().Mark(lines) : lines;
+        SampleDiff.Lines = marked ? new TextDiffWords().Mark(lines) : lines;
 
         DiffCount.Text = marked
             ? "words marked"

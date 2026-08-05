@@ -24,6 +24,10 @@
          written as a polymorphic value, reference preservation does not apply to one, and
          the writer recurses until it gives up. -->
     <PackageReference Include="Dock.Serializer.Newtonsoft" Version="12.1.0" />
+
+    <!-- The text editor under ui:TextDiff. Read only, with its own rendering replaced, so
+         what is taken is the document, the selection and the virtualised text view. -->
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
   </ItemGroup>
 
   <ItemGroup>

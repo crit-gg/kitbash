@@ -1,12 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Documents;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
+using AvaloniaEdit.Rendering;
 using Kitbash.Ui.Controls;
 
 namespace Kitbash.Ui.Tests;
@@ -21,7 +20,7 @@ public class TextDiffTests
     /// <summary>A window holding one diff, laid out and ready to read.</summary>
     private static (Window Window, TextDiff Diff) Open(IReadOnlyList<TextDiffLine> lines)
     {
-        var diff = new TextDiff { ItemsSource = lines };
+        var diff = new TextDiff { Lines = lines };
 
         var window = new Window
         {
@@ -35,14 +34,10 @@ public class TextDiffTests
         Dispatcher.UIThread.RunJobs();
         window.UpdateLayout();
 
+        diff.TextArea.TextView.EnsureVisualLines();
+
         return (window, diff);
     }
-
-    private static IReadOnlyList<TextDiffRow> Rows(Window window) =>
-        [.. window.GetVisualDescendants().OfType<TextDiffRow>()];
-
-    private static TextBlock Part(TextDiffRow row, string name) =>
-        row.GetVisualDescendants().OfType<TextBlock>().First(b => b.Name == name);
 
     private static IReadOnlyList<TextDiffLine> Sample() =>
     [
@@ -53,87 +48,84 @@ public class TextDiffTests
         new TextDiffLine(TextDiffLineKind.Context, "\thurt_box.flash()", 19, 19),
     ];
 
-    [AvaloniaFact]
-    public void EveryLineIsDrawnWithItsNumberAndItsSymbol()
+    /// <summary>The run properties the editor built for one document line.</summary>
+    private static IReadOnlyList<VisualLineElement> Parts(TextDiff diff, int number)
     {
-        var (window, _) = Open(Sample());
+        var view = diff.TextArea.TextView;
+        var line = view.GetOrConstructVisualLine(diff.Document.GetLineByNumber(number));
 
-        var rows = Rows(window);
+        return line.Elements;
+    }
 
-        Assert.Equal(5, rows.Count);
+    /// <summary>
+    /// The colour of a brush. The editor keeps an immutable copy of whatever it is handed, so
+    /// a brush from the theme and the one on a run are equal in colour and never the same
+    /// object.
+    /// </summary>
+    private static Color? Colour(IBrush? brush) => (brush as ISolidColorBrush)?.Color;
 
-        // A heading is not a line of the file, so it carries no number.
-        Assert.Equal("", Part(rows[0], "PART_Number").Text);
-        Assert.Equal("", Part(rows[0], "PART_Symbol").Text);
+    private static Color? Token(string key) =>
+        Colour(Application.Current!.FindResource(key) as IBrush);
 
-        Assert.Equal("17", Part(rows[1], "PART_Number").Text);
-        Assert.Equal("", Part(rows[1], "PART_Symbol").Text);
+    // The document is the file's own text. The symbol and the number are drawn in the gutters
+    // beside it, so nothing a person selects and copies carries them.
+    [AvaloniaFact]
+    public void TheDocumentIsTheLinesWithNoMarkersInIt()
+    {
+        var lines = Sample();
+        var (window, diff) = Open(lines);
 
-        // A removed line still says where it was, which is its number on the old side.
-        Assert.Equal("18", Part(rows[2], "PART_Number").Text);
-        Assert.Equal("-", Part(rows[2], "PART_Symbol").Text);
+        Assert.Equal(lines.Count, diff.Document.LineCount);
 
-        Assert.Equal("18", Part(rows[3], "PART_Number").Text);
-        Assert.Equal("+", Part(rows[3], "PART_Symbol").Text);
+        for (var at = 0; at < lines.Count; at++)
+        {
+            Assert.Equal(lines[at].Text, diff.Document.GetText(diff.Document.GetLineByNumber(at + 1)));
+        }
 
         window.Close();
     }
 
     [AvaloniaFact]
-    public void AKindPutsItsOwnClassOnTheRow()
+    public void TheDiffCannotBeEdited()
     {
-        var (window, _) = Open(Sample());
+        var (window, diff) = Open(Sample());
 
-        var rows = Rows(window);
+        Assert.True(diff.IsReadOnly);
 
-        Assert.Contains("heading", rows[0].Classes);
-        Assert.Contains("context", rows[1].Classes);
-        Assert.Contains("removed", rows[2].Classes);
-        Assert.Contains("added", rows[3].Classes);
-
-        // Only ever one, or two fills would fight over the same row.
-        Assert.All(rows, r => Assert.Single(
-            r.Classes,
-            c => c is "context" or "added" or "removed" or "ours" or "theirs"
-                or "chosen" or "settled" or "heading"));
+        // Its own numbers are off, since the gutter draws the file's number rather than the
+        // line's place in the document.
+        Assert.False(diff.ShowLineNumbers);
 
         window.Close();
     }
 
-    // The mark down the left is the one part of a row that carries colour at full strength,
-    // so it is what says what happened without reading the line.
     [AvaloniaFact]
-    public void TheMarkTakesTheKindsOwnColour()
+    public void AKindCarriesItsFillItsMarkAndItsInkTogether()
     {
-        var (window, _) = Open(Sample());
+        var (window, diff) = Open(Sample());
 
-        var rows = Rows(window);
+        var added = diff.Style(TextDiffLineKind.Added);
+        var removed = diff.Style(TextDiffLineKind.Removed);
 
-        Border Mark(TextDiffRow row) =>
-            row.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_Mark");
+        Assert.Equal(Token("Ok"), Colour(added?.Mark));
+        Assert.Equal(Token("OkSurface"), Colour(added?.Fill));
+        Assert.Equal(Token("Error"), Colour(removed?.Mark));
+        Assert.Equal(Token("ErrorSurface"), Colour(removed?.Fill));
 
-        Assert.Equal(
-            Application.Current!.FindResource("Error"),
-            Mark(rows[2]).Background);
-
-        Assert.Equal(
-            Application.Current!.FindResource("Ok"),
-            Mark(rows[3]).Background);
+        // A heading is not a side of the diff, so it takes no mark.
+        Assert.Null(diff.Style(TextDiffLineKind.Heading)?.Mark);
 
         window.Close();
     }
 
-    // A line with nothing marked is one run of text rather than a list of them, since
-    // building runs for every row of a large diff is waste.
     [AvaloniaFact]
-    public void AnUnmarkedLineIsPlainText()
+    public void ALineIsInkedByItsKind()
     {
-        var (window, _) = Open(Sample());
+        var (window, diff) = Open(Sample());
 
-        var text = Part(Rows(window)[1], "PART_Text");
-
-        Assert.Equal("\tstate_machine.start()", text.Text);
-        Assert.True(text.Inlines is null || text.Inlines.Count == 0);
+        Assert.All(
+            Parts(diff, 4),
+            part => Assert.Equal(Token("OkInk"), Colour(part.TextRunProperties.ForegroundBrush)));
 
         window.Close();
     }
@@ -157,19 +149,20 @@ public class TextDiffTests
     [AvaloniaFact]
     public void AMarkedWordIsDrawnOnItsOwnBackground()
     {
-        var (window, _) = Open(new TextDiffWords().Mark(Sample()));
+        var (window, diff) = Open(new TextDiffWords().Mark(Sample()));
 
-        var text = Part(Rows(window)[3], "PART_Text");
+        var lit = Parts(diff, 4).Where(p => p.TextRunProperties.BackgroundBrush is not null).ToList();
 
-        Assert.NotNull(text.Inlines);
+        Assert.All(
+            lit,
+            part => Assert.Equal(Token("OkLine"), Colour(part.TextRunProperties.BackgroundBrush)));
 
-        var runs = text.Inlines.OfType<Run>().ToList();
-        var lit = runs.Where(r => r.Background is not null).ToList();
+        // Only the one character that changed, and the rest of the line left alone.
+        var text = diff.Document.GetText(diff.Document.GetLineByNumber(4));
+        var marked = lit.Sum(p => p.DocumentLength);
 
-        Assert.Equal("8", string.Concat(lit.Select(r => r.Text)));
-
-        // And the rest of the line is still there, unmarked.
-        Assert.Equal("\tposition = Vector2(0, -8)", string.Concat(runs.Select(r => r.Text)));
+        Assert.Equal(1, marked);
+        Assert.Equal("\tposition = Vector2(0, -8)", text);
 
         window.Close();
     }
@@ -193,7 +186,7 @@ public class TextDiffTests
     {
         var diff = new TextDiff
         {
-            ItemsSource = Sample(),
+            Lines = Sample(),
             Colouring = new TwoWords(),
             Path = "player.gd",
         };
@@ -203,49 +196,62 @@ public class TextDiffTests
         window.Show();
         Dispatcher.UIThread.RunJobs();
         window.UpdateLayout();
+        diff.TextArea.TextView.EnsureVisualLines();
 
-        var text = Part(Rows(window)[2], "PART_Text");
+        var coloured = Parts(diff, 3)
+            .Where(p => Colour(p.TextRunProperties.ForegroundBrush) == Colors.Magenta)
+            .ToList();
 
-        Assert.NotNull(text.Inlines);
+        Assert.Equal("position".Length, coloured.Sum(p => p.DocumentLength));
 
-        // Foreground on an inline inherits, so the run is found by its text and its brush
-        // is read off it rather than asking which runs carry one.
-        var runs = text.Inlines.OfType<Run>().ToList();
-        var coloured = Assert.Single(runs, r => r.Text == "position");
-
-        Assert.Equal(Brushes.Magenta, coloured.Foreground);
-        Assert.Equal("\tposition = Vector2(0, -6)", string.Concat(runs.Select(r => r.Text)));
+        // The grammar colours one word and the kind still inks the rest.
+        Assert.Contains(
+            Parts(diff, 3),
+            p => Colour(p.TextRunProperties.ForegroundBrush) == Token("ErrorInk"));
 
         window.Close();
     }
 
-    // Staging a hunk is picking a run of lines, so more than one at a time is the point.
+    // The reason for the editor. A selection is characters rather than rows, so what is copied
+    // is what was dragged over, across as many lines as it touches.
     [AvaloniaFact]
-    public void MoreThanOneLineCanBePicked()
+    public void TextCanBeSelectedAndCopiedAcrossLines()
     {
         var lines = Sample();
         var (window, diff) = Open(lines);
 
-        Assert.Equal(SelectionMode.Multiple, diff.SelectionMode);
+        var start = diff.Document.GetLineByNumber(2).Offset;
+        var end = diff.Document.GetLineByNumber(4).EndOffset;
 
-        diff.SelectedItems!.Add(lines[2]);
-        diff.SelectedItems.Add(lines[3]);
+        diff.Select(start, end - start);
 
-        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(
+            "\tstate_machine.start()\n\tposition = Vector2(0, -6)\n\tposition = Vector2(0, -8)",
+            diff.SelectedText.ReplaceLineEndings("\n"));
 
-        Assert.Equal(2, diff.SelectedItems.Count);
+        // And the same selection read as a run of lines, which is what staging a hunk picks.
+        Assert.Equal((2, 4), diff.SelectedLines);
 
         window.Close();
     }
 
-    // A container is reused for another line, so anything a row is told has to be untold in
-    // the same breath or a recycled row wears the line before it.
     [AvaloniaFact]
-    public void ARecycledRowWearsNothingOfTheLineBeforeIt()
+    public void NothingSelectedIsNoRunOfLines()
+    {
+        var (window, diff) = Open(Sample());
+
+        Assert.Null(diff.SelectedLines);
+
+        window.Close();
+    }
+
+    // A file with thousands of changed lines costs the lines on screen and nothing more.
+    [AvaloniaFact]
+    public void OnlyTheLinesOnScreenAreBuilt()
     {
         var many = new List<TextDiffLine>();
 
-        for (var i = 0; i < 400; i++)
+        for (var i = 0; i < 4000; i++)
         {
             many.Add(new TextDiffLine(
                 i % 3 == 0 ? TextDiffLineKind.Added : TextDiffLineKind.Context,
@@ -256,28 +262,10 @@ public class TextDiffTests
 
         var (window, diff) = Open(many);
 
-        var scroller = window.GetVisualDescendants().OfType<ScrollViewer>().First();
-
-        scroller.Offset = new Avalonia.Vector(0, 2000);
-        Dispatcher.UIThread.RunJobs();
-        window.UpdateLayout();
-
-        // Far fewer controls than lines, which is the whole reason this is a list.
-        var rows = Rows(window);
-
-        Assert.True(rows.Count < 60, $"{rows.Count} rows were realised for 400 lines");
-
-        foreach (var row in rows)
-        {
-            var kind = row.Classes.Count(c => c is "added" or "context");
-
-            Assert.Equal(1, kind);
-        }
-
-        Directory.CreateDirectory(Shots);
-
-        using var frame = window.CaptureRenderedFrame();
-        frame?.Save(Path.Combine(Shots, "text-diff-scrolled.png"), new PngBitmapEncoderOptions());
+        Assert.Equal(4000, diff.Document.LineCount);
+        Assert.True(
+            diff.TextArea.TextView.VisualLines.Count < 60,
+            $"{diff.TextArea.TextView.VisualLines.Count} lines were built for 4000");
 
         window.Close();
     }

@@ -3,6 +3,10 @@
 
     <!-- The one thing a consumer includes. -->
 
+    <!-- The editor under ui:TextDiff brings its own theme, and ours is based on it, so it is
+         loaded before the resources below rather than with the styles at the end. -->
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

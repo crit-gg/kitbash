@@ -269,14 +269,12 @@
 
     <x:Double x:Key="HeightTreeRow">25</x:Double>
 
-    <!-- A diff line, and the four columns it is made of. Deliberately not in the density
-         set: a diff is read as a document and the design draws the same row at both. -->
-    <x:Double x:Key="HeightDiffLine">21</x:Double>
-    <x:Double x:Key="WidthDiffNumber">46</x:Double>
+    <!-- A diff line. Deliberately not in the density set: a diff is read as a document and
+         the design draws the same row at both. The gutters measure themselves off the font,
+         so the row is a multiple of the font's own height rather than a number of pixels.
+         1.33 against FontSizeControl is the design's 21px row. -->
+    <x:Double x:Key="FactorDiffLine">1.33</x:Double>
     <x:Double x:Key="WidthDiffMark">3</x:Double>
-    <x:Double x:Key="WidthDiffSymbol">20</x:Double>
-    <Thickness x:Key="PaddingDiffNumber">0,0,10,0</Thickness>
-    <Thickness x:Key="PaddingDiffText">4,0,20,0</Thickness>
     <Thickness x:Key="PaddingDiff">0,4,0,24</Thickness>
     <x:Double x:Key="HeightGridRow">31</x:Double>
 
