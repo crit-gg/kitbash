@@ -140,6 +140,42 @@ public class RefReaderTests
         Assert.Null(await repository.Refs.CompareAsync(repository.Root, "origin/main", "HEAD", Stop));
     }
 
+    // Where a branch parted from the one it came off. A branch view is drawn from that
+    // commit outwards, so it is the anchor rather than a detail.
+    [Fact]
+    public async Task TheCommitTwoBranchesPartedAtIsFound()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+
+        var parted = repository.Git("rev-parse", "HEAD").Trim();
+
+        repository.Git("switch", "--create", "side");
+        repository.Commit("theirs", ("side.txt", "side\n"));
+        repository.Git("switch", "main");
+        repository.Commit("ours", ("main.txt", "main\n"));
+
+        Assert.Equal(parted, await repository.Refs.ReadMergeBaseAsync(repository.Root, "main", "side", Stop));
+    }
+
+    // Two histories with nothing in common are not an error, and a caller drawing a branch
+    // against a base it never came from has to be able to say so.
+    [Fact]
+    public async Task HistoriesWithNothingInCommonPartedNowhere()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("switch", "--orphan", "alone");
+        repository.Commit("elsewhere", ("other.txt", "other\n"));
+
+        Assert.Null(await repository.Refs.ReadMergeBaseAsync(repository.Root, "main", "alone", Stop));
+        Assert.Null(await repository.Refs.ReadMergeBaseAsync(repository.Root, "main", "nothing", Stop));
+    }
+
     [Fact]
     public async Task TheBranchTheHeadIsOnIsNamed()
     {

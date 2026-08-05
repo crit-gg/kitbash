@@ -39,4 +39,11 @@ public interface IGitRefReader
 
     /// <summary>The name of the branch the head is on, or null when it is detached.</summary>
     Task<string?> ReadHeadBranchAsync(string root, CancellationToken cancellation = default);
+
+    /// <summary>
+    /// The commit two revisions last had in common, as a full hash. Null when either does not
+    /// resolve or the two share no history at all.
+    /// </summary>
+    Task<string?> ReadMergeBaseAsync(
+        string root, string first, string second, CancellationToken cancellation = default);
 }

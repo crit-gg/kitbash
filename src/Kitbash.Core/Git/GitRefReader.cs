@@ -96,4 +96,19 @@ public sealed class GitRefReader : IGitRefReader
 
         return result.Succeeded && result.Output.Trim() is { Length: > 0 } name ? name : null;
     }
+
+    public async Task<string?> ReadMergeBaseAsync(
+        string root, string first, string second, CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(first);
+        ArgumentException.ThrowIfNullOrWhiteSpace(second);
+
+        // Two histories with no common commit are not an error to git either, it writes
+        // nothing and exits non zero, which reads here as no answer.
+        var result = await _git
+            .RunAsync(root, GitCommand.Of("merge-base", first, second), cancellation)
+            .ConfigureAwait(false);
+
+        return result.Succeeded && result.Output.Trim() is { Length: > 0 } hash ? hash : null;
+    }
 }
