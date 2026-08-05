@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 
 namespace Kitbash.Ui.Controls;
@@ -111,26 +112,42 @@ public class TextDiffBar : TemplatedControl
     private void Show()
     {
         var actions = Diff?.Actions ?? TextDiffActions.None;
+        var chunk = Diff?.Chunk;
+        var showing = chunk is not null && actions != TextDiffActions.None;
 
-        if (Diff?.Chunk is not { } chunk || actions == TextDiffActions.None)
+        Wear(_stage, showing && actions.HasFlag(TextDiffActions.Stage), Key.S);
+        Wear(_unstage, showing && actions.HasFlag(TextDiffActions.Unstage), Key.U);
+        Wear(_discard, showing && actions.HasFlag(TextDiffActions.Discard), Key.D);
+
+        if (chunk is not null)
         {
-            IsVisible = false;
+            Margin = new Thickness(0, chunk.Top + Drop, 0, 0);
+        }
+
+        IsVisible = showing;
+    }
+
+    /// <summary>
+    /// Shows or hides one button and takes its shortcut with it. A key binding outlives the
+    /// button being hidden, so a shortcut left behind would still run a gesture off screen.
+    /// </summary>
+    private static void Wear(Button? button, bool on, Key key)
+    {
+        if (button is null)
+        {
             return;
         }
 
-        Wear(_stage, actions.HasFlag(TextDiffActions.Stage));
-        Wear(_unstage, actions.HasFlag(TextDiffActions.Unstage));
-        Wear(_discard, actions.HasFlag(TextDiffActions.Discard));
+        var gesture = on ? new KeyGesture(key, Command()) : null;
 
-        Margin = new Thickness(0, chunk.Top + Drop, 0, 0);
-        IsVisible = true;
+        button.IsVisible = on;
+        button.HotKey = gesture;
+
+        ToolTip.SetTip(button, gesture?.ToString());
     }
 
-    private static void Wear(Button? button, bool on)
-    {
-        if (button is not null)
-        {
-            button.IsVisible = on;
-        }
-    }
+    /// <summary>Meta on macOS and Control elsewhere, asked of the platform rather than the OS.</summary>
+    private static KeyModifiers Command() =>
+        Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers
+            ?? KeyModifiers.Control;
 }

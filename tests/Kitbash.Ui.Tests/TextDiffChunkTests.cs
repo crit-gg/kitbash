@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Kitbash.Ui.Controls;
@@ -49,6 +50,13 @@ public class TextDiffChunkTests
         diff.TextArea.TextView.EnsureVisualLines();
 
         return (window, diff, bar);
+    }
+
+    private static void Press(Window window, Key key, PhysicalKey physical)
+    {
+        window.KeyPress(key, RawInputModifiers.Control, physical, null);
+
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static void Pick(TextDiff diff, int first, int last)
@@ -122,6 +130,55 @@ public class TextDiffChunkTests
         diff.Ask(TextDiffActions.Unstage);
 
         Assert.Equal([TextDiffActions.Stage, TextDiffActions.Discard], asked);
+
+        window.Close();
+    }
+
+    // The shortcut and the button are the same gesture, and the shortcut is only alive while a
+    // run is picked, so it cannot fire at a diff a person is not looking at.
+    [AvaloniaFact]
+    public void AShortcutRunsTheGestureItIsOffered()
+    {
+        var (window, diff, _) = Open(
+            TextDiffPicking.Lines, TextDiffActions.Stage | TextDiffActions.Discard);
+
+        List<TextDiffActions> asked = [];
+        diff.Asked += (_, e) => asked.Add(e.Action);
+
+        Pick(diff, 4, 6);
+        window.UpdateLayout();
+
+        Press(window, Key.S, PhysicalKey.S);
+
+        // Never offered on this diff, so it is not bound and nothing happens.
+        Press(window, Key.U, PhysicalKey.U);
+
+        Assert.Equal([TextDiffActions.Stage], asked);
+
+        window.Close();
+    }
+
+    // Nothing picked means nothing bound, or a stale shortcut would act on the last run.
+    [AvaloniaFact]
+    public void AShortcutGoesWithTheRunItActedOn()
+    {
+        var (window, diff, bar) = Open(TextDiffPicking.Lines, TextDiffActions.Stage);
+
+        Pick(diff, 4, 6);
+        window.UpdateLayout();
+
+        Pick(diff, 7, 8);
+        window.UpdateLayout();
+
+        Assert.Null(diff.Chunk);
+        Assert.False(bar.IsVisible);
+
+        List<TextDiffActions> asked = [];
+        diff.Asked += (_, e) => asked.Add(e.Action);
+
+        Press(window, Key.S, PhysicalKey.S);
+
+        Assert.Empty(asked);
 
         window.Close();
     }
