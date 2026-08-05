@@ -179,9 +179,13 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
         return result;
     }
 
+    // Tomlyn has two array types and a table array is not a TomlArray, so [[a.b]] needs
+    // its own case or it reaches the document as a Tomlyn type. Reading only: writing one
+    // back through ToTomlValue would make a plain array of inline tables.
     private static object? FromToml(object? value) => value switch
     {
         TomlTable table => ToTables(table),
+        TomlTableArray tables => tables.Select(FromToml).ToArray(),
         TomlArray array => array.Select(FromToml).ToArray(),
         _ => value,
     };

@@ -1,25 +1,20 @@
 using Avalonia.Controls;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Kitbash.Core;
+using Kitbash.Tools;
 
 namespace Kitbash.ViewModels;
 
-/// <summary>A tool as the launcher lists it.</summary>
+/// <summary>
+/// A tool as the launcher lists it. One card is either something installed, which may
+/// have an update waiting, or something a repository offers.
+/// </summary>
 public partial class ToolCardViewModel : ObservableObject
 {
-    /// <summary>Milliseconds before a simulated update shows its first progress.</summary>
-    private const int UpdateLead = 300;
-
-    /// <summary>Milliseconds between steps of a simulated update.</summary>
-    private const int UpdateStep = 260;
-
     /// <summary>Most actions a card promotes out of the menu, counting the primary.</summary>
     private const int ProminentActions = 3;
 
-    private readonly string _installed;
-    private readonly string? _offered;
-    private readonly bool _blocks;
+    private readonly Func<ToolCardViewModel, Task>? _install;
     private readonly IReadOnlyList<string> _actions;
 
     [ObservableProperty]
@@ -28,57 +23,61 @@ public partial class ToolCardViewModel : ObservableObject
     [ObservableProperty]
     private double _progress;
 
-    private bool _updated;
-
+    /// <param name="tool">What is on disk, or null for a tool that is only offered.</param>
+    /// <param name="offer">What a repository has, or null when none does.</param>
+    /// <param name="install">Puts <paramref name="offer"/> on this machine.</param>
     public ToolCardViewModel(
-        ITool tool,
-        string mark,
-        string version,
-        string? offered,
-        bool installed,
-        bool blocked,
-        IReadOnlyList<string> actions,
-        IReadOnlyList<ToolMenuItemViewModel> menu)
+        InstalledTool? tool,
+        OfferedTool? offer,
+        Func<ToolCardViewModel, Task>? install = null,
+        IReadOnlyList<string>? actions = null,
+        IReadOnlyList<ToolMenuItemViewModel>? menu = null)
     {
-        ArgumentNullException.ThrowIfNull(tool);
-        ArgumentNullException.ThrowIfNull(actions);
-        ArgumentNullException.ThrowIfNull(menu);
+        if (tool is null && offer is null)
+        {
+            throw new ArgumentException("A card is an installed tool, an offered one, or both.", nameof(tool));
+        }
 
         Tool = tool;
-        Mark = mark;
-        IsInstalled = installed;
-        Menu = menu;
+        Offer = offer;
+        Menu = menu ?? [];
 
-        _installed = version;
-        _offered = offered;
-        _blocks = blocked;
-        _actions = actions;
+        _install = install;
+        _actions = actions ?? [];
     }
 
-    public ITool Tool { get; }
+    /// <summary>Null when the tool is not installed.</summary>
+    public InstalledTool? Tool { get; }
+
+    /// <summary>Null when no repository is offering this tool.</summary>
+    public OfferedTool? Offer { get; }
 
     /// <summary>The letter on the card's tile, until a tool supplies an icon.</summary>
-    public string Mark { get; }
+    public string Mark => Name.Length == 0 ? "?" : Name[..1].ToUpperInvariant();
 
-    public string Name => Tool.Name;
+    public string Name => Tool?.Name ?? Offer!.Name;
 
-    public string Description => Tool.Description;
+    public string Description => Tool?.Summary ?? Offer!.Summary;
 
     /// <summary>False lists the tool under available rather than installed.</summary>
-    public bool IsInstalled { get; }
+    public bool IsInstalled => Tool is not null;
 
     public IReadOnlyList<ToolMenuItemViewModel> Menu { get; }
 
-    /// <summary>The version installed, which becomes the offered one once an update lands.</summary>
-    public string Version => _updated ? _offered! : _installed;
+    public bool HasMenu => Menu.Count > 0;
 
-    public bool HasUpdate => _offered is not null && !_updated && !IsUpdating;
+    /// <summary>The version installed, or the one on offer for a tool that is not.</summary>
+    public string Version => (Tool?.Version ?? Offer!.Version).ToString();
+
+    /// <summary>A repository has a version above the one installed.</summary>
+    public bool HasUpdate =>
+        !IsUpdating && Tool is { } tool && Offer is { } offer && offer.Version.CompareTo(tool.Version) > 0;
 
     /// <summary>
     /// The tool cannot open this workspace until it is updated. Nothing says so in words.
     /// The card offers one button, which is its own explanation.
     /// </summary>
-    public bool IsBlocked => _blocks && !_updated;
+    public bool IsBlocked => HasUpdate && Offer!.Manifest.Required;
 
     public bool ShowLaunch => !IsDead && IsInstalled;
 
@@ -97,9 +96,7 @@ public partial class ToolCardViewModel : ObservableObject
     /// </summary>
     public GridLength BarColumn => IsUpdating ? new GridLength(1, GridUnitType.Star) : GridLength.Auto;
 
-    public string ReleaseNoteLabel => $"What is new in {_offered}";
-
-    public string UninstallLabel => $"Uninstall {Name}";
+    public string ReleaseNoteLabel => $"What is new in {Offer?.Version}";
 
     /// <summary>
     /// The actions promoted out of the menu. An update takes one of the three slots, and a
@@ -114,14 +111,18 @@ public partial class ToolCardViewModel : ObservableObject
     /// <summary>Neither the lead button nor a promoted action is offered.</summary>
     private bool IsDead => IsBlocked && !IsUpdating;
 
+    /// <summary>What the install reports back, as a percentage of the whole payload.</summary>
+    public void Report(double percent) => Progress = Math.Clamp(percent, 0, 100);
+
     /// <summary>
-    /// Runs an update and reports it in the card. Nothing is downloaded. There is no answer
-    /// yet to where a tool comes from, so this only drives the states the design draws.
+    /// Installs the offered version, which is Install on a card without the tool and
+    /// Update on one with it. The page is read again afterwards, so this card is replaced
+    /// rather than updated in place.
     /// </summary>
     [RelayCommand]
-    private async Task Update()
+    private async Task Install()
     {
-        if (IsUpdating || _updated || _offered is null)
+        if (IsUpdating || _install is null || Offer is null)
         {
             return;
         }
@@ -129,19 +130,14 @@ public partial class ToolCardViewModel : ObservableObject
         Progress = 0;
         IsUpdating = true;
 
-        await Task.Delay(UpdateLead).ConfigureAwait(true);
-
-        while (Progress < 100)
+        try
         {
-            Progress = Math.Min(100, Progress + Random.Shared.Next(9, 23));
-
-            await Task.Delay(UpdateStep).ConfigureAwait(true);
+            await _install(this).ConfigureAwait(true);
         }
-
-        _updated = true;
-        IsUpdating = false;
-
-        OnPropertyChanged(nameof(Version));
+        finally
+        {
+            IsUpdating = false;
+        }
     }
 
     partial void OnProgressChanged(double value) => OnPropertyChanged(nameof(PercentLabel));
@@ -160,5 +156,5 @@ public partial class ToolCardViewModel : ObservableObject
     }
 }
 
-/// <summary>One line of a tool card's menu.</summary>
-public sealed record ToolMenuItemViewModel(string Label, string? Hint = null);
+/// <summary>One line of a tool card's menu, and what choosing it does.</summary>
+public sealed record ToolMenuItemViewModel(string Label, Action Invoke, string? Hint = null);

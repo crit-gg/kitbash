@@ -10,6 +10,7 @@ public sealed class ApplicationPaths
 {
     private const string ApplicationName = "Kitbash";
     private const string GlobalFileName = "kitbash.toml";
+    private const string ToolStateFileName = "state.toml";
     private const string ToolsDirectoryName = "tools";
     private const string EnginesDirectoryName = "engines";
     private const string LayoutsDirectoryName = "layouts";
@@ -39,11 +40,30 @@ public sealed class ApplicationPaths
     /// </summary>
     public string Engines => Path.Combine(State, EnginesDirectoryName);
 
+    /// <summary>
+    /// Where every installed tool lives, one folder per tool. Under the data directory
+    /// beside the engines, since an install is a download and losing it is not free.
+    /// </summary>
+    public string Tools => Path.Combine(State, ToolsDirectoryName);
+
+    /// <summary>
+    /// Everything about one tool: its installed versions, a folder each, and the state
+    /// file beside them. The folder need not exist.
+    /// </summary>
+    public string ToolDirectoryFor(string toolId) =>
+        Path.Combine(Tools, SettingsScope.ForTool(toolId).ToolId!);
+
     /// <summary>The settings file backing one scope. The file need not exist.</summary>
     public string SettingsFileFor(SettingsScope scope) => FileIn(Configuration, scope);
 
-    /// <summary>The state file backing one scope. The file need not exist.</summary>
-    public string StateFileFor(SettingsScope scope) => FileIn(State, scope);
+    /// <summary>
+    /// The state file backing one scope. A tool's sits inside its own folder, beside the
+    /// versions installed for it, so one tool is one place. The file need not exist.
+    /// </summary>
+    public string StateFileFor(SettingsScope scope) =>
+        scope.IsGlobal
+            ? Path.Combine(State, GlobalFileName)
+            : Path.Combine(ToolDirectoryFor(scope.ToolId!), ToolStateFileName);
 
     /// <summary>
     /// Where one view's window layout is kept. It is state rather than a setting, since

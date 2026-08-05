@@ -2,13 +2,12 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
                  x:Class="Kitbash.Views.UninstallDialog"
-                 Title="Uninstall engine"
                  Width="428" SizeToContent="Height"
                  FontFamily="{StaticResource FontFamilyUi}"
                  FontSize="{StaticResource FontSizeBody}">
 
     <Grid RowDefinitions="Auto,*,Auto">
-        <ui:WindowTitleBar Grid.Row="0" Title="Uninstall engine" />
+        <ui:WindowTitleBar Grid.Row="0" Name="Bar" />
 
         <StackPanel Grid.Row="1" Margin="16,16,16,14">
             <Grid ColumnDefinitions="20,*" ColumnSpacing="11">

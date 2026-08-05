@@ -50,6 +50,9 @@ public sealed class FileSystem : IFileSystem
     public void MoveFile(string sourcePath, string destinationPath, bool overwrite) =>
         File.Move(sourcePath, destinationPath, overwrite);
 
+    public void MoveDirectory(string sourcePath, string destinationPath) =>
+        Directory.Move(sourcePath, destinationPath);
+
     public DateTimeOffset? GetLastWriteTime(string path)
     {
         try

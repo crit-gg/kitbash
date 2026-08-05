@@ -116,6 +116,19 @@ sees the encoding change along with the setting. So `Apply` looks at the first t
 and writes the mark back through a `StreamWriter` when it was there. A file without one
 never gains one. Measured: 29 bytes in, 26 out, before this.
 
+**An array of tables is read and never written.** `[[a.b]]` reads back as an array of
+dictionaries, which is what the tool repository list is. Tomlyn has two array types and a
+table array is not a `TomlArray`, so it takes its own case in the store. Nothing writes
+one: `ToTomlValue` would make a plain array of inline tables, and no page declares such a
+key, so a write is refused before it gets there. A write into a file holding one leaves it
+exactly as it was, which was measured.
+
+**A key added to a table that holds only comments lands under them, after the blank line
+that separates the next table.** Valid TOML, read back correctly, and a reset gives the
+file back byte for byte, but the blank line ends up above the new key rather than below
+it. `AddTo` carries trivia off the last pair's end of line token and an empty table has no
+pair to carry from. Cosmetic, and untouched.
+
 **Keys are compared ordinally, and that is not the same rule as paths.** A TOML key is case
 sensitive on every platform, so nothing here goes through `IPathRules`, which exists
 because Windows filesystems ignore case. `Godot.Engine` and `godot.engine` are two keys on
@@ -231,6 +244,9 @@ There are two ways to get the third:
 
 - `AddKitbashSettings(paths)` for an app that opens one workspace and keeps it. Writes
   through `ISettingsService`, so that service's cache is dropped by the same call.
+- `IWorkspaceSettingsFactory`, from `AddKitbashWorkspaces`, for reading a workspace named
+  at the call rather than one held for the life of the app. The launcher reads the open
+  workspace's repository list through it.
 - `AddKitbashKnownWorkspaceSettings()` for an app that holds a list of them, which is
   the launcher. Writes straight to the document store, since nothing in that app caches a
   workspace's settings.
@@ -359,7 +375,7 @@ its answer is not known until something searches, which is why those two use bla
 
 `ApplicationPaths.Engines` is `engines` under the data directory, which is the case
 `State` was put there for. It reads oddly on Windows, where the data directory already
-ends in `State`, so engines land in `%LOCALAPPDATA%\Kitbash\State\engines`. Moving it
+ends in `State`, so engines land in `%LOCALAPPDATA%\KitbashData\State\engines`. Moving it
 means a fourth user directory and is a decision of its own.
 
 `IExternalTools.Dotnet` is what `godot.build` set to Automatic resolves through, so a
@@ -391,10 +407,19 @@ thing that knows the OS layout. `ApplicationPaths` names the files under them.
 | | Linux | Windows |
 |---|---|---|
 | Configuration | `$XDG_CONFIG_HOME/kitbash` or `~/.config/kitbash` | `%APPDATA%\Kitbash`, roams |
-| State | `$XDG_DATA_HOME/kitbash` or `~/.local/share/kitbash` | `%LOCALAPPDATA%\Kitbash\State` |
-| Cache | `$XDG_CACHE_HOME/kitbash` or `~/.cache/kitbash` | `%LOCALAPPDATA%\Kitbash\Cache` |
+| State | `$XDG_DATA_HOME/kitbash` or `~/.local/share/kitbash` | `%LOCALAPPDATA%\KitbashData\State` |
+| Cache | `$XDG_CACHE_HOME/kitbash` or `~/.cache/kitbash` | `%LOCALAPPDATA%\KitbashData\Cache` |
 
 An XDG variable holding a relative path is ignored, which the spec requires.
+
+**The Windows local folder is the application name plus `Data`, and that is Velopack's
+doing.** It installs the app to `%LOCALAPPDATA%\Kitbash` and its uninstaller deletes that
+whole folder, so state and cache sit in a sibling rather than inside it. Nothing a person
+owns may go under the install root.
+
+**A tool's state file sits in the tool's own folder**, at `<state>/tools/<id>/state.toml`,
+beside the version folders installed for it, so everything about one tool is in one place.
+`ApplicationPaths.StateFileFor` is what says so and `Tools` is the directory.
 
 The application folder is lower case on Unix and keeps its written case on Windows,
 which is what each platform does with its own directories. `IUserDirectories` folds it,

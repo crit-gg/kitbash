@@ -1,13 +1,14 @@
 using Avalonia.Controls;
 using Kitbash.Core.Godot;
+using Kitbash.Tools;
 using Kitbash.Ui.Controls;
 using Kitbash.ViewModels;
 
 namespace Kitbash.Views;
 
 /// <summary>
-/// Asks before an engine is removed. A real window, so the desktop owns modality and there
-/// is no scrim.
+/// Asks before something installed is removed. A real window, so the desktop owns
+/// modality and there is no scrim.
 /// </summary>
 public partial class UninstallDialog : DialogWindow
 {
@@ -27,6 +28,8 @@ public partial class UninstallDialog : DialogWindow
         var dialog = new UninstallDialog();
         var name = EngineRowViewModel.NameOf(engine.Tag);
 
+        dialog.Titled("Uninstall engine");
+
         dialog.Heading.Text = engine.IsImported
             ? $"Remove Godot {name} from the list?"
             : $"Uninstall Godot {name}?";
@@ -43,5 +46,35 @@ public partial class UninstallDialog : DialogWindow
             : $"{EngineRowViewModel.Size(engine.SizeOnDisk)} on disk";
 
         return dialog;
+    }
+
+    /// <summary>
+    /// The tool's version directories go and everything a person owns stays, so the
+    /// consequence line says so rather than warning about losing work.
+    /// </summary>
+    /// <param name="onDisk">What the versions take up, already written for a person.</param>
+    public static UninstallDialog For(InstalledTool tool, string onDisk)
+    {
+        ArgumentNullException.ThrowIfNull(tool);
+
+        var dialog = new UninstallDialog();
+
+        dialog.Titled("Uninstall tool");
+
+        dialog.Heading.Text = $"Uninstall {tool.Name}?";
+        dialog.Body.Text = "The files are deleted from disk. Its settings and anything it "
+            + "wrote in a workspace are left alone, so installing it again finds them.";
+
+        dialog.Confirm.Content = "Uninstall";
+        dialog.Path.Text = tool.Directory;
+        dialog.Size.Text = onDisk;
+
+        return dialog;
+    }
+
+    private void Titled(string title)
+    {
+        Title = title;
+        Bar.Title = title;
     }
 }

@@ -27,6 +27,13 @@ public interface IFileSystem
     void MoveFile(string sourcePath, string destinationPath, bool overwrite);
 
     /// <summary>
+    /// Renames a directory. The destination must not exist, so this never merges into one
+    /// that is already there. Within one filesystem it is atomic, which is what lets a
+    /// directory be built beside its final name and put in place whole.
+    /// </summary>
+    void MoveDirectory(string sourcePath, string destinationPath);
+
+    /// <summary>
     /// When the path was last written, or null when it is not there. Used to read a
     /// timestamp off a file whose contents do not matter, such as when a repository last
     /// fetched.

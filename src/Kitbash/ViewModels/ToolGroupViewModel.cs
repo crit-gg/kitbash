@@ -10,19 +10,23 @@ namespace Kitbash.ViewModels;
 /// </summary>
 public partial class ToolGroupViewModel : ObservableObject
 {
-    /// <summary>Milliseconds a simulated check for updates takes.</summary>
-    private const int CheckDelay = 1800;
+    private readonly Func<Task>? _check;
 
     [ObservableProperty]
     private bool _isChecking;
 
-    public ToolGroupViewModel(string label, IReadOnlyList<ToolCardViewModel> tools, bool offersUpdates)
+    public ToolGroupViewModel(
+        string label,
+        IReadOnlyList<ToolCardViewModel> tools,
+        bool offersUpdates,
+        Func<Task>? check = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
         Label = label;
         Tools = tools;
         ShowsCheck = offersUpdates;
+        _check = check;
 
         foreach (var tool in tools)
         {
@@ -48,25 +52,30 @@ public partial class ToolGroupViewModel : ObservableObject
 
     [RelayCommand]
     private Task UpdateAll() =>
-        Task.WhenAll(Pending.Select(tool => tool.UpdateCommand.ExecuteAsync(null)));
+        Task.WhenAll(Pending.Select(tool => tool.InstallCommand.ExecuteAsync(null)));
 
     /// <summary>
-    /// Reports on itself in place rather than raising a toast, the way the status bar does.
-    /// Nothing is asked, since there is nowhere yet to ask.
+    /// Asks every repository now rather than using what was cached. Reports on itself in
+    /// place rather than raising a toast, the way the status bar does.
     /// </summary>
     [RelayCommand]
     private async Task Check()
     {
-        if (IsChecking)
+        if (IsChecking || _check is null)
         {
             return;
         }
 
         IsChecking = true;
 
-        await Task.Delay(CheckDelay).ConfigureAwait(true);
-
-        IsChecking = false;
+        try
+        {
+            await _check().ConfigureAwait(true);
+        }
+        finally
+        {
+            IsChecking = false;
+        }
     }
 
     partial void OnIsCheckingChanged(bool value) => OnPropertyChanged(nameof(CheckLabel));

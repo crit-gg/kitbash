@@ -15,7 +15,7 @@ public readonly record struct SettingsScope
     /// <summary>Settings the launcher and every tool can read.</summary>
     public static SettingsScope Global { get; } = new(null);
 
-    /// <summary>Settings for one tool, keyed by its <see cref="ITool.Id"/>.</summary>
+    /// <summary>Settings for one tool, keyed by the id the launcher installed it under.</summary>
     public static SettingsScope ForTool(string toolId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(toolId);

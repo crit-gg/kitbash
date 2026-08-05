@@ -83,7 +83,6 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IExecutableFinder, ExecutableFinder>();
         services.TryAddSingleton<IDesktopLauncherResolver, DesktopLauncherResolver>();
         services.TryAddSingleton(CreatePlatform);
-
         return services;
     }
 
@@ -216,6 +215,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IWorkspaceNameResolver, WorkspaceNameResolver>();
         services.TryAddSingleton<IWorkspaceScaffold, WorkspaceScaffold>();
         services.TryAddSingleton<IWorkspaceRegistry, WorkspaceRegistry>();
+        services.TryAddSingleton<IWorkspaceSettingsFactory, WorkspaceSettingsFactory>();
 
         return services;
     }

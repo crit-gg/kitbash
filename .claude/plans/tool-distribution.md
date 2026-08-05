@@ -2,16 +2,50 @@
 
 How a tool reaches a machine, where it lives, and how it is kept current.
 
-This replaces **The tool system** in `distribution-and-updates.md`, which assumed one
-catalogue on one server we run. Sources are plural now, and the first one is GitHub
-releases. Everything else on that page still stands, including the two tier model that
-put this half here in the first place.
+The two tier model this sits inside is the `kitbash-updates` skill: Velopack installs and
+updates the launcher, and the launcher installs and updates tools. An earlier version of
+this assumed one catalogue on one server we run. Sources are plural instead, and the first
+one is GitHub releases.
 
 ## Status
 
-**Nothing here is built.** `src/tools/` is empty, the five tools on the launcher's page
-are placeholders in `App.BuildRegistry`, and every version and install state on a card is
-invented in `Kitbash/Mock/MockToolCatalogue.cs`.
+**Steps 1 to 6 of the order of work are built.** A tool is found, listed, started,
+offered by a repository, installed, updated and uninstalled. **Step 7, the GitHub login,
+is the only one left**, so a private repository is not reachable and the hourly
+unauthenticated request allowance is what a check costs.
+
+- **The Windows user directories moved.** State and cache are under
+  `%LOCALAPPDATA%\KitbashData` and the install root holds the app alone.
+- **`Kitbash/Tools/` is the model**, and it is the launcher's rather than Core's:
+  `ToolId`, `ToolVersion`, `ToolManifest`, `IToolManifestReader`, `IToolRuntime`,
+  `IInstalledTools`, `IToolStarter`, `IToolRepositoryList`, `IToolRepository` with
+  `GitHubToolRepository`, `IToolCatalogue`, `IToolInstaller` and `ToolLog`.
+- **`ITool`, `IToolActivation`, `IToolRegistry`, `ToolDescriptor` and
+  `DelegateToolActivation` are gone from Core**, along with `App.BuildRegistry` and
+  `MockToolCatalogue`. Core keeps `SettingsScope.ForTool`, which is only a string.
+- **Core grew two things this needed.** `IWorkspaceSettingsFactory`, so an app holding a
+  list of workspaces can read any of them, and `IFileSystem.MoveDirectory`, which is what
+  puts a version directory in place whole.
+- **The tools page is the real thing.** Installed and available are two groups, Install,
+  Update, Update all, Check for updates and Uninstall all do what they say, and the card
+  draws its progress from the install.
+
+Measured on this machine, Linux, through a console harness and a headless run of the real
+launcher. What was exercised, with a real download over http, a real checksum and a real
+archive: a tool placed by hand found and started; a repository listing, offering the
+newest version, skipping a prerelease and a tag that is not a version; an install from a
+card's Install button; an update from its Update button, with both versions on disk and
+the older one swept at the next launch; an uninstall keeping `state.toml`; a payload one
+byte short and a payload one byte changed both refused with nothing left behind; a second
+repository claiming a taken id refused by name; and two unreachable repositories changing
+nothing on screen while the installed tool kept working. The GitHub release parse was
+checked against the live API on two real repositories.
+
+**What has not been exercised: a real Kitbash tool release.** No tool is published, so
+the release list and the manifests came from the launcher's own caches, written by hand
+in the shape GitHub answers, and the payloads came from a local http server. The parse of
+GitHub's real JSON was checked separately against `velopack/velopack` and
+`godotengine/godot`.
 
 ## Settled
 
@@ -73,9 +107,9 @@ to carry its payload in the repository and install by checking out a tag, which 
 different model with different costs, not a variation on this one. Build it when a host
 that is not a forge actually matters.
 
-**A static index** on a bucket is the arrangement `distribution-and-updates.md`
-originally described, and it is the cheapest of the three. `tools.json` beside the
-launcher's own feed. It is worth having for anything published alongside the launcher.
+**A static index** on a bucket is the cheapest of the three, and it was the original
+arrangement here: `tools.json` beside the launcher's own feed. It is worth having for
+anything published alongside the launcher.
 
 **Gitea and GitLab** are the same shape as GitHub with different URLs.
 
@@ -246,7 +280,8 @@ directories as the fix.
 | Cache | `%LocalAppData%\Kitbash\Cache` | `%LocalAppData%\KitbashData\Cache` |
 
 Linux does not change. Nothing has been distributed, so there is no migration to write,
-and **this has to land before the tools directory exists** rather than after.
+and **this has to land before the tools directory exists** rather than after. **It has
+landed.**
 
 `KitbashData` is the one arbitrary name here. It exists because the plain one is taken,
 and it is free to change until the first release.
@@ -438,8 +473,102 @@ If the launcher runs a shell script then it installs and starts programs rather 
 hosting managed code, which is the claim the whole two tier model rests on. Steps 1 to 4
 are exactly this and nothing more.
 
+**That is what was done, and the claim holds.** The script ran, in its own folder, with
+the workspace it was told about. Alongside it: a folder whose name is not an id, one whose
+manifest names a different tool, one whose only payload is for another platform, and one
+with no version in it, all four left out; three versions of one tool with the newest
+opening; and a `state.toml` naming an older one, which opened instead.
+
 Then the same with the gallery, which is a real .NET application, to find out what a
 hundred megabyte payload feels like to install.
+
+## What building steps 1 to 4 settled
+
+Everything here is a decision this page did not already hold.
+
+**The manifest is copied into the version folder**, at `kitbash-tool.json`, so
+`<state>/tools/<id>/<version>/` holds the payload and the manifest it came from. That is
+what lets a card draw its name, summary and executable with no network, and it is what
+makes a folder placed by hand a tool with nothing else written anywhere.
+
+**The manifest says which version a folder is, not the folder name.** So the two can never
+disagree and nothing has to reconcile them. A folder can be called anything.
+
+**The folder name is the id, and the manifest's `id` has to be its tool half.** A folder
+called `github.foundry` holding a manifest that says `foundry` is that tool, and one that
+says anything else is skipped rather than opened under a name it did not choose.
+
+**An id is lower case letters, digits and dashes, in one part or two.** Stricter than a
+file name, because Windows ignores case and Linux does not, so `Foundry` and `foundry`
+would be one tool on one machine and two on the other. One part is a tool with no source,
+which is what a folder placed by hand is.
+
+**`state.toml` holds `install.version`, and it is read through `IApplicationState`.** A
+tool's scope already points at that file now `StateFileFor` is folded, so nothing new
+stores anything. **A version it names that is not installed falls back to the newest that
+is**, rather than leaving the tool missing.
+
+**This machine's runtime identifier is `RuntimeInformation.RuntimeIdentifier`.** It is
+what .NET reports for the running host, so nothing here tests the operating system, and a
+musl machine reports itself as one rather than claiming a payload built for glibc.
+
+**Everything about downloading is optional in the reader**, so `asset`, `size` and
+`sha256` may all be absent. A folder placed by hand has nothing to download and still has
+something to run. The installer is what requires them, and it is not built.
+
+**The executable is a relative path written with forward slashes**, since that is what an
+archive holds whichever platform packed it. A path that is rooted, holds `..`, or carries
+a character Windows refuses is refused when the manifest is read, because a manifest comes
+off the internet and names a program the launcher then runs.
+
+**A folder that will not read is left out and nothing is said.** Same rule as an
+unreachable repository. There is nowhere to log it yet, which is worth fixing when step 5
+lands and failures start having causes worth reading.
+
+**Uninstall is on the card's menu and it asks first**, through the same dialog the
+engines page uses, which now takes a tool as well as an engine.
+
+## What building steps 5 and 6 settled
+
+**An installed tool does not pre claim its id.** The page has to be able to say a newer
+version is waiting, and it cannot if the id being installed stops every repository
+offering it. So the catalogue answers one offer per id whatever is installed, first
+source in list order wins the id, and the page joins the two by id: installed with a
+higher offer is an update, an offer with nothing installed is available. Nothing on disk
+is ever touched by a list changing, which is what the rule was protecting.
+
+**The launcher reads the disk, draws, then asks the network and draws again.** A person
+who has a tool should not wait on a server to see it. The tools page fills in twice on
+every refresh and the second pass is the only one that can be slow.
+
+**A repository type that is not github.com is not this type.** `GitHubToolRepository`
+refuses any other host rather than guessing at an API root, so a self hosted forge is a
+type of its own when somebody wants one. The factory logs what it could not read.
+
+**An install refuses a payload with no checksum.** The plan's manifest always publishes
+one and a payload is a program off the internet, so an unhashed one is refused rather
+than trusted. `asset`, `size` and `sha256` stay optional in the reader, since a folder
+placed by hand has nothing to download.
+
+**tar.gz or zip is chosen by what the asset is called, not by the platform**, so a
+payload marked `any` unpacks the same way everywhere. Nothing is stripped from the front
+of an entry path: the manifest names the executable exactly as the archive holds it. Only
+plain files are unpacked, so a link inside a payload is skipped rather than followed.
+
+**The release list is cached for three hours and a manifest forever.** Check for updates
+passes refresh, which ignores both. Conditional requests, which GitHub documents as not
+counting against the allowance, are not built, because `IWebContent` carries no headers.
+That is the cheapest thing to do when the login lands.
+
+**An old version is removed at the next launch, never during an update.** The launcher
+sweeps once when it reads the tools directory, and a directory Windows will not delete
+because something is running from it is left for the launch after.
+
+**The repository list is read only.** `[[tools.repositories]]` is an array of tables,
+which the settings machinery could not read at all, so `TomlSettingsDocumentStore` learnt
+to read one. Writing one back is not built and no page declares the key, so a repository
+is added by editing a file. A settings write into a file holding a list leaves the list
+exactly as it was, which was measured.
 
 ## Open questions
 

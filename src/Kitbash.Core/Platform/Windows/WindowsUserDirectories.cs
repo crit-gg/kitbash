@@ -9,6 +9,13 @@ namespace Kitbash.Core.Platform.Windows;
 /// </summary>
 internal sealed class WindowsUserDirectories : IUserDirectories
 {
+    /// <summary>
+    /// Added to the application name for the local folder. Velopack installs an app to
+    /// %LOCALAPPDATA% under its pack id and its uninstaller deletes that whole folder, so
+    /// anything a person owns is kept in a sibling of it rather than inside it.
+    /// </summary>
+    private const string DataSuffix = "Data";
+
     private readonly IEnvironment _environment;
 
     public WindowsUserDirectories(IEnvironment environment)
@@ -21,10 +28,10 @@ internal sealed class WindowsUserDirectories : IUserDirectories
         Path.Combine(Roaming, Named(application));
 
     public string StateFor(string application) =>
-        Path.Combine(Local, Named(application), "State");
+        Path.Combine(Local, Named(application) + DataSuffix, "State");
 
     public string CacheFor(string application) =>
-        Path.Combine(Local, Named(application), "Cache");
+        Path.Combine(Local, Named(application) + DataSuffix, "Cache");
 
     // The variables are set on every supported version. The fallback is the layout
     // they would name, so a stripped environment still lands in the right place.

@@ -158,7 +158,7 @@ agent as an author.
 
 ```
 Kitbash.slnx
-src/Kitbash.Core/    shared contract (ITool, IToolActivation, IToolRegistry)
+src/Kitbash.Core/    what a tool and the launcher share: IO, settings, workspaces, git, Godot
 src/Kitbash.Ui/      the look: tokens, type, control themes, fonts, the window shell
 src/Kitbash.Gallery/ every control, live, for building and checking the library
 src/Kitbash/         the launcher app, Avalonia 12
@@ -217,7 +217,8 @@ the problem:
 - `.claude/dotnet.md` the .NET and toolchain notes
 - `.claude/godot-engines.md` how engine builds are named, downloaded and installed
 - `.claude/plans/tool-distribution.md` where a tool comes from, how it is installed and
-  how it is kept current. Read before touching `ITool`, the registry or the tools page.
+  how it is kept current. Read before touching anything under `Kitbash/Tools` or the tools
+  page.
 - `.claude/plans/` the twelve design stages and the plans not yet started
 
 **A new rule goes in the skill it belongs to, not here.** This file grows only when a
@@ -280,13 +281,11 @@ All of that is built and measured. **`UpdateSettingsSchema.IsEnabled` is false**
 there is nowhere to publish to yet, so nothing checks and the settings window offers no
 feed. Releases will go to Backblaze B2 from a GitHub workflow that versions them itself.
 
-The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash`,
-which is also the parent of `State` and `Cache`. Velopack's uninstaller deletes the whole
-install root, so **uninstalling takes the workspace list, every setting and every
-installed engine with it**. Moving the two user directories out is the fix and has not
-been done. `.claude/plans/distribution-and-updates.md` has the rules and records five
-things it originally got wrong. **Tool distribution is not built**,
-so `ITool` and the registry are unchanged.
+The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash`, and
+Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there any
+more**: state and cache moved to `%LocalAppData%\KitbashData`, which is what had to happen
+before tools could be installed. `.claude/plans/distribution-and-updates.md` has the rules
+and records five things it originally got wrong.
 
 The app was moved to the Slate design in the thirteen stages under `.claude/plans/`. **The
 numbers are the order**, and every stage depended only on lower ones, so the plan ran
@@ -387,13 +386,19 @@ the secondary button with `:checked` taking the pressed fill, and it is in the g
 beside the six kinds. The radio and the checkbox now put their mark where
 `VerticalContentAlignment` says, so the renderer rows can sit it against the first line.
 
-**The tools section is drawn, its data is invented, and it is hidden.** The set of tools is
-the registry's, and every version, update, install state and blocked state on a card comes
-from `Kitbash/Mock/MockToolCatalogue.cs`. Update, Update all and Check for updates run timers
-and download nothing. None of it is on screen: `LauncherViewModel.HasTools` is false, so the
-page shows a Tools are coming soon panel and the cards draw only when it turns true. The
-markup and the mock are both intact behind it. That stands until there is an answer to where
-a tool comes from, which is an open decision below. Delete the mock when there is.
+**The tools page is real and it installs.** Six of the seven steps in
+`.claude/plans/tool-distribution.md` are built. A tool comes from a repository, GitHub
+releases is the one kind, and `Kitbash/Tools` holds all of it: the manifest and its
+reader, the id and version rules, the repository list read out of the global config and
+the open workspace's, the catalogue that decides what is offered, the installer, and the
+scan of `<state>/tools/<id>/<version>/` that says what is here. A tool starts as its own
+process, in its own folder, told which workspace is open. Installed and available are two
+groups on the page and Install, Update, Update all, Check for updates and Uninstall all
+work. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
+read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation`,
+`IToolRegistry` and the mock catalogue are gone, and Core keeps only
+`SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured
+against a real Kitbash release. Read the plan before touching any of it.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
 `.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in

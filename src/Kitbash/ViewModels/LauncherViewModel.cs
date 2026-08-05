@@ -1,15 +1,14 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Kitbash.Core;
 using Kitbash.Core.Git;
 using Kitbash.Core.Godot;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 using Kitbash.Core.Workspaces;
-using Kitbash.Mock;
 using Kitbash.Settings;
+using Kitbash.Tools;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.ViewModels;
@@ -35,12 +34,22 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGodotLauncher _godotLauncher;
     private readonly IGodotProjectReader _projects;
     private readonly IWorkspaceMaker _maker;
+    private readonly IInstalledTools _installed;
+    private readonly IToolStarter _starter;
+    private readonly IToolCatalogue _tools;
+    private readonly IToolInstaller _installer;
+    private readonly ToolLog _log;
+    private readonly IFileSystem _files;
     private readonly IToastService _toasts;
     private readonly IPlatformServices _platform;
     private readonly ILauncherCloseSettings _close;
     private readonly IApplicationShutdown _shutdown;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
+
+    private IReadOnlyList<ToolGroupViewModel> _toolGroups = [];
+    private IReadOnlyList<OfferedTool> _offers = [];
+    private bool _swept;
 
     [ObservableProperty]
     private bool _workspacesOpen;
@@ -73,8 +82,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IWorkspaceRegistry workspaces,
         IWorkspacesSettings workspaceSettings,
         IPathShortener paths,
-        IToolRegistry tools,
-        MockToolCatalogue catalogue,
+        IInstalledTools installed,
+        IToolStarter starter,
+        IToolCatalogue tools,
+        IToolInstaller installer,
+        ToolLog log,
+        IFileSystem files,
         IGitStatusMonitor git,
         IGitUpdater updater,
         IGitCloner cloner,
@@ -96,8 +109,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceSettings);
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(starter);
         ArgumentNullException.ThrowIfNull(tools);
-        ArgumentNullException.ThrowIfNull(catalogue);
+        ArgumentNullException.ThrowIfNull(installer);
+        ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(updater);
         ArgumentNullException.ThrowIfNull(cloner);
@@ -131,14 +148,18 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _godotLauncher = godotLauncher;
         _projects = projects;
         _maker = maker;
+        _installed = installed;
+        _starter = starter;
+        _tools = tools;
+        _installer = installer;
+        _log = log;
+        _files = files;
         _toasts = toasts;
         _platform = platform;
         _close = close;
         _shutdown = shutdown;
 
         Engines = engines;
-
-        ToolGroups = catalogue.Build(tools.Tools);
 
         // The monitor reads on its own threads, so what it says has to be carried over
         // before anything bound to it is touched.
@@ -157,6 +178,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // Not part of the read above, which runs before the window exists and has to stay
         // quick. This one probes every install and can run a process.
         _ = RefreshEngineAsync();
+
+        // Scans the tools directory, which is a disk read, so it happens off this thread
+        // and the page fills in a moment after it opens.
+        _ = RefreshToolsAsync();
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
@@ -175,16 +200,216 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public GitViewModel Git { get; } = new();
 
     /// <summary>
-    /// The registered tools, split into installed and available. The set comes from the
-    /// registry and every version, update and install state on it comes from the mock.
+    /// What the tools page draws, which is what is installed on this machine. Nothing
+    /// offers a tool to install yet, so there is one group rather than two.
     /// </summary>
-    public IReadOnlyList<ToolGroupViewModel> ToolGroups { get; }
+    public IReadOnlyList<ToolGroupViewModel> ToolGroups
+    {
+        get => _toolGroups;
+        private set
+        {
+            SetProperty(ref _toolGroups, value);
+            OnPropertyChanged(nameof(HasTools));
+        }
+    }
+
+    /// <summary>False shows the empty state instead of the cards.</summary>
+    public bool HasTools => ToolGroups.Count > 0;
 
     /// <summary>
-    /// Whether the tools section draws. False while every card on it is invented, so the
-    /// page says tools are coming rather than offering ones that do not exist.
+    /// Reads what is installed, draws it, then asks the repositories and draws again. Two
+    /// passes because the disk answers at once and a network does not, and a person who
+    /// has a tool should not wait on a server to see it.
     /// </summary>
-    public bool HasTools => false;
+    /// <param name="refresh">Asks every repository now rather than using what was cached.</param>
+    public async Task RefreshToolsAsync(bool refresh = false)
+    {
+        var installed = await Task.Run(_installed.Read).ConfigureAwait(true);
+
+        if (!_swept)
+        {
+            // At launch, since a version is never removed while anything might be running
+            // from it. A failed install leaves its own leftovers here too.
+            _swept = true;
+            _ = Task.Run(() => _installer.SweepOldVersions(installed));
+        }
+
+        Draw(installed, _offers);
+
+        _offers = await ReadOffersAsync(refresh).ConfigureAwait(true);
+
+        Draw(installed, _offers);
+    }
+
+    private async Task<IReadOnlyList<OfferedTool>> ReadOffersAsync(bool refresh)
+    {
+        try
+        {
+            return await _tools.ReadAsync(refresh, CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // Nothing a repository does reaches a person, so a fault here leaves the page
+            // showing what is installed and says nothing.
+            _log.Say("the tool catalogue could not be read", exception);
+
+            return _offers;
+        }
+    }
+
+    private void Draw(IReadOnlyList<InstalledTool> installed, IReadOnlyList<OfferedTool> offers)
+    {
+        var offered = offers.ToDictionary(offer => offer.Id.Value, StringComparer.Ordinal);
+        var held = installed.Select(tool => tool.Id.Value).ToHashSet(StringComparer.Ordinal);
+
+        List<ToolCardViewModel> mine =
+        [
+            .. installed.Select(tool => new ToolCardViewModel(
+                tool,
+                offered.GetValueOrDefault(tool.Id.Value),
+                InstallToolAsync,
+                menu: MenuFor(tool))),
+        ];
+
+        List<ToolCardViewModel> theirs =
+        [
+            .. offers
+                .Where(offer => !held.Contains(offer.Id.Value))
+                .Select(offer => new ToolCardViewModel(null, offer, InstallToolAsync)),
+        ];
+
+        List<ToolGroupViewModel> groups = [];
+
+        if (mine.Count > 0)
+        {
+            groups.Add(new ToolGroupViewModel(
+                "INSTALLED TOOLS",
+                mine,
+                offersUpdates: true,
+                () => RefreshToolsAsync(refresh: true)));
+        }
+
+        if (theirs.Count > 0)
+        {
+            groups.Add(new ToolGroupViewModel("AVAILABLE TO INSTALL", theirs, offersUpdates: false));
+        }
+
+        ToolGroups = groups;
+    }
+
+    /// <summary>
+    /// Puts the offered version on this machine, which is Install for a tool nobody has
+    /// and Update for one somebody does. The page is read again either way.
+    /// </summary>
+    private async Task InstallToolAsync(ToolCardViewModel card)
+    {
+        if (card.Offer is not { } offer)
+        {
+            return;
+        }
+
+        var progress = new Progress<ToolInstallProgress>(step => card.Report(Percent(step)));
+
+        try
+        {
+            await Task.Run(() => _installer.InstallAsync(offer, progress, CancellationToken.None))
+                .ConfigureAwait(true);
+
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Ok,
+                Title = $"{offer.Name} {offer.Version} is installed",
+            });
+        }
+        catch (ToolInstallException exception)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"{offer.Name} could not be installed",
+                Body = exception.Message,
+            });
+        }
+
+        await RefreshToolsAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// The bar across the whole install rather than across one stage, so it only ever goes
+    /// forwards. The download is nearly all of the wait, so it takes nearly all of the bar.
+    /// </summary>
+    private static double Percent(ToolInstallProgress step) => step.Stage switch
+    {
+        ToolInstallStage.Downloading => (step.Fraction ?? 0) * 90,
+        ToolInstallStage.Verifying => 92,
+        ToolInstallStage.Extracting => 96,
+        _ => 100,
+    };
+
+    /// <summary>What a tool's installed version takes up, written for a person to read.</summary>
+    public string SizeOnDisk(InstalledTool tool)
+    {
+        ArgumentNullException.ThrowIfNull(tool);
+
+        var bytes = _files
+            .EnumerateFiles(tool.Directory, recursive: true)
+            .Sum(_files.GetFileLength);
+
+        return $"{EngineRowViewModel.Size(bytes)} on disk";
+    }
+
+    /// <summary>Removes every version and keeps the tool's settings and its state.</summary>
+    public async Task UninstallToolAsync(InstalledTool tool)
+    {
+        ArgumentNullException.ThrowIfNull(tool);
+
+        try
+        {
+            await Task.Run(() => _installer.Uninstall(tool)).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"{tool.Name} could not be removed",
+                Body = exception.Message,
+            });
+        }
+
+        await RefreshToolsAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Opens a tool. It outlives the launcher, so a person can close this window and keep
+    /// working, and a tool that will not start says so as a toast rather than in place.
+    /// </summary>
+    public async Task LaunchToolAsync(InstalledTool tool)
+    {
+        ArgumentNullException.ThrowIfNull(tool);
+
+        var workspace = _workspaces.Current?.Root;
+
+        try
+        {
+            await Task.Run(() => _starter.Start(tool, workspace)).ConfigureAwait(true);
+        }
+        catch (ProcessStartException exception)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"{tool.Name} could not start",
+                Body = exception.Message,
+            });
+        }
+    }
+
+    /// <summary>
+    /// What a card's menu holds. One entry, until installing and uninstalling land.
+    /// </summary>
+    private IReadOnlyList<ToolMenuItemViewModel> MenuFor(InstalledTool tool) =>
+        [new ToolMenuItemViewModel("Open folder", () => OpenFolder(tool.Directory))];
 
     /// <summary>
     /// Registers a folder and opens it. A folder inside a workspace already added is

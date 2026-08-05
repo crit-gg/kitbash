@@ -5,6 +5,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
+using Kitbash.Tools;
 using Kitbash.Ui.Controls;
 using Kitbash.Ui.Settings;
 using Kitbash.Updates;
@@ -277,9 +278,10 @@ public partial class LauncherWindow : ChromelessWindow
     // The result has nowhere to go until the launcher grows an error surface.
     private void OnLaunchToolClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is Control { DataContext: ToolCardViewModel card })
+        if (sender is Control { DataContext: ToolCardViewModel { Tool: { } tool } }
+            && DataContext is LauncherViewModel launcher)
         {
-            _ = card.Tool.Activation.ActivateAsync();
+            _ = launcher.LaunchToolAsync(tool);
         }
     }
 
@@ -296,24 +298,43 @@ public partial class LauncherWindow : ChromelessWindow
 
         foreach (var item in card.Menu)
         {
-            menu.Items.Add(new MenuItem { Header = item.Label, InputGesture = Gesture(item.Hint) });
-        }
+            var entry = new MenuItem { Header = item.Label, InputGesture = Gesture(item.Hint) };
 
-        if (card.HasUpdate || card.ShowUpdateLead)
-        {
-            Separate(menu);
-            menu.Items.Add(new MenuItem { Header = card.ReleaseNoteLabel });
+            entry.Click += (_, _) => item.Invoke();
+
+            menu.Items.Add(entry);
         }
 
         // Last, behind a separator, and it names its tool, so a click on the wrong card is
         // visible before it is confirmed.
-        if (card.IsInstalled)
+        if (card.Tool is { } tool)
         {
             Separate(menu);
-            menu.Items.Add(new MenuItem { Header = card.UninstallLabel, Classes = { "danger" } });
+            menu.Items.Add(Item(
+                $"Uninstall {card.Name}",
+                enabled: true,
+                () => _ = UninstallToolAsync(tool),
+                danger: true));
         }
 
         menu.ShowAt(button);
+    }
+
+    private async Task UninstallToolAsync(InstalledTool tool)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        // Walking a directory is a disk read, so it happens before the dialog is built
+        // rather than while the UI thread is drawing it.
+        var size = await Task.Run(() => model.SizeOnDisk(tool));
+
+        if (await UninstallDialog.For(tool, size).ShowDialog<bool>(this))
+        {
+            await model.UninstallToolAsync(tool);
+        }
     }
 
     private static void Separate(MenuFlyout menu)

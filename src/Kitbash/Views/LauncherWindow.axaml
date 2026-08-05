@@ -473,6 +473,7 @@
                                                                          the primary has one target and one meaning. -->
                                                                     <Button Grid.Column="2" Classes="icon"
                                                                             VerticalAlignment="Top"
+                                                                            IsVisible="{Binding HasMenu}"
                                                                             ToolTip.Tip="More"
                                                                             AutomationProperties.Name="More"
                                                                             Click="OnToolMenuClick">
@@ -502,7 +503,7 @@
 
                                                                         <Button Grid.Column="0" Margin="0,0,7,0"
                                                                                 IsVisible="{Binding ShowUpdate}"
-                                                                                Command="{Binding UpdateCommand}">
+                                                                                Command="{Binding InstallCommand}">
                                                                             <StackPanel Orientation="Horizontal" Spacing="7">
                                                                                 <ui:Icon Glyph="ArrowBigDownLine"
                                                                                          Size="{DynamicResource IconSizeField}"
@@ -535,14 +536,15 @@
                                                                         <Button Grid.Column="2"
                                                                                 HorizontalAlignment="Stretch"
                                                                                 Content="Install"
-                                                                                IsVisible="{Binding ShowInstall}" />
+                                                                                IsVisible="{Binding ShowInstall}"
+                                                                                Command="{Binding InstallCommand}" />
 
                                                                         <!-- One button is its own explanation, so a
                                                                              blocked card greys nothing out. -->
                                                                         <Button Grid.Column="2" Classes="neutral"
                                                                                 HorizontalAlignment="Stretch"
                                                                                 IsVisible="{Binding ShowUpdateLead}"
-                                                                                Command="{Binding UpdateCommand}">
+                                                                                Command="{Binding InstallCommand}">
                                                                             <StackPanel Orientation="Horizontal" Spacing="7">
                                                                                 <ui:Icon Glyph="ArrowBigDownLine"
                                                                                          Size="{DynamicResource IconSizeField}"
@@ -582,8 +584,8 @@
                             </ItemsControl>
                         </ScrollViewer>
 
-                        <!-- No tool is built yet, so the section that would list them says
-                             so. Same shape as the empty workspace page. -->
+                        <!-- Nothing installed and nothing offered. Same shape as the empty
+                             workspace page. -->
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                                     MaxWidth="400"
                                     IsVisible="{Binding !HasTools}">
@@ -593,7 +595,7 @@
                                          Foreground="{DynamicResource Accent}" />
                             </Border>
 
-                            <TextBlock Text="Tools are coming soon" Margin="0,18,0,0"
+                            <TextBlock Text="No tools yet" Margin="0,18,0,0"
                                        FontSize="{DynamicResource FontSizeDialogTitle}"
                                        FontWeight="{DynamicResource FontWeightStrong}"
                                        Foreground="{DynamicResource InkPrimary}"
@@ -604,7 +606,7 @@
                                        LineHeight="18"
                                        TextWrapping="Wrap" TextAlignment="Center"
                                        Foreground="{DynamicResource InkSecondary}"
-                                       Text="The first tools are being built. They will show up here for the workspace you have open." />
+                                       Text="A tool comes from a repository. Add one under tools.repositories in your Kitbash config and it shows up here, ready to install." />
                         </StackPanel>
                       </Panel>
                     </Border>
