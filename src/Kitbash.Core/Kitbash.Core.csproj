@@ -35,7 +35,7 @@
          answered on a signal and dies with the connection that asked, so the connection has
          to outlive the call, which no command line tool can do. The secret store already
          brings this, so naming it here only pins the version. -->
-    <PackageReference Include="Tmds.DBus.Protocol" Version="0.92.0" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
   </ItemGroup>
 
   <!-- A store cannot compile without its package, so each one goes out with it. -->

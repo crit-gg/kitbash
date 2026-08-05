@@ -57,18 +57,21 @@ public sealed class LinuxScreenColour : IScreenColour
                 Member = "Response",
             },
             (Message message, object? _) => Read(message, token),
-            (Exception? failure, (bool Ours, ScreenColour? Colour) reply, object? _, object? _) =>
+
+            // A notification carrying no value is the connection or the observer ending, and
+            // the ordinary end is this request being disposed once the answer is in.
+            notification =>
             {
-                if (failure is not null)
+                if (notification.Exception is { } failure)
                 {
                     answer.TrySetException(new ScreenColourException("The desktop portal stopped answering.", failure));
                 }
-                else if (reply.Ours)
+                else if (notification.HasValue && notification.Value.Ours)
                 {
-                    answer.TrySetResult(reply.Colour);
+                    answer.TrySetResult(notification.Value.Colour);
                 }
             },
-            ObserverFlags.None);
+            flags: ObserverFlags.None);
 
         // A person taking their time is the ordinary case, so nothing here times out, and
         // the caller's own token is what ends the wait early. It is registered before the
