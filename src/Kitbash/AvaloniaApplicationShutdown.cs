@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Kitbash.Ui;
 
 namespace Kitbash;
 

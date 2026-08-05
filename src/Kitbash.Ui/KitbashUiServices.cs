@@ -17,6 +17,19 @@ namespace Kitbash.Ui;
 public static class KitbashUiServices
 {
     /// <summary>
+    /// The way onto the thread that owns the views. Anything raising an event off a timer,
+    /// a watch or a background read needs one before it touches a bound property.
+    /// </summary>
+    public static IServiceCollection AddKitbashDispatcher(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
+
+        return services;
+    }
+
+    /// <summary>
     /// The toast service, its clock and its settings. Register any of the three
     /// beforehand to substitute it, since these all use <c>TryAdd</c>.
     /// </summary>

@@ -1,6 +1,6 @@
 using Avalonia.Threading;
 
-namespace Kitbash;
+namespace Kitbash.Ui;
 
 /// <summary>The real one, over Avalonia's dispatcher.</summary>
 public sealed class AvaloniaUiDispatcher : IUiDispatcher

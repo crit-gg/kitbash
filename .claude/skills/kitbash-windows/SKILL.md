@@ -29,6 +29,13 @@ bound properties. `LauncherViewModel.Read` and `Apply` are the shape to copy: `R
 disk half and runs anywhere, `Apply` is the screen half and runs after the await. One load
 at a time behind a semaphore, since two overlapping race on what a registry holds.
 
+**Coming back the other way is `IUiDispatcher`.** A timer, a directory watch or any
+background read raises its event on a thread pool thread, and a bound property touched from
+there throws or draws nothing. `AddKitbashDispatcher` registers the Avalonia one, and a view
+model takes the interface rather than reaching for `Dispatcher.UIThread` itself, so a test
+can hand it one that runs the action there and then. `IGitStatusMonitor` is the case that
+needs it, and both the launcher and Splice pair the two.
+
 The one read that stays synchronous is the first, in the constructor, because it runs before
 the window exists. There is no frame to drop, and it means a window opens filled in rather
 than opening empty and filling in a moment later.

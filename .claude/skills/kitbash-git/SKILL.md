@@ -392,8 +392,14 @@ a watch dies. VS Code closes the push case with an extra watch on the upstream r
 which is more machinery than a status bar earns.
 
 **Nothing runs while the app is not in front.** `IGitStatusMonitor.IsActive` parks the beat
-and every watch driven read, and coming back reads at once. The launcher drives it from
-`Activated` and `Deactivated`. VS Code parks its refresh the same way.
+and every watch driven read, and coming back reads at once. The launcher and Splice both
+drive it from `Activated` and `Deactivated`. VS Code parks its refresh the same way.
+
+**The monitor's own reading is not what a git client draws.** Splice takes it as a signal
+alone: `Changed` says something moved, and Splice then reads the repository its own way.
+That is why `Changed` is raised on a difference rather than on every read, and it is what
+makes following one repository affordable for an app that reads far more than a status bar
+does. Marshal it with `IUiDispatcher`, since it arrives on a thread pool thread.
 
 Reads are debounced 400ms, and a watch driven read cannot run more than once a second
 whatever the debounce lets through.

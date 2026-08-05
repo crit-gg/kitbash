@@ -9,6 +9,7 @@ using Kitbash.Core.Settings;
 using Kitbash.Core.Workspaces;
 using Kitbash.Settings;
 using Kitbash.Tools;
+using Kitbash.Ui;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.ViewModels;

@@ -1,4 +1,4 @@
-namespace Kitbash;
+namespace Kitbash.Ui;
 
 /// <summary>
 /// Moves work onto the thread that owns the views. Behind an interface so a view model can
