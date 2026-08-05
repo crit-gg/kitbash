@@ -30,6 +30,14 @@ public sealed record GitDiffLine(
     int? NewLine = null);
 
 /// <summary>
+/// One line of a patch, named by the hunk it is in and its place in that hunk. What a
+/// gesture picked, for staging less than a whole hunk.
+/// </summary>
+/// <param name="Hunk">The hunk's index in <see cref="GitPatch.Hunks"/>, counting from zero.</param>
+/// <param name="Line">The line's index in <see cref="GitHunk.Lines"/>, counting from zero.</param>
+public readonly record struct GitPatchLine(int Hunk, int Line);
+
+/// <summary>
 /// One run of changed lines and the context around it.
 /// </summary>
 /// <param name="OldStart">The first line number on the old side, counting from one.</param>

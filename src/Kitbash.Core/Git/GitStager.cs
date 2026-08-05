@@ -58,6 +58,20 @@ public sealed class GitStager : IGitStager
         CancellationToken cancellation = default) =>
         Apply(root, patch, hunks, reverse: true, cancellation);
 
+    public Task<GitResult> StageLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default) =>
+        Apply(root, patch, lines, reverse: false, cancellation);
+
+    public Task<GitResult> UnstageLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default) =>
+        Apply(root, patch, lines, reverse: true, cancellation);
+
     private Task<GitResult> Apply(
         string root,
         GitPatch patch,
@@ -68,7 +82,28 @@ public sealed class GitStager : IGitStager
         ArgumentNullException.ThrowIfNull(patch);
         ArgumentNullException.ThrowIfNull(hunks);
 
-        var text = _patches.Write(patch, hunks, reverse);
+        return Apply(root, _patches.Write(patch, hunks, reverse), reverse, cancellation);
+    }
+
+    private Task<GitResult> Apply(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        bool reverse,
+        CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+        ArgumentNullException.ThrowIfNull(lines);
+
+        return Apply(root, _patches.Write(patch, lines, reverse), reverse, cancellation);
+    }
+
+    private Task<GitResult> Apply(
+        string root,
+        string text,
+        bool reverse,
+        CancellationToken cancellation)
+    {
 
         if (text.Length == 0)
         {

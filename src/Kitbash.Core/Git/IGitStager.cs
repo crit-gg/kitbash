@@ -58,4 +58,26 @@ public interface IGitStager
         GitPatch patch,
         IReadOnlyCollection<int> hunks,
         CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Stages some of a file's changed lines. The patch must be the unstaged one, since that
+    /// is what describes the index this is applied to.
+    /// </summary>
+    /// <param name="lines">Which changed lines were picked. Context lines are never picked.</param>
+    Task<GitResult> StageLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Takes some of a file's changed lines back out of the index. The patch must be the
+    /// staged one.
+    /// </summary>
+    /// <inheritdoc cref="StageLinesAsync" path="/param[@name='lines']"/>
+    Task<GitResult> UnstageLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default);
 }

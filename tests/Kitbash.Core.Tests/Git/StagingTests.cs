@@ -366,4 +366,194 @@ public class StagingTests
 
         Assert.True((await repository.Stager.StageAsync(repository.Root, [], Stop)).Succeeded);
     }
+
+    /// <summary>Where a line with this text sits, as the hunk and the place in it.</summary>
+    private static GitPatchLine Find(GitPatch patch, string text)
+    {
+        for (var hunk = 0; hunk < patch.Hunks.Count; hunk++)
+        {
+            var lines = patch.Hunks[hunk].Lines;
+
+            for (var line = 0; line < lines.Count; line++)
+            {
+                if (string.Equals(lines[line].Text, text, StringComparison.Ordinal))
+                {
+                    return new GitPatchLine(hunk, line);
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"no line reading {text}");
+    }
+
+    /// <summary>Forty numbered lines with extra ones put in after the numbers named.</summary>
+    private static string Inserted(params (int After, string Text)[] extras)
+    {
+        List<string> lines = [];
+
+        for (var number = 1; number <= 40; number++)
+        {
+            lines.Add("line " + number.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+            foreach (var (after, text) in extras)
+            {
+                if (after == number)
+                {
+                    lines.Add(text);
+                }
+            }
+        }
+
+        return string.Join('\n', lines) + "\n";
+    }
+
+    // One added line of a run and not the ones around it. The index has to end up holding
+    // that line alone, with the rest still only in the working tree.
+    [Fact]
+    public async Task OneAddedLineOfAHunkGoesInWithoutTheRest()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nb\nc\n"));
+        repository.Write("one.txt", "a\nX\nY\nZ\nb\nc\n");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        var staged = await repository.Stager.StageLinesAsync(
+            repository.Root, patch, [Find(patch, "Y")], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+        Assert.Equal("a\nY\nb\nc\n", repository.Git("show", ":one.txt"));
+
+        // The file on disk was not touched, so X and Z are still there to stage.
+        Assert.Equal("a\nX\nY\nZ\nb\nc\n", repository.Read("one.txt"));
+    }
+
+    // The mirror. An unpicked removal has to survive as context, since the line really is
+    // still in the file git is applying this to.
+    [Fact]
+    public async Task OneRemovedLineOfAHunkGoesInWithoutTheRest()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nX\nY\nZ\nb\n"));
+        repository.Write("one.txt", "a\nb\n");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        var staged = await repository.Stager.StageLinesAsync(
+            repository.Root, patch, [Find(patch, "Y")], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+        Assert.Equal("a\nX\nZ\nb\n", repository.Git("show", ":one.txt"));
+    }
+
+    [Fact]
+    public async Task AddedAndRemovedLinesArePickedTogether()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nX\nY\nb\n"));
+        repository.Write("one.txt", "a\nP\nQ\nb\n");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        var staged = await repository.Stager.StageLinesAsync(
+            repository.Root, patch, [Find(patch, "X"), Find(patch, "Q")], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+
+        // X went out and Q came in. Y and P were not picked and are untouched.
+        Assert.Equal("a\nY\nQ\nb\n", repository.Git("show", ":one.txt"));
+    }
+
+    // Taking one line back out. Reverse is where an unpicked addition has to become context
+    // and an unpicked removal has to be dropped, which is the opposite of going in.
+    [Fact]
+    public async Task OneLineComesBackOutOfTheIndexOnItsOwn()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nb\nc\n"));
+        repository.Write("one.txt", "a\nX\nY\nZ\nb\nc\n");
+        repository.Git("add", "--all", "--", ".");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Staged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        var unstaged = await repository.Stager.UnstageLinesAsync(
+            repository.Root, patch, [Find(patch, "Y")], Stop);
+
+        Assert.True(unstaged.Succeeded, unstaged.Message);
+        Assert.Equal("a\nX\nZ\nb\nc\n", repository.Git("show", ":one.txt"));
+
+        // And the working tree still holds all three, so Y is unstaged rather than lost.
+        Assert.Equal("a\nX\nY\nZ\nb\nc\n", repository.Read("one.txt"));
+    }
+
+    // The case that catches a wrong offset. A hunk only part of which was taken moves the
+    // file by less than the whole diff would, so every later hunk starts somewhere else.
+    [Fact]
+    public async Task ALaterHunkLandsRightAfterAnEarlierOneWasOnlyPartlyTaken()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", TestRepository.Lines(40)));
+        repository.Write("one.txt", Inserted((5, "FIVE A"), (5, "FIVE B"), (30, "THIRTY A"), (30, "THIRTY B")));
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+        Assert.Equal(2, patch.Hunks.Count);
+
+        var staged = await repository.Stager.StageLinesAsync(
+            repository.Root, patch, [Find(patch, "FIVE A"), Find(patch, "THIRTY B")], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+
+        // One line from each hunk, and the second landed where it belongs even though the
+        // first hunk went in one line shorter than the diff said.
+        Assert.Equal(
+            Inserted((5, "FIVE A"), (30, "THIRTY B")),
+            repository.Git("show", ":one.txt"));
+    }
+
+    [Fact]
+    public async Task PickingNoChangedLineIsNotAnError()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nb\nc\n"));
+        repository.Write("one.txt", "a\nX\nb\nc\n");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        // A context line, which is never a change however it was picked.
+        var staged = await repository.Stager.StageLinesAsync(
+            repository.Root, patch, [Find(patch, "a")], Stop);
+
+        Assert.True(staged.Succeeded, staged.Message);
+        Assert.Equal("", Staged(repository));
+    }
 }
