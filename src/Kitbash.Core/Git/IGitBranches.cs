@@ -11,6 +11,16 @@ public interface IGitBranches
         string root, bool includeRemote = true, CancellationToken cancellation = default);
 
     /// <summary>
+    /// The full ref name of every branch whose commits are all in <paramref name="into"/>,
+    /// which is what says a branch has nothing left on it. The named branch is one of them.
+    /// </summary>
+    Task<IReadOnlyList<string>> ReadMergedAsync(
+        string root,
+        string into,
+        bool includeRemote = true,
+        CancellationToken cancellation = default);
+
+    /// <summary>
     /// Makes a branch, and moves to it unless told not to. A start point is anything git
     /// accepts as a revision, and null means the head.
     /// </summary>

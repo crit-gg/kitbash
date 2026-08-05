@@ -136,4 +136,62 @@ public class CommitTests
 
         Assert.Null(await repository.Committer.ReadIdentityAsync(repository.Root, Stop));
     }
+
+    [Fact]
+    public async Task RevertingACommitMakesTheOppositeOfIt()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Commit("add the second", ("two.txt", "two\n"));
+
+        var result = await repository.Committer.RevertAsync(repository.Root, "HEAD", true, Stop);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.False(File.Exists(Path.Combine(repository.Root, "two.txt")));
+        Assert.Contains("Revert", repository.Git("log", "--format=%s", "-1"));
+    }
+
+    // Git wants told which parent to keep when the commit is a merge. Measured on git 2.55,
+    // naming one on a commit that is not a merge is accepted and ignored, so it is always
+    // passed and both kinds go down one path.
+    [Fact]
+    public async Task AMergeCommitCanBeRevertedToo()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("switch", "--create", "work");
+        repository.Commit("theirs", ("two.txt", "two\n"));
+        repository.Git("switch", "main");
+        repository.Commit("ours", ("three.txt", "three\n"));
+        repository.Git("merge", "--no-edit", "work");
+
+        var result = await repository.Committer.RevertAsync(repository.Root, "HEAD", true, Stop);
+
+        Assert.True(result.Succeeded, result.Message);
+
+        // The side that came in is gone and the side that was here stayed.
+        Assert.False(File.Exists(Path.Combine(repository.Root, "two.txt")));
+        Assert.True(File.Exists(Path.Combine(repository.Root, "three.txt")));
+    }
+
+    [Fact]
+    public async Task ARevertLeftUncommittedIsInTheIndexAndNowhereElse()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Commit("add the second", ("two.txt", "two\n"));
+
+        var head = repository.Git("rev-parse", "HEAD").Trim();
+        var result = await repository.Committer.RevertAsync(repository.Root, "HEAD", false, Stop);
+
+        Assert.True(result.Succeeded, result.Message);
+        Assert.Equal(head, repository.Git("rev-parse", "HEAD").Trim());
+        Assert.False(File.Exists(Path.Combine(repository.Root, "two.txt")));
+    }
 }

@@ -182,4 +182,40 @@ public class BranchTests
 
         Assert.DoesNotContain(branches, b => b.IsRemote);
     }
+
+    [Fact]
+    public async Task ABranchWithNothingLeftOnItReadsAsMerged()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("switch", "--create", "done");
+        repository.Commit("finished", ("two.txt", "two\n"));
+        repository.Git("switch", "main");
+        repository.Git("merge", "--no-edit", "done");
+
+        repository.Git("switch", "--create", "going");
+        repository.Commit("part way", ("three.txt", "three\n"));
+        repository.Git("switch", "main");
+
+        var merged = await repository.Branches.ReadMergedAsync(repository.Root, "main", true, Stop);
+
+        Assert.Contains("refs/heads/done", merged);
+        Assert.DoesNotContain("refs/heads/still going", merged);
+
+        // A branch is merged into itself, which is what says the base has nothing waiting.
+        Assert.Contains("refs/heads/main", merged);
+    }
+
+    [Fact]
+    public async Task NothingIsMergedIntoARevisionThatDoesNotResolve()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+
+        Assert.Empty(await repository.Branches.ReadMergedAsync(repository.Root, "nowhere", true, Stop));
+    }
 }

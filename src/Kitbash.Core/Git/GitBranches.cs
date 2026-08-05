@@ -61,6 +61,34 @@ public sealed class GitBranches : IGitBranches
         return branches;
     }
 
+    public async Task<IReadOnlyList<string>> ReadMergedAsync(
+        string root,
+        string into,
+        bool includeRemote = true,
+        CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(into);
+
+        var arguments = new List<string>
+        {
+            "for-each-ref",
+            "--format=%(refname)",
+            "--merged",
+            into,
+            "refs/heads",
+        };
+
+        if (includeRemote)
+        {
+            arguments.Add("refs/remotes");
+        }
+
+        var result = await _git.RunAsync(root, new GitCommand(arguments), cancellation)
+            .ConfigureAwait(false);
+
+        return result.Succeeded ? result.Lines : [];
+    }
+
     public Task<GitResult> CreateAsync(
         string root,
         string name,

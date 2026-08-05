@@ -62,6 +62,28 @@ public sealed class GitCommitter : IGitCommitter
         return _git.RunAsync(root, new GitCommand(arguments).Reading(message), cancellation);
     }
 
+    public Task<GitResult> RevertAsync(
+        string root,
+        string revision,
+        bool commit = true,
+        CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(revision);
+
+        // A merge has no single opposite, so git wants told which parent to keep. Measured on
+        // git 2.55, naming one on a commit that is not a merge is accepted and ignored.
+        var arguments = new List<string> { "revert", "--mainline", "1", "--no-edit" };
+
+        if (!commit)
+        {
+            arguments.Add("--no-commit");
+        }
+
+        arguments.Add(revision);
+
+        return _git.RunAsync(root, new GitCommand(arguments), cancellation);
+    }
+
     public async Task<GitIdentity?> ReadIdentityAsync(
         string root, CancellationToken cancellation = default)
     {

@@ -63,6 +63,7 @@ public sealed class TestRepository : IDisposable
         Conflicts = new GitConflictReader(Runner);
         Files = new GitFileStatusReader(Runner);
         Refs = new GitRefReader(Runner);
+        Merger = new GitMerger(Runner, Refs);
 
         Git(bare ? ["init", "--bare", "-b", "main"] : ["init", "-b", "main"]);
 
@@ -106,6 +107,8 @@ public sealed class TestRepository : IDisposable
     public IGitFileStatusReader Files { get; }
 
     public IGitRefReader Refs { get; }
+
+    public IGitMerger Merger { get; }
 
     /// <summary>Whether there is a git to run at all, which every test skips without.</summary>
     public bool HasGit => Runner.IsAvailable;

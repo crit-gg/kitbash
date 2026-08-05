@@ -41,6 +41,17 @@ public interface IGitCommitter
         CancellationToken cancellation = default);
 
     /// <summary>
+    /// Commits the opposite of another commit. Conflicts leave the repository part way
+    /// through a revert, which <see cref="IGitConflictReader"/> is what reads and abandons.
+    /// </summary>
+    /// <param name="commit">False to leave the undoing in the working tree and the index.</param>
+    Task<GitResult> RevertAsync(
+        string root,
+        string revision,
+        bool commit = true,
+        CancellationToken cancellation = default);
+
+    /// <summary>
     /// The name and address a commit would carry, or null when either is unset. A repository
     /// with neither cannot commit, so this is what a client asks before offering to.
     /// </summary>

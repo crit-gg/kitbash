@@ -49,6 +49,7 @@ The services, all from `AddKitbashGit`:
 | `IGitCommitter` | commits, and who one would be by |
 | `IGitBranches` | listing, creating, switching, deleting |
 | `IGitSync` | fetch, push, pull |
+| `IGitMerger` | merging a revision in, and what that would cost before it starts |
 | `IGitConflictReader` | the three versions a conflict leaves, and settling one |
 | `IGitCloner`, `IGitUpdater`, `IGitStatusMonitor` | the launcher's own three |
 
@@ -214,6 +215,11 @@ in a way it would not be for a path. `%(upstream:track)` is git's own note,
 `switch` rather than `checkout`, so a branch and a path can never be confused for each
 other, and `switch --detach` for a commit.
 
+`ReadMergedAsync` is `for-each-ref --merged`, which is what says a branch has nothing left
+on it. **A branch is merged into itself**, so the ref asked about is always in the answer
+and a caller listing finished branches has to drop it. A revision that does not resolve
+answers nothing rather than failing.
+
 ### Which branch is the base, and how far from it
 
 `IGitRefReader` answers the questions a branch list cannot. **`refs/remotes/origin/HEAD` is
@@ -242,6 +248,54 @@ would go back to the network to learn what it just learned. `--ff-only` by defau
 
 **Never a rebase.** A rebase settles the same conflict once per commit, which for a binary
 file is once too many.
+
+### Merging, and asking first
+
+`IGitMerger` merges a revision into the branch the head is on. **Git says which of the
+outcomes it was in prose rather than in an exit code**, the way push and pull do, and
+`GitMergeOutcome` names the ones a person needs told apart. Measured on git 2.55, and the
+phrases read for are these:
+
+| Outcome | What git said |
+|---|---|
+| `AlreadyLevel` | `Already up to date.` |
+| `FastForwarded` | `Fast-forward` |
+| `Merged` | anything else that succeeded |
+| `NotFastForward` | `fatal: Not possible to fast-forward, aborting.`, exit 128 |
+| `Blocked` | `Your local changes to the following files would be overwritten by merge` |
+| `Conflicted` | `Automatic merge failed`, exit 1 |
+| `NoSuchRevision` | `merge: <name> - not something we can merge` |
+
+**`Blocked` happens before anything starts**, so the working tree is untouched and there
+is no merge to abandon. `Conflicted` is the opposite: the merge is under way and
+`IGitConflictReader` is what reads it and puts it back.
+
+**`PreviewAsync` is `merge-tree --write-tree`, which touches no working tree and moves no
+branch**, so it is safe to run while a person reads. Exit 0 is clean and exit 1 is
+conflicts. Anything else is git refusing, which reads as `Unknown` rather than as clean.
+
+- **The merge base is worked out first and named.** Without `--merge-base` git finds one
+  itself and treats two histories with nothing in common as an error, and that case has to
+  be answerable rather than a failure.
+- **`-z` for the same reason every other path form uses it.** The form is the tree, then
+  the conflicted paths, then an empty record, then git's own messages. `GitResult.Records`
+  drops empty entries, so the section end is invisible through it and the output is split
+  by hand.
+- It writes a tree object into the database. Nothing points at it, so it is loose until a
+  gc, which is what SourceGit's own preview leaves behind too.
+
+`IsAncestorAsync` is `merge-base --is-ancestor`, the question that says a push cannot be
+refused. A revision that does not resolve is false, since a caller asking this is deciding
+whether to offer a button.
+
+### Undoing a commit
+
+`RevertAsync` is `revert --mainline 1 --no-edit`. **A merge has no single opposite, so git
+wants told which parent to keep**, and measured on git 2.55 naming one on a commit that is
+not a merge is accepted and ignored. Both kinds go down one path because of that.
+
+`commit: false` leaves the undoing in the working tree and the index, which is how several
+reverts become one commit. A revert that conflicts leaves `GitMergeState.Reverting`.
 
 ### Conflict stages
 
