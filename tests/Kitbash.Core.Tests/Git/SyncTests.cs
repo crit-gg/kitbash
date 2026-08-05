@@ -230,4 +230,32 @@ public class SyncTests
         Assert.Equal(1, main.Behind);
         Assert.False(File.Exists(Path.Combine(local.Root, "theirs.txt")));
     }
+
+    [Fact]
+    public async Task ARepositoryWithNoRemoteSaysSoRatherThanFailing()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+
+        Assert.Empty(await repository.Sync.ReadRemotesAsync(repository.Root, Stop));
+    }
+
+    [Fact]
+    public async Task EveryRemoteIsNamed()
+    {
+        using var first = new TestRepository(bare: true);
+        using var second = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", first.Root);
+        repository.Git("remote", "add", "backup", second.Root);
+
+        var remotes = await repository.Sync.ReadRemotesAsync(repository.Root, Stop);
+
+        Assert.Equal(["backup", "origin"], remotes);
+    }
 }

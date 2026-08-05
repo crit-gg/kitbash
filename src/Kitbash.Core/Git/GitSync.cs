@@ -14,6 +14,15 @@ public sealed class GitSync : IGitSync
         _git = git;
     }
 
+    public async Task<IReadOnlyList<string>> ReadRemotesAsync(
+        string root, CancellationToken cancellation = default)
+    {
+        var result = await _git.RunAsync(root, GitCommand.Of("remote"), cancellation)
+            .ConfigureAwait(false);
+
+        return result.Succeeded ? result.Lines : [];
+    }
+
     public async Task<GitSyncResult> FetchAsync(
         string root, string? remote = null, CancellationToken cancellation = default)
     {

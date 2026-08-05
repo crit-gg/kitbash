@@ -48,7 +48,7 @@ The services, all from `AddKitbashGit`:
 | `IGitStager` | into and out of the index, whole files or single hunks |
 | `IGitCommitter` | commits, and who one would be by |
 | `IGitBranches` | listing, creating, switching, deleting |
-| `IGitSync` | fetch, push, pull |
+| `IGitSync` | fetch, push, pull, and which remotes there are |
 | `IGitMerger` | merging a revision in, and what that would cost before it starts |
 | `IGitConflictReader` | the three versions a conflict leaves, and settling one |
 | `IGitCloner`, `IGitUpdater`, `IGitStatusMonitor` | the launcher's own three |
@@ -245,6 +245,10 @@ upstream, which means there is nowhere to send it yet.
 
 Pull fetches and then merges what is already here, rather than running `git pull`, which
 would go back to the network to learn what it just learned. `--ff-only` by default.
+
+**A repository with no remote at all is ordinary, not broken.** `ReadRemotesAsync` is
+`git remote`, and empty is a real answer. A client that assumed one would offer a push that
+can only fail, so this is what it asks before drawing the button.
 
 **Never a rebase.** A rebase settles the same conflict once per commit, which for a binary
 file is once too many.

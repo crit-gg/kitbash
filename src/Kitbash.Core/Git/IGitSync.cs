@@ -92,9 +92,16 @@ public sealed record GitPullRequest
     public bool FastForwardOnly { get; init; } = true;
 }
 
-/// <summary>Sends commits to a remote and takes them from one.</summary>
+/// <summary>Sends commits to a remote, takes them from one, and says which there are.</summary>
 public interface IGitSync
 {
+    /// <summary>
+    /// Every remote this repository has, by name, in git's own order. Empty is a repository
+    /// with nowhere to send anything, which is a working repository rather than a broken one.
+    /// </summary>
+    Task<IReadOnlyList<string>> ReadRemotesAsync(
+        string root, CancellationToken cancellation = default);
+
     /// <summary>Brings the remote tracking refs up to date without touching any branch.</summary>
     Task<GitSyncResult> FetchAsync(
         string root, string? remote = null, CancellationToken cancellation = default);
