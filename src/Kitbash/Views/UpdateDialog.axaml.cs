@@ -67,6 +67,7 @@ public partial class UpdateDialog : DialogWindow
             }
 
             dialog.Finish();
+            await Task.Delay(250);
 
             try
             {
