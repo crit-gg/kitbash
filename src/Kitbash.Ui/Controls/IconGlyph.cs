@@ -10,6 +10,7 @@ public enum IconGlyph
     AlertCircle,
     AlertTriangle,
     ArrowBigDownLine,
+    ArrowOutUpLeftStrokeSquare,
     ArrowToBottom,
     Bolt,
     Check,

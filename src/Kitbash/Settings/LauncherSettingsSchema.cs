@@ -23,6 +23,7 @@ public sealed class LauncherSettingsSchema
         WorkspacesSettingsSchema workspaces,
         WorkspaceGodotSettingsSchema workspaceGodot,
         ToolRepositoriesSettingsSchema toolRepositories,
+        CustomToolsSettingsSchema customTools,
         UpdateSettingsSchema updates,
         IWorkspaceRegistry registry,
         IPathShortener shortener,
@@ -35,6 +36,7 @@ public sealed class LauncherSettingsSchema
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceGodot);
         ArgumentNullException.ThrowIfNull(toolRepositories);
+        ArgumentNullException.ThrowIfNull(customTools);
         ArgumentNullException.ThrowIfNull(updates);
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(shortener);
@@ -85,6 +87,7 @@ public sealed class LauncherSettingsSchema
             [
                 window.Page,
                 tools.Page,
+                customTools.Page,
                 godot.Page,
                 close.Page,
                 workspaces.Page,

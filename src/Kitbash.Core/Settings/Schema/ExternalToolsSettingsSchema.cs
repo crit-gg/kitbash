@@ -18,16 +18,6 @@ public sealed class ExternalToolsSettingsSchema
             Rules = [new PathShapeRule(PathKind.File, true, true)]
         };
 
-        GitClientPath = new SettingDescriptor<string>
-        {
-            Key = "tools.gitClient.path",
-            Name = "Git Client",
-            Description = "The git client to open a workspace in. Blank means none.",
-            Default = string.Empty,
-            NeedsRestart = true,
-            Rules = [new PathShapeRule(PathKind.File, true, true)]
-        };
-
         DotnetPath = new SettingDescriptor<string>
         {
             Key = "tools.dotnet.path",
@@ -44,14 +34,11 @@ public sealed class ExternalToolsSettingsSchema
             Title = "External tools",
             Home = SettingsHome.Application,
             Sections = [
-                new SettingsSection("Git", [GitPath, GitClientPath]),
+                new SettingsSection("Git", [GitPath]),
                 new SettingsSection(".NET", [DotnetPath])
             ]
         };
     }
-
-    /// <summary>Blank means no git client has been configured.</summary>
-    public SettingDescriptor<string> GitClientPath { get; set; }
 
     /// <summary>Blank means the git on PATH, which is what the app did before this existed.</summary>
     public SettingDescriptor<string> GitPath { get; }

@@ -42,12 +42,40 @@ public partial class LauncherWindow : ChromelessWindow
 
 
                 model.Failed ??= (failure, mode) => LaunchFailedDialog.Show(this, failure, mode);
+
+                model.OpenIn.PropertyChanged += OnOpenInChanged;
+                FillOpenIn();
             }
         };
     }
 
+    /// <summary>
+    /// Rebuilds the Open in menu when the workspace changes. It is filled as soon as the
+    /// rows are known rather than when the flyout opens, since a presenter that has already
+    /// been built does not pick up items added on the way open.
+    /// </summary>
+    private void OnOpenInChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(OpenInViewModel.Rows))
+        {
+            FillOpenIn();
+        }
+    }
+
+    // A flyout is not in the window's name scope, so it is reached through its button.
+    private void FillOpenIn()
+    {
+        if (OpenInButton.Flyout is MenuFlyout menu)
+        {
+            OpenIn?.Fill(menu, Model?.OpenIn.Rows ?? []);
+        }
+    }
+
     /// <summary>Where the rail's Settings item goes. Handed over by the composition root.</summary>
     public ISettingsWindows? Settings { get; init; }
+
+    /// <summary>Builds the Open in menu's controls. Handed over by the composition root.</summary>
+    public OpenInMenu? OpenIn { get; init; }
 
     /// <summary>
     /// What the title bar reads out beside the name. Set here rather than bound, since a

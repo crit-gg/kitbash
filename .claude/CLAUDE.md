@@ -233,6 +233,8 @@ the problem:
 - `.claude/plans/tool-distribution.md` where a tool comes from, how it is installed and
   how it is kept current. Read before touching anything under `Kitbash/Tools` or the tools
   page.
+- `.claude/plans/external-tools.md` what the Open in button was ported from and what could
+  not be tested here. Read before touching `Platform/Openers` or either opener finder.
 - `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken
   from the asset tool designs. Read before building any of them.
 - `.claude/plans/` the twelve design stages and the plans not yet started
@@ -373,6 +375,16 @@ the status bar in place, which is rule 8 of that row and not something a toast s
 over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
+
+**The engine strip has a second button, Open in external tool.** `IWorkspaceOpeners` in
+Core finds the VS Code family, JetBrains Toolbox IDEs, Visual Studio through vswhere and
+every terminal installed, and a person adds their own on the Open in settings page. It
+opens the workspace folder, or a `.sln` or `.code-workspace` found inside it. Ported from
+SourceGit, and each tool wears its own brand PNG rather than a glyph, which is the one
+place the launcher carries art the icon generator did not make. `tests/Kitbash.Tests` is a
+third test project, headless, and it is where the menu and the button are checked. Read the
+`kitbash-platform` skill and `.claude/plans/external-tools.md` before changing any of it.
+**None of the Windows half has ever been executed**, since this machine is Linux.
 
 **`ui:TextDiff` reads a diff as lines**, built for Splice and useful to any tool that shows
 one. It is the list again rather than a code editor: AvaloniaEdit was read and refused, since

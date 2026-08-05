@@ -5,6 +5,7 @@ using Kitbash.Core.Godot;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Linux;
+using Kitbash.Core.Platform.Openers;
 using Kitbash.Core.Platform.Windows;
 using Kitbash.Core.Settings;
 using Kitbash.Core.Settings.Schema;
@@ -345,6 +346,55 @@ public static class KitbashCoreServices
         services.TryAddEnumerable(ServiceDescriptor.Singleton<ISettingsHome, WorkspaceSettingsHome>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Opening a workspace in a program a person already has. Over the external tools,
+    /// since finding Git Bash on Windows means knowing where git is.
+    /// </summary>
+    public static IServiceCollection AddKitbashWorkspaceOpeners(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashExternalTools();
+        services.TryAddSingleton<JetBrainsToolbox>();
+        services.TryAddSingleton<IWorkspaceFileFinder, WorkspaceFileFinder>();
+        services.TryAddSingleton<IOpenerArguments, OpenerArguments>();
+        services.TryAddSingleton<ICustomOpeners, CustomOpeners>();
+        services.TryAddSingleton(CreateOpenerFinder);
+        services.TryAddSingleton<IWorkspaceOpeners, WorkspaceOpeners>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// A fifth place in this file that tests the running OS. Nothing about the registry
+    /// needs the version test the secret store has, since its annotation carries no version.
+    /// </summary>
+    private static IWorkspaceOpenerFinder CreateOpenerFinder(IServiceProvider provider)
+    {
+        var fileSystem = provider.GetRequiredService<IFileSystem>();
+        var environment = provider.GetRequiredService<IEnvironment>();
+        var executables = provider.GetRequiredService<IExecutableFinder>();
+        var toolbox = provider.GetRequiredService<JetBrainsToolbox>();
+
+        if (OperatingSystem.IsWindows())
+        {
+            return new WindowsWorkspaceOpenerFinder(
+                environment,
+                fileSystem,
+                executables,
+                provider.GetRequiredService<IProcessRunner>(),
+                provider.GetRequiredService<IExternalTools>(),
+                toolbox);
+        }
+
+        if (OperatingSystem.IsLinux())
+        {
+            return new LinuxWorkspaceOpenerFinder(executables, environment, fileSystem, toolbox);
+        }
+
+        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
     }
 
     private static IPlatformServices CreatePlatform(IServiceProvider provider)

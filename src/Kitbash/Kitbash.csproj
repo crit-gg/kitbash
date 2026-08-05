@@ -31,6 +31,9 @@
     <!-- Linked rather than copied, so icons/ stays the one source for the app mark
          and for packaging later. -->
     <AvaloniaResource Include="../../icons/icon_*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+
+    <!-- Brand marks for the Open in menu. Recursive, so a new subfolder needs no line here. -->
+    <AvaloniaResource Include="Assets/ExternalTools/**/*.png" />
   </ItemGroup>
 
   <ItemGroup>

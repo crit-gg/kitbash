@@ -93,8 +93,9 @@ before the blank line and comment that introduce the next one.
 the file by position, so a row that did not change keeps its own comments and key order,
 a surplus block is removed and a new row is appended. A file already spelling it inline,
 as `a.b = [{ }]`, keeps that spelling, since writing blocks beside it would leave the key
-in the file twice and no later read could open it. `tools.repositories` is the only such
-key and `.claude/plans/tool-distribution.md` has what it holds.
+in the file twice and no later read could open it. `tools.repositories` and `tools.custom`
+are the two such keys, and `.claude/plans/tool-distribution.md` and
+`.claude/plans/external-tools.md` have what each holds.
 
 **A comment above a key is not owned by that key and is left where it is.** The scaffolded
 workspace file settles it: every setting there sits under a paragraph and a commented out
@@ -326,8 +327,9 @@ the writer's guard on undeclared keys is unaffected.
 **`SettingsEditorRow` is for a value no descriptor can describe**, which today means an
 array of tables. The app writes an `ISettingsEditor`, the row carries it, and the window
 draws it as content, so the app registers a `DataTemplate` for its own type in
-`App.axaml`. `Kitbash/ViewModels/ToolRepositoriesEditor` is the one that exists, and
-`Kitbash/Settings/ToolRepositoriesSettingsSchema` is the page it sits on.
+`App.axaml`. There are two, `Kitbash/ViewModels/ToolRepositoriesEditor` on
+`ToolRepositoriesSettingsSchema` and `Kitbash/ViewModels/CustomToolsEditor` on
+`CustomToolsSettingsSchema`, and the second was written by copying the first.
 
 **An editor owns its value and its file, and the writer never sees it.** It has no key, so
 `Descriptors` reports nothing for it and the guard on undeclared keys still holds. That is
@@ -368,6 +370,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
 | `LauncherCloseSettingsSchema` | `launcher.close.projectManager`, `launcher.close.editor`, `launcher.close.play`, the launcher's |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
+| `CustomToolsSettingsSchema` | `tools.custom`, the launcher's, and through an editor too |
 
 **A `launcher.` key is the launcher's own behaviour and Core never declares one.** Closing
 after a project opens is something only the launcher can do, so the keys, the page and the

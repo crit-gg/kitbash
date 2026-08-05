@@ -370,6 +370,17 @@ at 133px.
 
 `MenuFlyout` is for a button's dropdown, which is what both of those behaviours are for.
 
+**An overlay lines up with its target's left edge, and `ui:Popups.AlignsRight="True"` is the
+only way out.** `Popups.Place` writes the placement itself and rewrites it whenever a
+control asks for something else, so setting `Placement` on a flyout does nothing at all.
+Put the property on the control the popup belongs to, never on the popup.
+
+Use it for a control at the right of a row, where a left aligned menu wider than its button
+runs away from the thing that opened it. The engine strip's Open in button is the one that
+does. **The room pull is mirrored with it**, since the offset that cancels the shadow's room
+is a leftward nudge and would otherwise hang the popup a room's width off the control.
+Measured on a real popup: 28 left by default and 28 right with the opt out.
+
 **A wheel inside an overlay stays in it.** A popup is its own window, but its child's
 logical parent is the popup, which lives in the parent window's tree, so an unhandled wheel
 routes out of the popup and scrolls the page behind it. Measured: a wheel inside the time

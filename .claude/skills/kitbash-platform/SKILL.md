@@ -130,6 +130,80 @@ launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE
 MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
 what it looked for. Add candidates there rather than in `LinuxPlatform`.
 
+## Opening a workspace elsewhere
+
+`IWorkspaceOpeners` is the Open in button beside the engine strip: every editor, IDE and
+terminal on this machine, plus the ones a person added. It is **not** `IExternalTools`,
+which says where git and dotnet are, and the two must not be merged. Everything lives in
+`Kitbash.Core/Platform/Openers/` with a finder per OS beside the other platform code.
+
+Ported from SourceGit, and `.claude/plans/external-tools.md` records which file each piece
+came from.
+
+**Two caching lifetimes, because the halves go stale differently.** What is installed is
+found once and held behind a gate, the reason `DesktopLauncherResolver` already gives: a
+program is not installed while the app runs. What a person set is read every call, since
+the settings window changes it while the launcher is open. What is inside the workspace is
+never cached at all.
+
+**Nothing gathers when the menu opens.** `LauncherViewModel` walks for solutions with the
+engine strip, off the UI thread.
+
+**The menu is filled when the rows change, never on `Opening`.** Measured: a `MenuFlyout`
+whose items are added from its own `Opening` handler opens empty, because the presenter has
+already been built by then. `LauncherWindow` listens to `OpenInViewModel.PropertyChanged`
+instead and refills whenever `Rows` moves.
+
+**JetBrains Toolbox writes `launchCommand` absolute on Linux and relative on Windows.**
+`Path.Combine` silently discards its first argument when the second is rooted, so it
+happens to work and reads as though it concatenates. `Path.IsPathRooted` is tested first
+instead. Toolbox also leaves an entry behind for an IDE that has been removed, so the
+program is checked before it becomes a row.
+
+**Every terminal found is offered, not the first one present.** That is the opposite of
+`DesktopLauncherResolver`, and the difference is whether a person can tell. Nobody knows
+whether `xdg-open` or `gio open` ran. Everybody notices being handed Konsole on a machine
+where they use Ptyxis.
+
+**A terminal takes no path argument.** It is told where it is by `WorkingDirectory`, and a
+path in argv would be read as a command to run. `TakesPathArgument` is what says so, and a
+terminal needing its own flag carries it in `FixedArguments`, such as `wt -d .`.
+
+**A custom tool's arguments are one token, `{workspace}`.** The template is split into argv
+**before** the token is filled in, so a path with spaces stays one argument. Whitespace
+separates and double quotes group. **There is no backslash escape**, because Windows and
+Linux disagree about it and a Windows path is what gets pasted in. A blank template gives
+the workspace alone and a template naming no token gets it appended, so `--new-window`
+works without anybody learning the token.
+
+**A registry read needs only `OperatingSystem.IsWindows()`.** `Microsoft.Win32.Registry` is
+in the plain `net10.0` ref pack and in the shared framework, and its annotation carries no
+version, so `WindowsWorkspaceOpenerFinder` needs none of the per runtime gating the secret
+store has. Measured by publishing both runtimes from this Linux machine with
+`TreatWarningsAsErrors` on. Do not copy the `#if` pattern here.
+
+**Where a brand mark lives is the launcher's business.** `WorkspaceOpener.IconKey` is a
+plain string such as `jetbrains/RD`, and `Kitbash/Views/ExternalToolIcons` turns it into an
+asset. Core draws nothing and takes no Avalonia. A missing mark draws no icon and still
+draws the row.
+
+**Nothing detected takes the button away entirely**, which is SourceGit's answer too. The
+folder alone is not what the button says it does, so a menu holding only that is not worth
+opening. A single terminal is enough to keep it.
+
+**The menu is one flat list and nothing in it opens a submenu.** A tool is one row, and it
+opens the first thing it would rather have, or the workspace folder when it found none.
+Rider and Visual Studio take `.sln` and `.slnx` at depth 4, and the VS Code family takes
+`.code-workspace` at depth 2, which are SourceGit's own numbers.
+
+**First means shallowest.** `WorkspaceFileFinder` reads a folder before it descends and
+orders by name, so a solution at the root beats one in a subfolder. A workspace with several
+is not offered the choice, which is the trade a flat menu makes.
+
+**The whole of `WindowsWorkspaceOpenerFinder` is reasoned rather than measured**, since
+this machine is Linux. The registry keys, the `vswhere` output and its UTF 8 encoding, the
+Cursor path and the Git Bash derivation have never been executed.
+
 ## Secrets
 
 `ISecretStore` keeps a credential for one person on one machine. Read, write and remove

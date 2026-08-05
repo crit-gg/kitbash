@@ -6,6 +6,7 @@
 alert-circle
 alert-triangle
 arrow-big-down-line
+arrow-out-up-left-stroke-square
 arrow-to-bottom
 bolt
 check

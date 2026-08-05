@@ -16,6 +16,9 @@
         <DataTemplate DataType="vm:ToolRepositoriesEditor">
             <views:ToolRepositoriesEditorView />
         </DataTemplate>
+        <DataTemplate DataType="vm:CustomToolsEditor">
+            <views:CustomToolsEditorView />
+        </DataTemplate>
     </Application.DataTemplates>
 
 </Application>

@@ -157,6 +157,7 @@ public partial class App : Application
             // A window is built without a container, so the services it opens for
             // itself are handed over here rather than resolved inside it.
             Settings = services.GetRequiredService<ISettingsWindows>(),
+            OpenIn = services.GetRequiredService<OpenInMenu>(),
             Version = services.GetRequiredService<IApplicationVersion>(),
             DataContext = services.GetRequiredService<LauncherViewModel>(),
         };
@@ -182,6 +183,7 @@ public partial class App : Application
             .AddKitbashWorkspaceCreation()
             .AddKitbashGit()
             .AddKitbashEngines()
+            .AddKitbashWorkspaceOpeners()
             .AddKitbashSettingsSchema()
             .AddKitbashKnownWorkspaceSettings()
             .AddKitbashToasts()
@@ -208,6 +210,11 @@ public partial class App : Application
             .AddSingleton<IToolFolderInstaller, ToolFolderInstaller>()
             .AddSingleton<ToolRepositoriesEditor>()
             .AddSingleton<ToolRepositoriesSettingsSchema>()
+            .AddSingleton<CustomToolsEditor>()
+            .AddSingleton<CustomToolsSettingsSchema>()
+            .AddSingleton<ExternalToolIcons>()
+            .AddSingleton<OpenInMenu>()
+            .AddSingleton<OpenInViewModel>()
             .AddSingleton(provider => new EnginesViewModel(
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineStore>(),
@@ -247,6 +254,7 @@ public partial class App : Application
                 provider.GetRequiredService<IPlatformServices>(),
                 provider.GetRequiredService<ILauncherCloseSettings>(),
                 provider.GetRequiredService<IApplicationShutdown>(),
-                provider.GetRequiredService<EnginesViewModel>()))
+                provider.GetRequiredService<EnginesViewModel>(),
+                provider.GetRequiredService<OpenInViewModel>()))
             .BuildServiceProvider();
 }

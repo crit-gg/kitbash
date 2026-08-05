@@ -11,7 +11,8 @@ namespace Kitbash.Ui.Controls;
 
 /// <summary>
 /// Places a control's popup under it, left aligned, whatever the control asked for.
-/// Attach it to the control: <c>ui:Popups.Under="True"</c>.
+/// Attach it to the control: <c>ui:Popups.Under="True"</c>. The one opt out is
+/// <c>ui:Popups.AlignsRight</c>.
 /// </summary>
 public class Popups
 {
@@ -30,6 +31,18 @@ public class Popups
 
     public static readonly AttachedProperty<bool> UnderProperty =
         AvaloniaProperty.RegisterAttached<Popups, TemplatedControl, bool>("Under");
+
+    /// <summary>
+    /// Lines the popup up with this control's right edge rather than its left. Set it on
+    /// the control the popup belongs to, not on the popup.
+    /// </summary>
+    public static readonly AttachedProperty<bool> AlignsRightProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Control, bool>("AlignsRight");
+
+    public static bool GetAlignsRight(Control control) => control.GetValue(AlignsRightProperty);
+
+    public static void SetAlignsRight(Control control, bool value) =>
+        control.SetValue(AlignsRightProperty, value);
 
     static Popups()
     {
@@ -237,14 +250,14 @@ public class Popups
         }
 
         if (e.Property == Popup.PlacementProperty
-            && e.GetNewValue<PlacementMode>() != PlacementMode.BottomEdgeAlignedLeft)
+            && e.GetNewValue<PlacementMode>() != Side(popup))
         {
             Place(popup);
         }
         else if (e.Property == Popup.HorizontalOffsetProperty
-                 && e.GetNewValue<double>() != popup.GetValue(WantedProperty).X)
+                 && e.GetNewValue<double>() != Pull(popup))
         {
-            popup.SetCurrentValue(e.Property, popup.GetValue(WantedProperty).X);
+            popup.SetCurrentValue(e.Property, Pull(popup));
         }
         else if (e.Property == Popup.VerticalOffsetProperty
                  && e.GetNewValue<double>() != popup.GetValue(WantedProperty).Y)
@@ -253,12 +266,27 @@ public class Popups
         }
     }
 
+    /// <summary>Which edge this popup lines up with, read off the control it belongs to.</summary>
+    private static PlacementMode Side(Popup popup) =>
+        (popup.GetValue(OwnerProperty) ?? popup.PlacementTarget) is { } target && GetAlignsRight(target)
+            ? PlacementMode.BottomEdgeAlignedRight
+            : PlacementMode.BottomEdgeAlignedLeft;
+
+    /// <summary>
+    /// The pull that cancels the room. It is a leftward nudge, so lining up with the right
+    /// edge needs it the other way or the popup hangs a room's width off the control.
+    /// </summary>
+    private static double Pull(Popup popup) =>
+        Side(popup) is PlacementMode.BottomEdgeAlignedRight
+            ? -popup.GetValue(WantedProperty).X
+            : popup.GetValue(WantedProperty).X;
+
     private static void Place(Popup popup)
     {
         var wanted = popup.GetValue(WantedProperty);
 
-        popup.Placement = PlacementMode.BottomEdgeAlignedLeft;
-        popup.HorizontalOffset = wanted.X;
+        popup.Placement = Side(popup);
+        popup.HorizontalOffset = Pull(popup);
         popup.VerticalOffset = wanted.Y;
         popup.PlacementConstraintAdjustment = PopupPositionerConstraintAdjustment.SlideX
             | PopupPositionerConstraintAdjustment.SlideY

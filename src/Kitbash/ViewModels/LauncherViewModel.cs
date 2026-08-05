@@ -106,7 +106,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IPlatformServices platform,
         ILauncherCloseSettings close,
         IApplicationShutdown shutdown,
-        EnginesViewModel engines)
+        EnginesViewModel engines,
+        OpenInViewModel openIn)
     {
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceSettings);
@@ -135,6 +136,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(close);
         ArgumentNullException.ThrowIfNull(shutdown);
         ArgumentNullException.ThrowIfNull(engines);
+        ArgumentNullException.ThrowIfNull(openIn);
 
         _workspaces = workspaces;
         _workspaceSettings = workspaceSettings;
@@ -164,6 +166,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _shutdown = shutdown;
 
         Engines = engines;
+        OpenIn = openIn;
 
         // The monitor reads on its own threads, so what it says has to be carried over
         // before anything bound to it is touched.
@@ -192,6 +195,9 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     /// <summary>The engines page, which the rail's second item opens.</summary>
     public EnginesViewModel Engines { get; }
+
+    /// <summary>The Open in menu, beside the engine strip's own button.</summary>
+    public OpenInViewModel OpenIn { get; }
 
     public bool OnWorkspacePage => Page == 0;
 
@@ -735,11 +741,16 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             if (_workspaces.Current is not { IsMissing: false } current)
             {
                 Engine = EngineViewModel.NoWorkspace;
+                await OpenIn.RefreshAsync(null).ConfigureAwait(true);
 
                 return;
             }
 
             var root = current.Root;
+
+            // Gathered here rather than when the menu opens, so opening it touches no disk.
+            await OpenIn.RefreshAsync(root).ConfigureAwait(true);
+
             var requirement = await Task.Run(() => _requirements.Read(root)).ConfigureAwait(true);
             var installed = await _engines.ReadAsync(CancellationToken.None).ConfigureAwait(true);
             var theDefault = await Task.Run(() => _godot.DefaultEngine).ConfigureAwait(true);
