@@ -2,9 +2,10 @@ namespace Kitbash.Core.Settings.Schema;
 
 /// <summary>
 /// One row on a settings page. Almost every row is a <see cref="SettingDescriptor{T}"/>.
-/// The other implementation is <see cref="SettingsReadoutRow"/>, the escape hatch an app
-/// supplies for something a page shows without editing it. That has no key, no default
-/// and no rules, so the schema never grows a way to describe an action.
+/// The other two are the escape hatch an app supplies for something no descriptor can
+/// describe: <see cref="SettingsReadoutRow"/> shows it and <see cref="SettingsEditorRow"/>
+/// edits it. Neither has a key, a default or a rule, so the schema never grows a way to
+/// describe an action.
 /// </summary>
 public interface ISettingsRow
 {

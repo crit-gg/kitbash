@@ -395,7 +395,8 @@ the open workspace's, the catalogue that decides what is offered, the installer,
 scan of `<state>/tools/<id>/<version>/` that says what is here. A tool starts as its own
 process, in its own folder, told which workspace is open. Installed and available are two
 groups on the page and Install, Update, Update all, Check for updates and Uninstall all
-work. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
+work. **The global repository list is edited in the settings window**, on a Tool
+repositories page, and a workspace's own list is still only ever read. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
 read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation`,
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured
@@ -410,6 +411,11 @@ and the rail's cog opens it. The Workspace store lists every workspace by name w
 settings under it, so any of them can be changed without switching to it first. Nothing has to be hand edited any more: every setting Core
 declares is drawn, `workspaces.directory` included. A setting nothing rereads carries
 `NeedsRestart`, and the footer grows a Save and restart button while one is waiting.
+
+**A page can also hold an editor an app wrote itself.** `SettingsEditorRow` is the other
+half of the readout row, for a value no descriptor can describe, and the tool repository
+list is the one that exists. It stages and saves with the rest of the page, so the unsaved
+count and the Save button still mean what they say.
 
 The design's red Reset Workbench button is deliberately not built. It deletes a person's
 whole workspace list and nothing asked for it, so the State page reads the registry and

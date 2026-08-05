@@ -390,6 +390,23 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
+        <!-- A row an app edits itself. Same two columns, and the second holds whatever
+             template the app registered for its editor. -->
+        <DataTemplate x:Key="EditorRow" DataType="s:SettingsEditorRowViewModel">
+            <Border Classes="settingRow">
+                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                        <TextBlock Classes="rowName" Text="{Binding Name}" />
+                        <TextBlock Classes="rowNote" Text="{Binding Description}"
+                                   IsVisible="{Binding HasDescription}" />
+                    </StackPanel>
+
+                    <ContentControl Grid.Column="1" Margin="66,0,0,0"
+                                    Content="{Binding Editor}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
     </Window.Resources>
 
     <Grid RowDefinitions="Auto,*">
@@ -535,6 +552,7 @@
                                                                 <ItemsControl.DataTemplates>
                                                                     <StaticResource ResourceKey="SettingRow" />
                                                                     <StaticResource ResourceKey="ReadoutRow" />
+                                                                    <StaticResource ResourceKey="EditorRow" />
                                                                 </ItemsControl.DataTemplates>
                                                             </ItemsControl>
                                                         </StackPanel>

@@ -30,7 +30,10 @@ internal sealed class TomlDocument
 
     public override string ToString() => _document.ToString();
 
-    /// <summary>Writes a dotted key, and reports whether the file changed.</summary>
+    /// <summary>
+    /// Writes a dotted key, and reports whether the file changed. A value that is a list
+    /// of dictionaries is an array of tables, so it goes to <see cref="SetTables"/>.
+    /// </summary>
     public bool SetValue(string key, object value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -40,6 +43,11 @@ internal sealed class TomlDocument
         if (path.Length == 0)
         {
             throw new ArgumentException("Key must contain at least one segment.", nameof(key));
+        }
+
+        if (Rows(value) is { } rows)
+        {
+            return SetTables(path, rows);
         }
 
         var written = ValueFor(value);
@@ -68,6 +76,155 @@ internal sealed class TomlDocument
         return true;
     }
 
+    // Arrays of tables
+
+    /// <summary>
+    /// Writes a key that holds a list of tables, such as <c>[[tools.repositories]]</c>.
+    /// Rows are matched to the blocks already in the file by position, so a row that did
+    /// not change keeps its own comments and key order. Rows are flat: a nested table
+    /// inside one is written as an inline table.
+    /// </summary>
+    private bool SetTables(string[] path, IReadOnlyList<IReadOnlyDictionary<string, object?>> rows)
+    {
+        // An inline array of inline tables is the other legal spelling, so a file already
+        // written that way keeps it rather than gaining a second copy of the key.
+        if (Find(path) is { } pair)
+        {
+            return Replace(pair, ArrayFor(rows));
+        }
+
+        var blocks = Blocks(path);
+        var changed = false;
+
+        for (var index = 0; index < rows.Count && index < blocks.Count; index++)
+        {
+            changed |= Fill(blocks[index], rows[index]);
+        }
+
+        for (var index = blocks.Count - 1; index >= rows.Count; index--)
+        {
+            _document.Tables.RemoveChild(blocks[index]);
+            changed = true;
+        }
+
+        if (rows.Count > blocks.Count)
+        {
+            DropScalarPrefix(path);
+        }
+
+        for (var index = blocks.Count; index < rows.Count; index++)
+        {
+            var block = new TableArraySyntax(KeyFor(path)) { EndOfLineToken = NewLineToken() };
+
+            Separate(block);
+            Fill(block, rows[index]);
+            _document.Tables.Add(block);
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    /// <summary>Every <c>[[path]]</c> block in the file, in the order they are written.</summary>
+    private List<TableArraySyntax> Blocks(string[] path)
+    {
+        var blocks = new List<TableArraySyntax>();
+
+        foreach (var candidate in _document.Tables)
+        {
+            if (candidate is TableArraySyntax { Name: { } name } block && Same(PathOf(name), path))
+            {
+                blocks.Add(block);
+            }
+        }
+
+        return blocks;
+    }
+
+    /// <summary>
+    /// Makes one block say what the row says. A key the block holds and the row does not
+    /// is taken out, so a row that lost a value does not leave the old one behind.
+    /// </summary>
+    private bool Fill(TableSyntaxBase block, IReadOnlyDictionary<string, object?> row)
+    {
+        var changed = false;
+        var held = new List<KeyValueSyntax>();
+
+        foreach (var pair in Pairs(block.Items))
+        {
+            held.Add(pair);
+        }
+
+        foreach (var pair in held)
+        {
+            if (pair.Key is not { } key)
+            {
+                continue;
+            }
+
+            var here = PathOf(key);
+
+            if (here.Length != 1 || !row.TryGetValue(here[0], out var kept) || kept is null)
+            {
+                Detach(pair);
+                changed = true;
+            }
+        }
+
+        foreach (var (name, value) in row)
+        {
+            if (value is null)
+            {
+                continue;
+            }
+
+            var written = ValueFor(value);
+
+            if (Find(Pairs(block.Items), [name]) is { } pair)
+            {
+                changed |= Replace(pair, written);
+            }
+            else
+            {
+                AddTo(block, [name], written);
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// The rows in a value, or null when it is not a list of tables. The typed form is
+    /// what a caller writes and the loose form is what a read gives back, so both count.
+    /// </summary>
+    private static IReadOnlyList<IReadOnlyDictionary<string, object?>>? Rows(object value)
+    {
+        if (value is IEnumerable<IReadOnlyDictionary<string, object?>> typed)
+        {
+            return [.. typed];
+        }
+
+        if (value is not IEnumerable items || value is string)
+        {
+            return null;
+        }
+
+        var rows = new List<IReadOnlyDictionary<string, object?>>();
+
+        foreach (var item in items)
+        {
+            if (item is not IReadOnlyDictionary<string, object?> row)
+            {
+                return null;
+            }
+
+            rows.Add(row);
+        }
+
+        return rows.Count > 0 ? rows : null;
+    }
+
     // Finding
 
     private KeyValueSyntax? Find(string[] path)
@@ -79,7 +236,8 @@ internal sealed class TomlDocument
 
         foreach (var table in _document.Tables)
         {
-            // A table array is never a setting, so it is not searched.
+            // A table array holds no plain setting, and the whole of one is written by
+            // SetTables instead, so it is not searched.
             if (table is not TableSyntax { Name: { } name })
             {
                 continue;
@@ -258,7 +416,7 @@ internal sealed class TomlDocument
     /// and comment that introduce whatever comes next, which trail the last pair's end of
     /// line token rather than belonging to it.
     /// </summary>
-    private void AddTo(TableSyntax table, string[] path, ValueSyntax value)
+    private void AddTo(TableSyntaxBase table, string[] path, ValueSyntax value)
     {
         var pair = PairFor(path, value);
         var tail = Last(table.Items)?.EndOfLineToken;
@@ -316,7 +474,7 @@ internal sealed class TomlDocument
     }
 
     /// <summary>A blank line above a new table, and a line ending if the file lacks one.</summary>
-    private void Separate(TableSyntax table)
+    private void Separate(TableSyntaxBase table)
     {
         var text = _document.ToString();
 
@@ -420,9 +578,28 @@ internal sealed class TomlDocument
         sbyte or byte or short or ushort or int or uint =>
             new IntegerValueSyntax(Convert.ToInt64(value, CultureInfo.InvariantCulture)),
 
+        // Ahead of the array, since a dictionary is an IEnumerable of its own pairs.
+        IReadOnlyDictionary<string, object?> row => InlineTableFor(row),
+
         IEnumerable items => ArrayFor(items),
         _ => new StringValueSyntax(value.ToString() ?? string.Empty),
     };
+
+    /// <summary>A table inside an array, since only a block can be written on its own line.</summary>
+    private ValueSyntax InlineTableFor(IReadOnlyDictionary<string, object?> row)
+    {
+        var pairs = new List<KeyValueSyntax>();
+
+        foreach (var (name, value) in row)
+        {
+            if (value is not null)
+            {
+                pairs.Add(new KeyValueSyntax(KeyFor([name]), ValueFor(value)));
+            }
+        }
+
+        return new InlineTableSyntax([.. pairs]);
+    }
 
     /// <summary>
     /// A null has no TOML spelling, so it is dropped rather than written as something

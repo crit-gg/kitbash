@@ -72,6 +72,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
 
     private readonly List<SettingValueRowViewModel> _values = [];
     private readonly List<(SettingsReadoutRow Source, SettingsReadoutRowViewModel Row)> _readouts = [];
+    private readonly List<ISettingsEditor> _editors = [];
 
     [ObservableProperty]
     private bool _isAvailable = true;
@@ -189,12 +190,13 @@ public sealed partial class SettingsPageViewModel : ObservableObject
             ? "There is no workspace behind this page any more."
             : "There is nowhere to keep these settings on this machine.";
 
-    public int DirtyCount => _values.Count(row => row.IsDirty);
+    /// <summary>An editor counts once however much is staged inside it.</summary>
+    public int DirtyCount => _values.Count(row => row.IsDirty) + _editors.Count(editor => editor.IsDirty);
 
     public bool IsDirty => DirtyCount > 0;
 
     /// <summary>Every unsaved change on this page can be written as it stands.</summary>
-    public bool IsValid => _values.All(row => row.IsValid);
+    public bool IsValid => _values.All(row => row.IsValid) && _editors.All(editor => editor.IsValid);
 
     /// <summary>
     /// A restart is owed, either by an unsaved change or by one this window already wrote.
@@ -208,6 +210,11 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         foreach (var row in _values)
         {
             row.Discard();
+        }
+
+        foreach (var editor in _editors)
+        {
+            editor.Discard();
         }
     }
 
@@ -253,6 +260,14 @@ public sealed partial class SettingsPageViewModel : ObservableObject
             row.Entries = entries;
         }
 
+        // An editor owns its own file, so it reads itself. It runs here rather than with
+        // the page read above, since what it fills is bound to the window.
+        foreach (var editor in _editors)
+        {
+            editor.IsPageWritable = IsWritable;
+            await editor.LoadAsync(token).ConfigureAwait(true);
+        }
+
         Announce();
     }
 
@@ -263,8 +278,9 @@ public sealed partial class SettingsPageViewModel : ObservableObject
     public async Task SaveAsync(CancellationToken token = default)
     {
         var edits = _values.Select(row => row.Edit()).OfType<SettingsEdit>().ToArray();
+        var staged = _editors.Where(editor => editor.IsDirty).ToArray();
 
-        if (edits.Length == 0)
+        if (edits.Length == 0 && staged.Length == 0)
         {
             return;
         }
@@ -272,7 +288,15 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         var layer = IsLayered ? Layer : (SettingsLayer?)null;
         var restarts = _values.Any(row => row.IsRestartStaged);
 
-        await Task.Run(() => _writer.Write(_scope, _page, _place, layer, edits), token).ConfigureAwait(true);
+        if (edits.Length > 0)
+        {
+            await Task.Run(() => _writer.Write(_scope, _page, _place, layer, edits), token).ConfigureAwait(true);
+        }
+
+        foreach (var editor in staged)
+        {
+            await editor.SaveAsync(token).ConfigureAwait(true);
+        }
 
         _restartWasSaved |= restarts;
         Discard();
@@ -284,6 +308,11 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         foreach (var row in _values)
         {
             row.IsPageWritable = IsWritable;
+        }
+
+        foreach (var editor in _editors)
+        {
+            editor.IsPageWritable = IsWritable;
         }
 
         Announce();
@@ -311,6 +340,12 @@ public sealed partial class SettingsPageViewModel : ObservableObject
                         var reading = new SettingsReadoutRowViewModel(readout);
                         _readouts.Add((readout, reading));
                         rows.Add(reading);
+                        break;
+
+                    case SettingsEditorRow editor:
+                        editor.Editor.Changed += OnEditorChanged;
+                        _editors.Add(editor.Editor);
+                        rows.Add(new SettingsEditorRowViewModel(editor));
                         break;
                 }
             }
@@ -340,6 +375,8 @@ public sealed partial class SettingsPageViewModel : ObservableObject
 
         return new PageLoad(view, choices, readouts);
     }
+
+    private void OnEditorChanged(object? sender, EventArgs args) => OnRowChanged();
 
     private void OnRowChanged()
     {

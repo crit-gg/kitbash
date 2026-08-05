@@ -44,3 +44,20 @@ public sealed partial class SettingsReadoutRowViewModel : SettingsRowViewModel
     /// </summary>
     public bool IsList { get; }
 }
+
+/// <summary>
+/// A row an app supplied and edits itself. The page loads, stages and saves it with
+/// every other row, and the app supplies the template that draws the editor.
+/// </summary>
+public sealed class SettingsEditorRowViewModel : SettingsRowViewModel
+{
+    public SettingsEditorRowViewModel(SettingsEditorRow row)
+        : base(row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        Editor = row.Editor;
+    }
+
+    public ISettingsEditor Editor { get; }
+}

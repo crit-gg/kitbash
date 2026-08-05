@@ -5,8 +5,8 @@ using Kitbash.Core.Workspaces;
 namespace Kitbash.Tools;
 
 /// <summary>
-/// Reads <c>tools.repositories</c> out of the global config and the open workspace's.
-/// Nothing writes it, so a repository is added by editing a file.
+/// Reads <c>tools.repositories</c> out of the global config and the open workspace's, and
+/// writes the global half. A workspace's own list is only ever read here.
 /// </summary>
 public sealed class ToolRepositoryList : IToolRepositoryList
 {
@@ -15,6 +15,9 @@ public sealed class ToolRepositoryList : IToolRepositoryList
 
     private const string TypeKey = "type";
     private const string UrlKey = "url";
+
+    /// <summary>Where an entry is listed, in words, for a refusal to name.</summary>
+    private const string GlobalOrigin = "the global config";
 
     private readonly IApplicationSettings _application;
     private readonly IWorkspaceRegistry _workspaces;
@@ -40,9 +43,7 @@ public sealed class ToolRepositoryList : IToolRepositoryList
 
     public IReadOnlyList<ToolRepositorySource> Read()
     {
-        List<ToolRepositorySource> sources = [];
-
-        sources.AddRange(In(_application.Global, "the global config"));
+        List<ToolRepositorySource> sources = [.. ReadGlobal()];
 
         if (_workspaces.Current is { Exists: true } workspace)
         {
@@ -50,6 +51,29 @@ public sealed class ToolRepositoryList : IToolRepositoryList
         }
 
         return sources;
+    }
+
+    public IReadOnlyList<ToolRepositorySource> ReadGlobal()
+    {
+        // The file has not been read since the last write from here, so it is read again.
+        _application.Reload();
+
+        return In(_application.Global, GlobalOrigin);
+    }
+
+    public void WriteGlobal(IReadOnlyList<ToolRepositorySource> repositories)
+    {
+        ArgumentNullException.ThrowIfNull(repositories);
+
+        var rows = repositories
+            .Select(repository => new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                [TypeKey] = repository.Type,
+                [UrlKey] = repository.Url.ToString(),
+            })
+            .ToArray();
+
+        _application.Apply(SettingsScope.Global, [SettingsEdit.Set(Key, rows)]);
     }
 
     private IReadOnlyList<ToolRepositorySource> Workspace(Workspace workspace)

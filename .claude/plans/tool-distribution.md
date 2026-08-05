@@ -10,9 +10,10 @@ one is GitHub releases.
 ## Status
 
 **Steps 1 to 6 of the order of work are built.** A tool is found, listed, started,
-offered by a repository, installed, updated and uninstalled. **Step 7, the GitHub login,
-is the only one left**, so a private repository is not reachable and the hourly
-unauthenticated request allowance is what a check costs.
+offered by a repository, installed, updated and uninstalled, and the global repository
+list is edited in the settings window. **Step 7, the GitHub login, is the only one left**,
+so a private repository is not reachable and the hourly unauthenticated request allowance
+is what a check costs.
 
 - **The Windows user directories moved.** State and cache are under
   `%LOCALAPPDATA%\KitbashData` and the install root holds the app alone.
@@ -215,7 +216,9 @@ url = "https://github.com/owner/foundry"
 
 The same shape in the global config and in a workspace's. **The type is written rather
 than inferred**, because a self hosted Gitea URL and a plain git URL look identical and
-guessing wrong is the thing the abstraction exists to prevent.
+guessing wrong is the thing the abstraction exists to prevent. `ToolRepositorySource.Kinds`
+is what the settings window offers, and a file naming a type that is not there keeps it,
+so a list written for a newer copy survives being saved by this one.
 
 **Availability is derived rather than stored.** A tool is offered in a workspace when its
 repository is in the global list or in that workspace's list. Nothing records which
@@ -564,11 +567,15 @@ That is the cheapest thing to do when the login lands.
 sweeps once when it reads the tools directory, and a directory Windows will not delete
 because something is running from it is left for the launch after.
 
-**The repository list is read only.** `[[tools.repositories]]` is an array of tables,
-which the settings machinery could not read at all, so `TomlSettingsDocumentStore` learnt
-to read one. Writing one back is not built and no page declares the key, so a repository
-is added by editing a file. A settings write into a file holding a list leaves the list
-exactly as it was, which was measured.
+**The global list is edited in the settings window and a workspace's is not.**
+`[[tools.repositories]]` is an array of tables, which the settings machinery could read
+but not write, so `TomlDocument` learnt to write one and `SettingsEditorRow` gave a page
+somewhere to draw it. The Tool repositories page holds
+`Kitbash/ViewModels/ToolRepositoriesEditor`, which writes the global config through
+`IToolRepositoryList.WriteGlobal`, and a readout under it lists every repository in force
+with where each is listed. **A workspace's own list is only ever read**, since it is a
+team file that travels in a clone, so changing it stays a file edit. The `kitbash-settings`
+skill has the rules for both halves.
 
 ## Open questions
 

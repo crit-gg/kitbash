@@ -88,6 +88,14 @@ holding the same key twice, which no later read can open. The five are `[a.b]` t
 it precede every table header. A new key goes after everything already in its table but
 before the blank line and comment that introduce the next one.
 
+**A value that is a list of dictionaries is an array of tables**, and it is written as
+`[[a.b]]` blocks rather than as one long line. Rows are matched to the blocks already in
+the file by position, so a row that did not change keeps its own comments and key order,
+a surplus block is removed and a new row is appended. A file already spelling it inline,
+as `a.b = [{ }]`, keeps that spelling, since writing blocks beside it would leave the key
+in the file twice and no later read could open it. `tools.repositories` is the only such
+key and `.claude/plans/tool-distribution.md` has what it holds.
+
 **A comment above a key is not owned by that key and is left where it is.** The scaffolded
 workspace file settles it: every setting there sits under a paragraph and a commented out
 sample of itself, so taking the comment with the key would mean resetting a setting
@@ -142,6 +150,13 @@ back exactly, each of the five spellings set and removed with the result parsing
 holding the key once, a scalar replaced where a table belongs, arrays and floats and bools,
 and a file with no trailing newline.
 
+The array of tables was measured the same way, 26 checks: a new key written as blocks, two
+rows written as two blocks, an edited row keeping its own comment while the tables around
+it stay untouched, a surplus block removed, an empty list taking every block out, the
+inline spelling staying inline and the key written once, an unchanged list coming back byte
+for byte, a key the row does not name dropped, a plain setting written into a file holding
+a list leaving the list alone, and a CRLF file with a byte order mark keeping both.
+
 **The Windows cases were measured here too, and could be**, because line endings and
 encoding are decided by .NET and by this code rather than by the OS. A file written the way
 a Windows editor writes one, UTF-8 with a byte order mark and CRLF throughout, keeps its
@@ -174,9 +189,9 @@ obvious shortcut and it is ambient state.
 
 Three levels: a `SettingsPage` is a tree node, it holds `SettingsSection`s under rule
 headings, and a section holds rows. Almost every row is a `SettingDescriptor<T>`. The
-other `ISettingsRow` implementation is the escape hatch an app supplies for a row that
-is not a setting, such as a list of known workspaces or a button that resets the app,
-so the schema never grows a way to describe a button.
+other two `ISettingsRow` implementations are the escape hatch an app supplies for a row
+that is not a setting, such as a list of known workspaces or a value the schema cannot
+describe. Neither has a key, so the schema never grows a way to describe a button.
 
 **The scope belongs to the schema and the home belongs to the page.** Every page in the
 launcher's window writes `kitbash.toml` and every page in a tool's writes that tool's
@@ -272,10 +287,10 @@ window draws its empty state from.
 to be, a layer that does not match whether the page layers, and any key the page does not
 declare, so a window can only write what it drew.
 
-**A row that is not a setting is a `SettingsReadoutRow`.** That is the whole escape hatch,
-and it reads rather than edits: a name, an optional description, a style and a function
-returning lines. The function is called again every time the page loads, since what it
-says changes while the app runs.
+**A row that is not a setting is a `SettingsReadoutRow` or a `SettingsEditorRow`.** One
+reads and one edits, and those two are the whole escape hatch. A readout is a name, an
+optional description, a style and a function returning lines. The function is called again
+every time the page loads, since what it says changes while the app runs.
 
 **The style is the presentation and it is never derived**, because the answer must not
 change with the data. A list that happened to hold one line would otherwise redraw itself
@@ -304,13 +319,39 @@ valued setting draws, so those are copyable too.
 **A readout can sit on a page that also has settings**, as its own section above them. The
 Updates page is the shape to copy: a `This copy` section holding the version, then a
 `Source` section holding the one key the page declares. `Descriptors` still reports one, so
-the writer's guard on undeclared keys is unaffected. Anything an app wants to draw that this
-cannot describe is a reason to change the window, not to add a row kind.
+the writer's guard on undeclared keys is unaffected.
+
+### An app's own editor
+
+**`SettingsEditorRow` is for a value no descriptor can describe**, which today means an
+array of tables. The app writes an `ISettingsEditor`, the row carries it, and the window
+draws it as content, so the app registers a `DataTemplate` for its own type in
+`App.axaml`. `Kitbash/ViewModels/ToolRepositoriesEditor` is the one that exists, and
+`Kitbash/Settings/ToolRepositoriesSettingsSchema` is the page it sits on.
+
+**An editor owns its value and its file, and the writer never sees it.** It has no key, so
+`Descriptors` reports nothing for it and the guard on undeclared keys still holds. That is
+the trade for the escape hatch: rules, origin dots, layers and reset are all things a
+descriptor gets and an editor writes for itself.
+
+**It still stages.** `IsDirty` and `IsValid` join the page's, so the unsaved count, the
+Save button and Discard mean what they say, and an editor counts as one change however
+much is staged inside it. Save writes the page's descriptors first, then each dirty
+editor, then reads the page again.
+
+**`LoadAsync` and `SaveAsync` are awaited on the UI thread.** An editor that touches a
+disk puts that part on another thread itself, since what it fills is bound to a window.
+The window sets `IsPageWritable` before every load, because only the window knows that a
+file is missing or will not parse.
+
+**Reach for a descriptor first.** An editor is the answer when the shape of the value is
+the problem, not when the drawing is. Anything else an app wants to draw is a reason to
+change the window rather than to add a row kind.
 
 ### The schemas that exist
 
-Five in Core, four of them in the `Application` home, plus the launcher's own two,
-`LauncherCloseSettingsSchema` and the State page in
+Five in Core, four of them in the `Application` home, plus the launcher's own three,
+`LauncherCloseSettingsSchema`, `ToolRepositoriesSettingsSchema` and the State page in
 `Kitbash/Settings/LauncherSettingsSchema`, which is what puts them all together into the
 window's tree. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
@@ -326,6 +367,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
 | `LauncherCloseSettingsSchema` | `launcher.close.projectManager`, `launcher.close.editor`, `launcher.close.play`, the launcher's |
+| `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
 
 **A `launcher.` key is the launcher's own behaviour and Core never declares one.** Closing
 after a project opens is something only the launcher can do, so the keys, the page and the

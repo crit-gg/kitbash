@@ -205,6 +205,8 @@ public partial class App : Application
             .AddSingleton<IToolRepositoryFactory, ToolRepositoryFactory>()
             .AddSingleton<IToolCatalogue, ToolCatalogue>()
             .AddSingleton<IToolInstaller, ToolInstaller>()
+            .AddSingleton<ToolRepositoriesEditor>()
+            .AddSingleton<ToolRepositoriesSettingsSchema>()
             .AddSingleton(provider => new EnginesViewModel(
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineStore>(),

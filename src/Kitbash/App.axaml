@@ -1,5 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kitbash.ViewModels"
+             xmlns:views="clr-namespace:Kitbash.Views"
              x:Class="Kitbash.App"
              RequestedThemeVariant="Dark">
 
@@ -7,5 +9,13 @@
         <FluentTheme />
         <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
     </Application.Styles>
+
+    <!-- The settings window draws an app supplied editor as content, so its template is
+         registered here rather than in the window. -->
+    <Application.DataTemplates>
+        <DataTemplate DataType="vm:ToolRepositoriesEditor">
+            <views:ToolRepositoriesEditorView />
+        </DataTemplate>
+    </Application.DataTemplates>
 
 </Application>
