@@ -136,5 +136,27 @@ public class StatusReaderTests
         Assert.NotNull(status);
         Assert.True(Directory.Exists(status.Places.GitDirectory));
         Assert.Contains(status.Places.GitDirectory, status.Places.Watchable);
+
+        // Every path git reports is relative to this, so it is what turns one into a file
+        // that can be opened.
+        Assert.True(Directory.Exists(status.Places.WorkTree));
+        Assert.True(File.Exists(Path.Combine(status.Places.WorkTree, "one.txt")));
+    }
+
+    // A workspace can sit below the repository root, so the folder git was run in is not
+    // the folder its paths are relative to.
+    [Fact]
+    public async Task TheWorkTreeIsTheTopRatherThanTheFolderGitRanIn()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("nested/deep/one.txt", "one\n"));
+
+        var inside = Path.Combine(repository.Root, "nested", "deep");
+        var status = await repository.Status.ReadAsync(inside, Stop);
+
+        Assert.NotNull(status);
+        Assert.True(File.Exists(Path.Combine(status.Places.WorkTree, "nested", "deep", "one.txt")));
     }
 }

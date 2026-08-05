@@ -20,10 +20,16 @@ namespace Kitbash.Core.Git;
 /// this second ref backend. A repository using it keeps every ref here and leaves
 /// <c>HEAD</c> a stub that never changes, so watching the git directory alone sees nothing.
 /// </param>
+/// <param name="WorkTree">
+/// The top of the working tree, from <c>rev-parse --show-toplevel</c>. Every path git
+/// reports is relative to this, so it is what turns one into something that can be opened.
+/// Empty for a bare repository, which has no working tree at all.
+/// </param>
 public sealed record GitPlaces(
     string GitDirectory,
     string CommonDirectory,
-    string? ReftableDirectory)
+    string? ReftableDirectory,
+    string WorkTree = "")
 {
     /// <summary>
     /// Every folder worth watching, without repeats. Keep this list short. Recursing costs

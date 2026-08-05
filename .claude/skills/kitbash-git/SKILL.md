@@ -58,10 +58,11 @@ its own read as a change and reads again, forever. VS Code passes `GIT_OPTIONAL_
 for the same reason.
 
 **Where git keeps a repository is asked, never guessed.** `rev-parse --absolute-git-dir
---git-common-dir` gives both, and `GitPlaces` holds them. `.git` under the workspace is
-right only in the simplest case: a workspace can sit below the repository root, a worktree
-and a submodule leave a file there instead of a folder, and `GIT_DIR` can point elsewhere
-again.
+--git-common-dir --show-toplevel` gives all three in one run, and `GitPlaces` holds them.
+The top level is what every path git reports is relative to, and it is not the folder git
+was run in. `.git` under the workspace is right only in the simplest case: a workspace can
+sit below the repository root, a worktree and a submodule leave a file there instead of a
+folder, and `GIT_DIR` can point elsewhere again.
 
 **Updating runs unattended.** `GitUpdater` sets the variables that stop git waiting for a
 person, since there is no terminal behind this to type into and it would wait until the

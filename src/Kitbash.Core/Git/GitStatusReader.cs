@@ -84,7 +84,7 @@ public sealed class GitStatusReader : IGitStatusReader
         try
         {
             output = await _processes.ReadAsync(
-                ProcessRequest.CommandIn(root, git, "rev-parse", "--absolute-git-dir", "--git-common-dir"),
+                ProcessRequest.CommandIn(root, git, "rev-parse", "--absolute-git-dir", "--git-common-dir", "--show-toplevel"),
                 cancellation).ConfigureAwait(false);
         }
         catch (ProcessStartException)
@@ -110,7 +110,8 @@ public sealed class GitStatusReader : IGitStatusReader
         var places = new GitPlaces(
             directory,
             common,
-            _fileSystem.DirectoryExists(reftable) ? reftable : null);
+            _fileSystem.DirectoryExists(reftable) ? reftable : null,
+            output.Lines.Count > 2 ? output.Lines[2].Trim() : "");
 
         _resolvedRoot = root;
         _resolvedPlaces = places;
