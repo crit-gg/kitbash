@@ -62,6 +62,7 @@ public sealed class TestRepository : IDisposable
         Sync = new GitSync(Runner);
         Conflicts = new GitConflictReader(Runner);
         Files = new GitFileStatusReader(Runner);
+        Refs = new GitRefReader(Runner);
 
         Git(bare ? ["init", "--bare", "-b", "main"] : ["init", "-b", "main"]);
 
@@ -103,6 +104,8 @@ public sealed class TestRepository : IDisposable
     public IGitConflictReader Conflicts { get; }
 
     public IGitFileStatusReader Files { get; }
+
+    public IGitRefReader Refs { get; }
 
     /// <summary>Whether there is a git to run at all, which every test skips without.</summary>
     public bool HasGit => Runner.IsAvailable;

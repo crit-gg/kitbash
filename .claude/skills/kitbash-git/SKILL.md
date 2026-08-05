@@ -200,6 +200,21 @@ in a way it would not be for a path. `%(upstream:track)` is git's own note,
 `switch` rather than `checkout`, so a branch and a path can never be confused for each
 other, and `switch --detach` for a commit.
 
+### Which branch is the base, and how far from it
+
+`IGitRefReader` answers the questions a branch list cannot. **`refs/remotes/origin/HEAD` is
+written by a clone and by nothing else**, so a repository built with `remote add` and
+`fetch` has none and a caller has to fall back rather than treat the absence as an error.
+`remote set-head origin --auto` is what fills it in after the fact.
+
+`rev-list --left-right --count baseline...head` is the pair of numbers. **Left is what the
+baseline has alone, which is what the head is behind by**, and getting the two the wrong
+way round reads as up to date when it is not. Both counts on `GitDivergence` are about the
+head.
+
+**A revision that does not resolve answers null, not level.** A client that took the two as
+the same would tell somebody they are up to date with a branch that is not there.
+
 ### Push and pull
 
 **Git says why in prose rather than in an exit code**, so prose is what there is to read,
