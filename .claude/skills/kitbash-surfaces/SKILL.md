@@ -233,6 +233,30 @@ grammar engine is a dependency and Godot's own formats would need one written an
 control asks per line as it is built, so anything supplied has to be cheap. A grammar runs
 before the changed words, so a marked word keeps its colour and only gains a background.
 
+**Picking a run of lines is off until it is switched on.** `Picking` defaults to `None`, so a
+diff that was never told stays read only. That default is the safety: a format whose lines
+reference each other, such as a Godot scene, must never be staged a line at a time, and the
+control cannot be made to offer it by accident.
+
+**The run is the selection when there is one, and the change under the pointer when there is
+not.** Under the pointer it reaches out until a heading or the second context line in a row,
+so pointing at a change offers that change rather than the whole hunk with the context git
+wrote around it. A run holding only context is never offered, since there is nothing in it to
+stage. `Chunk` is the answer and `Asked` is what a gesture raises.
+
+**`ui:TextDiffBar` is the buttons over the run**, placed in the same panel as the diff rather
+than inside it, so the editor's own template is left alone:
+
+```xml
+<Panel>
+    <ui:TextDiff Name="Diff" Picking="Lines" Actions="Stage, Discard" />
+    <ui:TextDiffBar Diff="{Binding #Diff}" />
+</Panel>
+```
+
+`Actions` says which of Stage, Unstage and Discard are drawn, and `Ask` refuses anything not
+in it, so the gate holds whether the gesture came from the bar or from a key.
+
 **The theme is `BasedOn` the editor's own `ControlTheme`.** `AvaloniaEdit.xaml` is included
 before the resources in `KitbashTheme.axaml` for that reason. Do not reach for
 `StyleKeyOverride` here: it makes a type selector match the base type, so `Selector="ui|TextDiff"`

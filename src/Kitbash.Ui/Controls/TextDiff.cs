@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Media;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Rendering;
 
 namespace Kitbash.Ui.Controls;
 
@@ -70,6 +71,24 @@ public class TextDiff : TextEditor
     public static readonly StyledProperty<TextDiffKindStyle?> HeadingStyleProperty =
         AvaloniaProperty.Register<TextDiff, TextDiffKindStyle?>(nameof(HeadingStyle));
 
+    /// <inheritdoc cref="TextDiffPicking"/>
+    public static readonly StyledProperty<TextDiffPicking> PickingProperty =
+        AvaloniaProperty.Register<TextDiff, TextDiffPicking>(nameof(Picking));
+
+    /// <summary>Which gestures a picked run is offered.</summary>
+    public static readonly StyledProperty<TextDiffActions> ActionsProperty =
+        AvaloniaProperty.Register<TextDiff, TextDiffActions>(nameof(Actions));
+
+    /// <summary>The run of lines under the pointer or under the selection, or null.</summary>
+    public static readonly DirectProperty<TextDiff, TextDiffChunk?> ChunkProperty =
+        AvaloniaProperty.RegisterDirect<TextDiff, TextDiffChunk?>(nameof(Chunk), o => o.Chunk);
+
+    private TextDiffChunk? _chunk;
+    private double _pointer = double.NaN;
+
+    /// <summary>A run of lines was asked to do something.</summary>
+    public event EventHandler<TextDiffChunkEventArgs>? Asked;
+
     public TextDiff()
     {
         IsReadOnly = true;
@@ -88,6 +107,25 @@ public class TextDiff : TextEditor
 
         TextArea.TextView.BackgroundRenderers.Add(new TextDiffRenderer(this));
         TextArea.TextView.LineTransformers.Add(new TextDiffColouriser(this));
+
+        TextArea.TextView.PointerMoved += (_, e) =>
+        {
+            _pointer = e.GetPosition(TextArea.TextView).Y + TextArea.TextView.VerticalOffset;
+            Track();
+        };
+
+        TextArea.TextView.PointerExited += (_, _) =>
+        {
+            _pointer = double.NaN;
+            Track();
+        };
+
+        TextArea.SelectionChanged += (_, _) => Track();
+        TextArea.TextView.ScrollOffsetChanged += (_, _) => Track();
+
+        // A selection can be set while the lines it covers have not been laid out yet, and
+        // scrolling rebuilds them, so the run is worked out again whenever they land.
+        TextArea.TextView.VisualLinesChanged += (_, _) => Track();
     }
 
     /// <inheritdoc cref="LinesProperty"/>
@@ -216,10 +254,172 @@ public class TextDiff : TextEditor
         }
     }
 
+    /// <inheritdoc cref="PickingProperty"/>
+    public TextDiffPicking Picking
+    {
+        get => GetValue(PickingProperty);
+        set => SetValue(PickingProperty, value);
+    }
+
+    /// <inheritdoc cref="ActionsProperty"/>
+    public TextDiffActions Actions
+    {
+        get => GetValue(ActionsProperty);
+        set => SetValue(ActionsProperty, value);
+    }
+
+    /// <inheritdoc cref="ChunkProperty"/>
+    public TextDiffChunk? Chunk
+    {
+        get => _chunk;
+        private set => SetAndRaise(ChunkProperty, ref _chunk, value);
+    }
+
     /// <summary>
     /// The widest line number the gutter has to fit, which is what it measures itself by.
     /// </summary>
     internal int WidestNumber { get; private set; }
+
+    /// <summary>Asks the run of lines currently picked to do something.</summary>
+    public void Ask(TextDiffActions action)
+    {
+        if (Chunk is { } chunk && (Actions & action) == action && action != TextDiffActions.None)
+        {
+            Asked?.Invoke(this, new TextDiffChunkEventArgs(action, chunk));
+        }
+    }
+
+    /// <summary>
+    /// Works out what a gesture would act on. A selection is what was asked for outright, and
+    /// with none the run under the pointer is offered instead.
+    /// </summary>
+    private void Track()
+    {
+        var view = TextArea.TextView;
+
+        if (Picking == TextDiffPicking.None || !view.VisualLinesValid || Lines.Count == 0)
+        {
+            Chunk = null;
+            return;
+        }
+
+        var selection = TextArea.Selection;
+
+        if (!selection.IsEmpty)
+        {
+            var start = selection.StartPosition.Line;
+            var end = selection.EndPosition.Line;
+
+            Chunk = Between(start <= end ? start : end, start <= end ? end : start);
+            return;
+        }
+
+        Chunk = double.IsNaN(_pointer) ? null : Around(Under(_pointer));
+    }
+
+    /// <summary>Which line of the document sits at this point down the view.</summary>
+    private int Under(double y)
+    {
+        foreach (var line in TextArea.TextView.VisualLines)
+        {
+            if (line.IsDisposed || line.FirstDocumentLine is not { IsDeleted: false } document)
+            {
+                continue;
+            }
+
+            var bottom = line.GetTextLineVisualYPosition(line.TextLines[^1], VisualYPosition.LineBottom);
+
+            if (bottom > y)
+            {
+                return document.LineNumber;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// The run of changes around a line. It reaches out until a heading or the second context
+    /// line in a row, so pointing at a change offers that change rather than the whole hunk
+    /// with the context git wrote around it.
+    /// </summary>
+    private TextDiffChunk? Around(int number)
+    {
+        if (At(number) is not { } line || line.Kind == TextDiffLineKind.Heading)
+        {
+            return null;
+        }
+
+        var first = Reach(number, -1);
+        var last = Reach(number, 1);
+
+        return Between(first, last);
+    }
+
+    private int Reach(int from, int step)
+    {
+        var at = from;
+        var context = 0;
+
+        while (true)
+        {
+            var next = at + step;
+
+            if (At(next) is not { } line || line.Kind == TextDiffLineKind.Heading)
+            {
+                return at;
+            }
+
+            if (line.Kind == TextDiffLineKind.Context)
+            {
+                if (++context >= 2)
+                {
+                    return at;
+                }
+            }
+            else
+            {
+                context = 0;
+            }
+
+            at = next;
+        }
+    }
+
+    /// <summary>
+    /// A run of lines and where it is drawn, or null when it holds nothing that could be
+    /// staged. A run of context alone is not a change and is never offered.
+    /// </summary>
+    private TextDiffChunk? Between(int first, int last)
+    {
+        var changed = false;
+
+        for (var at = first; at <= last && !changed; at++)
+        {
+            changed = At(at) is { Kind: not TextDiffLineKind.Context and not TextDiffLineKind.Heading };
+        }
+
+        if (!changed)
+        {
+            return null;
+        }
+
+        var view = TextArea.TextView;
+        var start = view.GetVisualLine(first);
+        var end = view.GetVisualLine(last);
+
+        // A run scrolled off the top or the bottom is clamped to the edge it went past, so
+        // the buttons stay against the part of it that can still be seen.
+        var top = start is null
+            ? 0
+            : start.GetTextLineVisualYPosition(start.TextLines[0], VisualYPosition.LineTop) - view.VerticalOffset;
+
+        var bottom = end is null
+            ? view.Bounds.Height
+            : end.GetTextLineVisualYPosition(end.TextLines[^1], VisualYPosition.LineBottom) - view.VerticalOffset;
+
+        return new TextDiffChunk(first, last, top, bottom - top);
+    }
 
     /// <summary>The line at a document line number, counting from one, or null past the end.</summary>
     public TextDiffLine? At(int number)

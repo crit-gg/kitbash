@@ -80,4 +80,26 @@ public interface IGitStager
         GitPatch patch,
         IReadOnlyCollection<GitPatchLine> lines,
         CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Throws some of a file's hunks away, putting the file on disk back. The patch must be
+    /// the unstaged one, and the index is not touched.
+    /// </summary>
+    /// <param name="hunks">Indexes into the patch's own hunk list.</param>
+    Task<GitResult> DiscardHunksAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<int> hunks,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Throws some of a file's changed lines away, putting those lines on disk back. The
+    /// patch must be the unstaged one, and the index is not touched.
+    /// </summary>
+    /// <inheritdoc cref="StageLinesAsync" path="/param[@name='lines']"/>
+    Task<GitResult> DiscardLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default);
 }

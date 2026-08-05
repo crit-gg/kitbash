@@ -63,26 +63,49 @@ public sealed class GitStager : IGitStager
         GitPatch patch,
         IReadOnlyCollection<GitPatchLine> lines,
         CancellationToken cancellation = default) =>
-        Apply(root, patch, lines, reverse: false, cancellation);
+        Apply(root, patch, lines, reverse: false, index: true, cancellation);
 
     public Task<GitResult> UnstageLinesAsync(
         string root,
         GitPatch patch,
         IReadOnlyCollection<GitPatchLine> lines,
         CancellationToken cancellation = default) =>
-        Apply(root, patch, lines, reverse: true, cancellation);
+        Apply(root, patch, lines, reverse: true, index: true, cancellation);
+
+    public Task<GitResult> DiscardHunksAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<int> hunks,
+        CancellationToken cancellation = default) =>
+        Apply(root, patch, hunks, reverse: true, index: false, cancellation);
+
+    public Task<GitResult> DiscardLinesAsync(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<GitPatchLine> lines,
+        CancellationToken cancellation = default) =>
+        Apply(root, patch, lines, reverse: true, index: false, cancellation);
 
     private Task<GitResult> Apply(
         string root,
         GitPatch patch,
         IReadOnlyCollection<int> hunks,
         bool reverse,
+        CancellationToken cancellation) =>
+        Apply(root, patch, hunks, reverse, index: true, cancellation);
+
+    private Task<GitResult> Apply(
+        string root,
+        GitPatch patch,
+        IReadOnlyCollection<int> hunks,
+        bool reverse,
+        bool index,
         CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(patch);
         ArgumentNullException.ThrowIfNull(hunks);
 
-        return Apply(root, _patches.Write(patch, hunks, reverse), reverse, cancellation);
+        return Apply(root, _patches.Write(patch, hunks, reverse), reverse, index, cancellation);
     }
 
     private Task<GitResult> Apply(
@@ -90,21 +113,22 @@ public sealed class GitStager : IGitStager
         GitPatch patch,
         IReadOnlyCollection<GitPatchLine> lines,
         bool reverse,
+        bool index,
         CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(patch);
         ArgumentNullException.ThrowIfNull(lines);
 
-        return Apply(root, _patches.Write(patch, lines, reverse), reverse, cancellation);
+        return Apply(root, _patches.Write(patch, lines, reverse), reverse, index, cancellation);
     }
 
     private Task<GitResult> Apply(
         string root,
         string text,
         bool reverse,
+        bool index,
         CancellationToken cancellation)
     {
-
         if (text.Length == 0)
         {
             return Task.FromResult(GitResult.Skipped);
@@ -114,13 +138,17 @@ public sealed class GitStager : IGitStager
         {
             "apply",
 
-            // The index alone. The working tree already holds what this is moving.
-            "--cached",
-
-            // A patch built here is git's own output with hunks removed, so a warning about
+            // A patch built here is git's own output with changes removed, so a warning about
             // whitespace would be about code the person did not write in this gesture.
             "--whitespace=nowarn",
         };
+
+        // Staging moves the index and leaves the file alone. Discarding is the other way
+        // round: the file on disk goes back and the index never hears about it.
+        if (index)
+        {
+            arguments.Add("--cached");
+        }
 
         if (reverse)
         {

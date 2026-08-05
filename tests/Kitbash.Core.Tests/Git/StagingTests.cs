@@ -556,4 +556,56 @@ public class StagingTests
         Assert.True(staged.Succeeded, staged.Message);
         Assert.Equal("", Staged(repository));
     }
+
+    // Discarding is the one that touches the file on disk instead of the index, so it is
+    // asserted by reading the file back rather than by asking git what it holds.
+    [Fact]
+    public async Task DiscardingOneLinePutsThatLineBackAndLeavesTheRest()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "a\nb\nc\n"));
+        repository.Write("one.txt", "a\nX\nY\nZ\nb\nc\n");
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+
+        var thrown = await repository.Stager.DiscardLinesAsync(
+            repository.Root, patch, [Find(patch, "Y")], Stop);
+
+        Assert.True(thrown.Succeeded, thrown.Message);
+
+        // Y is gone from disk and the other two are still there to keep or throw away.
+        Assert.Equal("a\nX\nZ\nb\nc\n", repository.Read("one.txt"));
+
+        // And nothing was staged on the way through.
+        Assert.Equal("", Staged(repository));
+    }
+
+    [Fact]
+    public async Task DiscardingAHunkLeavesTheOtherHunksOnDisk()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", TestRepository.Lines(40)));
+        repository.Write("one.txt", TestRepository.Lines(40, (2, "TOP"), (20, "MIDDLE"), (38, "END")));
+
+        var patch = await repository.Diffs.ReadPatchAsync(
+            repository.Root, GitDiffScope.Unstaged, "one.txt", null, Stop);
+
+        Assert.NotNull(patch);
+        Assert.Equal(3, patch.Hunks.Count);
+
+        var thrown = await repository.Stager.DiscardHunksAsync(repository.Root, patch, [0], Stop);
+
+        Assert.True(thrown.Succeeded, thrown.Message);
+
+        Assert.Equal(
+            TestRepository.Lines(40, (20, "MIDDLE"), (38, "END")),
+            repository.Read("one.txt"));
+    }
 }
