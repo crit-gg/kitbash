@@ -121,6 +121,7 @@ public sealed class GitStatusReader : IGitStatusReader
     private GitStatus Parse(IReadOnlyList<string> lines, GitPlaces places)
     {
         var branch = "";
+        var commit = "";
         var detached = false;
         var hasUpstream = false;
         var ahead = 0;
@@ -136,11 +137,11 @@ public sealed class GitStatusReader : IGitStatusReader
                 branch = line["# branch.head ".Length..].Trim();
                 detached = branch == "(detached)";
             }
-            else if (line.StartsWith("# branch.oid ", StringComparison.Ordinal) && detached)
+            else if (line.StartsWith("# branch.oid ", StringComparison.Ordinal))
             {
-                // A detached head has no name, so it is shown as the short commit the way
-                // git itself shows it.
-                branch = Short(line["# branch.oid ".Length..].Trim());
+                // Kept whether or not this head turns out to be detached, since git writes
+                // this line before the one that says which it is.
+                commit = line["# branch.oid ".Length..].Trim();
             }
             else if (line.StartsWith("# branch.upstream ", StringComparison.Ordinal))
             {
@@ -171,11 +172,11 @@ public sealed class GitStatusReader : IGitStatusReader
             }
         }
 
-        // Detached and named alike, an oid line arrives before the head line, so the name
-        // is settled here rather than in the loop.
-        if (detached && branch == "(detached)")
+        // A detached head has no name, so it is shown as the short commit the way git itself
+        // shows it. Settled here because the oid line arrives before the head line.
+        if (detached)
         {
-            branch = "detached";
+            branch = commit.Length > 0 ? Short(commit) : "detached";
         }
 
         return new GitStatus(

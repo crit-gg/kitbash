@@ -6,4 +6,7 @@
     <Project Path="src/Kitbash/Kitbash.csproj" />
   </Folder>
   <Folder Name="/src/tools/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/Kitbash.Core.Tests/Kitbash.Core.Tests.csproj" />
+  </Folder>
 </Solution>

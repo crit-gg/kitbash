@@ -136,10 +136,21 @@ public static class KitbashCoreServices
         services.AddKitbashExternalTools();
         services.TryAddTransient<IDirectoryWatcher, DirectoryWatcher>();
         services.TryAddSingleton<GitEnvironment>();
+        services.TryAddSingleton<IGitRunner, GitRunner>();
         services.TryAddSingleton<IGitStatusReader, GitStatusReader>();
         services.TryAddSingleton<IGitUpdater, GitUpdater>();
         services.TryAddSingleton<IGitCloner, GitCloner>();
         services.TryAddSingleton<IGitStatusMonitor, GitStatusMonitor>();
+        services.TryAddSingleton<GitPatchReader>();
+        services.TryAddSingleton<GitPatchWriter>();
+        services.TryAddSingleton<IGitFileStatusReader, GitFileStatusReader>();
+        services.TryAddSingleton<IGitHistoryReader, GitHistoryReader>();
+        services.TryAddSingleton<IGitDiffReader, GitDiffReader>();
+        services.TryAddSingleton<IGitStager, GitStager>();
+        services.TryAddSingleton<IGitCommitter, GitCommitter>();
+        services.TryAddSingleton<IGitBranches, GitBranches>();
+        services.TryAddSingleton<IGitSync, GitSync>();
+        services.TryAddSingleton<IGitConflictReader, GitConflictReader>();
 
         return services;
     }

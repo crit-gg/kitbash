@@ -163,6 +163,7 @@ src/Kitbash.Ui/      the look: tokens, type, control themes, fonts, the window s
 src/Kitbash.Gallery/ every control, live, for building and checking the library
 src/Kitbash/         the launcher app, Avalonia 12
 src/tools/           one project per tool, empty until the first tool is named
+tests/               one test project per library, xunit v3
 ```
 
 **Kitbash** is the launcher and is its own executable. `Kitbash` is also the
@@ -244,6 +245,7 @@ skill rather than a section here.
 ```
 dotnet build
 dotnet run --project src/Kitbash
+dotnet test
 ```
 
 A runtime identifier cannot be passed to the solution, only to a project.
@@ -371,6 +373,13 @@ the status bar in place, which is rule 8 of that row and not something a toast s
 over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
+
+**`Kitbash.Core/Git` is a whole git client's worth of plumbing now**, built for Splice and
+useful to any tool: one shared runner, the file list, history, diffs, staging by hunk,
+commits, branches, push and pull, and the three versions a conflict leaves. The launcher
+uses none of it yet. **The repository has tests for the first time**, 97 of them in
+`tests/Kitbash.Core.Tests`, each building a real repository in a temporary folder and
+running the real git. Read the `kitbash-git` skill before touching any of it.
 
 **The workspace popover is finished.** Each row's menu opens a folder, copies its path,
 renames it and takes it off the list, and the footer creates a workspace, adds one from a

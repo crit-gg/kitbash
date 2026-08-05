@@ -52,7 +52,19 @@ public sealed class ProcessRunner : IProcessRunner
         start.UseShellExecute = false;
         start.RedirectStandardOutput = true;
         start.RedirectStandardError = true;
+        start.RedirectStandardInput = request.StandardInput is not null;
         start.CreateNoWindow = true;
+
+        if (request.TextEncoding is { } encoding)
+        {
+            start.StandardOutputEncoding = encoding;
+            start.StandardErrorEncoding = encoding;
+
+            if (start.RedirectStandardInput)
+            {
+                start.StandardInputEncoding = encoding;
+            }
+        }
 
         Process? process;
 
@@ -82,7 +94,13 @@ public sealed class ProcessRunner : IProcessRunner
 
                 var error = process.StandardError.ReadToEndAsync(cancellation);
 
+                // Written while the pipes are being read. A program that answers as it goes
+                // fills its output pipe part way through a large input, and a write that
+                // waits for it to drain would then wait on a reader that has not started.
+                var written = WriteAsync(process, request.StandardInput, cancellation);
+
                 await process.WaitForExitAsync(cancellation).ConfigureAwait(false);
+                await written.ConfigureAwait(false);
 
                 return new ProcessOutput(
                     process.ExitCode,
@@ -98,6 +116,32 @@ public sealed class ProcessRunner : IProcessRunner
                 Stop(process);
                 throw;
             }
+        }
+    }
+
+    /// <summary>
+    /// Writes the program's input and closes it, which is what tells the program there is
+    /// no more. A program that has already given up reading is not an error here.
+    /// </summary>
+    private static async Task WriteAsync(Process process, string? input, CancellationToken cancellation)
+    {
+        if (input is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await process.StandardInput.WriteAsync(input.AsMemory(), cancellation).ConfigureAwait(false);
+            await process.StandardInput.FlushAsync(cancellation).ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            // The far end closed. Whatever it decided comes back as an exit code.
+        }
+        finally
+        {
+            process.StandardInput.Close();
         }
     }
 

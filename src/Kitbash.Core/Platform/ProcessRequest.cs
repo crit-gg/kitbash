@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Kitbash.Core.Platform;
 
 /// <summary>
@@ -21,6 +23,18 @@ public sealed record ProcessRequest(
     string? WorkingDirectory = null,
     IReadOnlyDictionary<string, string>? Environment = null)
 {
+    /// <summary>
+    /// Text written to the program's input, which is then closed. Null leaves input as the
+    /// app's own, so a program that reads it waits forever.
+    /// </summary>
+    public string? StandardInput { get; init; }
+
+    /// <summary>
+    /// How text is decoded from the program and encoded to it. Null takes the console's
+    /// encoding, which on Windows is the OEM code page rather than UTF 8.
+    /// </summary>
+    public Encoding? TextEncoding { get; init; }
+
     /// <summary>Hands the target to its registered handler.</summary>
     public static ProcessRequest Shell(string target) => new(target, [], UseShellExecute: true);
 
