@@ -159,6 +159,17 @@ also takes Enter off the accepting one, because marking it is a statement that a
 the dangerous answer. Measured before that rule: a dialog opening with Cancel ready still
 accepted on Enter, which is the opposite of what marking it asked for.
 
+**Two dialogs are built and both are handed their words rather than a view model.**
+`ui:ErrorDialog.For` is one thing failed and here is what the program said, with the words
+in a mono well and a copy button hard left of the decision. `ui:ConfirmDialog.For` is one
+question with two answers, and `ConfirmWeight.Grave` is the form for something that cannot
+be undone: the accepting button goes red and cancelling becomes the ready one, so no
+keypress can answer yes.
+
+**Both call the generated `InitializeComponent`.** Defining one that calls
+`AvaloniaXamlLoader.Load` leaves every named field null, which is the rule in
+`.claude/avalonia.md` and which both of these broke until it was caught by a test.
+
 ### The desktop can draw the frame instead
 
 `window.nativeChrome` in `IWindowSettings` hands the frame to the desktop. It is global

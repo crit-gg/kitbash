@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
-using Avalonia.Markup.Xaml;
 
 namespace Kitbash.Ui.Controls;
 
@@ -16,6 +15,10 @@ public partial class ErrorDialog : DialogWindow
 
     private bool _copying;
 
+    /// <summary>
+    /// The generated InitializeComponent, since that is what assigns the named fields.
+    /// AvaloniaXamlLoader.Load builds the tree and leaves every one of them null.
+    /// </summary>
     public ErrorDialog()
     {
         InitializeComponent();
@@ -38,8 +41,6 @@ public partial class ErrorDialog : DialogWindow
 
         return dialog;
     }
-
-    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 
     private async Task CopyAsync()
     {
