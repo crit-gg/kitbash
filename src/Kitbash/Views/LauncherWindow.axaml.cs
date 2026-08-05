@@ -311,13 +311,29 @@ public partial class LauncherWindow : ChromelessWindow
         {
             Separate(menu);
             menu.Items.Add(Item(
-                $"Uninstall {card.Name}",
+                card.RemoveLabel,
                 enabled: true,
                 () => _ = UninstallToolAsync(tool),
                 danger: true));
         }
 
         menu.ShowAt(button);
+    }
+
+    // A folder holding a manifest is a tool wherever it sits, so this is how a build on
+    // this machine gets on the page without being published anywhere.
+    private async void OnInstallFromFolderClick(object? sender, RoutedEventArgs e)
+    {
+        var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Install from folder",
+            AllowMultiple = false,
+        });
+
+        if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } path && Model is { } model)
+        {
+            await model.InstallToolFromFolderAsync(path);
+        }
     }
 
     private async Task UninstallToolAsync(InstalledTool tool)

@@ -50,22 +50,29 @@ public partial class UninstallDialog : DialogWindow
 
     /// <summary>
     /// The tool's version directories go and everything a person owns stays, so the
-    /// consequence line says so rather than warning about losing work.
+    /// consequence line says so rather than warning about losing work. A tool added from a
+    /// folder is forgotten instead, since Kitbash did not put those files there.
     /// </summary>
-    /// <param name="onDisk">What the versions take up, already written for a person.</param>
+    /// <param name="onDisk">What the folder takes up, already written for a person.</param>
     public static UninstallDialog For(InstalledTool tool, string onDisk)
     {
         ArgumentNullException.ThrowIfNull(tool);
 
         var dialog = new UninstallDialog();
 
-        dialog.Titled("Uninstall tool");
+        dialog.Titled(tool.IsLinked ? "Remove tool" : "Uninstall tool");
 
-        dialog.Heading.Text = $"Uninstall {tool.Name}?";
-        dialog.Body.Text = "The files are deleted from disk. Its settings and anything it "
-            + "wrote in a workspace are left alone, so installing it again finds them.";
+        dialog.Heading.Text = tool.IsLinked
+            ? $"Remove {tool.Name} from the list?"
+            : $"Uninstall {tool.Name}?";
 
-        dialog.Confirm.Content = "Uninstall";
+        dialog.Body.Text = tool.IsLinked
+            ? "The folder stays where it is, since Kitbash did not put it there. "
+              + "You can add it again at any time."
+            : "The files are deleted from disk. Its settings and anything it "
+              + "wrote in a workspace are left alone, so installing it again finds them.";
+
+        dialog.Confirm.Content = tool.IsLinked ? "Remove" : "Uninstall";
         dialog.Path.Text = tool.Directory;
         dialog.Size.Text = onDisk;
 

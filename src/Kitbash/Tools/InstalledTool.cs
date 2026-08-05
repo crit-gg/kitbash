@@ -5,12 +5,17 @@ namespace Kitbash.Tools;
 /// </summary>
 /// <param name="Directory">The version's own folder, which is where the tool runs.</param>
 /// <param name="Payload">The payload matching this machine, out of the manifest's set.</param>
+/// <param name="IsLinked">
+/// The folder belongs to the person rather than to Kitbash, so removing the tool forgets
+/// the path and deletes nothing.
+/// </param>
 public sealed record InstalledTool(
     ToolId Id,
     ToolVersion Version,
     string Directory,
     ToolManifest Manifest,
-    ToolPayload Payload)
+    ToolPayload Payload,
+    bool IsLinked = false)
 {
     public string Name => Manifest.Name;
 

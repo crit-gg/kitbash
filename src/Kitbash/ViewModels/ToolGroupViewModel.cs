@@ -41,6 +41,12 @@ public partial class ToolGroupViewModel : ObservableObject
     /// <summary>Only the installed group can check for or apply updates.</summary>
     public bool ShowsCheck { get; }
 
+    /// <summary>
+    /// Whether this heading carries the page's own action. Set on the first group before
+    /// the list is bound, so it never changes while a group is on screen.
+    /// </summary>
+    public bool ShowsFolderInstall { get; set; }
+
     /// <summary>Drawn only while something is pending, so an up to date group is quiet.</summary>
     public bool ShowsUpdateAll => ShowsCheck && Pending.Count > 0;
 

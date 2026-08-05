@@ -205,6 +205,7 @@ public partial class App : Application
             .AddSingleton<IToolRepositoryFactory, ToolRepositoryFactory>()
             .AddSingleton<IToolCatalogue, ToolCatalogue>()
             .AddSingleton<IToolInstaller, ToolInstaller>()
+            .AddSingleton<IToolFolderInstaller, ToolFolderInstaller>()
             .AddSingleton<ToolRepositoriesEditor>()
             .AddSingleton<ToolRepositoriesSettingsSchema>()
             .AddSingleton(provider => new EnginesViewModel(
@@ -227,6 +228,7 @@ public partial class App : Application
                 provider.GetRequiredService<IToolStarter>(),
                 provider.GetRequiredService<IToolCatalogue>(),
                 provider.GetRequiredService<IToolInstaller>(),
+                provider.GetRequiredService<IToolFolderInstaller>(),
                 provider.GetRequiredService<ToolLog>(),
                 provider.GetRequiredService<IFileSystem>(),
                 provider.GetRequiredService<IGitStatusMonitor>(),

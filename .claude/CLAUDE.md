@@ -435,7 +435,11 @@ scan of `<state>/tools/<id>/<version>/` that says what is here. A tool starts as
 process, in its own folder, told which workspace is open. Installed and available are two
 groups on the page and Install, Update, Update all, Check for updates and Uninstall all
 work. **The global repository list is edited in the settings window**, on a Tool
-repositories page, and a workspace's own list is still only ever read. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
+repositories page, and a workspace's own list is still only ever read. **Install from
+folder is the other way in**, outside the seven steps: a folder holding a manifest is a
+tool where it sits, under a `local.` id, and nothing is copied, so a build on this machine
+runs from the folder it was built in and a rebuild needs no reinstall. Removing one
+forgets the path and deletes nothing. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
 read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation`,
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured

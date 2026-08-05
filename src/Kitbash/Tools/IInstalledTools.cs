@@ -14,4 +14,13 @@ public interface IInstalledTools
 
     /// <summary>Which version of a tool opens, which is what an install or an update sets.</summary>
     void SetActiveVersion(ToolId id, ToolVersion version);
+
+    /// <summary>
+    /// Points a tool at a folder somewhere else on this machine, which is then where it
+    /// runs from. Nothing is copied, so a rebuild in that folder is picked up as it is.
+    /// </summary>
+    void Link(ToolId id, string directory);
+
+    /// <summary>Forgets the folder a tool was pointed at. The folder itself is untouched.</summary>
+    void Unlink(ToolId id);
 }

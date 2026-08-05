@@ -410,6 +410,19 @@
                                                                     Header="{Binding Label}"
                                                                     Margin="0,0,0,11">
                                                 <StackPanel Orientation="Horizontal" Spacing="10">
+                                                    <!-- The page's own action, on the first heading only. -->
+                                                    <Button Theme="{StaticResource CompactButton}"
+                                                            IsVisible="{Binding ShowsFolderInstall}"
+                                                            Click="OnInstallFromFolderClick">
+                                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                                            <ui:Icon Glyph="FolderOpen"
+                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                     VerticalAlignment="Center" />
+                                                            <TextBlock Text="Install from folder"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
+
                                                     <Button Theme="{StaticResource CompactButton}"
                                                             IsVisible="{Binding ShowsUpdateAll}"
                                                             Command="{Binding UpdateAllCommand}">
@@ -606,7 +619,20 @@
                                        LineHeight="18"
                                        TextWrapping="Wrap" TextAlignment="Center"
                                        Foreground="{DynamicResource InkSecondary}"
-                                       Text="A tool comes from a repository. Add one under tools.repositories in your Kitbash config and it shows up here, ready to install." />
+                                       Text="A tool comes from a repository. Add one under tools.repositories in your Kitbash config and it shows up here, ready to install. A tool already on this machine can be added from its folder." />
+
+                            <!-- The other way in, for a tool that is already on this
+                                 machine and never came from a repository. -->
+                            <Button Margin="0,18,0,0" HorizontalAlignment="Center"
+                                    Click="OnInstallFromFolderClick">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <ui:Icon Glyph="FolderOpen"
+                                             Size="{DynamicResource IconSizeField}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="Install from folder"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                       </Panel>
                     </Border>

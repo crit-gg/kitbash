@@ -9,6 +9,12 @@ public readonly record struct ToolId
     /// <summary>Separates the source from the name.</summary>
     private const char Separator = '.';
 
+    /// <summary>
+    /// The source a tool takes when a person points at a folder on this machine. No
+    /// repository type may be called this, since the two would then share a namespace.
+    /// </summary>
+    public const string LocalSource = "local";
+
     private ToolId(string? source, string name)
     {
         Source = source;

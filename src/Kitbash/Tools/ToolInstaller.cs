@@ -150,6 +150,15 @@ public sealed class ToolInstaller : IToolInstaller
     {
         ArgumentNullException.ThrowIfNull(tool);
 
+        // A linked tool runs from a folder the person owns, so removing it forgets the
+        // path. Deleting somebody's own build output because they took the tool off the
+        // list would destroy work Kitbash never put there.
+        if (tool.IsLinked)
+        {
+            _installed.Unlink(tool.Id);
+            return;
+        }
+
         var root = _paths.ToolDirectoryFor(tool.Id.Value);
 
         foreach (var directory in _files.EnumerateDirectories(root))
@@ -174,6 +183,13 @@ public sealed class ToolInstaller : IToolInstaller
 
         foreach (var tool in installed)
         {
+            // A linked tool's folder is outside the tools directory, so every version
+            // folder here would look like an old one and be swept.
+            if (tool.IsLinked)
+            {
+                continue;
+            }
+
             var root = _paths.ToolDirectoryFor(tool.Id.Value);
 
             foreach (var directory in _files.EnumerateDirectories(root))

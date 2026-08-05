@@ -12,30 +12,37 @@ public sealed class InstalledTools : IInstalledTools
     /// <summary>Where a tool's state file records the version that opens.</summary>
     private const string ActiveVersionKey = "install.version";
 
+    /// <summary>Where a tool's state file records the folder it was pointed at.</summary>
+    private const string LinkedDirectoryKey = "install.directory";
+
     private readonly ApplicationPaths _paths;
     private readonly IFileSystem _files;
     private readonly IToolManifestReader _manifests;
     private readonly IToolRuntime _runtime;
     private readonly IApplicationState _state;
+    private readonly ToolLog _log;
 
     public InstalledTools(
         ApplicationPaths paths,
         IFileSystem files,
         IToolManifestReader manifests,
         IToolRuntime runtime,
-        IApplicationState state)
+        IApplicationState state,
+        ToolLog log)
     {
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(manifests);
         ArgumentNullException.ThrowIfNull(runtime);
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(log);
 
         _paths = paths;
         _files = files;
         _manifests = manifests;
         _runtime = runtime;
         _state = state;
+        _log = log;
     }
 
     public IReadOnlyList<InstalledTool> Read()
@@ -60,11 +67,58 @@ public sealed class InstalledTools : IInstalledTools
         _state.Set(SettingsScope.ForTool(id.Value), ActiveVersionKey, version.ToString());
     }
 
+    public void Link(ToolId id, string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
+        _state.Set(SettingsScope.ForTool(id.Value), LinkedDirectoryKey, directory);
+    }
+
+    public void Unlink(ToolId id) =>
+        _state.Apply(SettingsScope.ForTool(id.Value), [SettingsEdit.Remove(LinkedDirectoryKey)]);
+
     /// <summary>
-    /// The version the state file names, or the newest usable one when it names nothing
-    /// or names a version that is no longer here.
+    /// The folder the state file points at, or the version it names, or the newest usable
+    /// version when it names nothing. A folder that has gone leaves the tool out.
     /// </summary>
     private InstalledTool? Active(ToolId id, string folder)
+    {
+        if (Linked(id) is { } linked)
+        {
+            if (!_files.DirectoryExists(linked))
+            {
+                _log.Say($"{id} is pointed at '{linked}', which is not there");
+                return null;
+            }
+
+            var tool = Describe(id, linked);
+
+            if (tool is null)
+            {
+                _log.Say($"{id} is pointed at '{linked}', which holds no tool this machine can run");
+            }
+
+            return tool is null ? null : tool with { IsLinked = true };
+        }
+
+        return Versioned(id, folder);
+    }
+
+    /// <summary>
+    /// Where a linked tool runs from, or null for one Kitbash installed itself. A relative
+    /// path is refused rather than resolved, since it would mean a different folder to
+    /// every process that read it.
+    /// </summary>
+    private string? Linked(ToolId id)
+    {
+        var directory = _state.ForTool(id.Value).Get(LinkedDirectoryKey, string.Empty);
+
+        return !string.IsNullOrWhiteSpace(directory) && Path.IsPathRooted(directory)
+            ? directory
+            : null;
+    }
+
+    private InstalledTool? Versioned(ToolId id, string folder)
     {
         List<InstalledTool> versions = [.. _files
             .EnumerateDirectories(folder)

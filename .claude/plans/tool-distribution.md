@@ -15,6 +15,10 @@ list is edited in the settings window. **Step 7, the GitHub login, is the only o
 so a private repository is not reachable and the hourly unauthenticated request allowance
 is what a check costs.
 
+**Install from folder is built as well**, which is outside the seven steps. A folder
+holding a manifest is a tool where it sits, under a `local.` id, and nothing is copied.
+See A folder on this machine is the other way in.
+
 - **The Windows user directories moved.** State and cache are under
   `%LOCALAPPDATA%\KitbashData` and the install root holds the app alone.
 - **`Kitbash/Tools/` is the model**, and it is the launcher's rather than Core's:
@@ -426,6 +430,74 @@ defined outcome rather than a crash.
 
 A private repository needs the API for the download as well as the listing, since the
 plain `releases/download` URL is not readable without credentials.
+
+## A folder on this machine is the other way in
+
+**Install from folder points Kitbash at a folder and nothing is copied.** A tool author
+building their own tool needs it on the page before it is published anywhere, and copying
+a publish output on every rebuild is friction that makes the launcher the slow way to run
+your own program.
+
+It is not a repository. `IToolRepository` answers two operations, list the versions and
+fetch a file for one, and a build output folder has one version and nothing to fetch.
+`IToolFolderInstaller` is its own seam, the repository lists are untouched, and the
+catalogue never sees it.
+
+**The manifest is still the whole contract.** `kitbash-tool.json` at the folder's root,
+the payload matching this machine, and the program `executable` names sitting inside it.
+`asset`, `size` and `sha256` are already optional in the reader, so a folder needs none of
+them.
+
+**The id is `local.<name>`.** `local` is reserved and no repository type may take it, so a
+folder build and a released copy of the same tool are two ids and can both be installed.
+Nothing a repository offers ever matches a `local.` id, so a linked tool is never shown an
+update.
+
+### What the state file holds
+
+```
+<state>/tools/local.<name>/state.toml
+  [install]
+  directory = "/home/jason/dev/foundry/publish"
+```
+
+That folder is where the tool runs, so a rebuild in it is picked up with nothing installed
+again. The version comes from the manifest each time it is read, which is what makes that
+work.
+
+**A relative path is refused rather than resolved**, since it would mean a different
+folder to every process that read it. The path is stored absolute with no trailing
+separator.
+
+### What it refuses, all before anything is written
+
+A folder that is not there, one holding no manifest, a manifest whose format is newer than
+this launcher reads, a manifest with no payload for this runtime identifier, a manifest
+naming a program that is not in the folder, and a folder inside `<state>/tools/`, which is
+already listed through the tool it belongs to.
+
+### Removing one deletes nothing
+
+**A linked folder belongs to the person.** Uninstall forgets the path and leaves every
+file alone, which is the imported engine rule and the same dialog wording. The card's menu
+says Remove rather than Uninstall for exactly that reason.
+
+**A folder that has gone leaves the tool out**, logged and not drawn, the same as a
+version directory that will not read. The state entry stays, so putting the folder back
+brings the tool back.
+
+**The sweep skips a linked tool.** It deletes every directory under a tool's folder that
+is not the active version, and a linked tool's version is somewhere else entirely, so
+without the guard the sweep would take anything sitting there.
+
+Measured on this machine, Linux, 30 checks over a console harness against real folders and
+real state files, and the page and both dialogs rendered headlessly through the real
+launcher window: a folder installed, read back in a fresh process, and its executable
+resolving into the picked folder; a rebuild changing the version with nothing reinstalled;
+each of the eight refusals; a payload marked `any`; a trailing separator trimmed; the
+folder moved away and the tool dropping out while its neighbour kept working; remove
+leaving every file where it was; the sweep leaving a linked folder alone; and adding it
+again finding it as it was left.
 
 ## Uninstalling
 

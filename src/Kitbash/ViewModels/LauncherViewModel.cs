@@ -38,6 +38,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IToolStarter _starter;
     private readonly IToolCatalogue _tools;
     private readonly IToolInstaller _installer;
+    private readonly IToolFolderInstaller _folders;
     private readonly ToolLog _log;
     private readonly IFileSystem _files;
     private readonly IToastService _toasts;
@@ -86,6 +87,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IToolStarter starter,
         IToolCatalogue tools,
         IToolInstaller installer,
+        IToolFolderInstaller folders,
         ToolLog log,
         IFileSystem files,
         IGitStatusMonitor git,
@@ -113,6 +115,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(starter);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(installer);
+        ArgumentNullException.ThrowIfNull(folders);
         ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(git);
@@ -152,6 +155,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _starter = starter;
         _tools = tools;
         _installer = installer;
+        _folders = folders;
         _log = log;
         _files = files;
         _toasts = toasts;
@@ -294,6 +298,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             groups.Add(new ToolGroupViewModel("AVAILABLE TO INSTALL", theirs, offersUpdates: false));
         }
 
+        // The page has no bar of its own, so its one action rides on the first heading.
+        // Whichever group that is, since a person with nothing installed still needs it.
+        if (groups.Count > 0)
+        {
+            groups[0].ShowsFolderInstall = true;
+        }
+
         ToolGroups = groups;
     }
 
@@ -327,6 +338,38 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             {
                 Tier = ToastTier.Error,
                 Title = $"{offer.Name} could not be installed",
+                Body = exception.Message,
+            });
+        }
+
+        await RefreshToolsAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Adds a tool from a folder on this machine. The folder is not copied, so a rebuild
+    /// in it is picked up without installing again.
+    /// </summary>
+    public async Task InstallToolFromFolderAsync(string folder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+
+        try
+        {
+            var tool = await Task.Run(() => _folders.InstallFrom(folder)).ConfigureAwait(true);
+
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Ok,
+                Title = $"{tool.Name} {tool.Version} was added",
+                Body = "It runs from the folder you picked, so a rebuild there needs nothing here.",
+            });
+        }
+        catch (ToolInstallException exception)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = "That folder does not hold a tool",
                 Body = exception.Message,
             });
         }

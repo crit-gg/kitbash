@@ -62,6 +62,12 @@ public partial class ToolCardViewModel : ObservableObject
     /// <summary>False lists the tool under available rather than installed.</summary>
     public bool IsInstalled => Tool is not null;
 
+    /// <summary>
+    /// What the menu's last line says. A linked tool is removed from the list and a tool
+    /// Kitbash installed is uninstalled, since only one of the two deletes anything.
+    /// </summary>
+    public string RemoveLabel => Tool is { IsLinked: true } ? $"Remove {Name}" : $"Uninstall {Name}";
+
     public IReadOnlyList<ToolMenuItemViewModel> Menu { get; }
 
     public bool HasMenu => Menu.Count > 0;
