@@ -8,5 +8,6 @@
   <Folder Name="/src/tools/" />
   <Folder Name="/tests/">
     <Project Path="tests/Kitbash.Core.Tests/Kitbash.Core.Tests.csproj" />
+    <Project Path="tests/Kitbash.Ui.Tests/Kitbash.Ui.Tests.csproj" />
   </Folder>
 </Solution>

@@ -190,6 +190,8 @@ public partial class GalleryWindow : ChromelessWindow
 
         SampleTree.ItemsSource = opened;
 
+        ShowDiff(marked: true);
+
         for (var group = 1; group <= 200; group++)
         {
             var rows = new List<Node>();
@@ -233,6 +235,41 @@ public partial class GalleryWindow : ChromelessWindow
     }
 
     private void OnCountRows(object? sender, RoutedEventArgs e) => ShowRowCount();
+
+    /// <summary>One diff with every kind in it, so the whole vocabulary is on one screen.</summary>
+    private static IReadOnlyList<TextDiffLine> DiffSample() =>
+    [
+        new TextDiffLine(TextDiffLineKind.Heading, "@@ -14,9 +14,12 @@ func _ready()"),
+        new TextDiffLine(TextDiffLineKind.Context, "extends CharacterBody2D", 14, 14),
+        new TextDiffLine(TextDiffLineKind.Context, "", 15, 15),
+        new TextDiffLine(TextDiffLineKind.Removed, "@onready var state := $StateMachine", 16, null),
+        new TextDiffLine(TextDiffLineKind.Added, "@onready var state := $Logic/StateMachine", null, 16),
+        new TextDiffLine(TextDiffLineKind.Added, "@onready var hurt_box: Area2D = $HurtBox", null, 17),
+        new TextDiffLine(TextDiffLineKind.Context, "", 17, 18),
+        new TextDiffLine(TextDiffLineKind.Context, "func _ready() -> void:", 18, 19),
+        new TextDiffLine(TextDiffLineKind.Removed, "\tstate.start(\"Idle\")", 19, null),
+        new TextDiffLine(TextDiffLineKind.Added, "\tstate.start(\"Walk\")", null, 20),
+        new TextDiffLine(TextDiffLineKind.Heading, "@@ merged for you"),
+        new TextDiffLine(TextDiffLineKind.Settled, "\thurt_box.body_entered.connect(_on_hurt)", null, 21),
+        new TextDiffLine(TextDiffLineKind.Ours, "\tvelocity.y = jump_force", null, 22),
+        new TextDiffLine(TextDiffLineKind.Theirs, "\tvelocity.y = JUMP", null, 23),
+        new TextDiffLine(TextDiffLineKind.Chosen, "\tvelocity.y = jump_force", null, 24),
+    ];
+
+    private void OnMarkWords(object? sender, RoutedEventArgs e) => ShowDiff(marked: true);
+
+    private void OnLeaveWords(object? sender, RoutedEventArgs e) => ShowDiff(marked: false);
+
+    private void ShowDiff(bool marked)
+    {
+        var lines = DiffSample();
+
+        SampleDiff.ItemsSource = marked ? new TextDiffWords().Mark(lines) : lines;
+
+        DiffCount.Text = marked
+            ? "words marked"
+            : "line kinds only";
+    }
 
     private void ShowRowCount()
     {

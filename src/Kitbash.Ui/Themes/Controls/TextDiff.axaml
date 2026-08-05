@@ -1,0 +1,193 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+        <!-- A diff is a document rather than a list of things, so its rows are flush against
+             each other and against the frame: no radius, no gap, no rule. What tells one
+             line from the next is the mark down its left and the fill behind it. -->
+        <ControlTheme x:Key="{x:Type ui:TextDiffRow}" TargetType="ui:TextDiffRow">
+            <Setter Property="Height" Value="{DynamicResource HeightDiffLine}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeControl}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="(ui:TextDiff.Highlight)" Value="{x:Null}" />
+
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Root" Background="{TemplateBinding Background}">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*">
+                            <!-- The number of the line in its own file, which is what a
+                                 person matches against their editor. -->
+                            <TextBlock Name="PART_Number"
+                                       Grid.Column="0"
+                                       Width="{DynamicResource WidthDiffNumber}"
+                                       Padding="{DynamicResource PaddingDiffNumber}"
+                                       TextAlignment="Right"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkDisabled}"
+                                       VerticalAlignment="Center" />
+
+                            <!-- The one thing that says what happened to the line without
+                                 reading it, and the only part of a row that carries colour
+                                 at full strength. -->
+                            <Border Name="PART_Mark"
+                                    Grid.Column="1"
+                                    Width="{DynamicResource WidthDiffMark}"
+                                    Background="Transparent" />
+
+                            <TextBlock Name="PART_Symbol"
+                                       Grid.Column="2"
+                                       Width="{DynamicResource WidthDiffSymbol}"
+                                       TextAlignment="Center"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeBody}"
+                                       FontWeight="{DynamicResource FontWeightMedium}"
+                                       Foreground="{DynamicResource InkDisabled}"
+                                       VerticalAlignment="Center" />
+
+                            <!-- Never wrapped. A wrapped diff loses the one thing a line
+                                 number is for, which is that a row is a line. -->
+                            <TextBlock Name="PART_Text"
+                                       Grid.Column="3"
+                                       Padding="{DynamicResource PaddingDiffText}"
+                                       TextWrapping="NoWrap"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+
+            <!-- Every kind: the fill behind the row, the mark down its left, the ink of the
+                 text, the ink of the symbol, and what a changed word sits on. -->
+            <Style Selector="^.added">
+                <Setter Property="Background" Value="{DynamicResource OkSurface}" />
+                <Setter Property="Foreground" Value="{DynamicResource OkInk}" />
+                <Setter Property="(ui:TextDiff.Highlight)" Value="{DynamicResource OkLine}" />
+            </Style>
+
+            <Style Selector="^.added /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource Ok}" />
+            </Style>
+
+            <Style Selector="^.added /template/ TextBlock#PART_Symbol">
+                <Setter Property="Foreground" Value="{DynamicResource OkInk}" />
+            </Style>
+
+            <Style Selector="^.removed">
+                <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
+                <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+                <Setter Property="(ui:TextDiff.Highlight)" Value="{DynamicResource ErrorLine}" />
+            </Style>
+
+            <Style Selector="^.removed /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource Error}" />
+            </Style>
+
+            <Style Selector="^.removed /template/ TextBlock#PART_Symbol">
+                <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+            </Style>
+
+            <Style Selector="^.ours">
+                <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+                <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+                <Setter Property="(ui:TextDiff.Highlight)" Value="{DynamicResource AccentTintStrong}" />
+            </Style>
+
+            <Style Selector="^.ours /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource Accent}" />
+            </Style>
+
+            <Style Selector="^.ours /template/ TextBlock#PART_Symbol">
+                <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
+            </Style>
+
+            <Style Selector="^.theirs">
+                <Setter Property="Background" Value="{DynamicResource WarnSurface}" />
+                <Setter Property="Foreground" Value="{DynamicResource WarnInk}" />
+                <Setter Property="(ui:TextDiff.Highlight)" Value="{DynamicResource WarnLine}" />
+            </Style>
+
+            <Style Selector="^.theirs /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource Warn}" />
+            </Style>
+
+            <Style Selector="^.theirs /template/ TextBlock#PART_Symbol">
+                <Setter Property="Foreground" Value="{DynamicResource WarnInk}" />
+            </Style>
+
+            <!-- A decision somebody made, which reads as settled rather than as either side. -->
+            <Style Selector="^.chosen">
+                <Setter Property="Background" Value="{DynamicResource OkSurface}" />
+                <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+            </Style>
+
+            <Style Selector="^.chosen /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource Ok}" />
+            </Style>
+
+            <Style Selector="^.chosen /template/ TextBlock#PART_Symbol">
+                <Setter Property="Foreground" Value="{DynamicResource OkInk}" />
+            </Style>
+
+            <!-- Settled without asking, so it is there to be read past rather than read. -->
+            <Style Selector="^.settled">
+                <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+            </Style>
+
+            <Style Selector="^.settled /template/ Border#PART_Mark">
+                <Setter Property="Background" Value="{DynamicResource LineSeam}" />
+            </Style>
+
+            <!-- The heading over a run. Not a line of the file, so it carries no number. -->
+            <Style Selector="^.heading">
+                <Setter Property="Background" Value="{DynamicResource SurfaceNest1}" />
+                <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+            </Style>
+
+            <!-- Selection is what a person is about to act on, so it beats the kind's own
+                 fill. The mark stays, since it still says what the line is. -->
+            <Style Selector="^:selected">
+                <Setter Property="Background" Value="{DynamicResource AccentTint}" />
+                <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
+            </Style>
+
+            <Style Selector="^:pointerover">
+                <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            </Style>
+
+            <Style Selector="^:selected:pointerover">
+                <Setter Property="Background" Value="{DynamicResource AccentTintStrong}" />
+            </Style>
+        </ControlTheme>
+
+        <ControlTheme x:Key="{x:Type ui:TextDiff}" TargetType="ui:TextDiff">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="{DynamicResource PaddingDiff}" />
+            <Setter Property="SelectionMode" Value="Multiple" />
+            <Setter Property="(ScrollViewer.HorizontalScrollBarVisibility)" Value="Auto" />
+            <Setter Property="(ui:ScrollLane.Kind)" Value="Panel" />
+
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ScrollViewer HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                      VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                            <ItemsPresenter Name="PART_ItemsPresenter"
+                                            ItemsPanel="{TemplateBinding ItemsPanel}"
+                                            Margin="{TemplateBinding Padding}" />
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+
+</ResourceDictionary>

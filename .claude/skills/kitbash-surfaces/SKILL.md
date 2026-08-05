@@ -176,6 +176,47 @@ sits inside the 1px stroke but at a corner it paints over it: the marker came th
 clears the stroke by about 1.4px at 45 degrees, which is why two borders work and one does
 not. The design says the same thing its own way, with `overflow:hidden` on the dock frame.
 
+### The text diff
+
+`ui:TextDiff` reads a diff as lines. It is a `ListBox`, the way the tree and both grids are,
+so virtualisation, selection and recycling are the ones from stage 9 rather than a second
+set. **AvaloniaEdit was read and refused**: SourceGit builds its diff on a full code editor,
+and what a diff needs is a read only viewer with line selection, which the list already is.
+
+**A diff is a document, not a list of things.** Rows are flush against each other and against
+the frame: no radius, no gap, no rule. What tells one line from the next is the mark down its
+left, which is the one part of a row carrying colour at full strength.
+
+**Eight kinds and the theme is the only place they are written.** `Context`, `Added` and
+`Removed` are what every diff has. `Ours`, `Theirs`, `Chosen` and `Settled` are what a merge
+adds, and `Heading` is the row over a run. Each sets four things together, the row's fill,
+the mark, the ink and what a changed word sits on, and a row wears exactly one.
+
+**The changed words inside a line are worked out and lit.** `TextDiffWords` trims the shared
+ends, runs a longest common subsequence over what is left, and joins runs that touch. Two
+guards keep it honest: a pair longer than 400 words is left alone, since the comparison is
+quadratic and nobody reads a line that long word by word, and a pair where over three
+quarters of the line differs is left alone too, because marking nearly everything only
+repeats what the kind already said.
+
+`TextDiffWords.Mark` is what pairs the lines: a run of removals followed by a run of additions
+is one replacement, paired off in the order they were written. It is on the word differ rather
+than on the control, since what builds the lines is usually a view model with no control to
+ask. A caller that wants no marking simply does not call it.
+
+**A line with nothing marked is one piece of text, not a list of runs.** Building runs for
+every row of a large diff is waste, so the row only assembles them when there is something to
+assemble. When it does, it works the line out a character at a time and joins the result,
+since a coloured run and a changed run do not line up and either may split the other.
+
+**The seam for syntax colouring is `ITextDiffColouring`, and the library ships none.** A
+grammar engine is a dependency and Godot's own formats would need one written anyway. The
+control asks per line as it is realised, so anything supplied has to be cheap.
+
+**The sizes are deliberately not in the density set.** A diff is read as a document and the
+design draws the same 21px row at both densities, the way the title bar is one size whatever
+is inside it.
+
 ### Grids
 
 Two of them, `ui:DataGrid` and `ui:TreeDataGrid`, and one column model under both. Both are

@@ -28,6 +28,7 @@
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/SplitView.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/List.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tree.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/TextDiff.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tabs.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Toast.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Alert.axaml" />

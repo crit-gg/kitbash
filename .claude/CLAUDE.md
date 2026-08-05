@@ -374,6 +374,13 @@ over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
 
+**`ui:TextDiff` reads a diff as lines**, built for Splice and useful to any tool that shows
+one. It is the list again rather than a code editor: AvaloniaEdit was read and refused, since
+what a diff needs is a read only viewer with line selection. Eight line kinds, the three every
+diff has and the four a merge adds, the changed words inside a line worked out and lit, and a
+seam for syntax colouring that the library ships nothing for. `tests/Kitbash.Ui.Tests` is the
+second test project, headless with real drawing.
+
 **`Kitbash.Core/Git` is a whole git client's worth of plumbing now**, built for Splice and
 useful to any tool: one shared runner, the file list, history, diffs, staging by hunk,
 commits, branches, push and pull, and the three versions a conflict leaves. The launcher

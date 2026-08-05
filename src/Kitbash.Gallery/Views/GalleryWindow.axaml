@@ -1334,6 +1334,22 @@
                             <TextBlock Name="RowCount" Classes="caption" VerticalAlignment="Center" />
                         </StackPanel>
 
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="TEXT DIFF" Content="every kind, and the words that differ" />
+
+                        <TextBlock Classes="note"
+                                   Text="A diff is a document rather than a list of things, so its rows are flush and what tells one line from the next is the mark down its left. The three kinds every diff has are here with the four a merge adds. Changed words inside a line are worked out and lit, so a one character change in a long line is visible without reading it twice." />
+
+                        <Border Classes="panel" Padding="0" Height="330">
+                            <ui:TextDiff Name="SampleDiff" />
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Mark the words" Click="OnMarkWords" />
+                            <Button Classes="ghost" Content="Leave them" Click="OnLeaveWords" />
+                            <TextBlock Name="DiffCount" Classes="caption" VerticalAlignment="Center" />
+                        </StackPanel>
+
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="LIST" />
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
