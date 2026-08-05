@@ -129,7 +129,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}" />
 
                     <Border Name="PART_Root"
                             Background="{TemplateBinding Background}"
@@ -161,7 +161,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}" />
 
                     <Border Name="PART_Root"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -577,7 +577,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Frame"

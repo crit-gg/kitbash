@@ -112,6 +112,16 @@
             <Setter Property="Fill" Value="{DynamicResource Graph}" />
         </Style>
 
+        <!-- Laid over a picture. Every tier above is a tint picked to read on a known
+             surface, and a thumbnail is any colour at all, so the fill becomes a scrim and
+             the tier is left to say its piece through the dot alone. Declared after the
+             tiers, so a badge keeps its dot and loses its tint. -->
+        <Style Selector="^.onMedia">
+            <Setter Property="Background" Value="{DynamicResource ScrimMedia}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />

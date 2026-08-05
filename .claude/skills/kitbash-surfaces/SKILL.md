@@ -63,6 +63,11 @@ of the row and an optional note at the end. It is a keyed theme over
 takes the seam of the tone it stands on, through `Border.seam`, which is worth reusing for
 any hairline a view draws.
 
+**`Expander.trailingCaret` moves the caret to the end of the header row.** For a header that
+reads as a setting, label on the left and today's answer on the right. A caret in front of the
+label pushes the labels of a stack of these out of line with every other row in the panel. The
+header presenter still fills, so the value is content the view docks right inside the header.
+
 **The splitter** is the hairline itself at rest, so the panes stay flush. Hover turns that
 one pixel accent and dragging widens it to three, centred, so nothing shifts. A one pixel
 line cannot be grabbed, so `GridSplitter` reaches seven and pulls itself back in with a
@@ -245,6 +250,18 @@ An edit ends when focus leaves the cell, with one exception written into
 `DataGridCell.OnLostFocus`: a context menu opens in a popup and takes the focus with it, so
 the edit would end under the open menu. The cell holds on while any menu inside it is open.
 `TextBox.OnLostFocus` guards its own selection the same way.
+
+**`plain` is the other thing a table can be.** A grid is a document with chrome of its own,
+and this is a way of looking at a list that is already on a page, beside a second way of
+looking at the same list. It drops the three things that make a grid read as a document, the
+rule under every row, the stripe and the header's fill, and its rows take the list's radius
+and spacing instead. The header keeps its seam, since scrolling with no fill behind it that
+seam is the only thing between the labels and the first row.
+
+**It is a class on the grid and a set of plain styles, both forced.** A control theme may not
+hold a descendant selector, so restyling rows from the grid has to live outside both themes,
+beside the `IsMono` and `IsStrong` rules. And it is on the grid rather than on the row because
+it is the whole table that is plain, and a view should not have to mark every row it builds.
 
 **Pagination is `ui:GridPager`, a control of its own under the grid.** The grid does not know
 pages exist. Attaching a pager is what turns them on, which is why a grid that never pages

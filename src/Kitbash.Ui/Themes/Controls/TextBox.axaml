@@ -352,6 +352,38 @@
 
     </Styles.Resources>
 
+    <!-- A field that takes prose. Every other field is one line of a value, and this one is a
+         paragraph, so it drops the fixed height for a floor and grows downward. The well, the
+         border and the focus ramp are the field's own, because a notes box is a field. -->
+    <Style Selector="TextBox.notes">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="MinHeight" Value="{DynamicResource HeightNotes}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingNotes}" />
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- TextWrapping on its own does nothing here. The template's scroll viewer is written
+         Hidden rather than Disabled, which still scrolls, so it measures the presenter at
+         infinite width and no line ever runs out of room. Disabled is what constrains it. -->
+    <Style Selector="TextBox.notes /template/ ScrollViewer#PART_ScrollViewer">
+        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+
+    <!-- The presenter is centred by a constant in the template, so a paragraph in a box that
+         has grown would float in the middle of it. A class carries an activator and a
+         constant does not, which is the only reason this can reach past it. -->
+    <Style Selector="TextBox.notes /template/ TextPresenter#PART_TextPresenter">
+        <Setter Property="VerticalAlignment" Value="Top" />
+    </Style>
+
+    <!-- A search field holding a query language rather than words. The mono family is the
+         same rule every value editor follows: a thing with a syntax is not prose. -->
+    <Style Selector="ui|SearchBox.query">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+    </Style>
+
     <!-- Nothing to clear, so nothing to press. Out here rather than inside the theme, and both
          halves of that are forced. -->
     <Style Selector="ui|SearchBox:empty Button#PART_Clear">

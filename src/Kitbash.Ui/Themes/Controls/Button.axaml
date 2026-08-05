@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
 
     <!-- Five button kinds, one control theme. The resting look is the setters, the kinds and
          the states are the nested styles, and nothing here is a plain type selector. -->
@@ -36,7 +37,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Root"
@@ -158,6 +159,22 @@
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
         </Style>
 
+        <!-- An icon button that destroys something. It rests quiet and floods only under
+             the pointer, so a row of actions is not one red square shouting at the others.
+             This is the caption close button's rule, not the danger kind's, which is red
+             at rest because it is the only action in its row. -->
+        <Style Selector="^.icon.danger:pointerover">
+            <Setter Property="Background" Value="{DynamicResource Destructive}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Destructive}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInk}" />
+        </Style>
+
+        <Style Selector="^.icon.danger:pressed">
+            <Setter Property="Background" Value="{DynamicResource DestructivePressed}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DestructivePressed}" />
+            <Setter Property="Foreground" Value="{DynamicResource DestructiveInkPressed}" />
+        </Style>
+
         <!-- Focus is a halo outside the border, never in place of one. It answers the
              keyboard only, so clicking a button does not ring it. -->
         <Style Selector="^:focus-visible /template/ Border#PART_Focus">
@@ -206,7 +223,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Root"
@@ -225,6 +242,27 @@
                 </Panel>
             </ControlTemplate>
         </Setter>
+
+        <!-- Two kinds, and they are the Button theme's own two that carry no fill. They
+             move the resting look only, so they stand before the states rather than after,
+             and hover, pressed and checked all still reach a toggle wearing one. A toolbar
+             is a row of toggles, and a bordered box around each is a grid of boxes, so the
+             fill has to be the only thing saying which one is on. -->
+        <Style Selector="^.ghost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <!-- Icon only. Same rule as the Button kind: the size is the hit area rather than
+             the glyph, and a view owes it a tooltip and an accessible name. -->
+        <Style Selector="^.icon">
+            <Setter Property="Width" Value="{DynamicResource SizeIconButton}" />
+            <Setter Property="Height" Value="{DynamicResource SizeIconButton}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
 
         <Style Selector="^:pointerover">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
@@ -257,6 +295,12 @@
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
         </Style>
+
+        <!-- A kind with no fill has none to flatten. The Button theme draws the same line. -->
+        <Style Selector="^.ghost:disabled, ^.icon:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
     </ControlTheme>
 
     <!-- The short button, for the row of actions on a toast or an alert. -->
@@ -283,7 +327,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Root"
@@ -369,6 +413,42 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentPressed}" />
         </Style>
 
+        <!-- For an alert's own row of actions, where the surface under the button is
+             already the warn tint. Not a flood: Warn is the mark's colour and a button
+             wearing it beside the mark reads as a second alert inside the first. -->
+        <Style Selector="^.warn">
+            <Setter Property="Background" Value="{DynamicResource WarnControl}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WarnControl}" />
+            <Setter Property="Foreground" Value="{DynamicResource WarnControlInk}" />
+        </Style>
+
+        <Style Selector="^.warn:pointerover">
+            <Setter Property="Background" Value="{DynamicResource WarnControlHover}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WarnControlHover}" />
+        </Style>
+
+        <Style Selector="^.warn:pressed">
+            <Setter Property="Background" Value="{DynamicResource WarnLine}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource WarnLine}" />
+        </Style>
+
+        <!-- The quiet half of that pair. The design draws two buttons in the callout and
+             only the one it recommends carries a fill. -->
+        <Style Selector="^.warnGhost">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^.warnGhost:pointerover">
+            <Setter Property="Background" Value="{DynamicResource WarnControl}" />
+            <Setter Property="Foreground" Value="{DynamicResource WarnControlInk}" />
+        </Style>
+
+        <Style Selector="^.warnGhost:pressed">
+            <Setter Property="Background" Value="{DynamicResource WarnControlHover}" />
+        </Style>
+
         <Style Selector="^:focus-visible /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
@@ -377,6 +457,11 @@
             <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^.warnGhost:disabled">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
 
         <Style Selector="^.link:disabled">

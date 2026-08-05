@@ -28,7 +28,7 @@
                                 Margin="{DynamicResource FocusHaloReach}"
                                 BorderThickness="{DynamicResource FocusHaloThickness}"
                                 BorderBrush="Transparent"
-                                CornerRadius="{DynamicResource RadiusControlHalo}" />
+                                CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}" />
 
                         <Border Name="PART_Box"
                                 Width="{DynamicResource SizeCheck}"
@@ -154,11 +154,14 @@
                          to two lines can put it against the first one. -->
                     <Panel DockPanel.Dock="Left"
                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                        <!-- The radio's halo grows from the box rather than from the control,
+                             because a radio has no radius of its own: the round thing is the
+                             box inside it. -->
                         <Border Name="PART_Halo"
                                 Margin="{DynamicResource FocusHaloReach}"
                                 BorderThickness="{DynamicResource FocusHaloThickness}"
                                 BorderBrush="Transparent"
-                                CornerRadius="9" />
+                                CornerRadius="{Binding #PART_Box.CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}" />
 
                         <Border Name="PART_Box"
                                 Width="{DynamicResource SizeCheck}"
@@ -166,7 +169,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="7">
+                                CornerRadius="{DynamicResource RadiusCheck}">
                             <Ellipse Name="PART_Dot"
                                      Width="7"
                                      Height="7"
@@ -407,7 +410,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}" />
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}" />
 
                     <Border Name="PART_Root"
                             Background="{TemplateBinding Background}"

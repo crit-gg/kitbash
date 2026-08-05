@@ -55,7 +55,7 @@
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
-                            CornerRadius="{DynamicResource RadiusControlHalo}"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <!-- The dashed outline a drag lands on. A Rectangle rather than the

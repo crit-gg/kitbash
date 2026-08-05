@@ -18,13 +18,14 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
-                    <!-- The halo's radius is set by a style rather than here, because a value written in a
-                         template is a local value and a local value beats every style, so the two ends below
-                         could never override it. -->
+                    <!-- The halo grows from whatever radius the part was given, so the two ends
+                         below need no override of their own. Grow leaves a zero corner square,
+                         which is what keeps the seam between the halves flat. -->
                     <Border Name="PART_Focus"
                             Margin="{DynamicResource FocusHaloReach}"
                             BorderThickness="{DynamicResource FocusHaloThickness}"
                             BorderBrush="Transparent"
+                            CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
                             IsHitTestVisible="False" />
 
                     <Border Name="PART_Root"
@@ -40,10 +41,6 @@
                 </Panel>
             </ControlTemplate>
         </Setter>
-
-        <Style Selector="^ /template/ Border#PART_Focus">
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHalo}" />
-        </Style>
 
         <Style Selector="^:pointerover">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
@@ -66,18 +63,10 @@
          control, and its halo rounds to match. -->
     <ControlTheme x:Key="SplitButtonLabelPart" TargetType="Button" BasedOn="{StaticResource SplitButtonPart}">
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlLeft}" />
-
-        <Style Selector="^ /template/ Border#PART_Focus">
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHaloLeft}" />
-        </Style>
     </ControlTheme>
 
     <ControlTheme x:Key="SplitButtonCaretPart" TargetType="Button" BasedOn="{StaticResource SplitButtonPart}">
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlRight}" />
-
-        <Style Selector="^ /template/ Border#PART_Focus">
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlHaloRight}" />
-        </Style>
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type SplitButton}" TargetType="SplitButton">

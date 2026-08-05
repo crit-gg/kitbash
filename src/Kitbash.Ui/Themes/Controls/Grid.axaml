@@ -730,4 +730,33 @@
         <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
     </Style>
 
+    <!-- The plain grid. A grid is a document with chrome of its own, and this is the other
+         thing a table can be: a way of looking at a list that is already on a page, beside a
+         second way of looking at the same list. So it drops the three things that make a grid
+         read as a document, the rule under every row, the stripe and the header's own fill,
+         and its rows take the list's radius and spacing instead.
+
+         Descendant selectors, so they cannot live in either control theme. A class on the
+         grid rather than on the row, since it is the whole table that is plain and a view
+         should not have to mark every row it builds. -->
+    <Style Selector="ui|DataGrid.plain ui|DataGridRow">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Margin" Value="{DynamicResource MarginRow}" />
+    </Style>
+
+    <!-- The stripe is the other half of the ruled look. A row that is neither hovered nor
+         selected draws nothing at all. -->
+    <Style Selector="ui|DataGrid.plain ui|DataGridRow:alt">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- The header keeps its seam and loses its fill, so it reads as a label over the list
+         rather than as the top of a frame. It still scrolls with nothing behind it, which is
+         why the seam stays: it is the only thing separating the labels from the first row. -->
+    <Style Selector="ui|DataGrid.plain ui|DataGridHeader">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineRow}" />
+    </Style>
+
 </Styles>

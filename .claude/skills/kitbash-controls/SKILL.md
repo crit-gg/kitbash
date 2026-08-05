@@ -103,8 +103,21 @@ pressed tone there, and `neutral` takes its border instead, since it is the only
 edge does not track its fill.
 
 They do not otherwise carry the same set. Only `secondary`, `primary` and `neutral` are on
-all three. `Button` adds `ghost`, `danger` and `icon`, `CompactButton` adds `link`, and
-`SplitButton` adds `warn` and `danger`.
+all three. `Button` adds `ghost`, `danger` and `icon`, `CompactButton` adds `link`, `warn`
+and `warnGhost`, and `SplitButton` adds `warn` and `danger`.
+
+**`icon` and `danger` together are a third thing, not the two of them at once.** A trash
+button in a row of actions rests quiet and floods only under the pointer, which is the
+caption close button's rule rather than the danger kind's. `danger` alone is red at rest
+because it is the only action in its row, and a row of five icons with one red square in it
+is a row shouting at itself.
+
+**`CompactButton`'s two warn kinds are for an alert's own actions**, where the surface under
+the button is already the warn tint and the grey fill every other button takes reads as grey
+stuck on amber. They take `WarnControl` rather than `Warn`: a flood is the mark's colour, and
+a button wearing it beside the mark reads as a second alert inside the first. `warn` is the
+one an alert recommends and `warnGhost` is the other, since the design fills only one of the
+pair.
 
 **The gaps are unbuilt rather than refused**, with two exceptions worth knowing before
 closing one. `CompactButton` must never gain `danger`: it is the toast and alert button,
@@ -113,7 +126,7 @@ in the `kitbash-toasts` skill. `SplitButton` has no `icon`, since it is a label 
 and there is no glyph only form of one. Everything else missing is simply a kind nobody has
 needed yet, and adding one is a small change against the theme that lacks it.
 
-**`ToggleButton` is a button that stays down, and it carries no kinds.** It is the
+**`ToggleButton` is a button that stays down, and it carries two kinds.** It is the
 secondary button, and `:checked` takes the pressed fill with `InkPrimary` on it, so a
 toggle that is on reads as a control held in rather than as a second kind of button. Its
 live states step up from there through `Neutral`. The values are derived rather than read,
@@ -121,16 +134,162 @@ since the design draws the kind once, as the Create folder button on the new wor
 dialog. Use it where the answer is a state rather than an action, and a `CheckBox` where
 the answer is a list of them.
 
+Its kinds are `ghost` and `icon`, the Button theme's own two that carry no fill, for a
+toolbar. A toolbar is a row of toggles and a bordered box around each is a grid of boxes, so
+the fill has to be the only thing saying which one is on.
+
+**Both are declared before the states rather than after, and that is forced.** They move the
+resting look only, and order inside a theme is the only precedence there is, so a kind
+written after `:checked` wins while a toggle is checked and takes away the one fill that says
+so. The plain `Button` theme goes the other way, declaring `.icon` after the base states and
+then restating `.icon:pointerover` and `.icon:pressed`, because there its kinds change the
+live states too. Two shapes, and which one a theme needs depends on whether its kinds move a
+state or only the rest.
+
 `Expander` keys its own header off `ExpanderHeader` rather than this, so the two cannot
 drift into each other.
 
 `SplitButton` and `DropDownButton` are stock Avalonia types with a theme each. `Chip` and
 `StatusPill` are ours.
 
+`DropDownButton` has two kinds and they are separate axes. `compact` is for an inspector row,
+where the label owns the left of the row and the value has what is left. `mono` is for a
+button holding a value rather than a name, which is the same split every field draws: a size,
+a format or a version is mono, and a person or a status is Archivo. Neither touches a fill,
+so every state still reaches a button wearing one. A leading colour dot is content the view
+puts in, since only the view knows the colour.
+
+### The chip's three kinds
+
+**A chip still says what is true, and none of these change that.** The kinds are about what
+kind of true.
+
+**`dot` makes the mark round.** Square says the chip names a thing, such as a machine or a
+file kind. Round says it names a label somebody applied, such as a tag. That is the same
+split the badge already draws with its dot, and it is why the two shapes exist at all.
+`RadiusDot` is half of `SizeMark`, so the square becomes a circle and nothing else moves.
+
+**At `SizeMark` 5 the two shapes are nearly the same shape.** The designs draw both at 7,
+where a 2px radius reads as square and a 2.5px one reads as round. This is worth knowing
+before leaning on the distinction to carry meaning, and it is the same decision as the
+density note in `.claude/plans/hoard-controls.md`.
+
+**`accent` is a filter that is in force**, rather than a fact about a thing. It is the one
+chip a click removes something with, so it takes the colour that means selected everywhere
+else, and it carries no mark: the label is the whole of it.
+
+**`ChipAddButton` is the slot at the end of the row, and it is a `Button` and not a `Chip`.**
+A chip says what is true and this does something, which is the line the chip's own doc draws.
+Its box matches the chip beside it so a row stays even, and it sits on `SurfaceNest2`, a rung
+under the chip's `SurfaceNest3`. Not `SurfaceNest1`, which is the fill of a panel one step in
+and would leave the button invisible inside one.
+
+A count inside a chip is content, styled by `TextBlock.chipCount`.
+
+**`ui:Badge` gains `onMedia` for a badge laid over a picture.** Every tier is a tint picked
+to read on a surface the theme knows and a thumbnail is any colour at all, so the fill becomes
+`ScrimMedia` and the tier says its piece through the dot alone. Declared after the tiers, so
+a badge keeps its dot and loses its tint.
+
+### Row furniture
+
+`Themes/Rows.axaml` holds the small pieces a view puts **inside** a row, so a sidebar, a tree
+and a dropdown all say the same thing the same way.
+
+| Class | On | For |
+|---|---|---|
+| `rowCount` | `TextBlock` | what a row says there is more of |
+| `chipCount` | `TextBlock` | the same inside a chip, which sits on a fill |
+| `dot` | `Ellipse` | a label somebody applied |
+| `mark` | `Border` | names a thing |
+
+**These are styles and not template parts, and that is forced rather than chosen.** A row's
+modified mark is in the `ListBoxItem` template because a class can turn it on. A count cannot
+be: it is a value, and a value can only arrive as content. So the library owns what a count
+looks like and the view owns where it is. Growing `ListBoxItem` a `Count` property would mean
+subclassing a type Avalonia already ships, which is the rule at the top of this file.
+
+A count is always trailing, always mono, and a rung quieter than the label it follows, since
+it is read after the name and never instead of it. **Never draw a zero**, which is rule 2 of
+the status bar and holds everywhere.
+
 **A status reads as colour plus icon plus label, never colour alone.** `StatusPill` draws
 all three and none can be turned off, and each tier carries a default glyph, so a pill
 that says its meaning in colour alone cannot be built. The tiers are `Ok`, `Modified`,
 `Error`, `Accent` and `Neutral`.
+
+### Two densities
+
+**Dense is the default and most apps take it.** It is the design spec's own number, which
+says "25px tree rows, 31px grid rows, 26 to 27px controls". An app that browses rather than
+edits takes the other one, in one line, after `KitbashTheme`:
+
+```xml
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashComfortable.axaml" />
+```
+
+`Themes/KitbashComfortable.axaml` holds nothing but the keys that differ. A Styles
+collection is searched from its last child back, so it is reached before `Tokens.axaml`, and
+every control theme already reads these through `DynamicResource`, which is a live lookup.
+That is the whole mechanism, and it is the one docking uses.
+
+**Density is geometry. No colour, no font family and no font size is in that file, and none
+ever should be.** Measured against the asset tool designs, which are drawn at the roomier
+density: they use 11, 11.5, 12, 12.5 and 13, which is the dense type scale exactly. A tool
+that is roomier is not a tool whose words are bigger.
+
+**The set is closed and this is it.** Twenty three keys.
+
+| | Dense | Comfortable |
+|---|---|---|
+| `HeightControl` | 26 | 31 |
+| `HeightControlTall` | 27 | 33 |
+| `HeightControlSmall` | 24 | 28 |
+| `SizeIconButton` | 24 | 30 |
+| `HeightTreeRow` | 25 | 31 |
+| `HeightGridRow` | 31 | 40 |
+| `HeightGridHeader` | 28 | 36 |
+| `HeightGridToolbar` | 33 | 40 |
+| `HeightGridFooter` | 29 | 34 |
+| `HeightGridGroup` | 26 | 31 |
+| `HeightChip` | 21 | 27 |
+| `HeightPill` | 17 | 20 |
+| `HeightTab` | 28 | 33 |
+| `HeightTooltip` | 22 | 26 |
+| `RadiusControl` | 5 | 8 |
+| `SizeRadiusControl` | 5 | 8 |
+| `RadiusControlLeft` | 5,0,0,5 | 8,0,0,8 |
+| `RadiusControlRight` | 0,5,5,0 | 0,8,8,0 |
+| `SizeMark` | 5 | 7 |
+| `RadiusDot` | 2.5 | 3.5 |
+| `PaddingListRow` | 9,0 | 11,0 |
+| `PaddingGridCell` | 10,0 | 12,0 |
+| `PaddingTab` | 11,0 | 13,0 |
+
+**Adding a size token means deciding whether it is in the set.** A key the comfortable file
+does not name keeps its dense value, so forgetting one shows up as a single control that
+does not scale with everything around it. There is no check for this.
+
+**The title bar is not in the set**, and neither is the activity rail or the tree indent.
+The spec draws a 32px title bar and so do the asset designs, so a window frame is one size
+whatever is inside it.
+
+**`RadiusControl` is the one thing in here that is not a size.** At the roomier density a
+control takes the surface radius, so a button and the card under it share a corner. Dense
+keeps 5 on a control and reserves 8 for the card alone.
+
+**`SizeMark` moving is why the round and square marks are worth having.** At 5 the two are
+nearly the same shape, which quietly costs the split its meaning. At 7, which is what both
+asset pages draw, it reads.
+
+**A pinned pixel width does not scale, and that is the trap.** A control grows, the column
+or panel a view pinned around it does not, and the content clips. Found in the gallery: a
+118px status column fitted its pill at dense and cut it off at comfortable. Size a fixed
+width for the roomier density, or do not fix it.
+
+**Check both.** The gallery's title bar carries a Comfortable toggle that adds and removes
+the include at runtime, which is exactly what an app does at startup.
 
 ### Two rules that decide how a control theme is written
 
@@ -218,6 +377,23 @@ theme and the easiest to get wrong in a form.
 `FontFamilyUi` in the template rather than following the control's own family, so a mono
 field still says "No file selected" in Archivo.
 
+**`ui:SearchBox.query` is mono, and that is the same rule rather than an exception to it.** A
+field holding `tag:character -status:raw` holds a syntax, and a thing with a syntax is not
+prose. A field holding words a person is looking for stays Archivo. Parsing the prefixes is
+the view model's, not the control's.
+
+**`TextBox.notes` is the field that takes a paragraph.** It drops the fixed height for
+`HeightNotes` as a floor and grows with what is typed. The well, the border and the focus
+ramp stay the field's own, because a notes box is a field.
+
+**`TextWrapping` on its own does nothing here, which is a trap worth knowing.** The template's
+`PART_ScrollViewer` is written `HorizontalScrollBarVisibility="Hidden"`, and Hidden still
+scrolls, so it measures the presenter at infinite width and no line ever runs out of room.
+`Disabled` is what constrains it. The class reaches in with a `/template/` style to set both
+that and the presenter's `VerticalAlignment`, which is a constant `Center` in the template and
+would otherwise float a paragraph in the middle of a box that has grown. **A class carries an
+activator and a constant does not**, which is the only reason a style can reach past either.
+
 **The adorner rule is the whole look of a value editor.** A stepper, a calendar mark or a
 colour swatch sits *inside* the well behind a hairline, never floating outside it. Nothing
 is built for it: `TextBox` and `NumericUpDown` both carry `InnerLeftContent` and
@@ -229,10 +405,33 @@ field with only the frame themed.
 
 **A halo's radius is grown from the control's**, through `ui:HaloRadius.Grown`, rather than
 named per shape. The halo sits outside the border and a corner radius describes an outer
-edge, so the halo is the control's radius plus its own thickness. Naming a token per radius
-worked until the search field took 8 where every other field takes 5 and wore the 5px
-control's ring. A square corner stays square, which is what keeps one end of a split
-control right.
+edge, so the halo is the control's radius plus its own thickness. A square corner stays
+square, which is what keeps one end of a split control right.
+
+**There is no token for it, and there must not be one again.** A stored value has to be kept
+in step with two things it is derived from, and it never was. It was wrong for the search
+field, which takes 8 where every other field takes 5, wrong for the checkbox, whose box is 3,
+wrong for the chip button, which takes the surface radius, and then wrong for every control
+in the app at the second density, where a 7px ring sat inside an 8px button. All twenty three
+sites read the control now, so none of those can come back.
+
+```xml
+CornerRadius="{TemplateBinding CornerRadius, Converter={x:Static ui:HaloRadius.Grown}}"
+```
+
+**A control whose round part is not itself binds to that part instead.** A radio has no
+radius of its own, so its halo grows from `#PART_Box`, which is the circle. That is the only
+one, and an element name binding is what reaches it.
+
+**Do not write the halo's radius from a style.** The split button's two ends used to, so that
+each could override it, and they no longer need to: each end sets its own `CornerRadius` and
+the template binding follows. That also settles the precedence problem the old comment there
+described, since nothing overrides anything now.
+
+**Checking it is a measurement, not a look.** Read the halo `Border`'s `CornerRadius` back off
+a rendered window and compare it against its control's plus 2, at both densities. A ring that
+is one or two pixels tight reads as slightly wrong rather than as broken, which is exactly the
+kind of thing an eye signs off on.
 
 **Every field carries a right click menu**, and it is `ui:TextMenu`, an attached property
 one style turns on for `:is(TextBox)`. Undo, Redo, then Cut, Copy, Paste, Delete, then
@@ -637,17 +836,9 @@ A window that does not derive from `ChromelessWindow` does not get this.
 Disabled flattens the fill to `SurfaceControlOff` with a `LineControlOff` border and
 `InkDisabled` text. Never opacity. A kind with no fill keeps none.
 
-Each tool is its own executable, started by Kitbash as a separate OS process.
-Tools are not loaded in process and Kitbash does not construct their windows.
-`Kitbash.Core` is the contract shared by Kitbash and every tool. Its only
-dependency is Tomlyn, for settings. Keep it that lean.
+Each tool is its own executable, started by Kitbash as a separate OS process. Tools are not
+loaded in process and Kitbash does not construct their windows, so every control here has to
+work for a tool that shares nothing with the launcher but this library.
 
-Opening a tool goes through `IToolActivation`, which says nothing about how a tool
-opens. Most tools will start another application, some will run a script, and some
-will open a web page. The launcher asks the tool to activate itself and reports the
-`ToolActivationResult` that comes back.
-
-`Program.cs` builds the Avalonia app. `App.axaml.cs` composes the tool registry and
-opens `LauncherWindow`. Tools are registered explicitly in `App.BuildRegistry`
-rather than discovered by assembly scanning, so adding one is a visible code change.
+How a tool is found, installed and started is `.claude/plans/tool-distribution.md`.
 

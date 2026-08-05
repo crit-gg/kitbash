@@ -1,0 +1,73 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The second density, in one line, for an app that browses rather than edits.
+
+         Include it after KitbashTheme. A Styles collection is searched from the last child
+         back, so these are reached before Tokens.axaml under them, and every control theme
+         reads them through DynamicResource, which is a live lookup. Nothing else changes.
+
+         It holds only the keys that differ. A key it does not name keeps its dense value,
+         so adding a density token means adding it here too or that one control will not
+         scale with the rest. The set is closed and it is listed in the kitbash-controls
+         skill.
+
+         DENSITY IS GEOMETRY. No colour, no font family and no font size is in here, and
+         none ever should be. Measured against the asset tool designs: they draw 11, 11.5,
+         12, 12.5 and 13, which is the dense type scale exactly. A tool that is roomier is
+         not a tool whose words are bigger. -->
+
+    <Styles.Resources>
+
+        <!-- Controls. 31 is what the designs draw for a button, a field and a dropdown that
+             sits in a row of them, 33 for one carrying a value somebody sets, and 28 for
+             one inside another piece of chrome such as a tool strip. -->
+        <x:Double x:Key="HeightControl">31</x:Double>
+        <x:Double x:Key="HeightControlTall">33</x:Double>
+        <x:Double x:Key="HeightControlSmall">28</x:Double>
+        <x:Double x:Key="SizeIconButton">30</x:Double>
+
+        <!-- Rows. A tree row takes a control's height here, where dense keeps it two under,
+             because a browser's sidebar is the thing being pointed at all day. -->
+        <x:Double x:Key="HeightTreeRow">31</x:Double>
+        <x:Double x:Key="HeightGridRow">40</x:Double>
+
+        <!-- A grid's own chrome, moved together with its rows. A header that stayed dense
+             over 40px rows reads as a different table stuck on top of this one. -->
+        <x:Double x:Key="HeightGridHeader">36</x:Double>
+        <x:Double x:Key="HeightGridToolbar">40</x:Double>
+        <x:Double x:Key="HeightGridFooter">34</x:Double>
+        <x:Double x:Key="HeightGridGroup">31</x:Double>
+
+        <x:Double x:Key="HeightChip">27</x:Double>
+        <x:Double x:Key="HeightPill">20</x:Double>
+        <x:Double x:Key="HeightTab">33</x:Double>
+        <x:Double x:Key="HeightTooltip">26</x:Double>
+
+        <!-- Shape. The one place the two densities disagree about something that is not a
+             size: every control takes the surface radius here, so a button and the card it
+             sits on share a corner. Dense keeps 5 on a control and 8 for the card alone. -->
+        <CornerRadius x:Key="RadiusControl">8</CornerRadius>
+        <x:Double x:Key="SizeRadiusControl">8</x:Double>
+
+        <!-- One end of a segmented control. These follow RadiusControl and always have to,
+             or a split button keeps square looking ends while every plain button beside it
+             is round. The halo over them is computed, so it needs nothing here. -->
+        <CornerRadius x:Key="RadiusControlLeft">8,0,0,8</CornerRadius>
+        <CornerRadius x:Key="RadiusControlRight">0,8,8,0</CornerRadius>
+
+        <!-- The mark a chip and a row carry. At 5 the square and the round one are nearly
+             the same shape, and the split between them carries meaning, so the roomier
+             density is where it becomes legible. RadiusDot has to follow, since a circle is
+             half of the box it is drawn in. -->
+        <x:Double x:Key="SizeMark">7</x:Double>
+        <CornerRadius x:Key="RadiusDot">3.5</CornerRadius>
+
+        <!-- Padding, only where a taller control would otherwise look pinched sideways. -->
+        <Thickness x:Key="PaddingListRow">11,0</Thickness>
+        <Thickness x:Key="PaddingGridCell">12,0</Thickness>
+        <Thickness x:Key="PaddingTab">13,0</Thickness>
+
+    </Styles.Resources>
+
+</Styles>

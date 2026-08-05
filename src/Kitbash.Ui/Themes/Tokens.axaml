@@ -90,15 +90,18 @@
     <SolidColorBrush x:Key="FocusLine" Color="#569eff" Opacity="0.6" />
     <Thickness x:Key="FocusHaloThickness">2</Thickness>
     <Thickness x:Key="FocusHaloReach">-2</Thickness>
-    <CornerRadius x:Key="RadiusControlHalo">7</CornerRadius>
+
+    <!-- There is no token for the halo's radius. It is the control's own radius plus the
+         halo's reach, so it is computed by ui:HaloRadius.Grown from a TemplateBinding on
+         whatever the control was given. A stored value has to be kept in step with two
+         things it is derived from, and was wrong for anything that took a radius of its
+         own and wrong again at the second density. -->
 
     <!-- One end of a control that is built from segments, such as a split button or a
          segmented control. The parts cannot be clipped to the frame, because a clip
          would take the focus halo with them, so each end carries its own radius. -->
     <CornerRadius x:Key="RadiusControlLeft">5,0,0,5</CornerRadius>
     <CornerRadius x:Key="RadiusControlRight">0,5,5,0</CornerRadius>
-    <CornerRadius x:Key="RadiusControlHaloLeft">7,0,0,7</CornerRadius>
-    <CornerRadius x:Key="RadiusControlHaloRight">0,7,7,0</CornerRadius>
 
     <!-- Text. Disabled keeps its shape and flattens its fill, never its opacity. -->
     <SolidColorBrush x:Key="InkTitle" Color="#e6ebf2" />
@@ -142,6 +145,13 @@
     <SolidColorBrush x:Key="WarnSurface" Color="#2d2416" />
     <SolidColorBrush x:Key="WarnLine" Color="#4d3d1c" />
     <SolidColorBrush x:Key="WarnInk" Color="#e8bd72" />
+
+    <!-- A control standing on a warn surface. SurfaceNest2 is the fill a button takes
+         anywhere else, and on this tint it reads as grey stuck on amber. The hover shares
+         WarnLine's value and is a different role: one is an edge, one is a fill. -->
+    <SolidColorBrush x:Key="WarnControl" Color="#3d3320" />
+    <SolidColorBrush x:Key="WarnControlHover" Color="#4d3d1c" />
+    <SolidColorBrush x:Key="WarnControlInk" Color="#e6d5b0" />
 
     <SolidColorBrush x:Key="Error" Color="#ef6a6e" />
     <SolidColorBrush x:Key="ErrorSurface" Color="#2f1e20" />
@@ -203,8 +213,17 @@
          the mark radius and the control radius, because the box is between those sizes. -->
     <CornerRadius x:Key="RadiusBox">3</CornerRadius>
 
+    <!-- The same box for a radio, where it is a circle. Half of SizeCheck, and it has to
+         stay half of it, since a corner larger than half the box is clamped and one smaller
+         leaves a flat edge. -->
+    <CornerRadius x:Key="RadiusCheck">7</CornerRadius>
+
     <!-- The scrim behind a popup that covers a page. Not behind a dialog. -->
     <SolidColorBrush x:Key="Scrim" Color="#090a0b" Opacity="0.62" />
+
+    <!-- What a badge sits on when it is laid over a picture. A badge tier is a tint chosen
+         to read on a known surface, and a thumbnail is any colour at all. -->
+    <SolidColorBrush x:Key="ScrimMedia" Color="#0c0d0f" Opacity="0.8" />
 
     <!-- The gap between a control and the menu it opens. -->
     <Thickness x:Key="OverlayGap">0,4</Thickness>
@@ -242,6 +261,11 @@
          and a 26px row of buttons inside a 20px tall card reads as a dialog. -->
     <x:Double x:Key="HeightControlSmall">24</x:Double>
     <Thickness x:Key="PaddingControlSmall">11,0</Thickness>
+
+    <!-- The floor under a field that takes prose rather than a value. It is a floor and not
+         a height: the field grows with what is typed into it. -->
+    <x:Double x:Key="HeightNotes">72</x:Double>
+    <Thickness x:Key="PaddingNotes">10,8</Thickness>
 
     <x:Double x:Key="HeightTreeRow">25</x:Double>
     <x:Double x:Key="HeightGridRow">31</x:Double>

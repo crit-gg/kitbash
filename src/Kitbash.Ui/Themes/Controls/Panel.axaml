@@ -134,6 +134,16 @@
             <Setter Property="Glyph" Value="ChevronDown" />
         </Style>
 
+        <!-- The caret at the end of the row instead of the front. For a header that reads as
+             a setting, label on the left and today's answer on the right, where a caret in
+             front of the label would push the labels of a stack of these out of line with
+             every other row in the panel. The header presenter still fills, so the value is
+             content the view docks right inside it. -->
+        <Style Selector="^.trailingCaret /template/ ui|Icon#PART_Chevron">
+            <Setter Property="DockPanel.Dock" Value="Right" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+        </Style>
+
         <!-- Closed, the seam under the header would rule off nothing, so it goes. -->
         <Style Selector="^:not(:expanded) /template/ ToggleButton#PART_Toggle">
             <Setter Property="BorderThickness" Value="0" />

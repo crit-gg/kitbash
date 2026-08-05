@@ -182,6 +182,18 @@ That brings the tokens, the type scale, the icons and the window shell. Nothing 
 rather than what it looks like, and two names may share a value when they are genuinely
 different roles, which is noted in the file where it happens.
 
+**There are two densities and dense is the default.** An app that browses rather than edits
+takes a second line after that one:
+
+```xml
+<StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashComfortable.axaml" />
+```
+
+It holds twenty three geometry keys and nothing else. **Density is geometry, so no colour and
+no font size is ever in it**, and the type scale is the same at both. The `kitbash-controls`
+skill has the set and the one trap, which is that a pixel width a view pins does not scale
+with the control inside it.
+
 Everything a consumer names lives in one namespace, `Kitbash.Ui.Controls`, so a view
 declares one xmlns:
 
@@ -220,6 +232,8 @@ the problem:
 - `.claude/plans/tool-distribution.md` where a tool comes from, how it is installed and
   how it is kept current. Read before touching anything under `Kitbash/Tools` or the tools
   page.
+- `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken
+  from the asset tool designs. Read before building any of them.
 - `.claude/plans/` the twelve design stages and the plans not yet started
 
 **A new rule goes in the skill it belongs to, not here.** This file grows only when a
@@ -386,6 +400,22 @@ built**: no download size is shown beside a version that is not installed, since
 the secondary button with `:checked` taking the pressed fill, and it is in the gallery
 beside the six kinds. The radio and the checkbox now put their mark where
 `VerticalContentAlignment` says, so the renderer rows can sit it against the first line.
+
+**The library carries the alternative styles the asset tool designs need.** Twelve of them,
+none in the launcher, all in the gallery and all rendered headlessly against the real window:
+`ToggleButton` gains `ghost` and `icon`, `Button` gains the quiet form of `icon danger`,
+`CompactButton` gains `warn` and `warnGhost` for an alert's own actions, `ui:Chip` gains
+`dot`, `accent` and a `ChipAddButton` beside it, `ui:Badge` gains `onMedia`,
+`DropDownButton` gains `compact` and `mono`, `TextBox` gains `notes`, `ui:SearchBox` gains
+`query`, `Expander` gains `trailingCaret`, `ui:DataGrid` gains `plain`, and
+`Themes/Rows.axaml` holds the furniture a view puts inside a row. **The controls those pages
+need that have no type to theme are not built** and are planned in
+`.claude/plans/hoard-controls.md`.
+
+**The library has two densities and dense is the default.** `Themes/KitbashComfortable.axaml`
+is a second style include holding twenty three geometry keys, for an app that browses rather
+than edits. Density is geometry alone: the type scale is the same at both, which the asset
+designs confirm. The gallery's title bar toggles it live.
 
 **The tools page is real and it installs.** Six of the seven steps in
 `.claude/plans/tool-distribution.md` are built. A tool comes from a repository, GitHub

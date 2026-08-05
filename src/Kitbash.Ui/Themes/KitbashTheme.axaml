@@ -48,6 +48,7 @@
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/Grid.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Controls/ScrollBar.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Surfaces.axaml" />
+    <StyleInclude Source="avares://Kitbash.Ui/Themes/Rows.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Focus.axaml" />
     <StyleInclude Source="avares://Kitbash.Ui/Themes/Motion.axaml" />
 

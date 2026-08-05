@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Reflection;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
@@ -18,7 +21,14 @@ public partial class GalleryWindow : ChromelessWindow
     private readonly IScreenColour _screen;
 
     private readonly List<Control> _chips = [];
+    private readonly List<Control> _chipKinds = [];
     private readonly List<Node> _big = [];
+
+    /// <summary>Held rather than rebuilt, so turning it off removes the one that went on.</summary>
+    private readonly StyleInclude _comfortable = new(new Uri("avares://Kitbash.Ui/Themes/"))
+    {
+        Source = new Uri("avares://Kitbash.Ui/Themes/KitbashComfortable.axaml"),
+    };
 
     /// <summary>The window's own toasts, handed in rather than reached for.</summary>
     private readonly IToastService _toasts;
@@ -58,12 +68,8 @@ public partial class GalleryWindow : ChromelessWindow
         BuildDock();
         BuildColours();
 
-        _chips.AddRange(Chips.Children);
-
-        foreach (var chip in _chips.OfType<Chip>())
-        {
-            chip.RemoveCommand = new Run(() => Chips.Children.Remove(chip));
-        }
+        Removable(Chips, _chips);
+        Removable(ChipKinds, _chipKinds);
 
         ShowValue();
     }
@@ -243,13 +249,51 @@ public partial class GalleryWindow : ChromelessWindow
         ToggleEnabledButton.Content = _disabled ? "Enable everything" : "Disable everything";
     }
 
+    /// <summary>
+    /// Adds and removes the second density, which is the one line an app takes at startup.
+    /// Every control reads its size through a dynamic resource, so the page relays itself.
+    /// </summary>
+    private void OnToggleDensity(object? sender, RoutedEventArgs e)
+    {
+        if (Application.Current is not { } application || sender is not ToggleButton toggle)
+        {
+            return;
+        }
+
+        if (toggle.IsChecked is true)
+        {
+            application.Styles.Add(_comfortable);
+        }
+        else
+        {
+            application.Styles.Remove(_comfortable);
+        }
+    }
+
+    /// <summary>Remembers a row of chips and wires each one to take itself out.</summary>
+    private static void Removable(Panel row, List<Control> kept)
+    {
+        kept.AddRange(row.Children);
+
+        foreach (var chip in kept.OfType<Chip>())
+        {
+            chip.RemoveCommand = new Run(() => row.Children.Remove(chip));
+        }
+    }
+
     private void OnRestoreChips(object? sender, RoutedEventArgs e)
     {
-        Chips.Children.Clear();
+        Restore(Chips, _chips);
+        Restore(ChipKinds, _chipKinds);
+    }
 
-        foreach (var chip in _chips)
+    private static void Restore(Panel row, List<Control> kept)
+    {
+        row.Children.Clear();
+
+        foreach (var chip in kept)
         {
-            Chips.Children.Add(chip);
+            row.Children.Add(chip);
         }
     }
 
@@ -588,6 +632,14 @@ public partial class GalleryWindow : ChromelessWindow
         var picked = SampleGrid.SelectedItems?.Count ?? 0;
 
         PickAll.IsChecked = picked == 0 ? false : picked >= SampleGrid.ItemCount ? true : null;
+    }
+
+    private void OnPlainGrid(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton { IsChecked: var on })
+        {
+            SampleGrid.Classes.Set("plain", on is true);
+        }
     }
 
     private void OnGroupGrid(object? sender, RoutedEventArgs e)

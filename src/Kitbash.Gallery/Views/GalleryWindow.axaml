@@ -75,6 +75,10 @@
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Right" VerticalAlignment="Center"
                         Margin="0,0,8,0">
+                <!-- The whole library at the other density, live. It is one style include,
+                     so turning it on here is exactly what an app does at startup. -->
+                <ToggleButton Classes="ghost" Content="Comfortable" Click="OnToggleDensity" />
+
                 <Button Classes="ghost" Name="ToggleEnabledButton"
                         Content="Disable everything"
                         Click="OnToggleEnabled" />
@@ -92,7 +96,7 @@
                                    Text="Every kind in every state. The first column is live, so hover it, hold it and tab to it. The rest are held in one state so the five can be compared at once, and they ignore the pointer for that reason." />
 
                         <Grid ColumnDefinitions="90,Auto,Auto,Auto,Auto,Auto"
-                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                              RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                               ColumnSpacing="10" RowSpacing="9">
 
                             <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="live" />
@@ -166,6 +170,63 @@
                             <ToggleButton Grid.Row="7" Grid.Column="3" Classes="forcePressed" Content="Create folder" />
                             <ToggleButton Grid.Row="7" Grid.Column="4" Classes="forceFocus" Content="Create folder" />
                             <ToggleButton Grid.Row="7" Grid.Column="5" Content="Create folder" IsEnabled="False" />
+
+                            <!-- Quiet until it is touched. The held columns are what this
+                                 kind is for, since the whole point is that it is red in
+                                 exactly two of the five states and grey in the rest. -->
+                            <TextBlock Grid.Row="8" Grid.Column="0" Classes="caption" Text="icon danger" VerticalAlignment="Center" />
+                            <Button Grid.Row="8" Grid.Column="1" Classes="icon danger"
+                                    ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                <ui:Icon Glyph="Trash" />
+                            </Button>
+                            <Button Grid.Row="8" Grid.Column="2" Classes="icon danger forceHover"
+                                    ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                <ui:Icon Glyph="Trash" />
+                            </Button>
+                            <Button Grid.Row="8" Grid.Column="3" Classes="icon danger forcePressed"
+                                    ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                <ui:Icon Glyph="Trash" />
+                            </Button>
+                            <Button Grid.Row="8" Grid.Column="4" Classes="icon danger forceFocus"
+                                    ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                <ui:Icon Glyph="Trash" />
+                            </Button>
+                            <Button Grid.Row="8" Grid.Column="5" Classes="icon danger" IsEnabled="False"
+                                    ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                <ui:Icon Glyph="Trash" />
+                            </Button>
+
+                            <!-- The two toggle kinds. Both live samples are checked, so the
+                                 row shows that a kind with no fill still takes one when it
+                                 is on, which is the only thing saying it is on. -->
+                            <TextBlock Grid.Row="9" Grid.Column="0" Classes="caption" Text="toggle ghost" VerticalAlignment="Center" />
+                            <ToggleButton Grid.Row="9" Grid.Column="1" Classes="ghost" Content="Wireframe" IsChecked="True" />
+                            <ToggleButton Grid.Row="9" Grid.Column="2" Classes="ghost forceHover" Content="Wireframe" />
+                            <ToggleButton Grid.Row="9" Grid.Column="3" Classes="ghost forcePressed" Content="Wireframe" />
+                            <ToggleButton Grid.Row="9" Grid.Column="4" Classes="ghost forceFocus" Content="Wireframe" />
+                            <ToggleButton Grid.Row="9" Grid.Column="5" Classes="ghost" Content="Wireframe" IsEnabled="False" />
+
+                            <TextBlock Grid.Row="10" Grid.Column="0" Classes="caption" Text="toggle icon" VerticalAlignment="Center" />
+                            <ToggleButton Grid.Row="10" Grid.Column="1" Classes="icon" IsChecked="True"
+                                          ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                                <ui:Icon Glyph="Columns" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Row="10" Grid.Column="2" Classes="icon forceHover"
+                                          ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                                <ui:Icon Glyph="Columns" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Row="10" Grid.Column="3" Classes="icon forcePressed"
+                                          ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                                <ui:Icon Glyph="Columns" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Row="10" Grid.Column="4" Classes="icon forceFocus"
+                                          ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                                <ui:Icon Glyph="Columns" />
+                            </ToggleButton>
+                            <ToggleButton Grid.Row="10" Grid.Column="5" Classes="icon" IsEnabled="False"
+                                          ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                                <ui:Icon Glyph="Columns" />
+                            </ToggleButton>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -225,6 +286,31 @@
 
                             <DropDownButton Content="Godot 4.7.1" Width="170" IsEnabled="False" />
                         </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="A dropdown that names a status carries the colour in front of the word, since the word alone is what the row is read for. The compact one is for an inspector row, where the label owns the left of the row and the value has what is left, and it takes the mono family when it holds a value rather than a name." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <DropDownButton Width="170">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Ellipse Classes="dot" Fill="{DynamicResource Ok}" />
+                                    <TextBlock Text="Approved" />
+                                </StackPanel>
+                            </DropDownButton>
+
+                            <DropDownButton Width="170">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Ellipse Classes="dot" Fill="{DynamicResource Warn}" />
+                                    <TextBlock Text="In review" />
+                                </StackPanel>
+                            </DropDownButton>
+
+                            <DropDownButton Classes="compact" Content="Ilse" Width="110" />
+
+                            <DropDownButton Classes="compact mono" Content="2048" Width="90" />
+
+                            <DropDownButton Classes="compact mono" Content="PNG" Width="90" IsEnabled="False" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
@@ -241,6 +327,28 @@
                             <ui:Chip Content="attribute" Mark="{DynamicResource Warn}" IsRemovable="True" />
                             <ui:Chip Content="no mark" />
                             <ui:Chip Content="disabled" Mark="{DynamicResource Ok}" IsRemovable="True" IsEnabled="False" />
+                        </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="The round mark says the chip names a label somebody applied, and the square one says it names a thing. That is the same split the badge draws with its dot. The accent chip is a filter that is in force rather than a fact about a thing, so it carries the colour that means selected everywhere else and no mark at all." />
+
+                        <StackPanel Name="ChipKinds" Orientation="Horizontal" Spacing="8">
+                            <ui:Chip Classes="dot" Content="environment" Mark="{DynamicResource Ok}" IsRemovable="True" />
+                            <ui:Chip Classes="dot" Content="character" Mark="{DynamicResource Warn}" IsRemovable="True" />
+                            <ui:Chip Classes="dot" Content="wip" Mark="{DynamicResource Accent}" />
+                            <ui:Chip Classes="accent" Content="owner is Mara" IsRemovable="True" />
+                            <ui:Chip Classes="accent" Content="type is texture" IsRemovable="True" />
+
+                            <!-- A count inside a chip, for one that is true of some of a
+                                 selection rather than all of it. -->
+                            <ui:Chip Classes="dot" Mark="{DynamicResource Graph}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <TextBlock Text="lowpoly" />
+                                    <TextBlock Classes="chipCount" Text="3" />
+                                </StackPanel>
+                            </ui:Chip>
+
+                            <Button Theme="{StaticResource ChipAddButton}" Content="Add" />
                         </StackPanel>
 
                         <Button Classes="ghost" Content="Put them back" Click="OnRestoreChips"
@@ -263,6 +371,22 @@
                             <ui:Badge Tier="Accent" HasDot="True" Content="PREVIEW" />
                             <ui:Badge Tier="Neutral" Content="LOCAL" />
                             <ui:Badge Tier="Ok" HasDot="True" Content="disabled" IsEnabled="False" />
+                        </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="Laid over a picture. Every tier is a tint picked to read on a surface the theme knows, and a thumbnail is any colour at all, so the fill becomes a scrim and the tier says its piece through the dot alone. The two swatches below are standing in for a thumbnail." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border Width="128" Height="72" CornerRadius="{DynamicResource RadiusSurface}"
+                                    Background="{DynamicResource Warn}">
+                                <ui:Badge Classes="onMedia" Tier="Modified" HasDot="True" Content="IN REVIEW"
+                                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="7" />
+                            </Border>
+                            <Border Width="128" Height="72" CornerRadius="{DynamicResource RadiusSurface}"
+                                    Background="{DynamicResource SurfaceWell}">
+                                <ui:Badge Classes="onMedia" Tier="Ok" HasDot="True" Content="APPROVED"
+                                          HorizontalAlignment="Right" VerticalAlignment="Top" Margin="7" />
+                            </Border>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -602,6 +726,34 @@
                             <MaskedTextBox Grid.Row="3" Grid.Column="1" Width="128" Mask="0000-00-00" />
                             <TextBlock Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="4" Classes="note"
                                        Text="The clear button appears only once there is something to clear. The error column is what a field draws when its binding reports one, which a view model gets by implementing INotifyDataErrorInfo."
+                                       VerticalAlignment="Center" />
+                        </Grid>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                Header="PROSE AND QUERIES" />
+
+                        <TextBlock Classes="note"
+                                   Text="Two fields that are not one line of a value. The notes field drops the fixed height for a floor and grows with what is typed into it. The query field takes the mono family, because a thing with a syntax is not prose, which is the same rule every value editor follows." />
+
+                        <Grid ColumnDefinitions="86,340,*" RowDefinitions="Auto,Auto"
+                              ColumnSpacing="14" RowSpacing="11">
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Classes="caption" Text="notes"
+                                       VerticalAlignment="Top" Margin="0,6,0,0" />
+                            <TextBox Grid.Row="0" Grid.Column="1" Classes="notes"
+                                     Text="Loop points sit on the bar line. Do not re encode, the crossfade at the seam is baked into the file."
+                                     PlaceholderText="Say what the next person needs to know" />
+                            <TextBlock Grid.Row="0" Grid.Column="2" Classes="note"
+                                       Text="Type into it and it grows. The well, the border and the focus ramp are the field's own, because a notes box is a field."
+                                       VerticalAlignment="Center" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="query"
+                                       VerticalAlignment="Center" />
+                            <ui:SearchBox Grid.Row="1" Grid.Column="1" Classes="query"
+                                          Text="tag:character -status:raw"
+                                          PlaceholderText="Search, or type tag: type: owner: to narrow" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Classes="note"
+                                       Text="The placeholder stays Archivo whatever the value's family is, which the template pins rather than leaving to the control."
                                        VerticalAlignment="Center" />
                         </Grid>
 
@@ -973,6 +1125,19 @@
                             </StackPanel>
                         </Expander>
 
+                        <TextBlock Classes="note"
+                                   Text="The caret moves to the end of the row for a header that reads as a setting, label on the left and today's answer on the right. A caret in front of the label would push the labels of a stack of these out of line with every other row in the panel. The value is content the view docks right inside the header." />
+
+                        <Expander Classes="trailingCaret">
+                            <Expander.Header>
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="Web 2048" />
+                                    <TextBlock Text="Export preset" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Expander.Header>
+                            <TextBlock Classes="note" Text="What the preset holds goes here." />
+                        </Expander>
+
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                 Header="SPLITTER" Content="grab the seam" />
 
@@ -1078,6 +1243,46 @@
 
                                 <TextBlock Classes="note"
                                            Text="Focus on a selected row is the halo over the tint, so neither one replaces the other." />
+
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="ROW FURNITURE" />
+
+                                <Border Classes="panel" Padding="5">
+                                    <StackPanel>
+                                        <ListBoxItem>
+                                            <DockPanel LastChildFill="True">
+                                                <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="184" />
+                                                <ui:Icon DockPanel.Dock="Left" Glyph="Package" Margin="0,0,9,0" />
+                                                <TextBlock Text="Everything" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </ListBoxItem>
+                                        <ListBoxItem IsSelected="True">
+                                            <DockPanel LastChildFill="True">
+                                                <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="12" />
+                                                <ui:Icon DockPanel.Dock="Left" Glyph="ArrowToBottom" Margin="0,0,9,0" />
+                                                <TextBlock Text="Just arrived" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </ListBoxItem>
+                                        <ListBoxItem>
+                                            <DockPanel LastChildFill="True">
+                                                <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="31" />
+                                                <Border DockPanel.Dock="Left" Classes="mark"
+                                                        Background="{DynamicResource PinInt}" Margin="0,0,11,0" />
+                                                <TextBlock Text="Ships in the demo" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </ListBoxItem>
+                                        <ListBoxItem>
+                                            <DockPanel LastChildFill="True">
+                                                <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="8" />
+                                                <Ellipse DockPanel.Dock="Left" Classes="dot"
+                                                         Fill="{DynamicResource Warn}" Margin="0,0,11,0" />
+                                                <TextBlock Text="character" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </ListBoxItem>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Classes="note"
+                                           Text="A count is a value, so it can only arrive as content, which is why it is a style a view applies rather than a part of the row. The square mark names a thing and the round one names a label somebody applied." />
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Spacing="9">
@@ -1090,11 +1295,8 @@
                                             <DataTemplate x:DataType="views:Node">
                                                 <DockPanel LastChildFill="True">
                                                     <TextBlock DockPanel.Dock="Right"
-                                                               Text="{Binding Count}"
-                                                               FontFamily="{DynamicResource FontFamilyMono}"
-                                                               FontSize="{DynamicResource FontSizeSmall}"
-                                                               Foreground="{DynamicResource InkMuted}"
-                                                               VerticalAlignment="Center" />
+                                                               Classes="rowCount"
+                                                               Text="{Binding Count}" />
                                                     <TextBlock Text="{Binding Name}"
                                                                TextTrimming="CharacterEllipsis"
                                                                VerticalAlignment="Center" />
@@ -1295,8 +1497,10 @@
                                 </ui:GridColumn>
 
                                 <!-- A status cell is the stage four pill rather than a cell
-                                     style of its own. -->
-                                <ui:GridColumn Header="STATE" Width="118">
+                                     style of its own. Wide enough for the longest label at
+                                     the roomier density, since a pinned width does not
+                                     scale and a pill that does will clip inside one. -->
+                                <ui:GridColumn Header="STATE" Width="140">
                                     <ui:GridColumn.CellTemplate>
                                         <DataTemplate x:DataType="views:Entry">
                                             <ui:StatusPill Status="{Binding Status}"
@@ -1314,8 +1518,16 @@
                             <Button Classes="ghost" Content="Group by kind" Click="OnGroupGrid" />
                             <Button Classes="ghost" Content="Turn paging off" Click="OnPageGrid" />
                             <Button Classes="ghost" Content="Count what is real" Click="OnCountCells" />
+
+                            <!-- Toggled on the grid above rather than drawn as a second one,
+                                 so the two looks can be read against the same rows. -->
+                            <ToggleButton Classes="ghost" Content="Plain" Click="OnPlainGrid" />
+
                             <TextBlock Name="GridCount" Classes="caption" VerticalAlignment="Center" />
                         </StackPanel>
+
+                        <TextBlock Classes="note"
+                                   Text="Plain is the other thing a table can be: a way of looking at a list that is already on a page, beside a second way of looking at the same list. It drops the rule under every row, the stripe and the header's fill, and its rows take the list's radius and spacing instead." />
 
                         <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                                 Header="TREE DATA GRID"
@@ -1487,6 +1699,20 @@
                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                         <Button Theme="{StaticResource CompactButton}" Classes="primary" Content="Reveal cycle" />
                                         <HyperlinkButton Content="Copy path" />
+                                    </StackPanel>
+                                </ui:Alert.Actions>
+                            </ui:Alert>
+
+                            <!-- The buttons an alert can carry instead of the neutral pair.
+                                 The surface under them is already the warn tint, so the grey
+                                 fill every other button takes reads as grey stuck on amber. -->
+                            <ui:Alert Tier="Warn"
+                                      Title="3 files are the same file"
+                                      Description="They have different names and one hash.">
+                                <ui:Alert.Actions>
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Button Theme="{StaticResource CompactButton}" Classes="warn" Content="Keep one, link rest" />
+                                        <Button Theme="{StaticResource CompactButton}" Classes="warnGhost" Content="Compare" />
                                     </StackPanel>
                                 </ui:Alert.Actions>
                             </ui:Alert>
