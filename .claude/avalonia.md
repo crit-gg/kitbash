@@ -755,6 +755,15 @@ which fits our rule about probing rather than naming one thing:
 So a folder picker is available on any distribution, but which one appears depends on
 what is installed. Do not assume the native dialog.
 
+## The clipboard reads and writes a data transfer, not text
+
+`IClipboard` in 12 has `SetDataAsync`, `TryGetDataAsync` and `ClearAsync`. **`SetTextAsync`
+and `GetTextAsync` are gone from the interface** and live on
+`Avalonia.Input.Platform.ClipboardExtensions` instead, along with `TryGetTextAsync`,
+`SetValueAsync`, `TryGetValueAsync` and the file and bitmap pairs. Everything written about
+11 calls them on the interface, so the fix for `CS1061` is the using rather than a
+different call.
+
 ## Diagnostics without DevTools
 
 `Avalonia.Diagnostics` is gone, but `TopLevel.RendererDiagnostics.DebugOverlays` is

@@ -11,9 +11,10 @@ public sealed class GitBranches : IGitBranches
     /// </summary>
     private const string Format =
         "--format=%(refname)%1f%(refname:short)%1f%(objectname)%1f%(upstream:short)%1f" +
-        "%(upstream:track)%1f%(HEAD)%1f%(committerdate:iso-strict)%1f%(contents:subject)";
+        "%(upstream:track)%1f%(HEAD)%1f%(committerdate:iso-strict)%1f%(authorname)" +
+        "%1f%(contents:subject)";
 
-    private const int Fields = 8;
+    private const int Fields = 9;
 
     private readonly IGitRunner _git;
 
@@ -147,7 +148,8 @@ public sealed class GitBranches : IGitBranches
             ahead,
             behind,
             When(fields[6]),
-            fields[7]);
+            fields[7],
+            fields[8]);
     }
 
     /// <summary>

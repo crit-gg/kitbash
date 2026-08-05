@@ -60,6 +60,9 @@ public class BranchTests
 
         Assert.False(branch.IsCurrent);
         Assert.Equal("first", branch.Subject);
+
+        // Who wrote the tip is how a list says whose branch it is.
+        Assert.Equal("Kitbash Tests", branch.Author);
     }
 
     [Fact]

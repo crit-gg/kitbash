@@ -10,6 +10,7 @@ namespace Kitbash.Core.Git;
 /// <param name="UpstreamIsGone">True when it tracks something the remote no longer has.</param>
 /// <param name="Ahead">Commits this branch has that its upstream does not.</param>
 /// <param name="Behind">Commits its upstream has that this branch does not.</param>
+/// <param name="Author">Who wrote the commit it points at, which says whose branch it is.</param>
 public sealed record GitBranch(
     string Name,
     string FullName,
@@ -21,4 +22,5 @@ public sealed record GitBranch(
     int Ahead,
     int Behind,
     DateTimeOffset? LastCommit,
+    string Author,
     string Subject);
