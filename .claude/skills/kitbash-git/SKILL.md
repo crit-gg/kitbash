@@ -172,6 +172,11 @@ read the index back with `git show :path` and compare it whole.
 `--whitespace=nowarn`, since a patch built here is git's own output with hunks removed and
 a warning would be about code the person did not write in this gesture.
 
+**Unstaging is `reset`, not `restore --staged`.** The second needs a HEAD it can resolve, so
+it fails outright on a repository with no commits yet, which is exactly where the first file
+anybody stages gets unstaged. `reset` handles both, and an unborn head or a path the head
+never had simply leaves nothing in the index.
+
 **A new file has to be tracked before a hunk of it can be staged.** `add --intent-to-add`
 records it with no content, which is what makes it show in a diff at all.
 

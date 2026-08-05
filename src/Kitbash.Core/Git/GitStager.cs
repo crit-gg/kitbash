@@ -25,9 +25,11 @@ public sealed class GitStager : IGitStager
     public Task<GitResult> StageAllAsync(string root, CancellationToken cancellation = default) =>
         _git.RunAsync(root, GitCommand.Of("add", "--all", "--", "."), cancellation);
 
+    // reset rather than restore --staged, which needs a HEAD it can resolve and so fails
+    // outright on a repository that has no commits yet.
     public Task<GitResult> UnstageAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>
-        Run(root, cancellation, ["restore", "--staged", "--"], paths);
+        Run(root, cancellation, ["reset", "--quiet", "--"], paths);
 
     public Task<GitResult> DiscardAsync(
         string root, IReadOnlyList<string> paths, CancellationToken cancellation = default) =>

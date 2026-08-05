@@ -251,6 +251,46 @@ public class StagingTests
         Assert.True(File.Exists(Path.Combine(repository.Root, "one.txt")));
     }
 
+    // A repository with no commits has no HEAD to resolve, which is what restore --staged
+    // needs. Unstaging the very first file staged in a fresh repository goes through here.
+    [Fact]
+    public async Task AFileIsUnstagedInARepositoryWithNoCommitsYet()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Write("one.txt", "one\n");
+        repository.Git("add", "--", "one.txt");
+
+        var unstaged = await repository.Stager.UnstageAsync(repository.Root, ["one.txt"], Stop);
+
+        Assert.True(unstaged.Succeeded, unstaged.Message);
+
+        var file = Assert.Single(await repository.Files.ReadAsync(repository.Root, false, Stop));
+
+        Assert.True(file.IsUntracked);
+        Assert.True(File.Exists(Path.Combine(repository.Root, "one.txt")));
+    }
+
+    // The same for a file git has never had a version of, where there is nothing in the
+    // head to put back.
+    [Fact]
+    public async Task ANewFileIsUnstagedWithoutBeingDeleted()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Write("two.txt", "two\n");
+        repository.Git("add", "--", "two.txt");
+
+        var unstaged = await repository.Stager.UnstageAsync(repository.Root, ["two.txt"], Stop);
+
+        Assert.True(unstaged.Succeeded, unstaged.Message);
+        Assert.Equal("two\n", repository.Read("two.txt"));
+        Assert.Equal("", Staged(repository));
+    }
+
     [Fact]
     public async Task StagingNothingIsNotAnError()
     {
