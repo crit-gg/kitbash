@@ -146,6 +146,11 @@ file, and `[major]`, `[minor]` or `[version:x.y.z]` in a commit message moves it
 than the patch it would take on its own. `build/release.sh` publishes both runtimes and
 packs both.
 
+**A push that touches nothing the packed app is built from does not release.** The trigger's
+`paths-ignore` holds everything outside `src/Kitbash`, `src/Kitbash.Ui`, `src/Kitbash.Core`,
+`icons`, `build` and `Directory.Build.props`, so the gallery, the tests and the icon scripts
+release nothing. `workflow_dispatch` carries no filter and is how a skipped push is released.
+
 **`vpk download s3` runs before the pack and `vpk upload s3` after it.** The download is
 what makes a delta possible, since `vpk pack` diffs against the previous full package
 sitting in the feed directory. B2 serves an S3 compatible API, which is why the bucket beat

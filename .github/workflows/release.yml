@@ -1,9 +1,21 @@
 name: Release
 on:
   push:
-    paths-ignore: ['.claude/**', '.github/**', '.gitignore', '.gitattributes']
     branches: ["main"]
+    # release.sh publishes src/Kitbash alone, so the gallery, the tests and the icon
+    # scripts cannot change what ships. Patterns are rooted, so tools is not src/tools.
+    paths-ignore:
+      - '.claude/**'
+      - '.github/**'
+      - '.gitignore'
+      - '.gitattributes'
+      - 'src/Kitbash.Gallery/**'
+      - 'src/tools/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'Kitbash.slnx'
 
+  # No path filter, so this is how a skipped push is released.
   workflow_dispatch:
 
 # One release at a time. Two at once would work out the same version and race on the feed.
