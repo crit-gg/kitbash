@@ -50,6 +50,7 @@ The services, all from `AddKitbashGit`:
 | `IGitBranches` | listing, creating, switching, deleting |
 | `IGitSync` | fetch, push, pull, and which remotes there are |
 | `IGitMerger` | merging a revision in, and what that would cost before it starts |
+| `IGitBlobReader` | one file whole, as a revision holds it |
 | `IGitConflictReader` | the three versions a conflict leaves, and settling one |
 | `IGitCloner`, `IGitUpdater`, `IGitStatusMonitor` | the launcher's own three |
 
@@ -252,6 +253,17 @@ can only fail, so this is what it asks before drawing the button.
 
 **Never a rebase.** A rebase settles the same conflict once per commit, which for a binary
 file is once too many.
+
+### One file whole
+
+`IGitBlobReader` is `git show <revision>:<path>`, which is what a client showing a change
+as something other than lines needs. A diff gives the lines between two versions and a
+semantic differ needs both versions.
+
+**An empty revision is the index**, which git spells as a bare colon. The path goes in as
+part of that one argument, so a name holding a space or starting with a dash needs no
+quoting and can never be read as an option. A revision that does not hold the path answers
+null, since that is what an addition on one side looks like rather than a failure.
 
 ### Merging, and asking first
 

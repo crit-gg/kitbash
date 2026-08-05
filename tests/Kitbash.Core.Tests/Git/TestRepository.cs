@@ -64,6 +64,7 @@ public sealed class TestRepository : IDisposable
         Files = new GitFileStatusReader(Runner);
         Refs = new GitRefReader(Runner);
         Merger = new GitMerger(Runner, Refs);
+        Blobs = new GitBlobReader(Runner);
 
         Git(bare ? ["init", "--bare", "-b", "main"] : ["init", "-b", "main"]);
 
@@ -109,6 +110,8 @@ public sealed class TestRepository : IDisposable
     public IGitRefReader Refs { get; }
 
     public IGitMerger Merger { get; }
+
+    public IGitBlobReader Blobs { get; }
 
     /// <summary>Whether there is a git to run at all, which every test skips without.</summary>
     public bool HasGit => Runner.IsAvailable;
