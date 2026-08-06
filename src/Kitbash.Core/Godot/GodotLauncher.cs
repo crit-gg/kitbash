@@ -15,9 +15,14 @@ internal sealed class GodotLauncher : IGodotLauncher
     private const string CacheDirectoryName = ".godot";
 
     /// <summary>
-    /// The one file under the cache a person arranged rather than Godot generated.
+    /// The files under the cache a person arranged rather than Godot generated. Relative
+    /// to the cache folder, and Godot writes both when the editor closes.
     /// </summary>
-    private const string LayoutFileName = "editor_layout.cfg";
+    private static readonly string[] KeptFiles =
+    [
+        "editor/editor_layout.cfg",
+        "editor/project_metadata.cfg",
+    ];
 
     private readonly IProcessRunner _processes;
     private readonly IPlatformServices _platform;
@@ -64,7 +69,7 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         // Taken before the delete and put back after everything, so a rebuild costs a
         // person the cache and never the way they had the editor arranged.
-        var layout = mode == GodotLaunchMode.Rebuild ? Clean(project, progress) : null;
+        var kept = mode == GodotLaunchMode.Rebuild ? Clean(project, progress) : [];
 
         try
         {
@@ -73,12 +78,9 @@ internal sealed class GodotLauncher : IGodotLauncher
         }
         finally
         {
-            // In a finally, so a rebuild that failed or was cancelled does not take the
-            // layout with it as well. There is nothing to put back when there was none.
-            if (layout is not null)
-            {
-                Restore(project, layout);
-            }
+            // In a finally, so a rebuild that failed or was cancelled does not take these
+            // with it as well. There is nothing to put back when there was none.
+            Restore(project, kept);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -163,19 +165,29 @@ internal sealed class GodotLauncher : IGodotLauncher
     /// <summary>
     /// Deletes the import cache, so the import that follows makes all of it again.
     /// </summary>
-    /// <returns>The editor layout that was there, to be put back afterwards.</returns>
-    private string? Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
+    /// <returns>The kept files that were there, to be put back afterwards.</returns>
+    private IReadOnlyList<KeptFile> Clean(GodotProject project, IProgress<GodotLaunchStep> progress)
     {
         var cache = Path.Combine(project.Directory, CacheDirectoryName);
 
         if (!_fileSystem.DirectoryExists(cache))
         {
-            return null;
+            return [];
         }
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Cleaning, cache));
 
-        var layout = Read(LayoutFile(project));
+        List<KeptFile> kept = [];
+
+        foreach (var name in KeptFiles)
+        {
+            var file = CacheFile(project, name);
+
+            if (Read(file) is { } text)
+            {
+                kept.Add(new KeptFile(file, text));
+            }
+        }
 
         try
         {
@@ -187,28 +199,33 @@ internal sealed class GodotLauncher : IGodotLauncher
                 GodotLaunchStage.Cleaning, "The import cache could not be deleted.", exception);
         }
 
-        return layout;
+        return kept;
     }
 
     /// <summary>
-    /// Puts the editor layout back where the cache used to be.
+    /// Puts the kept files back where the cache used to be.
     /// </summary>
-    private void Restore(GodotProject project, string layout)
+    private void Restore(GodotProject project, IReadOnlyList<KeptFile> kept)
     {
-        var file = LayoutFile(project);
-
-        try
+        foreach (var file in kept)
         {
-            _fileSystem.CreateDirectory(Path.GetDirectoryName(file)!);
-            _fileSystem.WriteAllText(file, layout);
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
+            try
+            {
+                _fileSystem.CreateDirectory(Path.GetDirectoryName(file.Path)!);
+                _fileSystem.WriteAllText(file.Path, file.Text);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+            }
         }
     }
 
-    private static string LayoutFile(GodotProject project) =>
-        Path.Combine(project.Directory, CacheDirectoryName, "editor", LayoutFileName);
+    /// <summary>A file under the cache, named with forward slashes.</summary>
+    private static string CacheFile(GodotProject project, string name) =>
+        Path.Combine([project.Directory, CacheDirectoryName, .. name.Split('/')]);
+
+    /// <summary>One file taken out of the cache before the delete.</summary>
+    private readonly record struct KeptFile(string Path, string Text);
 
     /// <summary>
     /// The file's text, or null when there is nothing to keep.

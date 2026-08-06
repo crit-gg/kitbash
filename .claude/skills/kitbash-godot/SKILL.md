@@ -184,21 +184,28 @@ when one of those is the thing that is broken. All of it is Godot's to make agai
 none of it is committed. **The folder is named, never searched for**, so there is no case
 where this deletes something it found.
 
-**One file in there is kept: `editor/editor_layout.cfg`.** It is where a person put their
-docks, which is the one thing under the cache they arranged rather than Godot generated,
-and it sits among the files that are safe to delete. It is read before the delete and
-written back after the import, in a finally, so a rebuild that failed or was cancelled
-does not take it as well. Writing it back afterwards rather than before means whatever
-the headless editor did on its way past cannot win, which is a guard rather than a fix:
-measured, a headless import writes no layout of its own. A failure putting it back is
-swallowed, since losing a dock arrangement is a bad afternoon and losing the rebuild over
-it would be worse.
+**Two files in there are kept: `editor/editor_layout.cfg` and
+`editor/project_metadata.cfg`.** The first is where a person put their docks. The second
+is the editor's own record of this project: the scenes that were open, the last one
+edited, the folders the file dialogs were left in, the state of the panels. Both are
+things a person arranged rather than Godot generated, and both sit among files that are
+safe to delete. They are read before the delete and written back after the import, in a
+finally, so a rebuild that failed or was cancelled does not take them as well. Writing
+them back afterwards rather than before means whatever the headless editor did on its way
+past cannot win, which is a guard rather than a fix: measured, a headless import writes
+no layout of its own. A failure putting one back is swallowed, since losing a dock
+arrangement is a bad afternoon and losing the rebuild over it would be worse.
 
-**No layout file is the ordinary case and not a problem.** Godot writes it when a person
-closes the editor, so a project that has only ever been imported has none and a fresh
-clone has none either. Then nothing is kept and nothing is put back, which leaves the
-project exactly as it would have been. A file that exists and cannot be read is treated
-the same way.
+`KeptFiles` in `GodotLauncher` is the list, and each entry is a path under the cache
+written with forward slashes. **Adding a third is adding a line to it**, since the read,
+the delete and the write back are all over the list.
+
+**Neither file being there is the ordinary case and not a problem.** Godot writes both
+when a person closes the editor, so a project that has only ever been imported has
+neither and a fresh clone has neither. Then nothing is kept and nothing is put back,
+which leaves the project exactly as it would have been. A file that exists and cannot be
+read is treated the same way, and the two are handled one at a time, so one missing does
+not stop the other being kept.
 
 **It does not open the editor when it finishes.** The dialog stays up and offers Dismiss
 and Open in Editor, and pressing the second goes the ordinary way rather than starting
