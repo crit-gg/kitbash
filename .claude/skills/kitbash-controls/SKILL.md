@@ -561,9 +561,16 @@ same thing in the same way, and the one that moves stops being the thing being w
 Both the thumb's position and its width move, since Table, Grid and Cards are three
 different widths.
 
+**An option has no height of its own and stretches to whatever the row leaves it.** The row's
+height is a density token and an option carrying a number is right at one density and floats
+inside the row at the other. It was written as a 20, which is the dense height less the border
+and the padding exactly, so it was right at dense and wrong at comfortable, and `compact` was
+carrying a workaround for it. `compact` is now the shorter row and the tighter padding and
+nothing else.
+
 **The thumb reads the option it is standing on** rather than working a place out from
 tokens, so the padding, the 2px gap and the row height are written in the theme and nowhere
-else. The motion is the theme's too, through `ThumbTransitions`, which is the shape
+else. That is also why an option that did not fill the row left the thumb short of it. The motion is the theme's too, through `ThumbTransitions`, which is the shape
 `ToggleSwitch.KnobTransitions` already has. It is 200ms on the knob's own curve. The two
 share a curve and not a duration, because the knob crosses 13px and a thumb crosses a row.
 

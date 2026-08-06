@@ -378,7 +378,9 @@
     <!-- One option in a segmented row. A radio in a group is what a segmented control already
          is, so the only thing here is the look. -->
     <ControlTheme x:Key="SegmentedOption" TargetType="RadioButton">
-        <Setter Property="Height" Value="20" />
+        <!-- No height of its own. The row's is a density token, so an option carrying a number
+             is right at one density and floats inside the row at the other. -->
+        <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="Padding" Value="9,0" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
@@ -542,11 +544,9 @@
         <Setter Property="Height" Value="{DynamicResource HeightControlSmall}" />
     </Style>
 
-    <!-- No height of its own, so an option fills whatever the row is left with. The thumb
-         reads the option it is standing on, so it follows without being told. -->
+    <!-- Tighter across, since the row is shorter. The option already fills whatever height
+         the row is left with, and the thumb reads the option it stands on. -->
     <Style Selector="ui|Segmented.compact RadioButton">
-        <Setter Property="Height" Value="NaN" />
-        <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="Padding" Value="7,0" />
     </Style>
 
