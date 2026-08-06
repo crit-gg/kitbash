@@ -44,8 +44,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IFileSystem _files;
     private readonly IToastService _toasts;
     private readonly IPlatformServices _platform;
-    private readonly ILauncherCloseSettings _close;
-    private readonly IApplicationShutdown _shutdown;
+    private readonly IAfterLaunchSettings _afterLaunch;
+    private readonly IAfterLaunchActions _actions;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
 
@@ -105,8 +105,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IWorkspaceMaker maker,
         IToastService toasts,
         IPlatformServices platform,
-        ILauncherCloseSettings close,
-        IApplicationShutdown shutdown,
+        IAfterLaunchSettings afterLaunch,
+        IAfterLaunchActions actions,
         EnginesViewModel engines,
         OpenInViewModel openIn)
     {
@@ -134,8 +134,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(maker);
         ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(platform);
-        ArgumentNullException.ThrowIfNull(close);
-        ArgumentNullException.ThrowIfNull(shutdown);
+        ArgumentNullException.ThrowIfNull(afterLaunch);
+        ArgumentNullException.ThrowIfNull(actions);
         ArgumentNullException.ThrowIfNull(engines);
         ArgumentNullException.ThrowIfNull(openIn);
 
@@ -163,8 +163,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _files = files;
         _toasts = toasts;
         _platform = platform;
-        _close = close;
-        _shutdown = shutdown;
+        _afterLaunch = afterLaunch;
+        _actions = actions;
 
         Engines = engines;
         OpenIn = openIn;
@@ -834,18 +834,18 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         // Only ever after something really started. A cancelled launch started nothing
         // and a rebuild starts nothing by design.
-        if (outcome == GodotLaunchOutcome.Finished && ClosesAfter(mode))
+        if (outcome == GodotLaunchOutcome.Finished)
         {
-            _shutdown.Shutdown();
+            _actions.Apply(ActionAfter(mode));
         }
     }
 
-    /// <summary>Whether this person asked for the launcher to go once the mode has started.</summary>
-    private bool ClosesAfter(GodotLaunchMode mode) => mode switch
+    /// <summary>What this person asked the launcher to do once the mode has started.</summary>
+    private AfterLaunchAction ActionAfter(GodotLaunchMode mode) => mode switch
     {
-        GodotLaunchMode.Editor => _close.AfterEditor,
-        GodotLaunchMode.Play => _close.AfterPlay,
-        _ => false,
+        GodotLaunchMode.Editor => _afterLaunch.AfterEditor,
+        GodotLaunchMode.Play => _afterLaunch.AfterPlay,
+        _ => AfterLaunchAction.DoNothing,
     };
 
     /// <summary>Shows a folder in the file browser. Off the UI thread, like every open is.</summary>

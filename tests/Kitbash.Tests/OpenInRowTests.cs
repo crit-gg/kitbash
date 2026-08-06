@@ -1,5 +1,6 @@
 using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Openers;
+using Kitbash.Settings;
 using Kitbash.Ui.Toasts;
 using Kitbash.ViewModels;
 
@@ -13,19 +14,39 @@ public sealed class OpenInRowTests
 {
     private const string Root = "/home/a/ws";
 
-    private static (OpenInViewModel Model, FakeOpeners Opened) Built(
+    private static Harness Built(
         IReadOnlyList<WorkspaceOpener> openers,
-        IReadOnlyDictionary<string, IReadOnlyList<OpenChoice>>? choices = null)
+        IReadOnlyDictionary<string, IReadOnlyList<OpenChoice>>? choices = null,
+        AfterLaunchAction afterExternalTool = AfterLaunchAction.DoNothing,
+        bool startFails = false)
     {
-        var fake = new FakeOpeners(openers, choices ?? new Dictionary<string, IReadOnlyList<OpenChoice>>());
+        var fake = new FakeOpeners(
+            openers,
+            choices ?? new Dictionary<string, IReadOnlyList<OpenChoice>>(),
+            startFails);
 
-        return (new OpenInViewModel(fake, new FakePlatform(), new FakeToasts()), fake);
+        var platform = new FakePlatform();
+        var toasts = new FakeToasts();
+        var actions = new FakeAfterLaunchActions();
+
+        var model = new OpenInViewModel(
+            fake, platform, toasts, new FakeAfterLaunchSettings(afterExternalTool), actions);
+
+        return new Harness(model, fake, platform, toasts, actions);
     }
 
     private static OpenInViewModel Model(
         IReadOnlyList<WorkspaceOpener> openers,
         IReadOnlyDictionary<string, IReadOnlyList<OpenChoice>>? choices = null) =>
         Built(openers, choices).Model;
+
+    /// <summary>The view model and every fake behind it, so a test can read both ends.</summary>
+    private sealed record Harness(
+        OpenInViewModel Model,
+        FakeOpeners Opened,
+        FakePlatform Platform,
+        FakeToasts Toasts,
+        FakeAfterLaunchActions Actions);
 
     private static WorkspaceOpener Editor(string id, string name) =>
         new(id, name, id, $"/usr/bin/{id}", WorkspaceOpenerKind.Editor);
@@ -99,7 +120,7 @@ public sealed class OpenInRowTests
     public async Task PressingATooOpensTheFirstSolutionFound()
     {
         var solution = new OpenChoice("Game.sln", ["/home/a/ws/Game.sln"]);
-        var (model, opened) = Built(
+        var (model, opened, _, _, _) = Built(
             [Editor("rider", "Rider")],
             new Dictionary<string, IReadOnlyList<OpenChoice>>
             {
@@ -116,7 +137,7 @@ public sealed class OpenInRowTests
     [Fact]
     public async Task PressingATooWithNoSolutionOpensTheFolder()
     {
-        var (model, opened) = Built([Editor("rider", "Rider")]);
+        var (model, opened, _, _, _) = Built([Editor("rider", "Rider")]);
 
         await model.RefreshAsync(Root, TestContext.Current.CancellationToken);
         Assert.Single(model.Rows, row => row.Header == "Rider").Invoke!();
@@ -141,9 +162,57 @@ public sealed class OpenInRowTests
         }
     }
 
+    /// <summary>A tool that really started is what the after launch setting follows.</summary>
+    [Fact]
+    public async Task StartingAToolAppliesTheAfterLaunchAction()
+    {
+        var harness = Built(
+            [Editor("rider", "Rider")],
+            afterExternalTool: AfterLaunchAction.Minimize);
+
+        await harness.Model.RefreshAsync(Root, TestContext.Current.CancellationToken);
+        Assert.Single(harness.Model.Rows, row => row.Header == "Rider").Invoke!();
+
+        Assert.Equal(AfterLaunchAction.Minimize, await harness.Actions.Next);
+    }
+
+    /// <summary>A start that failed leaves the launcher up with its toast on screen.</summary>
+    [Fact]
+    public async Task AToolThatWouldNotStartAppliesNothing()
+    {
+        var harness = Built(
+            [Editor("rider", "Rider")],
+            afterExternalTool: AfterLaunchAction.Close,
+            startFails: true);
+
+        await harness.Model.RefreshAsync(Root, TestContext.Current.CancellationToken);
+        Assert.Single(harness.Model.Rows, row => row.Header == "Rider").Invoke!();
+
+        await harness.Toasts.Posted;
+
+        Assert.Empty(harness.Actions.Applied);
+    }
+
+    /// <summary>Showing the workspace folder is not opening an external tool.</summary>
+    [Fact]
+    public async Task TheFolderRowAppliesNothing()
+    {
+        var harness = Built(
+            [Editor("rider", "Rider")],
+            afterExternalTool: AfterLaunchAction.Close);
+
+        await harness.Model.RefreshAsync(Root, TestContext.Current.CancellationToken);
+        Assert.Single(harness.Model.Rows, row => row.Header == "Open folder").Invoke!();
+
+        await harness.Platform.Browsed;
+
+        Assert.Empty(harness.Actions.Applied);
+    }
+
     private sealed class FakeOpeners(
         IReadOnlyList<WorkspaceOpener> openers,
-        IReadOnlyDictionary<string, IReadOnlyList<OpenChoice>> choices) : IWorkspaceOpeners
+        IReadOnlyDictionary<string, IReadOnlyList<OpenChoice>> choices,
+        bool startFails = false) : IWorkspaceOpeners
     {
         private readonly TaskCompletionSource<OpenChoice?> _opened = new();
 
@@ -156,21 +225,31 @@ public sealed class OpenInRowTests
         public IReadOnlyList<OpenChoice> ChoicesFor(WorkspaceOpener opener, string workspaceRoot) =>
             choices.TryGetValue(opener.Id, out var found) ? found : [];
 
-        public void Open(WorkspaceOpener opener, OpenChoice? choice, string workspaceRoot) =>
+        public void Open(WorkspaceOpener opener, OpenChoice? choice, string workspaceRoot)
+        {
+            if (startFails)
+            {
+                throw new ProcessStartException(opener.Program, new InvalidOperationException());
+            }
+
             _opened.TrySetResult(choice);
+        }
     }
 
     private sealed class FakePlatform : IPlatformServices
     {
+        private readonly TaskCompletionSource<DirectoryLocation> _browsed = new();
+
+        /// <summary>The folder the next press shows. Opening runs off the caller's thread.</summary>
+        public Task<DirectoryLocation> Browsed => _browsed.Task;
+
         public PlatformKind Kind => PlatformKind.Linux;
 
         public void OpenInBrowser(WebAddress address)
         {
         }
 
-        public void OpenInFileBrowser(DirectoryLocation location)
-        {
-        }
+        public void OpenInFileBrowser(DirectoryLocation location) => _browsed.TrySetResult(location);
 
         public void StartDetached(ProcessRequest request)
         {
@@ -179,16 +258,60 @@ public sealed class OpenInRowTests
 
     private sealed class FakeToasts : IToastService
     {
+        private readonly TaskCompletionSource<ToastRequest> _posted = new();
+
+        /// <summary>What the next failure says. Reporting runs off the caller's thread.</summary>
+        public Task<ToastRequest> Posted => _posted.Task;
+
         public Toast Show(ToastRequest request) => throw new NotSupportedException();
 
-        public void Post(ToastRequest request)
-        {
-        }
+        public void Post(ToastRequest request) => _posted.TrySetResult(request);
 
         public IToastRegion Region(ToastAnchor anchor) => throw new NotSupportedException();
 
         public void DismissAll()
         {
+        }
+    }
+
+    private sealed class FakeAfterLaunchSettings(AfterLaunchAction externalTool) : IAfterLaunchSettings
+    {
+        public AfterLaunchAction AfterProjectManager => AfterLaunchAction.DoNothing;
+
+        public AfterLaunchAction AfterEditor => AfterLaunchAction.DoNothing;
+
+        public AfterLaunchAction AfterPlay => AfterLaunchAction.DoNothing;
+
+        public AfterLaunchAction AfterExternalTool => externalTool;
+    }
+
+    private sealed class FakeAfterLaunchActions : IAfterLaunchActions
+    {
+        private readonly List<AfterLaunchAction> _applied = [];
+        private readonly TaskCompletionSource<AfterLaunchAction> _next = new();
+
+        /// <summary>What the next press applies. Opening runs off the caller's thread.</summary>
+        public Task<AfterLaunchAction> Next => _next.Task;
+
+        public IReadOnlyList<AfterLaunchAction> Applied
+        {
+            get
+            {
+                lock (_applied)
+                {
+                    return [.. _applied];
+                }
+            }
+        }
+
+        public void Apply(AfterLaunchAction action)
+        {
+            lock (_applied)
+            {
+                _applied.Add(action);
+            }
+
+            _next.TrySetResult(action);
         }
     }
 }

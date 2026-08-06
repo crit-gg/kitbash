@@ -149,6 +149,11 @@ never cached at all.
 **Nothing gathers when the menu opens.** `LauncherViewModel` walks for solutions with the
 engine strip, off the UI thread.
 
+**The launcher can get out of the way once a tool has started.** `launcher.after.externalTool`
+is the setting, and the `kitbash-settings` skill has it. It follows a program from the menu
+and nothing else, so showing the workspace folder applies nothing, and neither does a start
+that failed, which leaves the launcher up with its toast on screen.
+
 **The menu is filled when the rows change, never on `Opening`.** Measured: a `MenuFlyout`
 whose items are added from its own `Opening` handler opens empty, because the presenter has
 already been built by then. `LauncherWindow` listens to `OpenInViewModel.PropertyChanged`

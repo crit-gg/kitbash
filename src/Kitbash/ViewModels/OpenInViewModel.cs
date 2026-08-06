@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Openers;
+using Kitbash.Settings;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.ViewModels;
@@ -14,19 +15,30 @@ public sealed partial class OpenInViewModel : ObservableObject
     private readonly IWorkspaceOpeners _openers;
     private readonly IPlatformServices _platform;
     private readonly IToastService _toasts;
+    private readonly IAfterLaunchSettings _afterLaunch;
+    private readonly IAfterLaunchActions _actions;
 
     [ObservableProperty]
     private IReadOnlyList<OpenInRow> _rows = [];
 
-    public OpenInViewModel(IWorkspaceOpeners openers, IPlatformServices platform, IToastService toasts)
+    public OpenInViewModel(
+        IWorkspaceOpeners openers,
+        IPlatformServices platform,
+        IToastService toasts,
+        IAfterLaunchSettings afterLaunch,
+        IAfterLaunchActions actions)
     {
         ArgumentNullException.ThrowIfNull(openers);
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(toasts);
+        ArgumentNullException.ThrowIfNull(afterLaunch);
+        ArgumentNullException.ThrowIfNull(actions);
 
         _openers = openers;
         _platform = platform;
         _toasts = toasts;
+        _afterLaunch = afterLaunch;
+        _actions = actions;
     }
 
     /// <summary>
@@ -140,6 +152,10 @@ public sealed partial class OpenInViewModel : ObservableObject
             try
             {
                 _openers.Open(opener, choice, workspaceRoot);
+
+                // Only once the tool really started, so a start that failed leaves the
+                // launcher up with its toast on screen. The folder row is not a tool.
+                _actions.Apply(_afterLaunch.AfterExternalTool);
             }
             catch (ProcessStartException exception)
             {

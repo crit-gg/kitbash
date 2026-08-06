@@ -33,8 +33,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly IEngineInstaller _installer;
     private readonly IEngineFiles _engineFiles;
     private readonly IToastService _toasts;
-    private readonly ILauncherCloseSettings _close;
-    private readonly IApplicationShutdown _shutdown;
+    private readonly IAfterLaunchSettings _afterLaunch;
+    private readonly IAfterLaunchActions _actions;
 
     /// <summary>One token per build being installed, so each cancels on its own.</summary>
     private readonly Dictionary<EngineId, CancellationTokenSource> _running = [];
@@ -97,8 +97,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IEngineInstaller installer,
         IEngineFiles engineFiles,
         IToastService toasts,
-        ILauncherCloseSettings close,
-        IApplicationShutdown shutdown)
+        IAfterLaunchSettings afterLaunch,
+        IAfterLaunchActions actions)
     {
         ArgumentNullException.ThrowIfNull(catalogue);
         ArgumentNullException.ThrowIfNull(store);
@@ -109,8 +109,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(engineFiles);
         ArgumentNullException.ThrowIfNull(toasts);
-        ArgumentNullException.ThrowIfNull(close);
-        ArgumentNullException.ThrowIfNull(shutdown);
+        ArgumentNullException.ThrowIfNull(afterLaunch);
+        ArgumentNullException.ThrowIfNull(actions);
 
         _catalogue = catalogue;
         _store = store;
@@ -121,8 +121,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _installer = installer;
         _engineFiles = engineFiles;
         _toasts = toasts;
-        _close = close;
-        _shutdown = shutdown;
+        _afterLaunch = afterLaunch;
+        _actions = actions;
 
         // Not read here. It fetches over a network and the window would wait on it.
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
@@ -506,10 +506,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
                 // Only once the desktop has taken it, so a start that failed leaves the
                 // launcher up with its toast on screen.
-                if (_close.AfterProjectManager)
-                {
-                    _shutdown.Shutdown();
-                }
+                _actions.Apply(_afterLaunch.AfterProjectManager);
             }
             catch (ProcessStartException)
             {

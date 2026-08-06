@@ -193,11 +193,12 @@ public partial class App : Application
             .AddSingleton<UpdateSettingsSchema>()
             .AddSingleton<UpdateLog>()
             .AddSingleton<IApplicationUpdates, VelopackUpdates>()
-            .AddSingleton<LauncherCloseSettingsSchema>()
-            .AddSingleton<ILauncherCloseSettings, LauncherCloseSettings>()
+            .AddSingleton<AfterLaunchSettingsSchema>()
+            .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
             .AddSingleton<LauncherSettingsSchema>()
             .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IApplicationShutdown, AvaloniaApplicationShutdown>()
+            .AddSingleton<IAfterLaunchActions, AvaloniaAfterLaunchActions>()
             .AddSingleton<ToolLog>()
             .AddSingleton<IToolManifestReader, ToolManifestReader>()
             .AddSingleton<IToolRuntime, ToolRuntime>()
@@ -225,8 +226,8 @@ public partial class App : Application
                 provider.GetRequiredService<IEngineInstaller>(),
                 provider.GetRequiredService<IEngineFiles>(),
                 provider.GetRequiredService<IToastService>(),
-                provider.GetRequiredService<ILauncherCloseSettings>(),
-                provider.GetRequiredService<IApplicationShutdown>()))
+                provider.GetRequiredService<IAfterLaunchSettings>(),
+                provider.GetRequiredService<IAfterLaunchActions>()))
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IWorkspacesSettings>(),
@@ -252,8 +253,8 @@ public partial class App : Application
                 provider.GetRequiredService<IWorkspaceMaker>(),
                 provider.GetRequiredService<IToastService>(),
                 provider.GetRequiredService<IPlatformServices>(),
-                provider.GetRequiredService<ILauncherCloseSettings>(),
-                provider.GetRequiredService<IApplicationShutdown>(),
+                provider.GetRequiredService<IAfterLaunchSettings>(),
+                provider.GetRequiredService<IAfterLaunchActions>(),
                 provider.GetRequiredService<EnginesViewModel>(),
                 provider.GetRequiredService<OpenInViewModel>()))
             .BuildServiceProvider();

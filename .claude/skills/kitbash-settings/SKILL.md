@@ -353,7 +353,7 @@ change the window rather than to add a row kind.
 ### The schemas that exist
 
 Five in Core, four of them in the `Application` home, plus the launcher's own three,
-`LauncherCloseSettingsSchema`, `ToolRepositoriesSettingsSchema` and the State page in
+`AfterLaunchSettingsSchema`, `ToolRepositoriesSettingsSchema` and the State page in
 `Kitbash/Settings/LauncherSettingsSchema`, which is what puts them all together into the
 window's tree. That home is per user per machine and
 has no layer, which is the point: **a path is right for one machine and wrong for every
@@ -368,15 +368,33 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
-| `LauncherCloseSettingsSchema` | `launcher.close.projectManager`, `launcher.close.editor`, `launcher.close.play`, the launcher's |
+| `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.externalTool`, the launcher's |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
 | `CustomToolsSettingsSchema` | `tools.custom`, the launcher's, and through an editor too |
 
-**A `launcher.` key is the launcher's own behaviour and Core never declares one.** Closing
-after a project opens is something only the launcher can do, so the keys, the page and the
-typed reader all live in `Kitbash/Settings` rather than beside the Godot keys in Core.
-Read them through `ILauncherCloseSettings`, which reads at every launch, so a change
+**A `launcher.` key is the launcher's own behaviour and Core never declares one.** Minimizing
+or closing once a project opens is something only the launcher can do, so the keys, the page
+and the typed reader all live in `Kitbash/Settings` rather than beside the Godot keys in Core.
+Read them through `IAfterLaunchSettings`, which reads at every launch, so a change
 applies without a restart. The `kitbash-godot` skill has what each one follows.
+
+**The four are `AfterLaunchAction`, which is the first enum any setting stores.** Do
+nothing, minimize or close, defaulting to do nothing, and each is drawn as a segmented row
+because a closed choice of three short labels derives one. An enum is stored by name and
+parsed back without regard to case, so a hand edited file reads the same whichever way it
+spells the value, and a name the enum does not have counts as absent and lets the default
+decide. `IAfterLaunchActions` is what carries the choice out, since a settings reader
+should not be driving the window. Measured over a real file in a temporary folder:
+the default, a written value spelled out in the file, one key not following another, a
+lower case name, a name outside the set, and the three options a page offers. Measured
+again through the real settings window drawn headlessly, which is where the first segment
+row in the app is: four rows each offering the three, picking one staging a single change,
+saving landing `externalTool = "Minimize"` inside `[launcher.after]`, and picking back what
+the file already says taking the change off again.
+
+The external tool one follows the Open in menu, and only a program from it. Showing the
+workspace folder is not opening a tool, so that row applies nothing, and neither does a
+start that failed, which leaves the launcher up with its toast on screen.
 
 **A descriptor does not have to be on a page.** `updates.feed` is the first that is not:
 where releases come from is the app's answer rather than a person's, so its default is a

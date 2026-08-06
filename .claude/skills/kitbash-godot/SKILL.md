@@ -216,19 +216,19 @@ Otherwise `GodotLaunchMode` is read by the last step and nothing else. A project
 will not build will not run either, and one that was never imported has no resources to
 run with, so editing and playing do the same work up to that point.
 
-### Closing the launcher after it
+### Getting out of the way after it
 
 **The launcher can get out of the way once Godot is running, and it does not unless it
-was asked to.** Three settings, all off, one per thing that starts: the project manager
-the engines page opens, a project opened in the editor, and a project run. They are the
-launcher's own keys and the `kitbash-settings` skill has them.
+was asked to.** Three settings, each doing nothing until it is set, one per thing that
+starts: the project manager the engines page opens, a project opened in the editor, and a
+project run. Each holds an `AfterLaunchAction`, so the answer is do nothing, minimize or
+close. They are the launcher's own keys and the `kitbash-settings` skill has them.
 
-**It only ever closes after something really started.** A failure has already thrown, and
+**It only ever acts after something really started.** A failure has already thrown, and
 a launch that was cancelled part way started nothing, so `LaunchDialog` reports which of
 the two happened rather than answering one bool. That is `GodotLaunchOutcome`, and the
 rebuild's Open in Editor is its third answer, which goes round again and leaves the
-closing to the second pass. A rebuild itself never closes the launcher, since it starts
-nothing.
+action to the second pass. A rebuild itself does nothing, since it starts nothing.
 
 Measured against real projects rather than written logs. A broken build in both launch
 modes: it throws, the import never runs, nothing starts and nothing lands in the project.

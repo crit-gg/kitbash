@@ -19,7 +19,7 @@ public sealed class LauncherSettingsSchema
         WindowSettingsSchema window,
         ExternalToolsSettingsSchema tools,
         GodotSettingsSchema godot,
-        LauncherCloseSettingsSchema close,
+        AfterLaunchSettingsSchema afterLaunch,
         WorkspacesSettingsSchema workspaces,
         WorkspaceGodotSettingsSchema workspaceGodot,
         ToolRepositoriesSettingsSchema toolRepositories,
@@ -32,7 +32,7 @@ public sealed class LauncherSettingsSchema
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(godot);
-        ArgumentNullException.ThrowIfNull(close);
+        ArgumentNullException.ThrowIfNull(afterLaunch);
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceGodot);
         ArgumentNullException.ThrowIfNull(toolRepositories);
@@ -89,7 +89,7 @@ public sealed class LauncherSettingsSchema
                 tools.Page,
                 customTools.Page,
                 godot.Page,
-                close.Page,
+                afterLaunch.Page,
                 workspaces.Page,
                 workspaceGodot.Page,
                 toolRepositories.Page,
