@@ -1,5 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kitbash.Core.Projects;
@@ -148,7 +151,7 @@ public class ProjectsWindowTests
         Assert.Equal("Heat rebalance spike", kind.Recent.All[0].Name);
     }
 
-    // The row menu offers the only thing that would help, and so does a double click.
+    // The row menu offers the only thing that would help, and so does a click.
     [AvaloniaFact]
     public async Task OpeningABrokenRowBrowsesForItInstead()
     {
@@ -287,6 +290,84 @@ public class ProjectsWindowTests
         Assert.Contains("tile", tile.Classes);
         Assert.Equal(32, tile.Bounds.Width);
         Assert.Equal(32, tile.Bounds.Height);
+    }
+
+    // One left click, anywhere on the row.
+    [AvaloniaFact]
+    public void ALeftClickOnARowOpensIt()
+    {
+        var kind = Kind();
+        var window = Open(kind);
+
+        Click(window, Row(window, 1), 60, 24);
+
+        Assert.Equal(["Heat rebalance spike"], kind.Opened);
+    }
+
+    // The row pads itself, so the strip inside its frame has to open it as well.
+    [AvaloniaFact]
+    public void TheRowsOwnPaddingIsPartOfTheRow()
+    {
+        var kind = Kind();
+        var window = Open(kind);
+
+        Click(window, Row(window, 1), 2, 24);
+
+        Assert.Equal(["Heat rebalance spike"], kind.Opened);
+    }
+
+    // Right opens the menu and middle does nothing, so neither is an open.
+    [AvaloniaFact]
+    public void OnlyTheLeftButtonOpensARow()
+    {
+        var kind = Kind();
+        var window = Open(kind);
+
+        Click(window, Row(window, 1), 60, 24, MouseButton.Right);
+        Click(window, Row(window, 1), 60, 24, MouseButton.Middle);
+
+        Assert.Empty(kind.Opened);
+    }
+
+    // The button has its own job, and the row underneath it must not take the click.
+    [AvaloniaFact]
+    public void AClickOnTheRowMenuButtonOpensNothing()
+    {
+        var kind = Kind();
+        var window = Open(kind);
+
+        var row = Row(window, 1);
+        var button = row.GetVisualDescendants()
+            .OfType<Button>()
+            .First(one => one.Classes.Contains("rowMenu"));
+
+        Click(window, button, button.Bounds.Width / 2, button.Bounds.Height / 2);
+
+        Assert.Empty(kind.Opened);
+    }
+
+    private static ListBoxItem Row(ProjectsWindow window, int index) =>
+        (ListBoxItem)window.GetControl<ListBox>("Projects").ContainerFromIndex(index)!;
+
+    // The pointer moves first, since the menu button is only hit tested while the row is
+    // under it.
+    private static void Click(
+        ProjectsWindow window,
+        Visual at,
+        double x,
+        double y,
+        MouseButton button = MouseButton.Left)
+    {
+        var point = at.TranslatePoint(new Point(x, y), window)!.Value;
+
+        window.MouseMove(point);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        window.MouseDown(point, button);
+        window.MouseUp(point, button);
+
+        Dispatcher.UIThread.RunJobs();
     }
 
     private static IReadOnlyList<ProjectRowViewModel> List(ProjectsWindow window) =>

@@ -191,7 +191,7 @@
                                      Padding="5,0,5,12"
                                      ItemsSource="{Binding Rows}"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     DoubleTapped="OnRowOpened"
+                                     PointerReleased="OnRowClick"
                                      KeyDown="OnListKey">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="p:ProjectRowViewModel">

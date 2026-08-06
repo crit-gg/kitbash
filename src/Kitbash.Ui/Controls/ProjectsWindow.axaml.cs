@@ -9,6 +9,7 @@ using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Projects;
@@ -28,6 +29,9 @@ public partial class ProjectsWindow : ChromelessWindow
 
     /// <summary>The app's pages, in rail order after the list.</summary>
     private IReadOnlyList<ProjectPage> _pages = [];
+
+    /// <summary>True while an open is in flight, so a second gesture is ignored.</summary>
+    private bool _opening;
 
     public ProjectsWindow()
     {
@@ -178,9 +182,23 @@ public partial class ProjectsWindow : ChromelessWindow
 
     private async void OnBrowseClick(object? sender, RoutedEventArgs e) => await BrowseAsync(null);
 
-    private void OnRowOpened(object? sender, TappedEventArgs e)
+    // A left click anywhere on a row opens it. On the list rather than in the row template,
+    // so the row's own padding counts as the row. The menu button marks its own release
+    // handled, so a click there never reaches this.
+    private void OnRowClick(object? sender, PointerReleasedEventArgs e)
     {
-        if (Selected is { } row)
+        if (e.InitialPressMouseButton != MouseButton.Left)
+        {
+            return;
+        }
+
+        var row = (e.Source as Visual)
+            ?.FindAncestorOfType<ListBoxItem>(includeSelf: true)
+            ?.DataContext as ProjectRowViewModel;
+
+        // The press is what picks the row, so a release under the list or on a row the
+        // press did not land on is a drag rather than a click.
+        if (row is not null && Selected == row)
         {
             _ = OpenAsync(row, inNewWindow: false);
         }
@@ -316,43 +334,54 @@ public partial class ProjectsWindow : ChromelessWindow
     private ProjectRowViewModel? Selected => Projects.SelectedItem as ProjectRowViewModel;
 
     /// <summary>
-    /// Opens a row, which is what a double click, Enter and the menu all reach. Public so
-    /// one path answers every gesture and a test can drive the same one.
+    /// Opens a row, which is what a click, Enter and the menu all reach. Public so one path
+    /// answers every gesture and a test can drive the same one.
     /// </summary>
     public async Task OpenAsync(ProjectRowViewModel row, bool inNewWindow)
     {
         ArgumentNullException.ThrowIfNull(row);
 
-        if (Kind is not { } kind)
+        // One at a time. A click opens, so a double click is two of them, and an app must
+        // not be told to open the same project twice.
+        if (Kind is not { } kind || _opening)
         {
             return;
         }
 
-        // A row that cannot be opened offers the only thing that would help. Double click
-        // and Enter go the same way as the menu, so no gesture reports a failure the menu
-        // would have avoided.
-        if (row.IsBroken)
+        _opening = true;
+
+        try
         {
-            await BrowseAsync(row.Project);
-            return;
-        }
+            // A row that cannot be opened offers the only thing that would help. A click and
+            // Enter go the same way as the menu, so no gesture reports a failure the menu
+            // would have avoided.
+            if (row.IsBroken)
+            {
+                await BrowseAsync(row.Project);
+                return;
+            }
 
-        if (!await kind.OpenAsync(row.Project, inNewWindow, this))
+            if (!await kind.OpenAsync(row.Project, inNewWindow, this))
+            {
+                return;
+            }
+
+            // Opening is what makes it recent, and the list is read again so the row moves
+            // even when the window stays.
+            Model?.Remember(new ProjectChoice(row.Project.Path, row.Project.Name));
+
+            if (kind.ClosesOnOpen && !inNewWindow)
+            {
+                Close();
+                return;
+            }
+
+            await ReloadAsync();
+        }
+        finally
         {
-            return;
+            _opening = false;
         }
-
-        // Opening is what makes it recent, and the list is read again so the row moves
-        // even when the window stays.
-        Model?.Remember(new ProjectChoice(row.Project.Path, row.Project.Name));
-
-        if (kind.ClosesOnOpen && !inNewWindow)
-        {
-            Close();
-            return;
-        }
-
-        await ReloadAsync();
     }
 
     /// <summary>

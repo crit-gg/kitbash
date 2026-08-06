@@ -63,6 +63,15 @@ list. `Limit` defaults to 50 and the oldest fall off the end.
 496 window with minimise and close alone. A list of an unknown number of rows is worth
 resizing, and every other Kitbash window resizes.
 
+**A row opens on one left click, anywhere on it but the menu button.** Coming back here is
+almost always to reopen something, so the list is a set of buttons rather than a set of
+things to select first. The handler sits on the list rather than in the row template, so the
+row's own padding counts as the row, and it reads `InitialPressMouseButton`, so a right
+click still opens the menu and a middle click does nothing. The button gets its own click
+because `Button` marks the release handled. Enter and the menu still open the same way, and
+`OpenAsync` refuses a second open while one is in flight, since a click that opens makes a
+double click two of them.
+
 **Reveal in explorer is Open folder.** A Linux file manager is not called explorer, and the
 launcher already says Open folder for the same action. It shows the nearest folder above the
 path that exists, so a row pointing at a file, or at a folder that has gone, still lands
@@ -140,8 +149,10 @@ without the badge growing an icon slot.
 
 ## Verified here
 
-- 17 headless tests in `tests/Kitbash.Ui.Tests/ProjectsWindowTests.cs`, drawn for real with
-  Skia and no display, plus 7 for the recency wording.
+- 21 headless tests in `tests/Kitbash.Ui.Tests/ProjectsWindowTests.cs`, drawn for real with
+  Skia and no display, plus 7 for the recency wording. Four of them drive a real pointer:
+  a click on a row, a click in its padding, a right and a middle click, and a click on the
+  menu button.
 - 11 tests in `tests/Kitbash.Core.Tests/Projects/RecentProjectsTests.cs`, each over a real
   state file in a temporary folder, through a provider built the way an executable builds
   one.
