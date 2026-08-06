@@ -295,6 +295,12 @@
     <x:Double x:Key="SizeRailItem">32</x:Double>
     <x:Double x:Key="HeightTab">28</x:Double>
 
+    <!-- The welcome window's row and the tile at the head of it. Deliberately not in the
+         comfortable set: that window browses at either density and its row already carries
+         two lines, so one size is right for both. -->
+    <x:Double x:Key="HeightProjectRow">48</x:Double>
+    <x:Double x:Key="SizeProjectTile">32</x:Double>
+
     <!-- A tree indents 14 per level, which is what the design's prose says and what its markup
          draws once the leading slot is taken out of it. -->
     <x:Double x:Key="IndentTree">14</x:Double>

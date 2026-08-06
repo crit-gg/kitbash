@@ -7,6 +7,7 @@ using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Linux;
 using Kitbash.Core.Platform.Openers;
 using Kitbash.Core.Platform.Windows;
+using Kitbash.Core.Projects;
 using Kitbash.Core.Settings;
 using Kitbash.Core.Settings.Schema;
 using Kitbash.Core.Workspaces;
@@ -267,6 +268,27 @@ public static class KitbashCoreServices
 
         services.AddKitbashIO();
         services.TryAddSingleton<IWorkspaceLocator, WorkspaceLocator>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// What this app has opened before, kept in its own state file. The store keeps the
+    /// list and the app decides what belongs on it.
+    /// </summary>
+    /// <param name="scope">
+    /// Which state file the list lands in. A tool passes its own scope, so two tools
+    /// never share a list.
+    /// </param>
+    public static IServiceCollection AddKitbashRecentProjects(
+        this IServiceCollection services,
+        SettingsScope scope)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.AddKitbashApplicationStorage();
+        services.TryAddSingleton(new RecentProjectsOptions(scope));
+        services.TryAddSingleton<IRecentProjects, RecentProjects>();
 
         return services;
     }

@@ -1811,6 +1811,25 @@
                 </Border>
 
                 <!-- section -->
+                <TextBlock Classes="section" Text="WELCOME WINDOW" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="One window over three apps. The library keeps the list, its order and when each was last opened, and the app says what a project is: what it will accept, what a row is called, what mark and chip it wears, and what opening one does. Foundry lists Godot projects, Hoard lists asset libraries and Splice lists repositories, and none of that reaches the window." />
+
+                        <TextBlock Classes="note"
+                                   Text="Search filters and never sorts, so typing three letters keeps the order you chose. The row menu opens on the row it acts on and every item is named after it. A row that cannot be reached keeps its full name and offers to be located rather than opened." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Foundry" Tag="Foundry" Click="OnOpenProjects" />
+                            <Button Content="Hoard" Tag="Hoard" Click="OnOpenProjects" />
+                            <Button Content="Splice" Tag="Splice" Click="OnOpenProjects" />
+                            <TextBlock Name="ProjectsAnswer" Classes="caption"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock Classes="section" Text="WINDOW AND DIALOG" />
                 <Border Classes="panel">
                     <StackPanel Spacing="14">

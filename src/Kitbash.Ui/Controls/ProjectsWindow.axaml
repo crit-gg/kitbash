@@ -1,0 +1,308 @@
+<ui:ChromelessWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls"
+        xmlns:p="clr-namespace:Kitbash.Ui.Projects"
+        x:Class="Kitbash.Ui.Controls.ProjectsWindow"
+        x:DataType="p:ProjectsViewModel"
+        x:CompileBindings="True"
+        Title="{Binding Words.Title}"
+        Width="672" Height="520"
+        MinWidth="544" MinHeight="424"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="{StaticResource FontFamilyUi}"
+        FontSize="{StaticResource FontSizeBody}">
+
+    <!-- The size is 24 more than the design's 648 by 496 on each axis, because the window
+         carries a 12px transparent gutter on every side for its shadow to fall into. -->
+
+    <Window.Styles>
+        <!-- Layout only. Every control look comes from the theme, so nothing here sets a
+             brush, a radius or a size that belongs to a control. -->
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        </Style>
+
+        <!-- The row is the list row with two lines in it, so it takes its own height and
+             keeps all seven states. A Style beats a ControlTheme, which is what lets two
+             properties move without the theme being written again. -->
+        <Style Selector="ListBox.projects > ListBoxItem">
+            <Setter Property="Height" Value="{DynamicResource HeightProjectRow}" />
+            <Setter Property="Padding" Value="6,0,8,0" />
+        </Style>
+
+        <!-- The menu button appears under the pointer, so a resting list is quiet, and it
+             stays while its own menu is open, which is when the pointer has left the row.
+             Selection does not show it: the first row is picked when the window opens and
+             a button sitting there permanently is what this rule is against.
+
+             Opacity rather than IsVisible, because Avalonia has no hidden that keeps its
+             box, and a row whose columns shifted as the pointer arrived would move the
+             thing being aimed at. Hit testing goes with it, so a button nobody can see
+             cannot be pressed. -->
+        <Style Selector="ListBox.projects > ListBoxItem Button.rowMenu">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
+
+        <Style Selector="ListBox.projects > ListBoxItem:pointerover Button.rowMenu">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+
+        <Style Selector="ListBox.projects > ListBoxItem Button.rowMenu.open">
+            <Setter Property="Opacity" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+        </Style>
+
+        <!-- A row that cannot be opened keeps its full name and its chip. Only the path
+             drops a tier, since that is the part that is wrong. A greyed row would read as
+             unimportant when it is the one needing a decision. -->
+        <Style Selector="TextBlock.path">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+            <Setter Property="Margin" Value="0,5,0,0" />
+        </Style>
+
+        <Style Selector="TextBlock.path.broken">
+            <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar"
+                           Title="{Binding Words.Title}"
+                           Version="{Binding Words.Version}" />
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+
+            <DockPanel Grid.Column="0">
+                <!-- Settings opens a window rather than a page, since an app has one
+                     settings window and this is a way in rather than a place. It is drawn
+                     only when the app registered one. -->
+                <ListBox DockPanel.Dock="Bottom" Name="RailFoot"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,0,0,8"
+                         SelectedIndex="-1"
+                         IsVisible="False"
+                         SelectionChanged="OnSettingsSelected">
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Settings" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Settings">
+                        <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+                </ListBox>
+
+                <!-- The list first and whatever the app added after it. Filled in code,
+                     since each item carries a word only the app knows and a container
+                     theme cannot be handed one per item. -->
+                <ListBox DockPanel.Dock="Top" Name="Rail"
+                         Theme="{StaticResource ActivityRail}"
+                         Padding="0,8,0,0"
+                         VerticalAlignment="Stretch"
+                         SelectionChanged="OnPageSelected" />
+            </DockPanel>
+
+            <Border Grid.Column="1" ui:Surface.Nests="True" BorderThickness="0">
+              <Panel>
+                <Panel Name="ListPage">
+                    <!-- The list is the window rather than a panel in it. People arrive
+                         here to reopen the thing they were in an hour ago. -->
+                    <Grid RowDefinitions="Auto,Auto,*" IsVisible="{Binding HasAny}">
+
+                        <Border Grid.Row="0" BorderThickness="0,0,0,1"
+                                BorderBrush="{DynamicResource LineSeam}"
+                                Padding="14,12">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <ui:SearchBox Grid.Column="0" Name="Query"
+                                              PlaceholderText="{Binding Words.SearchPlaceholder}"
+                                              Text="{Binding Search, Mode=TwoWay}" />
+
+                                <!-- One accent action, since New is the only irreversible
+                                     one here, and Open beside it in the bordered tier. -->
+                                <Button Grid.Column="1" Classes="primary"
+                                        Click="OnNewClick">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <ui:Icon Glyph="Plus"
+                                                 Size="{DynamicResource IconSizeField}"
+                                                 VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Words.NewLabel}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="2" Click="OnBrowseClick">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <ui:Icon Glyph="FolderOpen"
+                                                 Size="{DynamicResource IconSizeField}"
+                                                 VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Words.OpenLabel}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Searching filters and never sorts, so the order stays under its
+                             own dropdown with the current answer written on it. -->
+                        <HeaderedContentControl Grid.Row="1"
+                                                Theme="{StaticResource SectionLabel}"
+                                                Header="{Binding ListHeading}"
+                                                Margin="14,9,14,8">
+                            <DropDownButton Classes="compact" Content="{Binding SortLabel}">
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="Recently opened"
+                                                  Command="{Binding SortByCommand}"
+                                                  CommandParameter="{x:Static p:ProjectSort.Recent}">
+                                            <MenuItem.Icon>
+                                                <ui:Icon Glyph="Check"
+                                                         Size="{DynamicResource IconSizeCompact}"
+                                                         IsVisible="{Binding IsByRecent}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+
+                                        <MenuItem Header="Name"
+                                                  Command="{Binding SortByCommand}"
+                                                  CommandParameter="{x:Static p:ProjectSort.Name}">
+                                            <MenuItem.Icon>
+                                                <ui:Icon Glyph="Check"
+                                                         Size="{DynamicResource IconSizeCompact}"
+                                                         IsVisible="{Binding IsByName}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+
+                                        <MenuItem Header="Path"
+                                                  Command="{Binding SortByCommand}"
+                                                  CommandParameter="{x:Static p:ProjectSort.Path}">
+                                            <MenuItem.Icon>
+                                                <ui:Icon Glyph="Check"
+                                                         Size="{DynamicResource IconSizeCompact}"
+                                                         IsVisible="{Binding IsByPath}" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+                        </HeaderedContentControl>
+
+                        <Panel Grid.Row="2">
+                            <ListBox Name="Projects" Classes="projects"
+                                     Padding="5,0,5,12"
+                                     ItemsSource="{Binding Rows}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     DoubleTapped="OnRowOpened"
+                                     KeyDown="OnListKey">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="p:ProjectRowViewModel">
+                                        <!-- Four facts in four positions, laid out with a
+                                             row and a gap rather than separators. -->
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                                              ColumnSpacing="11"
+                                              Background="Transparent"
+                                              ContextRequested="OnRowContext">
+                                            <ui:Badge Grid.Column="0" Classes="tile"
+                                                      Tier="{Binding MarkTier}"
+                                                      Content="{Binding Mark}" />
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontSize="{DynamicResource FontSizeTitle}"
+                                                               FontWeight="{DynamicResource FontWeightStrong}"
+                                                               VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis" />
+
+                                                    <!-- The one place state appears. What a
+                                                         chip cannot say is not urgent
+                                                         enough for this window. -->
+                                                    <ui:Badge Tier="{Binding ChipTier}"
+                                                              IsVisible="{Binding HasChip}">
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Spacing="5">
+                                                            <ui:Icon Glyph="{Binding ChipGlyph}"
+                                                                     Size="{DynamicResource IconSizeCheck}"
+                                                                     IsVisible="{Binding HasChipGlyph}"
+                                                                     VerticalAlignment="Center" />
+                                                            <TextBlock Text="{Binding Chip}"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </ui:Badge>
+                                                </StackPanel>
+
+                                                <!-- Elided from the left, so the folder that
+                                                     tells one path from another stays
+                                                     readable. -->
+                                                <TextBlock Classes="path"
+                                                           Classes.broken="{Binding IsBroken}"
+                                                           Text="{Binding Path}"
+                                                           TextTrimming="LeadingCharacterEllipsis" />
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="2" Classes="mono"
+                                                       Text="{Binding Time}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       Foreground="{DynamicResource InkMuted}"
+                                                       VerticalAlignment="Center" />
+
+                                            <!-- The menu opens on the row it acts on, and
+                                                 every item names that row. -->
+                                            <Button Grid.Column="3" Classes="icon rowMenu"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="More"
+                                                    AutomationProperties.Name="More"
+                                                    Click="OnRowMenuClick">
+                                                <ui:Icon Glyph="DotsVerticalRounded" />
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Under the heading rather than centred in the pane, since
+                                 what is being looked for is at the top of the window. -->
+                            <StackPanel Classes="emptyState" Margin="40,64,40,0"
+                                        VerticalAlignment="Top"
+                                        IsVisible="{Binding IsEmpty}">
+                                <ui:Icon Glyph="Search" />
+                                <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Panel>
+                    </Grid>
+
+                    <!-- Nothing has ever been opened, so there is no list to search and
+                         nothing to sort. Derived rather than designed: the design draws a
+                         window that always has a list. -->
+                    <StackPanel Classes="emptyState" MaxWidth="400"
+                                IsVisible="{Binding HasNone}">
+                        <ui:Icon Glyph="FolderOpen" />
+
+                        <TextBlock Text="{Binding Words.EmptyTitle}"
+                                   FontSize="{DynamicResource FontSizeDialogTitle}"
+                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                   Foreground="{DynamicResource InkPrimary}" />
+
+                        <TextBlock Text="{Binding Words.EmptyNote}"
+                                   FontSize="{DynamicResource FontSizeControl}"
+                                   LineHeight="18"
+                                   TextWrapping="Wrap" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="9" Margin="0,10,0,0"
+                                    HorizontalAlignment="Center">
+                            <Button Classes="primary"
+                                    Content="{Binding Words.NewLabel}"
+                                    Click="OnNewClick" />
+                            <Button Content="{Binding Words.OpenLabel}"
+                                    Click="OnBrowseClick" />
+                        </StackPanel>
+                    </StackPanel>
+                </Panel>
+
+                <!-- A page the app added. It is built once and kept, so coming back to
+                     one finds it where it was left. -->
+                <ContentControl Name="PagePane" IsVisible="False" />
+              </Panel>
+            </Border>
+        </Grid>
+    </Grid>
+</ui:ChromelessWindow>

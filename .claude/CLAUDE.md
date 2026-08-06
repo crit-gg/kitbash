@@ -134,12 +134,14 @@ Core exposes registration methods rather than a container of its own:
 - `AddKitbashWorkspaces` the list of workspaces a person has added
 - `AddKitbashWorkspaceCreation` making one from nothing, which also takes git and Godot
 - `AddKitbashWorkspace` workspace discovery
+- `AddKitbashRecentProjects(scope)` what this app has opened before
 - `AddKitbashSettings(paths)` settings for one workspace
 
 `Kitbash.Ui` exposes one of its own, `KitbashUiServices`:
 
 - `AddKitbashToasts` the toast service, its clock and its settings
 - `AddKitbashSettingsWindow` the settings window, over whatever schema is registered
+- `AddKitbashProjectsWindow` the welcome window, over whatever `IProjectKind` is registered
 
 They use `TryAdd`, so calling several is safe and a caller can substitute any service
 by registering its own first.
@@ -235,6 +237,9 @@ the problem:
   page.
 - `.claude/plans/external-tools.md` what the Open in button was ported from and what could
   not be tested here. Read before touching `Platform/Openers` or either opener finder.
+- `.claude/plans/projects-window.md` the welcome window every app opens with, what the app
+  gets to define about it and where it departs from the design. Read before touching
+  `Kitbash.Ui/Projects` or `Kitbash.Core/Projects`.
 - `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken
   from the asset tool designs. Read before building any of them.
 - `.claude/plans/` the twelve design stages and the plans not yet started
@@ -464,6 +469,17 @@ read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured
 against a real Kitbash release. Read the plan before touching any of it.
+
+**The welcome window is built and it is the library's.** `ui:ProjectsWindow` is the window
+an app opens with, from the `Projects Window` design, and it is the second whole window
+`Kitbash.Ui` owns. **The library keeps the store and the app decides what a project is**:
+`IRecentProjects` in Core holds paths, names, the order they were last opened in and whether
+each is still there, and `IProjectKind` holds the words, the mark, the chip and what New,
+Open and opening do. Search, sort, the row menu, the keyboard, locating a lost row and both
+empty states are all real, and an app adds its own pages to the rail under the list.
+**Nothing hosts it yet**, since no tool exists, so the gallery is where it runs, carrying
+the design's three apps. `ui:Badge` gained a `tile` kind for the mark at the head of a row.
+Read `.claude/plans/projects-window.md` before touching it.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
 `.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in

@@ -3,7 +3,12 @@ using Dock.Model.Core;
 using Dock.Serializer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
+using Kitbash.Core.Projects;
+using Kitbash.Core.Settings;
 using Kitbash.Ui.Docking;
+using Kitbash.Ui.Projects;
 using Kitbash.Ui.Settings;
 using Kitbash.Ui.Toasts;
 
@@ -56,6 +61,29 @@ public static class KitbashUiServices
 
         services.TryAddSingleton<IApplicationRestart, ApplicationRestart>();
         services.TryAddSingleton<ISettingsWindows, SettingsWindows>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// The welcome window, over whatever <c>IProjectKind</c> is registered. Takes Core's
+    /// <c>AddKitbashRecentProjects</c> for the list and <c>AddKitbashPlatform</c> for
+    /// opening a folder. Registering <c>AddKitbashSettingsWindow</c> as well is what
+    /// draws the cog at the foot of the rail.
+    /// </summary>
+    public static IServiceCollection AddKitbashProjectsWindow(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // The one lookup, and it sits in the composition root where a lookup belongs. The
+        // settings window is optional and nothing else here is.
+        services.TryAddSingleton<IProjectsWindows>(provider => new ProjectsWindows(
+            provider.GetRequiredService<IProjectKind>(),
+            provider.GetRequiredService<IRecentProjects>(),
+            provider.GetRequiredService<IWindowSettings>(),
+            provider.GetRequiredService<IPlatformServices>(),
+            provider.GetRequiredService<IFileSystem>(),
+            provider.GetService<ISettingsWindows>()));
 
         return services;
     }

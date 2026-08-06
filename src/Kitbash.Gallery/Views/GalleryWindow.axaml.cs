@@ -9,8 +9,10 @@ using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
+using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Ui.Controls;
+using Kitbash.Ui.Projects;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.Gallery.Views;
@@ -39,19 +41,35 @@ public partial class GalleryWindow : ChromelessWindow
     /// </summary>
     private readonly IToastService _panelToasts;
 
+    /// <summary>What the welcome window needs, handed in the way a tool would hand it.</summary>
+    private readonly IPlatformServices _platform;
+    private readonly IFileSystem _files;
+
+    /// <summary>One at a time, so switching host closes the one that was open.</summary>
+    private ProjectsWindow? _projects;
+
     private bool _disabled;
 
     /// <summary>The docking harness. It owns the layout, so rebuilding is one call.</summary>
     private DockHarness? _dock;
 
-    public GalleryWindow(IToastService toasts, IToastServiceFactory scopes, IScreenColour screen)
+    public GalleryWindow(
+        IToastService toasts,
+        IToastServiceFactory scopes,
+        IScreenColour screen,
+        IPlatformServices platform,
+        IFileSystem files)
     {
         ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(scopes);
+        ArgumentNullException.ThrowIfNull(platform);
+        ArgumentNullException.ThrowIfNull(files);
 
         _toasts = toasts;
         _panelToasts = scopes.Create();
         _screen = screen;
+        _platform = platform;
+        _files = files;
 
         InitializeComponent();
 
@@ -347,6 +365,34 @@ public partial class GalleryWindow : ChromelessWindow
     private void ShowValue() => DeterminateValue.Text = $"{Determinate.Value:0}%";
 
     private void OnMaximize(object? sender, RoutedEventArgs e) => ToggleMaximized();
+
+    /// <summary>
+    /// The welcome window as one of the design's three hosts. Built here rather than
+    /// through IProjectsWindows, since that holds one host and this page shows three.
+    /// </summary>
+    private void OnOpenProjects(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string name })
+        {
+            return;
+        }
+
+        _projects?.Close();
+
+        var kind = HarnessProjectKind.For(Enum.Parse<ProjectHost>(name));
+        kind.Reported = report => ProjectsAnswer.Text = report;
+
+        _projects = new ProjectsWindow
+        {
+            Kind = kind,
+            Platform = _platform,
+            FileSystem = _files,
+            DataContext = new ProjectsViewModel(kind.Recent, kind),
+        };
+
+        _projects.Closed += (_, _) => _projects = null;
+        _projects.Show(this);
+    }
 
     private void OnTogglePane(object? sender, RoutedEventArgs e) =>
         Sidebar.IsPaneOpen = !Sidebar.IsPaneOpen;

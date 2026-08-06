@@ -22,7 +22,10 @@
                         BorderThickness="{TemplateBinding BorderThickness}"
                         CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Centred so the tile kind puts its letter in the middle of a square.
+                         A badge sizes to its content, so this changes nothing for one. -->
+                    <StackPanel Orientation="Horizontal" Spacing="6"
+                                HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Ellipse Name="PART_Dot"
                                  Width="{DynamicResource SizeMark}"
                                  Height="{DynamicResource SizeMark}"
@@ -120,6 +123,19 @@
             <Setter Property="Background" Value="{DynamicResource ScrimMedia}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- The square mark at the head of a row, carrying an initial rather than a word.
+             It is the tiers again at a size the eye can run down a list on, so it takes
+             the UI family where a badge takes mono: a letter standing for a name is not a
+             value. Geometry and type only, so every tier still reaches it. -->
+        <Style Selector="^.tile">
+            <Setter Property="Width" Value="{DynamicResource SizeProjectTile}" />
+            <Setter Property="Height" Value="{DynamicResource SizeProjectTile}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
         </Style>
 
         <Style Selector="^:disabled">

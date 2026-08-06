@@ -241,3 +241,49 @@ Anything clickable needs a `Background`, even `Transparent`. A control with no
 background is not hit tested, so a look that only appears on `:pointerover` can never
 be reached.
 
+
+### The welcome window
+
+`ui:ProjectsWindow` is the window an app opens with: one list of what it has opened
+before. It is the library's, like the settings window, so a tool writes a class and one
+line rather than a window. `.claude/plans/projects-window.md` has the whole of it and
+every departure from the design.
+
+**The library owns the store and the app owns what a project is.** `IRecentProjects` in
+Core keeps paths, names, the order they were last opened in and whether each is still on
+disk, and nothing else. It never looks inside a folder and never decides whether one
+qualifies.
+
+`IProjectKind` is the app's half: the words it uses, whether opening one closes the
+window, any extra rail pages, what each row says beyond its name and path, and what New,
+Open and opening do. `Describe` runs on the thread pool and may read a disk. An app that
+throws there costs that row its chip, never the window its list.
+
+**Extra pages follow the list down the rail.** A `ProjectPage` is a glyph, a word and a
+control or view model, and the window draws the rail item, gives the pane over and knows
+nothing else about it. A page is built once and kept, so coming back finds it as it was
+left. Most apps return none. The cog is not a page: it opens a window and never stays
+selected.
+
+```csharp
+services
+    .AddKitbashRecentProjects(SettingsScope.ForTool("hoard"))
+    .AddSingleton<IProjectKind, HoardProjects>()
+    .AddKitbashProjectsWindow();
+```
+
+**The scope is the app's own**, so two tools never share a list. Register
+`AddKitbashSettingsWindow` as well and the cog appears at the foot of the rail. Without
+one the rail carries the list alone.
+
+**Open it through `IProjectsWindows`**, which holds one window and brings the open one
+forward. A null owner is an app with no other window yet, which centres on the screen and
+shows in the task bar.
+
+**A row that cannot be reached keeps its full name.** A greyed row reads as unimportant
+when it is the one needing a decision, so only the path drops a tier and the chip carries
+the alert. Opening one browses to relocate it rather than failing, whether the gesture was
+the menu, a double click or Enter.
+
+**Search filters and never sorts.** Sorting is its own dropdown with the current answer
+written on it, so typing three letters never rearranges what is left.
