@@ -36,6 +36,7 @@ public sealed class ToolInstaller : IToolInstaller
 
     private readonly IToolRepositoryFactory _repositories;
     private readonly IInstalledTools _installed;
+    private readonly IToolIcons _icons;
     private readonly IFileSystem _files;
     private readonly ApplicationPaths _paths;
     private readonly ToolLog _log;
@@ -43,18 +44,21 @@ public sealed class ToolInstaller : IToolInstaller
     public ToolInstaller(
         IToolRepositoryFactory repositories,
         IInstalledTools installed,
+        IToolIcons icons,
         IFileSystem files,
         ApplicationPaths paths,
         ToolLog log)
     {
         ArgumentNullException.ThrowIfNull(repositories);
         ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(icons);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(log);
 
         _repositories = repositories;
         _installed = installed;
+        _icons = icons;
         _files = files;
         _paths = paths;
         _log = log;
@@ -120,6 +124,11 @@ public sealed class ToolInstaller : IToolInstaller
             // The release's manifest is what describes this version, whatever the payload
             // happened to carry, so it is written over the top of anything unpacked.
             _files.WriteAllText(Path.Combine(incoming, ToolManifestReader.FileName), tool.ManifestJson);
+
+            // The icon travels with the version, so an installed tool draws itself with
+            // nothing to fetch. It is decoration, so a repository that does not serve it
+            // leaves the card its letter rather than failing an install that worked.
+            await _icons.FetchIntoAsync(tool, incoming, cancellationToken).ConfigureAwait(false);
 
             Runnable(tool, incoming);
 

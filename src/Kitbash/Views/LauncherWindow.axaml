@@ -415,7 +415,8 @@
                       <Panel>
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                       IsVisible="{Binding HasTools}">
-                            <ItemsControl ItemsSource="{Binding ToolGroups}" Margin="20,16,20,18">
+                            <ItemsControl Name="ToolGroups" ItemsSource="{Binding ToolGroups}"
+                                          Margin="20,16,20,18">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Spacing="20" />
@@ -478,15 +479,29 @@
                                                                 <Grid Grid.Row="0" ColumnDefinitions="40,*,Auto"
                                                                       ColumnSpacing="12">
                                                                     <!-- The tile holds the tool's icon. A letter
-                                                                         until a tool supplies one. -->
+                                                                         when a tool supplies none. -->
                                                                     <Border Grid.Column="0" Classes="toolMark"
                                                                             Classes.available="{Binding !IsInstalled}"
                                                                             Width="40" Height="40">
-                                                                        <TextBlock Text="{Binding Mark}"
-                                                                                   HorizontalAlignment="Center"
-                                                                                   VerticalAlignment="Center"
-                                                                                   FontSize="{DynamicResource FontSizeCardTitle}"
-                                                                                   FontWeight="{DynamicResource FontWeightStrong}" />
+                                                                        <Panel>
+                                                                            <TextBlock Text="{Binding Mark}"
+                                                                                       IsVisible="{Binding !HasIcon}"
+                                                                                       HorizontalAlignment="Center"
+                                                                                       VerticalAlignment="Center"
+                                                                                       FontSize="{DynamicResource FontSizeCardTitle}"
+                                                                                       FontWeight="{DynamicResource FontWeightStrong}" />
+
+                                                                            <!-- A second border does the clipping,
+                                                                                 since clipping on the one that draws
+                                                                                 the stroke cuts at the outer curve. -->
+                                                                            <Border Name="ToolIconClip"
+                                                                                    ClipToBounds="True"
+                                                                                    IsVisible="{Binding HasIcon}"
+                                                                                    CornerRadius="{DynamicResource RadiusSurfaceInside}">
+                                                                                <Image Source="{Binding Icon}"
+                                                                                       Stretch="UniformToFill" />
+                                                                            </Border>
+                                                                        </Panel>
                                                                     </Border>
 
                                                                     <StackPanel Grid.Column="1" Margin="0,2,0,0">

@@ -212,6 +212,8 @@ public partial class App : Application
             .AddSingleton<IToolRepositoryList, ToolRepositoryList>()
             .AddSingleton<IToolRepositoryFactory, ToolRepositoryFactory>()
             .AddSingleton<IToolCatalogue, ToolCatalogue>()
+            .AddSingleton<IToolIcons, ToolIcons>()
+            .AddSingleton<ToolIconImages>()
             .AddSingleton<IToolInstaller, ToolInstaller>()
             .AddSingleton<IToolFolderInstaller, ToolFolderInstaller>()
             .AddSingleton<ToolRepositoriesEditor>()
@@ -244,6 +246,7 @@ public partial class App : Application
                 provider.GetRequiredService<IToolCatalogue>(),
                 provider.GetRequiredService<IToolInstaller>(),
                 provider.GetRequiredService<IToolFolderInstaller>(),
+                provider.GetRequiredService<ToolIconImages>(),
                 provider.GetRequiredService<ToolLog>(),
                 provider.GetRequiredService<IFileSystem>(),
                 provider.GetRequiredService<IGitStatusMonitor>(),

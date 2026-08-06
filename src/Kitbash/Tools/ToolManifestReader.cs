@@ -20,6 +20,9 @@ public sealed class ToolManifestReader : IToolManifestReader
     private const string AppWord = "app";
     private const string ScriptWord = "script";
 
+    /// <summary>What an icon may be, since the launcher has to decode it to draw a card.</summary>
+    private static readonly string[] IconKinds = [".png", ".jpg", ".jpeg", ".webp"];
+
     private static readonly JsonSerializerOptions Format = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -125,7 +128,7 @@ public sealed class ToolManifestReader : IToolManifestReader
             document.Name!.Trim(),
             document.Summary?.Trim() ?? string.Empty,
             document.Category?.Trim() ?? string.Empty,
-            Blank(document.Icon) ? null : document.Icon!.Trim(),
+            Icon(document.Icon),
             version,
             document.Required,
             payloads,
@@ -133,6 +136,30 @@ public sealed class ToolManifestReader : IToolManifestReader
         {
             Inputs = Inputs(document),
         };
+    }
+
+    /// <summary>
+    /// The icon names an asset sitting beside the manifest, so anything carrying a path or
+    /// an extension nothing can draw is dropped and the card keeps its letter. Both
+    /// separators are refused whichever platform reads this, since only one of them is a
+    /// separator here and a manifest is written somewhere else.
+    /// </summary>
+    private static string? Icon(string? name)
+    {
+        if (Blank(name))
+        {
+            return null;
+        }
+
+        var icon = name!.Trim();
+
+        if (icon.AsSpan().IndexOfAny('/', '\\') >= 0
+            || icon.AsSpan().IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            return null;
+        }
+
+        return IconKinds.Contains(Path.GetExtension(icon), StringComparer.OrdinalIgnoreCase) ? icon : null;
     }
 
     /// <summary>

@@ -11,6 +11,10 @@ namespace Kitbash.Tools;
 /// <param name="Required">
 /// The tool refuses to start on any version below this one until somebody updates it.
 /// </param>
+/// <param name="Icon">
+/// An image published beside the manifest, or null for a tool that draws a letter instead.
+/// A plain file name, never a path.
+/// </param>
 public sealed record ToolManifest(
     int Format,
     string Id,

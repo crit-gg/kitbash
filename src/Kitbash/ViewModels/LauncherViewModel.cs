@@ -42,6 +42,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IToolCatalogue _tools;
     private readonly IToolInstaller _installer;
     private readonly IToolFolderInstaller _folders;
+    private readonly ToolIconImages _images;
     private readonly ToolLog _log;
     private readonly IFileSystem _files;
     private readonly IToastService _toasts;
@@ -93,6 +94,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IToolCatalogue tools,
         IToolInstaller installer,
         IToolFolderInstaller folders,
+        ToolIconImages images,
         ToolLog log,
         IFileSystem files,
         IGitStatusMonitor git,
@@ -124,6 +126,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(folders);
+        ArgumentNullException.ThrowIfNull(images);
         ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(git);
@@ -167,6 +170,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _tools = tools;
         _installer = installer;
         _folders = folders;
+        _images = images;
         _log = log;
         _files = files;
         _toasts = toasts;
@@ -321,6 +325,30 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
 
         ToolGroups = groups;
+
+        // The art follows the card rather than holding it up, since an offered tool's icon
+        // is a download the first time anything asks for it.
+        _ = LoadIconsAsync([.. mine, .. theirs]);
+    }
+
+    /// <summary>
+    /// Fills in each card's icon once the page is on screen. A tool installed before it
+    /// published one has nothing in its folder, so the offer supplies it until the update.
+    /// </summary>
+    private async Task LoadIconsAsync(IReadOnlyList<ToolCardViewModel> cards)
+    {
+        foreach (var card in cards)
+        {
+            var image = card.Tool is { } tool
+                ? await _images.ForAsync(tool).ConfigureAwait(true)
+                : null;
+
+            image ??= card.Offer is { } offer
+                ? await _images.ForAsync(offer, CancellationToken.None).ConfigureAwait(true)
+                : null;
+
+            card.Icon = image;
+        }
     }
 
     /// <summary>

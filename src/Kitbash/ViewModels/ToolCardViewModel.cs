@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kitbash.Tools;
@@ -22,6 +23,9 @@ public partial class ToolCardViewModel : ObservableObject
 
     [ObservableProperty]
     private double _progress;
+
+    [ObservableProperty]
+    private Bitmap? _icon;
 
     /// <param name="tool">What is on disk, or null for a tool that is only offered.</param>
     /// <param name="offer">What a repository has, or null when none does.</param>
@@ -52,8 +56,11 @@ public partial class ToolCardViewModel : ObservableObject
     /// <summary>Null when no repository is offering this tool.</summary>
     public OfferedTool? Offer { get; }
 
-    /// <summary>The letter on the card's tile, until a tool supplies an icon.</summary>
+    /// <summary>The letter on the card's tile, for a tool that supplies no icon.</summary>
     public string Mark => Name.Length == 0 ? "?" : Name[..1].ToUpperInvariant();
+
+    /// <summary>The tile draws the tool's own art instead of the letter.</summary>
+    public bool HasIcon => Icon is not null;
 
     public string Name => Tool?.Name ?? Offer!.Name;
 
@@ -153,6 +160,8 @@ public partial class ToolCardViewModel : ObservableObject
     }
 
     partial void OnProgressChanged(double value) => OnPropertyChanged(nameof(PercentLabel));
+
+    partial void OnIconChanged(Bitmap? value) => OnPropertyChanged(nameof(HasIcon));
 
     partial void OnIsUpdatingChanged(bool value)
     {

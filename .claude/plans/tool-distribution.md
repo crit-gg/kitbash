@@ -202,7 +202,26 @@ a newer tool refusable rather than mysterious. **This launcher reads up to 2**, 
 **`version` must equal the tag.** A release where they disagree is refused rather than
 guessed at, because the two would then have to be reconciled at every later comparison.
 
-`icon` is optional. Without one the card draws the letter mark it draws today.
+`icon` is optional. Without one the card draws the letter mark.
+
+**It is built.** `IToolIcons` is the whole of it. The name is a plain file name beside the
+manifest, and the reader drops anything else, so a name carrying either separator or an
+extension nothing can draw leaves the tool with its letter rather than refusing the
+manifest. An install fetches it into the version folder, which is what lets an installed
+tool draw itself offline, and a tool that is only offered has its icon fetched into the
+cache instead, keyed by repository, tag and name, so it is fetched once ever. A public
+asset downloads off the release url with no API involved, so this costs no request
+allowance. The download is stopped at 4 MB, since nothing declares an icon's size and
+nothing hashes it. Every failure is logged and swallowed: the card keeps its letter and an
+install that otherwise worked still works.
+
+A tool installed before it published an icon has none in its folder, so the card falls
+back to the offer's until the next update, and nothing has to be reinstalled to gain art.
+
+The tile clips the icon to its own rounded corner with a second border inside the one that
+draws the stroke, which is the rule in `.claude/avalonia.md`, and `RadiusSurfaceInside` is
+the token for it. `ToolIconTileTests` renders the real card template inside the real
+launcher window and reads the four corner pixels back.
 
 `executable` is a path inside the payload, and it is what gets run.
 
