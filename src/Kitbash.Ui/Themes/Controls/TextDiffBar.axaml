@@ -2,6 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
 
+    <!-- The bar is the frame, so a button inside it carries none of its own. Three stacked
+         pills each with a border and a radius read as three things rather than as one bar.
+         The hover and pressed fills are still the compact button's. -->
+    <ControlTheme x:Key="TextDiffBarButton" TargetType="Button" BasedOn="{StaticResource CompactButton}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+    </ControlTheme>
+
     <!-- The buttons over a picked run of lines. It floats above the diff rather than sitting
          in it, so it takes the floating shadow and the popup's own fill, and it stands to the
          right where the text has run out. -->
@@ -12,17 +21,24 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="{DynamicResource SurfaceNest2}"
-                        BorderBrush="{DynamicResource LineControl}"
-                        BorderThickness="1"
-                        CornerRadius="{DynamicResource RadiusControl}"
+                <!-- Two borders. The outer one carries the shadow, which a clip would cut off,
+                     and the inner one clips its buttons to the rounded corner. -->
+                <Border CornerRadius="{DynamicResource RadiusControl}"
                         BoxShadow="{DynamicResource ShadowFloating}"
                         Margin="{DynamicResource MarginDiffBar}">
-                    <StackPanel Orientation="Horizontal">
-                        <Button Name="PART_Stage" Theme="{StaticResource CompactButton}" Content="Stage" />
-                        <Button Name="PART_Unstage" Theme="{StaticResource CompactButton}" Content="Unstage" />
-                        <Button Name="PART_Discard" Theme="{StaticResource CompactButton}" Content="Discard" />
-                    </StackPanel>
+                    <Border Background="{DynamicResource SurfaceNest2}"
+                            BorderBrush="{DynamicResource LineControl}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource RadiusControl}"
+                            ClipToBounds="True">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Name="PART_Stage" Theme="{StaticResource TextDiffBarButton}" Content="Stage" />
+                            <Border Name="PART_AfterStage" Width="1" Background="{DynamicResource LineControl}" />
+                            <Button Name="PART_Unstage" Theme="{StaticResource TextDiffBarButton}" Content="Unstage" />
+                            <Border Name="PART_AfterUnstage" Width="1" Background="{DynamicResource LineControl}" />
+                            <Button Name="PART_Discard" Theme="{StaticResource TextDiffBarButton}" Content="Discard" />
+                        </StackPanel>
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>

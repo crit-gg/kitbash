@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using AvaloniaEdit.Editing;
@@ -13,12 +14,122 @@ namespace Kitbash.Ui.Controls;
 /// </summary>
 public abstract class TextDiffMargin : AbstractMargin
 {
+    /// <summary>The line a drag down the gutter started on, or zero when none is running.</summary>
+    private int _anchor;
+
     protected TextDiffMargin()
     {
         ClipToBounds = true;
+        Cursor = new Cursor(StandardCursorType.Arrow);
     }
 
     protected TextDiff? Owner => this.FindAncestorOfType<TextDiff>();
+
+    /// <summary>
+    /// A press on any gutter takes the whole line, and dragging takes every line it passes.
+    /// Without this the press reaches the text area instead, which reads the pointer as being
+    /// left of the text and leaves the caret at the start of the line rather than the end.
+    /// </summary>
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        base.OnPointerPressed(e);
+
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed || Owner is null)
+        {
+            return;
+        }
+
+        _anchor = LineAt(e.GetPosition(this).Y);
+
+        if (_anchor == 0)
+        {
+            return;
+        }
+
+        Take(_anchor, _anchor);
+
+        e.Pointer.Capture(this);
+        e.Handled = true;
+    }
+
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        base.OnPointerMoved(e);
+
+        if (_anchor == 0 || !ReferenceEquals(e.Pointer.Captured, this))
+        {
+            return;
+        }
+
+        if (LineAt(e.GetPosition(this).Y) is var line and not 0)
+        {
+            Take(_anchor, line);
+        }
+
+        e.Handled = true;
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        base.OnPointerReleased(e);
+
+        if (_anchor != 0)
+        {
+            _anchor = 0;
+            e.Pointer.Capture(null);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Selects whole lines, from the start of the first to the end of the last, whichever way
+    /// round they were dragged. Ending at the end is the point: it is what puts the caret past
+    /// the last line's text rather than before it.
+    /// </summary>
+    private void Take(int from, int to)
+    {
+        if (Owner is not { Document: { } document } owner)
+        {
+            return;
+        }
+
+        var first = Math.Clamp(Math.Min(from, to), 1, document.LineCount);
+        var last = Math.Clamp(Math.Max(from, to), 1, document.LineCount);
+
+        var start = document.GetLineByNumber(first).Offset;
+        var end = document.GetLineByNumber(last).EndOffset;
+
+        owner.Select(start, end - start);
+    }
+
+    /// <summary>
+    /// The document line at this point down the gutter, or zero when there is no document. A
+    /// point above or below the text answers the nearest line, so a drag off either end takes
+    /// everything up to it rather than stopping.
+    /// </summary>
+    private int LineAt(double y)
+    {
+        var view = TextView;
+
+        if (Owner is not { Document: { } document } || view is not { VisualLinesValid: true })
+        {
+            return 0;
+        }
+
+        if (view.GetVisualLineFromVisualTop(y + view.VerticalOffset) is { } line
+            && line.FirstDocumentLine is { IsDeleted: false } first)
+        {
+            return first.LineNumber;
+        }
+
+        return y <= 0 ? 1 : document.LineCount;
+    }
 
     /// <summary>
     /// Walks the lines on screen, handing each one its diff line and the middle of the row it

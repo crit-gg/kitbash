@@ -79,12 +79,11 @@ public class TextDiff : TextEditor
     public static readonly StyledProperty<TextDiffActions> ActionsProperty =
         AvaloniaProperty.Register<TextDiff, TextDiffActions>(nameof(Actions));
 
-    /// <summary>The run of lines under the pointer or under the selection, or null.</summary>
+    /// <summary>The run of lines the selection covers, or null when nothing is selected.</summary>
     public static readonly DirectProperty<TextDiff, TextDiffChunk?> ChunkProperty =
         AvaloniaProperty.RegisterDirect<TextDiff, TextDiffChunk?>(nameof(Chunk), o => o.Chunk);
 
     private TextDiffChunk? _chunk;
-    private double _pointer = double.NaN;
 
     /// <summary>A run of lines was asked to do something.</summary>
     public event EventHandler<TextDiffChunkEventArgs>? Asked;
@@ -107,18 +106,6 @@ public class TextDiff : TextEditor
 
         TextArea.TextView.BackgroundRenderers.Add(new TextDiffRenderer(this));
         TextArea.TextView.LineTransformers.Add(new TextDiffColouriser(this));
-
-        TextArea.TextView.PointerMoved += (_, e) =>
-        {
-            _pointer = e.GetPosition(TextArea.TextView).Y + TextArea.TextView.VerticalOffset;
-            Track();
-        };
-
-        TextArea.TextView.PointerExited += (_, _) =>
-        {
-            _pointer = double.NaN;
-            Track();
-        };
 
         TextArea.SelectionChanged += (_, _) => Track();
         TextArea.TextView.ScrollOffsetChanged += (_, _) => Track();
@@ -290,100 +277,27 @@ public class TextDiff : TextEditor
     }
 
     /// <summary>
-    /// Works out what a gesture would act on. A selection is what was asked for outright, and
-    /// with none the run under the pointer is offered instead.
+    /// Works out what a gesture would act on, which is the selection and nothing else. A
+    /// person has to have said what they meant before a button to change it is drawn.
     /// </summary>
     private void Track()
     {
         var view = TextArea.TextView;
+        var selection = TextArea.Selection;
 
-        if (Picking == TextDiffPicking.None || !view.VisualLinesValid || Lines.Count == 0)
+        if (Picking == TextDiffPicking.None
+            || !view.VisualLinesValid
+            || Lines.Count == 0
+            || selection.IsEmpty)
         {
             Chunk = null;
             return;
         }
 
-        var selection = TextArea.Selection;
+        var start = selection.StartPosition.Line;
+        var end = selection.EndPosition.Line;
 
-        if (!selection.IsEmpty)
-        {
-            var start = selection.StartPosition.Line;
-            var end = selection.EndPosition.Line;
-
-            Chunk = Between(start <= end ? start : end, start <= end ? end : start);
-            return;
-        }
-
-        Chunk = double.IsNaN(_pointer) ? null : Around(Under(_pointer));
-    }
-
-    /// <summary>Which line of the document sits at this point down the view.</summary>
-    private int Under(double y)
-    {
-        foreach (var line in TextArea.TextView.VisualLines)
-        {
-            if (line.IsDisposed || line.FirstDocumentLine is not { IsDeleted: false } document)
-            {
-                continue;
-            }
-
-            var bottom = line.GetTextLineVisualYPosition(line.TextLines[^1], VisualYPosition.LineBottom);
-
-            if (bottom > y)
-            {
-                return document.LineNumber;
-            }
-        }
-
-        return 0;
-    }
-
-    /// <summary>
-    /// The run of changes around a line. It reaches out until a heading or the second context
-    /// line in a row, so pointing at a change offers that change rather than the whole hunk
-    /// with the context git wrote around it.
-    /// </summary>
-    private TextDiffChunk? Around(int number)
-    {
-        if (At(number) is not { } line || line.Kind == TextDiffLineKind.Heading)
-        {
-            return null;
-        }
-
-        var first = Reach(number, -1);
-        var last = Reach(number, 1);
-
-        return Between(first, last);
-    }
-
-    private int Reach(int from, int step)
-    {
-        var at = from;
-        var context = 0;
-
-        while (true)
-        {
-            var next = at + step;
-
-            if (At(next) is not { } line || line.Kind == TextDiffLineKind.Heading)
-            {
-                return at;
-            }
-
-            if (line.Kind == TextDiffLineKind.Context)
-            {
-                if (++context >= 2)
-                {
-                    return at;
-                }
-            }
-            else
-            {
-                context = 0;
-            }
-
-            at = next;
-        }
+        Chunk = Between(start <= end ? start : end, start <= end ? end : start);
     }
 
     /// <summary>

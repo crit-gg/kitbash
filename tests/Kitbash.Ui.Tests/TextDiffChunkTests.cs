@@ -1,9 +1,12 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using AvaloniaEdit.Rendering;
 using Kitbash.Ui.Controls;
 
 namespace Kitbash.Ui.Tests;
@@ -59,6 +62,9 @@ public class TextDiffChunkTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    private static Border Rule(TextDiffBar bar, string name) =>
+        bar.GetVisualDescendants().OfType<Border>().Single(b => b.Name == name);
+
     private static void Pick(TextDiff diff, int first, int last)
     {
         var start = diff.Document.GetLineByNumber(first).Offset;
@@ -90,6 +96,29 @@ public class TextDiffChunkTests
         var (window, diff, bar) = Open(TextDiffPicking.None, TextDiffActions.Stage);
 
         Pick(diff, 4, 6);
+
+        Assert.Null(diff.Chunk);
+        Assert.False(bar.IsVisible);
+
+        window.Close();
+    }
+
+    // Resting on a change offers nothing. A button that appears wherever the pointer happens
+    // to be moves under the person reading, and it acts on a run they never asked for.
+    [AvaloniaFact]
+    public void RestingOnAChangeFormsNoRun()
+    {
+        var (window, diff, bar) = Open(TextDiffPicking.Lines, TextDiffActions.Stage);
+
+        var view = diff.TextArea.TextView;
+        var visual = view.GetVisualLine(5)!;
+
+        var middle =
+            visual.GetTextLineVisualYPosition(visual.TextLines[0], VisualYPosition.LineMiddle)
+            - view.VerticalOffset;
+
+        window.MouseMove(view.TranslatePoint(new Point(60, middle), window)!.Value);
+        Dispatcher.UIThread.RunJobs();
 
         Assert.Null(diff.Chunk);
         Assert.False(bar.IsVisible);
@@ -179,6 +208,30 @@ public class TextDiffChunkTests
         Press(window, Key.S, PhysicalKey.S);
 
         Assert.Empty(asked);
+
+        window.Close();
+    }
+
+    // The bar is one segmented surface, so a rule belongs between two buttons that are both
+    // drawn. One left beside a hidden button would read as an edge with nothing past it.
+    [InlineData(TextDiffActions.Stage, false, false)]
+    [InlineData(TextDiffActions.Unstage, false, false)]
+    [InlineData(TextDiffActions.Stage | TextDiffActions.Discard, true, false)]
+    [InlineData(TextDiffActions.Unstage | TextDiffActions.Discard, false, true)]
+    [InlineData(
+        TextDiffActions.Stage | TextDiffActions.Unstage | TextDiffActions.Discard, true, true)]
+    [AvaloniaTheory]
+    public void ARuleSitsOnlyBetweenTwoButtonsThatAreBothDrawn(
+        TextDiffActions actions, bool afterStage, bool afterUnstage)
+    {
+        var (window, diff, bar) = Open(TextDiffPicking.Lines, actions);
+
+        Pick(diff, 4, 6);
+        window.UpdateLayout();
+
+        Assert.True(bar.IsVisible);
+        Assert.Equal(afterStage, Rule(bar, "PART_AfterStage").IsVisible);
+        Assert.Equal(afterUnstage, Rule(bar, "PART_AfterUnstage").IsVisible);
 
         window.Close();
     }

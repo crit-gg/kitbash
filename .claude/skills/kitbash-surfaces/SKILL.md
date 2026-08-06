@@ -238,11 +238,19 @@ diff that was never told stays read only. That default is the safety: a format w
 reference each other, such as a Godot scene, must never be staged a line at a time, and the
 control cannot be made to offer it by accident.
 
-**The run is the selection when there is one, and the change under the pointer when there is
-not.** Under the pointer it reaches out until a heading or the second context line in a row,
-so pointing at a change offers that change rather than the whole hunk with the context git
-wrote around it. A run holding only context is never offered, since there is nothing in it to
-stage. `Chunk` is the answer and `Asked` is what a gesture raises.
+**The run is the selection and nothing else.** Resting on a change offers nothing: a button
+that appears wherever the pointer happens to be moves under the person reading, and it acts
+on a run they never asked for. A person says what they mean by selecting it. A run holding
+only context is never offered either, since there is nothing in it to stage. `Chunk` is the
+answer and `Asked` is what a gesture raises.
+
+**Every gutter selects whole lines.** A press on the numbers, the mark or the symbol takes
+that line, and dragging takes every line it passes, from the start of the first to the end of
+the last whichever way round it was dragged. Ending at the end is the point: without it the
+press reaches the text area instead, which reads the pointer as being left of the text and
+leaves the caret at the start of the last line, so that line is selected in name only. It is
+on `TextDiffMargin`, so all three gutters behave as the one strip they look like. Character
+selection in the text itself is untouched.
 
 **`ui:TextDiffBar` is the buttons over the run**, placed in the same panel as the diff rather
 than inside it, so the editor's own template is left alone:
@@ -256,6 +264,13 @@ than inside it, so the editor's own template is left alone:
 
 `Actions` says which of Stage, Unstage and Discard are drawn, and `Ask` refuses anything not
 in it, so the gate holds whether the gesture came from the bar or from a key.
+
+**The bar is the frame and its buttons carry none of their own.** `TextDiffBarButton` is
+`CompactButton` with the background, the border and the radius taken off, so the bar reads as
+one segmented control rather than as pills stacked in a box. A hairline sits between two
+buttons that are both drawn and nowhere else, which `TextDiffBar.Show` decides along with the
+buttons. Two borders, since the outer one carries the shadow that a clip would cut off and the
+inner one clips the buttons to the rounded corner.
 
 **The theme is `BasedOn` the editor's own `ControlTheme`.** `AvaloniaEdit.xaml` is included
 before the resources in `KitbashTheme.axaml` for that reason. Do not reach for

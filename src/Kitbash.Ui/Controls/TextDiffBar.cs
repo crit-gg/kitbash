@@ -14,11 +14,15 @@ namespace Kitbash.Ui.Controls;
 [TemplatePart(StagePart, typeof(Button))]
 [TemplatePart(UnstagePart, typeof(Button))]
 [TemplatePart(DiscardPart, typeof(Button))]
+[TemplatePart(AfterStagePart, typeof(Control))]
+[TemplatePart(AfterUnstagePart, typeof(Control))]
 public class TextDiffBar : TemplatedControl
 {
     private const string StagePart = "PART_Stage";
     private const string UnstagePart = "PART_Unstage";
     private const string DiscardPart = "PART_Discard";
+    private const string AfterStagePart = "PART_AfterStage";
+    private const string AfterUnstagePart = "PART_AfterUnstage";
 
     /// <summary>The diff whose picked run this acts on.</summary>
     public static readonly StyledProperty<TextDiff?> DiffProperty =
@@ -32,6 +36,8 @@ public class TextDiffBar : TemplatedControl
     private Button? _stage;
     private Button? _unstage;
     private Button? _discard;
+    private Control? _afterStage;
+    private Control? _afterUnstage;
 
     /// <inheritdoc cref="DiffProperty"/>
     public TextDiff? Diff
@@ -56,6 +62,9 @@ public class TextDiffBar : TemplatedControl
         _stage = Wire(e.NameScope.Find<Button>(StagePart), TextDiffActions.Stage);
         _unstage = Wire(e.NameScope.Find<Button>(UnstagePart), TextDiffActions.Unstage);
         _discard = Wire(e.NameScope.Find<Button>(DiscardPart), TextDiffActions.Discard);
+
+        _afterStage = e.NameScope.Find<Control>(AfterStagePart);
+        _afterUnstage = e.NameScope.Find<Control>(AfterUnstagePart);
 
         Show();
     }
@@ -115,9 +124,25 @@ public class TextDiffBar : TemplatedControl
         var chunk = Diff?.Chunk;
         var showing = chunk is not null && actions != TextDiffActions.None;
 
-        Wear(_stage, showing && actions.HasFlag(TextDiffActions.Stage), Key.S);
-        Wear(_unstage, showing && actions.HasFlag(TextDiffActions.Unstage), Key.U);
-        Wear(_discard, showing && actions.HasFlag(TextDiffActions.Discard), Key.D);
+        var stage = showing && actions.HasFlag(TextDiffActions.Stage);
+        var unstage = showing && actions.HasFlag(TextDiffActions.Unstage);
+        var discard = showing && actions.HasFlag(TextDiffActions.Discard);
+
+        Wear(_stage, stage, Key.S);
+        Wear(_unstage, unstage, Key.U);
+        Wear(_discard, discard, Key.D);
+
+        // A rule sits between two buttons that are both drawn, and nowhere else, so a bar
+        // showing one gesture is one button rather than a button against a line.
+        if (_afterStage is not null)
+        {
+            _afterStage.IsVisible = stage && (unstage || discard);
+        }
+
+        if (_afterUnstage is not null)
+        {
+            _afterUnstage.IsVisible = unstage && discard;
+        }
 
         if (chunk is not null)
         {
