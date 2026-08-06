@@ -583,9 +583,9 @@
                                                                                 IsVisible="{Binding ShowLaunch}"
                                                                                 Click="OnLaunchToolClick" />
 
-                                                                        <Button Grid.Column="2"
+                                                                        <Button Grid.Column="2" Classes="neutral"
                                                                                 HorizontalAlignment="Stretch"
-                                                                                Content="Install"
+                                                                                Content="Get Tool"
                                                                                 IsVisible="{Binding ShowInstall}"
                                                                                 Command="{Binding InstallCommand}" />
 
@@ -724,10 +724,10 @@
                                                                             IsVisible="{Binding ShowLaunch}"
                                                                             Click="OnLaunchToolClick" />
 
-                                                                    <Button Grid.Column="2"
+                                                                    <Button Grid.Column="2" Classes="neutral"
                                                                             Theme="{StaticResource CompactButton}"
                                                                             HorizontalAlignment="Stretch"
-                                                                            Content="Install"
+                                                                            Content="Get Tool"
                                                                             IsVisible="{Binding ShowInstall}"
                                                                             Command="{Binding InstallCommand}" />
 
