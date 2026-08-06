@@ -19,6 +19,11 @@ is what a check costs.
 holding a manifest is a tool where it sits, under a `local.` id, and nothing is copied.
 See A folder on this machine is the other way in.
 
+**A tool can also be a script**, which is outside the seven steps too. The manifest says
+`"kind": "script"` and declares what to ask for, and the launcher runs it under a modal
+rather than letting it go. That is manifest format 2 and it is the whole of what format 2
+added. `.claude/plans/tool-scripts.md` has it.
+
 - **The Windows user directories moved.** State and cache are under
   `%LOCALAPPDATA%\KitbashData` and the install root holds the app alone.
 - **`Kitbash/Tools/` is the model**, and it is the launcher's rather than Core's:
@@ -191,7 +196,8 @@ worth keeping: TOML is what a person edits, JSON is what programs exchange.
 
 `manifest` is a plain integer and the only version here that is not semantic. It
 describes a file format. The launcher reads it before anything else and it is what makes
-a newer tool refusable rather than mysterious.
+a newer tool refusable rather than mysterious. **This launcher reads up to 2**, and format
+2 is what added `kind` and `inputs` for a script tool.
 
 **`version` must equal the tag.** A release where they disagree is refused rather than
 guessed at, because the two would then have to be reconciled at every later comparison.
@@ -377,6 +383,10 @@ helper binary beside it.
 
 Working directory is the version directory, so a tool finds its own files beside it. With
 no workspace open the argument is absent.
+
+**A script tool is started differently**, since the launcher waits for it and reads its
+output. The workspace argument is the same and the form's answers follow it. See
+`.claude/plans/tool-scripts.md`.
 
 **That plus the manifest is the whole contract.** Settings, workspace discovery and how a
 tool draws a window are not in it. A .NET tool takes `Kitbash.Core` and `Kitbash.Ui` and

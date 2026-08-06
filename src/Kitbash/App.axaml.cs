@@ -206,6 +206,9 @@ public partial class App : Application
             .AddSingleton<IToolRuntime, ToolRuntime>()
             .AddSingleton<IInstalledTools, InstalledTools>()
             .AddSingleton<IToolStarter, ToolStarter>()
+            .AddSingleton<ToolProgressReader>()
+            .AddSingleton<IToolScriptRunner, ToolScriptRunner>()
+            .AddSingleton<IToolInputMemory, ToolInputMemory>()
             .AddSingleton<IToolRepositoryList, ToolRepositoryList>()
             .AddSingleton<IToolRepositoryFactory, ToolRepositoryFactory>()
             .AddSingleton<IToolCatalogue, ToolCatalogue>()
@@ -236,6 +239,8 @@ public partial class App : Application
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IInstalledTools>(),
                 provider.GetRequiredService<IToolStarter>(),
+                provider.GetRequiredService<IToolScriptRunner>(),
+                provider.GetRequiredService<IToolInputMemory>(),
                 provider.GetRequiredService<IToolCatalogue>(),
                 provider.GetRequiredService<IToolInstaller>(),
                 provider.GetRequiredService<IToolFolderInstaller>(),

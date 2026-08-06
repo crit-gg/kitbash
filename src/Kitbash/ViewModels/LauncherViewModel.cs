@@ -37,6 +37,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IWorkspaceMaker _maker;
     private readonly IInstalledTools _installed;
     private readonly IToolStarter _starter;
+    private readonly IToolScriptRunner _scripts;
+    private readonly IToolInputMemory _memory;
     private readonly IToolCatalogue _tools;
     private readonly IToolInstaller _installer;
     private readonly IToolFolderInstaller _folders;
@@ -86,6 +88,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IPathShortener paths,
         IInstalledTools installed,
         IToolStarter starter,
+        IToolScriptRunner scripts,
+        IToolInputMemory memory,
         IToolCatalogue tools,
         IToolInstaller installer,
         IToolFolderInstaller folders,
@@ -115,6 +119,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(installed);
         ArgumentNullException.ThrowIfNull(starter);
+        ArgumentNullException.ThrowIfNull(scripts);
+        ArgumentNullException.ThrowIfNull(memory);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(folders);
@@ -156,6 +162,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _maker = maker;
         _installed = installed;
         _starter = starter;
+        _scripts = scripts;
+        _memory = memory;
         _tools = tools;
         _installer = installer;
         _folders = folders;
@@ -431,12 +439,29 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
+    /// Asks the form for what a script needs. Set by the window, since a dialog belongs to
+    /// one and a view model has none.
+    /// </summary>
+    public Func<ToolInputsViewModel, Task<bool>>? AskingInputs { get; set; }
+
+    /// <summary>Shows the progress dialog while a script runs. Set by the window too.</summary>
+    public Func<string, Func<IProgress<ToolProgressStep>, CancellationToken, Task<ToolRunOutcome>>, Task<ToolRunOutcome?>>? RunningScript { get; set; }
+
+    /// <summary>
     /// Opens a tool. It outlives the launcher, so a person can close this window and keep
     /// working, and a tool that will not start says so as a toast rather than in place.
+    /// A script tool is run and watched instead, so that one does not outlive anything.
     /// </summary>
     public async Task LaunchToolAsync(InstalledTool tool)
     {
         ArgumentNullException.ThrowIfNull(tool);
+
+        if (tool.Manifest.IsScript)
+        {
+            await RunScriptAsync(tool).ConfigureAwait(true);
+
+            return;
+        }
 
         var workspace = _workspaces.Current?.Root;
 
@@ -447,6 +472,68 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             // Only once the tool really started, so a start that failed leaves the
             // launcher up with its toast on screen.
             _actions.Apply(_afterLaunch.ForTool(tool.Id));
+        }
+        catch (ProcessStartException exception)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"{tool.Name} could not start",
+                Body = exception.Message,
+            });
+        }
+    }
+
+    /// <summary>
+    /// Runs a script tool: the form first when it asks for anything, then the script under
+    /// a modal that reports what it writes. Cancelling either one stops there.
+    /// </summary>
+    private async Task RunScriptAsync(InstalledTool tool)
+    {
+        var workspace = _workspaces.Current?.Root;
+        IReadOnlyList<string> arguments = [];
+
+        if (tool.Manifest.Inputs.Count > 0)
+        {
+            if (AskingInputs is not { } ask)
+            {
+                return;
+            }
+
+            var form = new ToolInputsViewModel(tool, _memory.Read(tool.Id, tool.Manifest.Inputs), workspace);
+
+            if (!await ask(form).ConfigureAwait(true))
+            {
+                return;
+            }
+
+            // Kept before the run rather than after it, so a script that fails still finds
+            // its form as it was left.
+            _memory.Write(tool.Id, tool.Manifest.Inputs, form.Values);
+
+            arguments = form.Arguments();
+        }
+
+        if (RunningScript is not { } run)
+        {
+            return;
+        }
+
+        Task<ToolRunOutcome> Work(IProgress<ToolProgressStep> progress, CancellationToken cancellation) =>
+            _scripts.RunAsync(tool, workspace, arguments, progress, cancellation);
+
+        try
+        {
+            // A failed run reports itself in the dialog, which is the only place its log
+            // is, so nothing is said here about one.
+            if (await run(tool.Name, Work).ConfigureAwait(true) is { Worked: true })
+            {
+                _toasts.Post(new ToastRequest
+                {
+                    Tier = ToastTier.Ok,
+                    Title = $"{tool.Name} finished",
+                });
+            }
         }
         catch (ProcessStartException exception)
         {

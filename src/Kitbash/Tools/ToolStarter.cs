@@ -8,8 +8,8 @@ namespace Kitbash.Tools;
 /// </summary>
 public sealed class ToolStarter : IToolStarter
 {
-    /// <summary>How a tool is told which workspace to open.</summary>
-    private const string WorkspaceArgument = "--workspace";
+    /// <summary>How a tool is told which workspace to open, script or window alike.</summary>
+    public const string WorkspaceArgument = "--workspace";
 
     private readonly IPlatformServices _platform;
 

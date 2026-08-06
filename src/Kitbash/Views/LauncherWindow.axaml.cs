@@ -43,6 +43,10 @@ public partial class LauncherWindow : ChromelessWindow
 
                 model.Failed ??= (failure, mode) => LaunchFailedDialog.Show(this, failure, mode);
 
+                model.AskingInputs ??= form => ToolInputsDialog.AskAsync(this, form);
+
+                model.RunningScript ??= (subject, work) => ToolRunDialog.RunAsync(this, subject, work);
+
                 model.OpenIn.PropertyChanged += OnOpenInChanged;
                 FillOpenIn();
             }

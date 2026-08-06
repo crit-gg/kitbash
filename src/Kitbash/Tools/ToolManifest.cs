@@ -20,7 +20,18 @@ public sealed record ToolManifest(
     string? Icon,
     ToolVersion Version,
     bool Required,
-    IReadOnlyList<ToolPayload> Payloads);
+    IReadOnlyList<ToolPayload> Payloads,
+    ToolKind Kind = ToolKind.App)
+{
+    /// <summary>
+    /// What the form asks for before a script runs. The order is the order it is drawn in
+    /// and the order the answers reach the command line. Empty draws no form.
+    /// </summary>
+    public IReadOnlyList<ToolInput> Inputs { get; init; } = [];
+
+    /// <summary>The launcher waits for it and reports on it rather than letting it go.</summary>
+    public bool IsScript => Kind == ToolKind.Script;
+}
 
 /// <summary>
 /// One platform's copy of a tool. Everything about downloading it is optional, since a

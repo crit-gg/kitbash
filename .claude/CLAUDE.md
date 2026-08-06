@@ -235,6 +235,9 @@ the problem:
 - `.claude/plans/tool-distribution.md` where a tool comes from, how it is installed and
   how it is kept current. Read before touching anything under `Kitbash/Tools` or the tools
   page.
+- `.claude/plans/tool-scripts.md` a tool that is a script: how it reports progress, what a
+  form asks for before it runs, and how the answers become its arguments. Read before
+  touching the manifest reader, either tool dialog or anything about running one.
 - `.claude/plans/external-tools.md` what the Open in button was ported from and what could
   not be tested here. Read before touching `Platform/Openers` or either opener finder.
 - `.claude/plans/projects-window.md` the welcome window every app opens with, what the app
@@ -469,6 +472,15 @@ read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured
 against a real Kitbash release. Read the plan before touching any of it.
+
+**A tool can be a script, and the launcher waits for one.** `"kind": "script"` in the
+manifest means the card says Run rather than Launch, the launcher runs the program in its
+own folder and reads its output, and a modal reports what it writes. **A script reports in
+either of two forms**, a prefixed plain line such as `@kitbash progress 40` or a JSON object
+per line, and anything that is neither is a log line. **The manifest can also declare
+`inputs`**, which draws a form before the run and turns the answers into the script's
+arguments, with an input able to say it is remembered for next time. That is manifest format
+2, and `.claude/plans/tool-scripts.md` has the contract and what could not be tested here.
 
 **The welcome window is built and it is the library's.** `ui:ProjectsWindow` is the window
 an app opens with, from the `Projects Window` design, and it is the second whole window

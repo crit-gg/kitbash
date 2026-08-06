@@ -87,6 +87,12 @@ public partial class ToolCardViewModel : ObservableObject
 
     public bool ShowLaunch => !IsDead && IsInstalled;
 
+    /// <summary>
+    /// What the lead button says. A script runs and ends, so calling that Launch would
+    /// promise a window nobody is going to get.
+    /// </summary>
+    public string LaunchLabel => Tool?.Manifest.IsScript == true ? "Run" : "Launch";
+
     public bool ShowInstall => !IsDead && !IsInstalled;
 
     public bool ShowUpdate => HasUpdate && !IsDead;

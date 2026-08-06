@@ -562,7 +562,7 @@
 
                                                                         <Button Grid.Column="2" Classes="neutral"
                                                                                 HorizontalAlignment="Stretch"
-                                                                                Content="Launch"
+                                                                                Content="{Binding LaunchLabel}"
                                                                                 IsVisible="{Binding ShowLaunch}"
                                                                                 Click="OnLaunchToolClick" />
 

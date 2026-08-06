@@ -1,0 +1,58 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                 x:Class="Kitbash.Views.ToolRunDialog"
+                 Title="Running"
+                 Width="484" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="{Binding $parent[Window].Title}" />
+
+        <StackPanel Grid.Row="1" Margin="16,16,16,15">
+            <TextBlock Name="Stage"
+                       FontSize="{DynamicResource FontSizeControl}"
+                       FontWeight="{DynamicResource FontWeightMedium}"
+                       Foreground="{DynamicResource InkPrimary}"
+                       TextWrapping="Wrap" />
+
+            <!-- Its room is held whether or not it says anything, so the window does not
+                 change height as the steps go by. -->
+            <TextBlock Name="Detail" Margin="0,7,0,0" MinHeight="15"
+                       FontFamily="{DynamicResource FontFamilyMono}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource InkMuted}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <ProgressBar Name="Meter" Margin="0,11,0,0" IsIndeterminate="True" />
+
+            <ui:Alert Name="Failure" Margin="0,12,0,0" Tier="Error" IsVisible="False" />
+
+            <Expander Name="Log" Header="Details" Margin="0,12,0,0" IsVisible="False">
+                <ScrollViewer Name="LogScroll" MaxHeight="180">
+                    <SelectableTextBlock Name="LogText"
+                                         FontFamily="{DynamicResource FontFamilyMono}"
+                                         FontSize="{DynamicResource FontSizeSmall}"
+                                         Foreground="{DynamicResource InkSecondary}" />
+                </ScrollViewer>
+            </Expander>
+
+            <TextBlock Name="Note" Margin="0,10,0,0"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       LineHeight="17"
+                       Foreground="{DynamicResource InkMuted}"
+                       TextWrapping="Wrap"
+                       Text="Cancelling stops the script where it is. Anything it has already changed stays." />
+        </StackPanel>
+
+        <!-- No primary while work runs. A run that failed has nothing left to do, so its
+             one button closes and carries no role either. -->
+        <ui:DialogFooter Grid.Row="2">
+            <Panel>
+                <Button Name="CancelButton" Content="Cancel" ui:Dialog.Role="Cancel" />
+                <Button Name="CloseButton" Content="Close" IsVisible="False" />
+            </Panel>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>
