@@ -57,16 +57,30 @@ public sealed class ToolCardTests
     }
 
     /// <summary>
-    /// A script is run and gone, so its card drops the description floor and the promoted
-    /// actions. Half is the point of a separate section, not an incidental few pixels.
+    /// A script is run and gone, so its card keeps two lines of description where a tool
+    /// card keeps four, and drops the promoted actions. Plainly shorter is the point of a
+    /// separate section, not an incidental few pixels.
     /// </summary>
     [AvaloniaFact]
-    public void AScriptCardIsHalfTheHeightOfAToolCard()
+    public void AScriptCardIsMuchShorterThanAToolCard()
     {
         var full = Card_(Draw(Card(icon: null))).Bounds.Height;
         var compact = Card_(Draw(Card(icon: null, script: true))).Bounds.Height;
 
-        Assert.True(compact <= full / 2, $"a script card is {compact} and a tool card is {full}");
+        Assert.True(compact <= full * 0.65, $"a script card is {compact} and a tool card is {full}");
+    }
+
+    /// <summary>
+    /// A name too long for its column is trimmed on the card, so the whole of it has to be
+    /// somewhere. A name that fits carries no tooltip, since it would only repeat itself.
+    /// </summary>
+    [AvaloniaFact]
+    public void ATrimmedNameSaysTheWholeOfItselfOnHover()
+    {
+        const string Long = "Dependency report writer for every scene in the workspace";
+
+        Assert.Equal(Long, ToolTip.GetTip(Name_(Draw(Card(icon: null, name: Long)))));
+        Assert.Null(ToolTip.GetTip(Name_(Draw(Card(icon: null)))));
     }
 
     /// <summary>The lead button says what pressing it does, and for a script that is Run.</summary>
@@ -157,6 +171,12 @@ public sealed class ToolCardTests
         return tile;
     }
 
+    /// <summary>The card's name, whichever of the two templates drew it.</summary>
+    private static TextBlock Name_(Control drawn) =>
+        Assert.Single(
+            drawn.GetLogicalDescendants().OfType<TextBlock>(),
+            block => block.Classes.Contains("toolName"));
+
     /// <summary>The card itself, whichever of the two templates drew it.</summary>
     private static Border Card_(Control drawn) =>
         Assert.Single(drawn.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("toolCard"));
@@ -223,7 +243,7 @@ public sealed class ToolCardTests
     }
 
     /// <param name="script">A script, which is what the compact card is drawn for.</param>
-    private static ToolCardViewModel Card(Bitmap? icon, bool script = false)
+    private static ToolCardViewModel Card(Bitmap? icon, bool script = false, string name = "Foundry")
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
         Assert.True(ToolVersion.TryParse("1.0.0", out var version));
@@ -233,7 +253,7 @@ public sealed class ToolCardTests
         var manifest = new ToolManifest(
             script ? 2 : 1,
             id.Name,
-            "Foundry",
+            name,
             "A tool",
             "Tools",
             "foundry.png",

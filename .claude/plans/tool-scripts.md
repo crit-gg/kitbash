@@ -19,15 +19,21 @@ draws the form, runs the script, and reports what it writes over a modal.
 - `Kitbash/Views` grew `ToolInputsDialog` and `ToolRunDialog`, and
   `Kitbash/ViewModels` grew `ToolInputsViewModel` and `ToolInputRowViewModel`.
 - The card's lead button says Run rather than Launch for one.
-- **An installed script has its own section, SCRIPTS, and a card half the height.** Running
-  one and opening an app are different things to want, so they are two sections rather than
-  one list. Like every section it is drawn only when it holds something. A script nobody has
-  installed stays under AVAILABLE TO INSTALL, which answers what could be added rather than
-  what can be run, so that section never mixes card sizes.
-- The small card drops the description floor and the promoted actions and keeps the name,
-  the version, one line of description and the buttons. Four fit across where three of the
-  full card do. `ToolCardTemplates` is what picks between the two, off `IsCompact` on the
-  card, so the group a card lands in decides how it is drawn.
+- **A script has its own section on both sides, and a card half the height.** Running one
+  and opening an app are different things to want, so they are separate sections rather
+  than one list. The four are INSTALLED TOOLS, INSTALLED SCRIPTS, AVAILABLE TOOLS and
+  AVAILABLE SCRIPTS, and like every section each is drawn only when it holds something. A
+  script that is only offered is drawn small too, so no section ever mixes card sizes.
+- The small card drops the promoted actions and keeps the name, the version, two lines of
+  description and the buttons, against the full card's four lines. Both are three across,
+  so a script row and a tool row line up down the page. `ToolCardTemplates` is what picks
+  between the two, off `IsCompact` on the card, so the group a card lands in decides how
+  it is drawn.
+- Its description has a two line floor for the same reason the full card's has a four line
+  one. Without it a one line description leaves that card's buttons above its neighbour's.
+- **A card name and a small card description are trimmed, so both carry `ui:TextTip.Shows`**,
+  which puts the whole text in a tooltip while it does not fit and takes the tooltip away
+  again while it does.
 - Checking for updates moved off the installed group and onto whichever heading is first,
   since two installed sections would otherwise each draw their own Check for updates.
 

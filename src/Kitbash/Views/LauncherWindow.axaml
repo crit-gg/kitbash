@@ -512,7 +512,8 @@
                                                                                    Text="{Binding Name}"
                                                                                    FontSize="{DynamicResource FontSizeCardTitle}"
                                                                                    FontWeight="{DynamicResource FontWeightStrong}"
-                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                   ui:TextTip.Shows="True" />
                                                                         <TextBlock Classes="mono" Text="{Binding Version}"
                                                                                    Margin="0,6,0,0"
                                                                                    FontSize="{DynamicResource FontSizeBody}"
@@ -666,7 +667,8 @@
                                                                                    Text="{Binding Name}"
                                                                                    FontSize="{DynamicResource FontSizeSubhead}"
                                                                                    FontWeight="{DynamicResource FontWeightStrong}"
-                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                   ui:TextTip.Shows="True" />
                                                                         <TextBlock Classes="mono" Text="{Binding Version}"
                                                                                    Margin="0,3,0,0"
                                                                                    FontSize="{DynamicResource FontSizeSmall}"
@@ -683,9 +685,17 @@
                                                                     </Button>
                                                                 </Grid>
 
+                                                                <!-- Two lines, with a floor, so every card in the
+                                                                     row ends its buttons on the same line. -->
                                                                 <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                                                           MinHeight="35"
+                                                                           MaxLines="2"
+                                                                           LineHeight="17.4"
+                                                                           VerticalAlignment="Top"
+                                                                           TextWrapping="Wrap"
                                                                            FontSize="{DynamicResource FontSizeControl}"
                                                                            TextTrimming="CharacterEllipsis"
+                                                                           ui:TextTip.Shows="True"
                                                                            Foreground="{DynamicResource InkSecondary}" />
 
                                                                 <Grid Grid.Row="2">

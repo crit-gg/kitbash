@@ -218,6 +218,28 @@ all three and none can be turned off, and each tier carries a default glyph, so 
 that says its meaning in colour alone cannot be built. The tiers are `Ok`, `Modified`,
 `Error`, `Accent` and `Neutral`.
 
+### Text that does not fit
+
+**Trimmed text has to be somewhere, and that is `ui:TextTip`.** An attached property on a
+`TextBlock`, the same shape as `ui:TextMenu` on a field.
+
+```xml
+<TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" ui:TextTip.Shows="True" />
+```
+
+It puts the label's own text in its tooltip while the text is trimmed and takes the tooltip
+away again while it fits, so a pointer resting on a label that fits says nothing at all. Put
+it on a label that can trim and nowhere else: text that wraps and grows is never hidden, so a
+tooltip there only repeats what is on screen.
+
+**It reads the lines the label drew rather than comparing widths.** `TextLine.HasCollapsed` is
+what puts the ellipsis there, so the answer is the layout's own, and it holds for a wrapped
+label trimmed at `MaxLines` as well as a single line. Read on `LayoutUpdated`, since a text or
+size change is answered by a layout that has not run yet.
+
+It is code and not a setter for the reason `ui:TextMenu` is: whether text fits is not
+something a selector can ask.
+
 ### Two densities
 
 **Dense is the default and most apps take it.** It is the design spec's own number, which

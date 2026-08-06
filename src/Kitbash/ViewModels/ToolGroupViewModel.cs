@@ -39,7 +39,8 @@ public partial class ToolGroupViewModel : ObservableObject
     public ToolCheckViewModel? Check { get; }
 
     /// <summary>
-    /// How many cards fit across. A compact card is narrower, so its group fits more.
+    /// How many cards fit across. Both card sizes take the same width, so a script row and
+    /// a tool row line up down the page.
     /// </summary>
     public int Columns { get; init; } = 3;
 

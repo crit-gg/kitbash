@@ -292,9 +292,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         var offered = offers.ToDictionary(offer => offer.Id.Value, StringComparer.Ordinal);
         var held = installed.Select(tool => tool.Id.Value).ToHashSet(StringComparer.Ordinal);
 
-        // A script is its own section, since running one and opening an app are different
-        // things to want. One that is not installed stays under available, which answers
-        // what could be added rather than what can be run.
+        // A script is its own section on both sides, since running one and opening an app
+        // are different things to want, and a script card is a different shape.
         List<ToolCardViewModel> mine = [];
         List<ToolCardViewModel> scripts = [];
 
@@ -312,12 +311,18 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             (tool.Manifest.IsScript ? scripts : mine).Add(card);
         }
 
-        List<ToolCardViewModel> theirs =
-        [
-            .. offers
-                .Where(offer => !held.Contains(offer.Id.Value))
-                .Select(offer => new ToolCardViewModel(null, offer, InstallToolAsync)),
-        ];
+        List<ToolCardViewModel> theirs = [];
+        List<ToolCardViewModel> theirScripts = [];
+
+        foreach (var offer in offers.Where(offer => !held.Contains(offer.Id.Value)))
+        {
+            var card = new ToolCardViewModel(null, offer, InstallToolAsync)
+            {
+                IsCompact = offer.Manifest.IsScript,
+            };
+
+            (offer.Manifest.IsScript ? theirScripts : theirs).Add(card);
+        }
 
         List<ToolGroupViewModel> groups = [];
 
@@ -328,16 +333,19 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         if (scripts.Count > 0)
         {
-            groups.Add(new ToolGroupViewModel("SCRIPTS", scripts, offersUpdates: true, ToolCheck)
-            {
-                Columns = 4,
-            });
+            groups.Add(new ToolGroupViewModel("INSTALLED SCRIPTS", scripts, offersUpdates: true, ToolCheck));
         }
 
         if (theirs.Count > 0)
         {
             groups.Add(new ToolGroupViewModel(
-                "AVAILABLE TO INSTALL", theirs, offersUpdates: false, ToolCheck));
+                "AVAILABLE TOOLS", theirs, offersUpdates: false, ToolCheck));
+        }
+
+        if (theirScripts.Count > 0)
+        {
+            groups.Add(new ToolGroupViewModel(
+                "AVAILABLE SCRIPTS", theirScripts, offersUpdates: false, ToolCheck));
         }
 
         // The page has no bar of its own, so its actions ride on the first heading.
@@ -352,7 +360,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         // The art follows the card rather than holding it up, since an offered tool's icon
         // is a download the first time anything asks for it.
-        _ = LoadIconsAsync([.. mine, .. scripts, .. theirs]);
+        _ = LoadIconsAsync([.. mine, .. scripts, .. theirs, .. theirScripts]);
     }
 
     /// <summary>
