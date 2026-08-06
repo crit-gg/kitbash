@@ -72,11 +72,11 @@ public partial class ToolRunDialog : DialogWindow
                 failure = exception;
             }
 
-            // A run that failed has something to say and its log is the only place it says
-            // it, so the window stays up. Anything else has finished.
-            if (failure is null && outcome is { Worked: false })
+            // A run with something to say keeps its window, since its log is the only
+            // place it says it. A script that wrote nothing has nothing to read.
+            if (failure is null && outcome is { } ended && (!ended.Worked || dialog.HasOutput))
             {
-                dialog.Finish(subject, outcome.ExitCode);
+                dialog.Finish(subject, ended.ExitCode);
 
                 return;
             }
@@ -104,6 +104,9 @@ public partial class ToolRunDialog : DialogWindow
 
         return failure is null ? outcome : null;
     }
+
+    /// <summary>Whether the script has written a line the log is holding.</summary>
+    public bool HasOutput => _lines.Count > 0;
 
     /// <summary>One line the script wrote, on the UI thread.</summary>
     public void Report(ToolProgressStep step)
@@ -137,21 +140,30 @@ public partial class ToolRunDialog : DialogWindow
     }
 
     /// <summary>
-    /// The script ended badly. The bar and Cancel go, the log opens, and the one button
-    /// left closes the window.
+    /// The script ended and the window is being kept. The bar and Cancel go, the log
+    /// opens, and the one button left closes the window.
     /// </summary>
+    /// <param name="exitCode">Zero for a run that worked, which only says so here when
+    /// the script wrote something worth reading.</param>
     public void Finish(string subject, int exitCode)
     {
-        Stage.Text = $"{subject} did not finish";
+        var worked = exitCode == 0;
+
+        Stage.Text = worked ? $"{subject} finished" : $"{subject} did not finish";
         Detail.Text = string.Empty;
         Meter.IsVisible = false;
         Note.IsVisible = false;
 
-        Failure.Title = $"The script stopped with code {exitCode}.";
-        Failure.IsVisible = true;
+        if (!worked)
+        {
+            Failure.Title = $"The script stopped with code {exitCode}.";
+            Failure.IsVisible = true;
+        }
 
-        Log.IsVisible = true;
-        Log.IsExpanded = true;
+        // A failure opens the log whether or not it holds a line, since the code is all
+        // it otherwise says. A run that worked is only kept for its lines.
+        Log.IsVisible = !worked || HasOutput;
+        Log.IsExpanded = Log.IsVisible;
 
         CancelButton.IsVisible = false;
         CloseButton.IsVisible = true;

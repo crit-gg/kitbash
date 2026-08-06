@@ -159,8 +159,10 @@ anything.
 
 **Anything else is a log line**, including an unknown verb, which keeps its whole line.
 
-**The exit code is the answer.** Zero closes the modal and raises a toast. Anything else
-keeps the modal up, says which code it was, and opens the log.
+**The exit code is the answer.** Anything but zero keeps the modal up, says which code it
+was, and opens the log. Zero raises a toast, and keeps the modal up with its log open when
+the script wrote anything at all, so what it said can be read. A script that wrote nothing
+has nothing to read, so its modal closes.
 
 ## What the launcher does
 
@@ -173,7 +175,9 @@ keeps the modal up, says which code it was, and opens the log.
    folder, reading its output a line at a time.
 5. Every line goes through `ToolProgressReader` and arrives at the dialog on the UI thread.
 6. Standard error is read at the end and each line joins the log, marked as an error.
-7. Zero closes the dialog and raises a toast. Anything else keeps it up.
+7. A run that wrote a line keeps the dialog up with the log open, whichever way it went.
+   Only a run that worked and said nothing closes it. The toast for one that worked is
+   raised once the dialog has gone.
 
 **The log keeps the last 500 lines and is rebuilt when the thread is next idle**, never per
 line. A script can write faster than a screen can follow, and the text is only built at all
@@ -216,7 +220,7 @@ drawing them.
 
 ## What was measured
 
-On this machine, Linux, 115 checks in `tests/Kitbash.Tests`.
+On this machine, Linux, 116 checks in `tests/Kitbash.Tests`.
 
 **Real scripts, started by the real runner over the real process runner**: both report
 forms arriving in order, a plain line becoming a log line, standard error arriving marked,
@@ -229,8 +233,9 @@ rather than failing quietly.
 disabled while a required answer is missing and enabled once it is typed, a folder input
 being a path field whose value reaches the arguments, the modal drawing every part of a
 step and leaving alone what a step does not mention, the spinner coming back, the log
-appearing with its first line and filling in when it is opened, and a failed run keeping
-its window with Cancel gone, the code said and the log open.
+appearing with its first line and filling in when it is opened, a failed run keeping
+its window with Cancel gone, the code said and the log open, and a run that worked and
+wrote something keeping its window with nothing marked wrong about it.
 
 **Remembering, over a real state file**: only a marked input kept, a cleared answer
 forgetting its key, the file landing in the tool's own folder, and a form with nothing worth

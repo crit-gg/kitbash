@@ -231,6 +231,40 @@ public sealed class ToolScriptDialogTests
         }
     }
 
+    /// <summary>
+    /// A run that worked and wrote something keeps its window too, so the lines can be
+    /// read. Nothing is marked wrong about it.
+    /// </summary>
+    [AvaloniaFact]
+    public void ARunThatWorkedKeepsItsWindowForItsOutput()
+    {
+        var dialog = new ToolRunDialog();
+
+        dialog.Show();
+
+        try
+        {
+            dialog.Report(new ToolProgressStep { Log = "copied foo.png" });
+            dialog.Finish("Sprites", 0);
+
+            Assert.True(dialog.IsVisible);
+            Assert.Equal("Sprites finished", Named<TextBlock>(dialog, "Stage").Text);
+            Assert.False(Named<ProgressBar>(dialog, "Meter").IsVisible);
+            Assert.False(Named<Alert>(dialog, "Failure").IsVisible);
+            Assert.False(Named<Button>(dialog, "CancelButton").IsVisible);
+            Assert.True(Named<Button>(dialog, "CloseButton").IsVisible);
+
+            var log = Named<Expander>(dialog, "Log");
+
+            Assert.True(log.IsExpanded);
+            Assert.Equal("copied foo.png", Opened(dialog).Text);
+        }
+        finally
+        {
+            dialog.Close();
+        }
+    }
+
     private static (ToolInputsDialog Window, ToolInputsViewModel Model) Shown(InstalledTool tool)
     {
         var model = new ToolInputsViewModel(tool, new Dictionary<string, string>(), workspaceRoot: null);
