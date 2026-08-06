@@ -127,5 +127,7 @@ public sealed class CustomOpenersTests : IDisposable
         };
 
         public string GetHomeDirectory() => home;
+
+        public IReadOnlyList<string> GetProcessCommand() => [];
     }
 }

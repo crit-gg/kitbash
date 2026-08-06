@@ -7,4 +7,10 @@ public interface IEnvironment
 
     /// <summary>The user's home directory.</summary>
     string GetHomeDirectory();
+
+    /// <summary>
+    /// How to run this program again, as the words before any argument of its own. Empty
+    /// when the path cannot be told, which is what a single file host can answer.
+    /// </summary>
+    IReadOnlyList<string> GetProcessCommand();
 }

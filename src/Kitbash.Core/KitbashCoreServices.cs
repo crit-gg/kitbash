@@ -155,6 +155,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IGitMerger, GitMerger>();
         services.TryAddSingleton<IGitBlobReader, GitBlobReader>();
         services.TryAddSingleton<IGitConflictReader, GitConflictReader>();
+        services.TryAddSingleton<IGitMergeDrivers, GitMergeDrivers>();
 
         return services;
     }

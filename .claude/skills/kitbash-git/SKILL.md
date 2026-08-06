@@ -52,6 +52,7 @@ The services, all from `AddKitbashGit`:
 | `IGitMerger` | merging a revision in, and what that would cost before it starts |
 | `IGitBlobReader` | one file whole, as a revision holds it |
 | `IGitConflictReader` | the three versions a conflict leaves, and settling one |
+| `IGitMergeDrivers` | telling one repository to merge some paths with a command of its own |
 | `IGitCloner`, `IGitUpdater`, `IGitStatusMonitor` | the launcher's own three |
 
 Porcelain v2, `git status --porcelain=v2 --branch --untracked-files=no`, is the format git
@@ -303,6 +304,38 @@ conflicts. Anything else is git refusing, which reads as `Unknown` rather than a
 `IsAncestorAsync` is `merge-base --is-ancestor`, the question that says a push cannot be
 refused. A revision that does not resolve is false, since a caller asking this is deciding
 whether to offer a button.
+
+### Telling a repository about a merge driver
+
+`IGitMergeDrivers` writes one, as `merge.<name>.name` and `merge.<name>.driver` in the
+config plus the patterns that claim it. Git substitutes `%O %A %B %L %P` and takes the file
+written to `%A` as the result, so a driver that exits zero has settled it and one that exits
+non zero leaves the path conflicted with whatever it wrote.
+
+**`%O`, `%A` and `%B` are randomly named temporary files with no extension.** `%P` is the
+only argument carrying the real path, so a driver deciding what a file is has to read that
+one. `%L` is the conflict marker size.
+
+**Both halves go under the git directory and neither is cloned.** The config is `--local`,
+and the patterns go in `info/attributes` rather than into a `.gitattributes` in the working
+tree, so opening a repository never puts a change in front of somebody that they did not
+make. Every clone has to be told again, and a teammate who was never told gets git's own
+text merge, which is the correct failure.
+
+**It is `--git-common-dir`, not `--absolute-git-dir`.** Git reads `info/attributes` from the
+directory a linked worktree shares, so writing beside the worktree's own would do nothing.
+
+**A pattern somebody else already claims is left alone.** `check-attr -z merge` is what says
+who has it, asked of git so an attributes file anywhere counts, and `unspecified` is the only
+answer that is free to take. `info/attributes` beats a `.gitattributes` in the tree, so
+writing without asking would quietly override what a team set for themselves.
+
+Measured on git 2.55, on Linux: a driver written and read back, a second call writing
+nothing, a changed command rewriting the config, a pattern held by `merge=binary` refused,
+a real merge of two branches running the driver, and a driver exiting one leaving the path
+unmerged with its own output in the working tree. **The driver command runs through a
+shell**, git's own, which on Windows is the one git ships. That half has not been executed
+here.
 
 ### Undoing a commit
 
