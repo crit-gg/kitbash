@@ -285,14 +285,25 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         var offered = offers.ToDictionary(offer => offer.Id.Value, StringComparer.Ordinal);
         var held = installed.Select(tool => tool.Id.Value).ToHashSet(StringComparer.Ordinal);
 
-        List<ToolCardViewModel> mine =
-        [
-            .. installed.Select(tool => new ToolCardViewModel(
+        // A script is its own section, since running one and opening an app are different
+        // things to want. One that is not installed stays under available, which answers
+        // what could be added rather than what can be run.
+        List<ToolCardViewModel> mine = [];
+        List<ToolCardViewModel> scripts = [];
+
+        foreach (var tool in installed)
+        {
+            var card = new ToolCardViewModel(
                 tool,
                 offered.GetValueOrDefault(tool.Id.Value),
                 InstallToolAsync,
-                menu: MenuFor(tool))),
-        ];
+                menu: MenuFor(tool))
+            {
+                IsCompact = tool.Manifest.IsScript,
+            };
+
+            (tool.Manifest.IsScript ? scripts : mine).Add(card);
+        }
 
         List<ToolCardViewModel> theirs =
         [
@@ -312,23 +323,36 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                 () => RefreshToolsAsync(refresh: true)));
         }
 
+        if (scripts.Count > 0)
+        {
+            groups.Add(new ToolGroupViewModel(
+                "SCRIPTS",
+                scripts,
+                offersUpdates: true,
+                () => RefreshToolsAsync(refresh: true))
+            {
+                Columns = 4,
+            });
+        }
+
         if (theirs.Count > 0)
         {
             groups.Add(new ToolGroupViewModel("AVAILABLE TO INSTALL", theirs, offersUpdates: false));
         }
 
-        // The page has no bar of its own, so its one action rides on the first heading.
+        // The page has no bar of its own, so its actions ride on the first heading.
         // Whichever group that is, since a person with nothing installed still needs it.
         if (groups.Count > 0)
         {
             groups[0].ShowsFolderInstall = true;
+            groups[0].ShowsCheck = mine.Count > 0 || scripts.Count > 0;
         }
 
         ToolGroups = groups;
 
         // The art follows the card rather than holding it up, since an offered tool's icon
         // is a download the first time anything asks for it.
-        _ = LoadIconsAsync([.. mine, .. theirs]);
+        _ = LoadIconsAsync([.. mine, .. scripts, .. theirs]);
     }
 
     /// <summary>

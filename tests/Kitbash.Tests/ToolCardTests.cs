@@ -15,13 +15,14 @@ using Kitbash.Views;
 namespace Kitbash.Tests;
 
 /// <summary>
-/// The card's tile, drawn for real out of the window's own template, so what is checked is
-/// the markup rather than a copy of it made here.
+/// The card, drawn for real out of the window's own template, so what is checked is the
+/// markup rather than a copy of it made here.
 /// </summary>
-public sealed class ToolIconTileTests
+public sealed class ToolCardTests
 {
-    /// <summary>The tile's size, which the markup pins.</summary>
+    /// <summary>The tile's size on each card, which the markup pins.</summary>
     private const int Tile = 40;
+    private const int ScriptTile = 32;
 
     [AvaloniaFact]
     public void ATileWithNoIconDrawsTheLetter()
@@ -45,19 +46,55 @@ public sealed class ToolIconTileTests
     [AvaloniaFact]
     public void TheIconIsClippedToTheRoundedTile()
     {
-        var card = Card(Filled(Colors.Red));
+        Clipped(Card(Filled(Colors.Red)), Tile);
+    }
+
+    /// <summary>The smaller tile a script card carries clips the same way.</summary>
+    [AvaloniaFact]
+    public void TheScriptCardClipsItsIconToo()
+    {
+        Clipped(Card(Filled(Colors.Red), script: true), ScriptTile);
+    }
+
+    /// <summary>
+    /// A script is run and gone, so its card drops the description floor and the promoted
+    /// actions. Half is the point of a separate section, not an incidental few pixels.
+    /// </summary>
+    [AvaloniaFact]
+    public void AScriptCardIsHalfTheHeightOfAToolCard()
+    {
+        var full = Card_(Draw(Card(icon: null))).Bounds.Height;
+        var compact = Card_(Draw(Card(icon: null, script: true))).Bounds.Height;
+
+        Assert.True(compact <= full / 2, $"a script card is {compact} and a tool card is {full}");
+    }
+
+    /// <summary>The lead button says what pressing it does, and for a script that is Run.</summary>
+    [AvaloniaFact]
+    public void AScriptCardLeadsWithRun()
+    {
+        var card = Card(icon: null, script: true);
+
+        Assert.Equal("Run", card.LaunchLabel);
+        Assert.Contains(
+            Draw(card).GetLogicalDescendants().OfType<Button>(),
+            button => button.IsVisible && Equals(button.Content, "Run"));
+    }
+
+    private static void Clipped(ToolCardViewModel card, int side)
+    {
         var page = Draw(card);
 
         Assert.True(card.HasIcon);
 
-        var drawn = Pixels(page, Tile_(page));
+        var drawn = Pixels(page, Tile_(page, side));
 
         // Inside the curve is the icon and the corner is not, whatever the tile drew there.
-        Assert.Equal(Colors.Red, drawn[Tile / 2, Tile / 2]);
+        Assert.Equal(Colors.Red, drawn[side / 2, side / 2]);
         Assert.NotEqual(Colors.Red, drawn[2, 2]);
-        Assert.NotEqual(Colors.Red, drawn[Tile - 3, 2]);
-        Assert.NotEqual(Colors.Red, drawn[2, Tile - 3]);
-        Assert.NotEqual(Colors.Red, drawn[Tile - 3, Tile - 3]);
+        Assert.NotEqual(Colors.Red, drawn[side - 3, 2]);
+        Assert.NotEqual(Colors.Red, drawn[2, side - 3]);
+        Assert.NotEqual(Colors.Red, drawn[side - 3, side - 3]);
     }
 
     /// <summary>The letter goes when there is art, so the two never draw over each other.</summary>
@@ -99,8 +136,11 @@ public sealed class ToolIconTileTests
         return built;
     }
 
-    /// <summary>The bordered tile itself, found from the border that does the clipping.</summary>
-    private static Border Tile_(Control drawn)
+    /// <summary>
+    /// The bordered tile itself, found from the border that does the clipping. The clip sits
+    /// inside the tile's own one pixel stroke, which is what its radius is a step under.
+    /// </summary>
+    private static Border Tile_(Control drawn, int side)
     {
         var clip = Assert.Single(
             drawn.GetVisualDescendants().OfType<Border>(),
@@ -108,10 +148,18 @@ public sealed class ToolIconTileTests
 
         Assert.True(clip.ClipToBounds);
         Assert.Equal(new CornerRadius(7), clip.CornerRadius);
-        Assert.Equal(new Size(38, 38), clip.Bounds.Size);
+        Assert.Equal(new Size(side - 2, side - 2), clip.Bounds.Size);
 
-        return clip.GetVisualAncestors().OfType<Border>().First(border => border.Classes.Contains("toolMark"));
+        var tile = clip.GetVisualAncestors().OfType<Border>().First(border => border.Classes.Contains("toolMark"));
+
+        Assert.Equal(new Size(side, side), tile.Bounds.Size);
+
+        return tile;
     }
+
+    /// <summary>The card itself, whichever of the two templates drew it.</summary>
+    private static Border Card_(Control drawn) =>
+        Assert.Single(drawn.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("toolCard"));
 
     /// <summary>
     /// The tile as drawn, indexed by column and row. The whole page is what gets rendered
@@ -120,8 +168,7 @@ public sealed class ToolIconTileTests
     /// </summary>
     private static Colour[,] Pixels(Control page, Border tile)
     {
-        Assert.Equal(new Size(Tile, Tile), tile.Bounds.Size);
-
+        var side = (int)tile.Bounds.Width;
         var size = new PixelSize((int)page.Bounds.Width, (int)page.Bounds.Height);
         var origin = tile.TranslatePoint(new Point(0, 0), page);
 
@@ -145,11 +192,11 @@ public sealed class ToolIconTileTests
             handle.Free();
         }
 
-        var drawn = new Colour[Tile, Tile];
+        var drawn = new Colour[side, side];
 
-        for (var y = 0; y < Tile; y++)
+        for (var y = 0; y < side; y++)
         {
-            for (var x = 0; x < Tile; x++)
+            for (var x = 0; x < side; x++)
             {
                 var at = (((int)origin!.Value.Y + y) * stride) + (((int)origin.Value.X + x) * 4);
 
@@ -175,7 +222,8 @@ public sealed class ToolIconTileTests
         return target;
     }
 
-    private static ToolCardViewModel Card(Bitmap? icon)
+    /// <param name="script">A script, which is what the compact card is drawn for.</param>
+    private static ToolCardViewModel Card(Bitmap? icon, bool script = false)
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
         Assert.True(ToolVersion.TryParse("1.0.0", out var version));
@@ -183,7 +231,7 @@ public sealed class ToolIconTileTests
         var payload = new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run");
 
         var manifest = new ToolManifest(
-            1,
+            script ? 2 : 1,
             id.Name,
             "Foundry",
             "A tool",
@@ -191,11 +239,13 @@ public sealed class ToolIconTileTests
             "foundry.png",
             version,
             Required: false,
-            [payload]);
+            [payload],
+            script ? ToolKind.Script : ToolKind.App);
 
         return new ToolCardViewModel(new InstalledTool(id, version, "/tools/foundry", manifest, payload), null)
         {
             Icon = icon,
+            IsCompact = script,
         };
     }
 

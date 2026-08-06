@@ -11,6 +11,7 @@ namespace Kitbash.ViewModels;
 public partial class ToolGroupViewModel : ObservableObject
 {
     private readonly Func<Task>? _check;
+    private readonly bool _offersUpdates;
 
     [ObservableProperty]
     private bool _isChecking;
@@ -25,7 +26,7 @@ public partial class ToolGroupViewModel : ObservableObject
 
         Label = label;
         Tools = tools;
-        ShowsCheck = offersUpdates;
+        _offersUpdates = offersUpdates;
         _check = check;
 
         foreach (var tool in tools)
@@ -38,8 +39,16 @@ public partial class ToolGroupViewModel : ObservableObject
 
     public IReadOnlyList<ToolCardViewModel> Tools { get; }
 
-    /// <summary>Only the installed group can check for or apply updates.</summary>
-    public bool ShowsCheck { get; }
+    /// <summary>
+    /// How many cards fit across. A compact card is narrower, so its group fits more.
+    /// </summary>
+    public int Columns { get; init; } = 3;
+
+    /// <summary>
+    /// Checking asks every repository, so one heading carries it for the whole page rather
+    /// than each installed group carrying its own.
+    /// </summary>
+    public bool ShowsCheck { get; set; }
 
     /// <summary>
     /// Whether this heading carries the page's own action. Set on the first group before
@@ -48,7 +57,7 @@ public partial class ToolGroupViewModel : ObservableObject
     public bool ShowsFolderInstall { get; set; }
 
     /// <summary>Drawn only while something is pending, so an up to date group is quiet.</summary>
-    public bool ShowsUpdateAll => ShowsCheck && Pending.Count > 0;
+    public bool ShowsUpdateAll => _offersUpdates && Pending.Count > 0;
 
     public string UpdateAllLabel => $"Update all ({Pending.Count})";
 

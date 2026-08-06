@@ -469,10 +469,12 @@
                                             <ItemsControl ItemsSource="{Binding Tools}" Margin="0,0,-9,-9">
                                                 <ItemsControl.ItemsPanel>
                                                     <ItemsPanelTemplate>
-                                                        <UniformGrid Columns="3" />
+                                                        <UniformGrid Columns="{Binding Columns}" />
                                                     </ItemsPanelTemplate>
                                                 </ItemsControl.ItemsPanel>
                                                 <ItemsControl.ItemTemplate>
+                                                  <views:ToolCardTemplates>
+                                                    <views:ToolCardTemplates.Full>
                                                     <DataTemplate x:DataType="vm:ToolCardViewModel">
                                                         <Border Classes="toolCard" MinHeight="226" Margin="0,0,9,9">
                                                             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="11">
@@ -624,6 +626,123 @@
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
+                                                    </views:ToolCardTemplates.Full>
+
+                                                    <!-- The script card. A script is run rather
+                                                         than opened, so it carries one line of
+                                                         description, no promoted actions and no
+                                                         floor under the card. -->
+                                                    <views:ToolCardTemplates.Compact>
+                                                    <DataTemplate x:DataType="vm:ToolCardViewModel">
+                                                        <Border Classes="toolCard" Padding="11" Margin="0,0,9,9">
+                                                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="9">
+                                                                <Grid Grid.Row="0" ColumnDefinitions="32,*,Auto"
+                                                                      ColumnSpacing="10">
+                                                                    <Border Grid.Column="0" Classes="toolMark"
+                                                                            Classes.available="{Binding !IsInstalled}"
+                                                                            Width="32" Height="32">
+                                                                        <Panel>
+                                                                            <TextBlock Text="{Binding Mark}"
+                                                                                       IsVisible="{Binding !HasIcon}"
+                                                                                       HorizontalAlignment="Center"
+                                                                                       VerticalAlignment="Center"
+                                                                                       FontSize="{DynamicResource FontSizeSubhead}"
+                                                                                       FontWeight="{DynamicResource FontWeightStrong}" />
+
+                                                                            <Border Name="ToolIconClip"
+                                                                                    ClipToBounds="True"
+                                                                                    IsVisible="{Binding HasIcon}"
+                                                                                    CornerRadius="{DynamicResource RadiusSurfaceInside}">
+                                                                                <Image Source="{Binding Icon}"
+                                                                                       Stretch="UniformToFill" />
+                                                                            </Border>
+                                                                        </Panel>
+                                                                    </Border>
+
+                                                                    <StackPanel Grid.Column="1"
+                                                                                VerticalAlignment="Center">
+                                                                        <TextBlock Classes="toolName"
+                                                                                   Classes.available="{Binding !IsInstalled}"
+                                                                                   Text="{Binding Name}"
+                                                                                   FontSize="{DynamicResource FontSizeSubhead}"
+                                                                                   FontWeight="{DynamicResource FontWeightStrong}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Classes="mono" Text="{Binding Version}"
+                                                                                   Margin="0,3,0,0"
+                                                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                                                   Foreground="{DynamicResource InkMuted}" />
+                                                                    </StackPanel>
+
+                                                                    <Button Grid.Column="2" Classes="icon"
+                                                                            VerticalAlignment="Top"
+                                                                            IsVisible="{Binding HasMenu}"
+                                                                            ToolTip.Tip="More"
+                                                                            AutomationProperties.Name="More"
+                                                                            Click="OnToolMenuClick">
+                                                                        <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                    </Button>
+                                                                </Grid>
+
+                                                                <TextBlock Grid.Row="1" Text="{Binding Description}"
+                                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           Foreground="{DynamicResource InkSecondary}" />
+
+                                                                <Grid Grid.Row="2">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="{Binding BarColumn}" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <Button Grid.Column="0" Margin="0,0,7,0"
+                                                                            Theme="{StaticResource CompactButton}"
+                                                                            IsVisible="{Binding ShowUpdate}"
+                                                                            Command="{Binding InstallCommand}">
+                                                                        <ui:Icon Glyph="ArrowBigDownLine"
+                                                                                 Size="{DynamicResource IconSizeField}"
+                                                                                 Foreground="{DynamicResource Warn}" />
+                                                                    </Button>
+
+                                                                    <Grid Grid.Column="1" Margin="0,0,7,0"
+                                                                          ColumnDefinitions="*,Auto" ColumnSpacing="9"
+                                                                          VerticalAlignment="Center"
+                                                                          IsVisible="{Binding IsUpdating}">
+                                                                        <ProgressBar Grid.Column="0"
+                                                                                     Value="{Binding Progress}"
+                                                                                     Foreground="{DynamicResource Warn}" />
+                                                                        <TextBlock Grid.Column="1" Classes="mono"
+                                                                                   Text="{Binding PercentLabel}"
+                                                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                                                   Foreground="{DynamicResource InkSecondary}" />
+                                                                    </Grid>
+
+                                                                    <Button Grid.Column="2" Classes="neutral"
+                                                                            Theme="{StaticResource CompactButton}"
+                                                                            HorizontalAlignment="Stretch"
+                                                                            Content="{Binding LaunchLabel}"
+                                                                            IsVisible="{Binding ShowLaunch}"
+                                                                            Click="OnLaunchToolClick" />
+
+                                                                    <Button Grid.Column="2"
+                                                                            Theme="{StaticResource CompactButton}"
+                                                                            HorizontalAlignment="Stretch"
+                                                                            Content="Install"
+                                                                            IsVisible="{Binding ShowInstall}"
+                                                                            Command="{Binding InstallCommand}" />
+
+                                                                    <Button Grid.Column="2" Classes="neutral"
+                                                                            Theme="{StaticResource CompactButton}"
+                                                                            HorizontalAlignment="Stretch"
+                                                                            Content="Update"
+                                                                            IsVisible="{Binding ShowUpdateLead}"
+                                                                            Command="{Binding InstallCommand}" />
+                                                                </Grid>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                    </views:ToolCardTemplates.Compact>
+                                                  </views:ToolCardTemplates>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
                                         </StackPanel>

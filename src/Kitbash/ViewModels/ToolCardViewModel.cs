@@ -56,6 +56,12 @@ public partial class ToolCardViewModel : ObservableObject
     /// <summary>Null when no repository is offering this tool.</summary>
     public OfferedTool? Offer { get; }
 
+    /// <summary>
+    /// The card is drawn small. A script has one button and nothing to describe at length,
+    /// so its own section fits more of them across.
+    /// </summary>
+    public bool IsCompact { get; init; }
+
     /// <summary>The letter on the card's tile, for a tool that supplies no icon.</summary>
     public string Mark => Name.Length == 0 ? "?" : Name[..1].ToUpperInvariant();
 

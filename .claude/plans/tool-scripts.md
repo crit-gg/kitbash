@@ -19,6 +19,17 @@ draws the form, runs the script, and reports what it writes over a modal.
 - `Kitbash/Views` grew `ToolInputsDialog` and `ToolRunDialog`, and
   `Kitbash/ViewModels` grew `ToolInputsViewModel` and `ToolInputRowViewModel`.
 - The card's lead button says Run rather than Launch for one.
+- **An installed script has its own section, SCRIPTS, and a card half the height.** Running
+  one and opening an app are different things to want, so they are two sections rather than
+  one list. Like every section it is drawn only when it holds something. A script nobody has
+  installed stays under AVAILABLE TO INSTALL, which answers what could be added rather than
+  what can be run, so that section never mixes card sizes.
+- The small card drops the description floor and the promoted actions and keeps the name,
+  the version, one line of description and the buttons. Four fit across where three of the
+  full card do. `ToolCardTemplates` is what picks between the two, off `IsCompact` on the
+  card, so the group a card lands in decides how it is drawn.
+- Checking for updates moved off the installed group and onto whichever heading is first,
+  since two installed sections would otherwise each draw their own Check for updates.
 
 ## Settled
 
