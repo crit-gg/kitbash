@@ -383,6 +383,12 @@ tool draws a window are not in it. A .NET tool takes `Kitbash.Core` and `Kitbash
 gets them for free, which is why those exist. Anything else reads a path and does as it
 likes.
 
+**The launcher can get out of the way once the tool is up.** `launcher.after.tool` is what
+every tool follows and `launcher.after.tools` holds the ones that differ, both on the
+Launcher settings page. The `kitbash-settings` skill has them. It follows a start that
+really happened, so a tool that would not start leaves the launcher up with its toast on
+screen. Nothing about it reaches the tool, which is told only which workspace is open.
+
 ## Updating
 
 **Checking is not installing.** Applying an update is a click, always. Checking is one

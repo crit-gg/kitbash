@@ -93,9 +93,9 @@ before the blank line and comment that introduce the next one.
 the file by position, so a row that did not change keeps its own comments and key order,
 a surplus block is removed and a new row is appended. A file already spelling it inline,
 as `a.b = [{ }]`, keeps that spelling, since writing blocks beside it would leave the key
-in the file twice and no later read could open it. `tools.repositories` and `tools.custom`
-are the two such keys, and `.claude/plans/tool-distribution.md` and
-`.claude/plans/external-tools.md` have what each holds.
+in the file twice and no later read could open it. `tools.repositories`, `tools.custom` and
+`launcher.after.tools` are the three such keys. `.claude/plans/tool-distribution.md` and
+`.claude/plans/external-tools.md` have what the first two hold.
 
 **A comment above a key is not owned by that key and is left where it is.** The scaffolded
 workspace file settles it: every setting there sits under a paragraph and a commented out
@@ -327,9 +327,15 @@ the writer's guard on undeclared keys is unaffected.
 **`SettingsEditorRow` is for a value no descriptor can describe**, which today means an
 array of tables. The app writes an `ISettingsEditor`, the row carries it, and the window
 draws it as content, so the app registers a `DataTemplate` for its own type in
-`App.axaml`. There are two, `Kitbash/ViewModels/ToolRepositoriesEditor` on
-`ToolRepositoriesSettingsSchema` and `Kitbash/ViewModels/CustomToolsEditor` on
-`CustomToolsSettingsSchema`, and the second was written by copying the first.
+`App.axaml`. There are three, `Kitbash/ViewModels/ToolRepositoriesEditor` on
+`ToolRepositoriesSettingsSchema`, `Kitbash/ViewModels/CustomToolsEditor` on
+`CustomToolsSettingsSchema` and `Kitbash/ViewModels/ToolActionsEditor` on
+`AfterLaunchSettingsSchema`, and each was written by copying the one before it.
+
+**An editor row can sit under a descriptor that it qualifies.** The Kitbash tool section is
+one setting and one editor: the default, then the tools that differ from it. The editor
+still counts as one change however much is staged inside it, so the unsaved count reads as
+one whichever tools were touched.
 
 **An editor owns its value and its file, and the writer never sees it.** It has no key, so
 `Descriptors` reports nothing for it and the guard on undeclared keys still holds. That is
@@ -368,7 +374,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
-| `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.externalTool`, the launcher's |
+| `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.tool`, `launcher.after.externalTool`, the launcher's, and `launcher.after.tools` **through an editor rather than a descriptor** |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
 | `CustomToolsSettingsSchema` | `tools.custom`, the launcher's, and through an editor too |
 
@@ -378,7 +384,7 @@ and the typed reader all live in `Kitbash/Settings` rather than beside the Godot
 Read them through `IAfterLaunchSettings`, which reads at every launch, so a change
 applies without a restart. The `kitbash-godot` skill has what each one follows.
 
-**The four are `AfterLaunchAction`, which is the first enum any setting stores.** Do
+**The five are `AfterLaunchAction`, which is the first enum any setting stores.** Do
 nothing, minimize or close, defaulting to do nothing, and each is drawn as a segmented row
 because a closed choice of three short labels derives one. An enum is stored by name and
 parsed back without regard to case, so a hand edited file reads the same whichever way it
@@ -395,6 +401,23 @@ the file already says taking the change off again.
 The external tool one follows the Open in menu, and only a program from it. Showing the
 workspace folder is not opening a tool, so that row applies nothing, and neither does a
 start that failed, which leaves the launcher up with its toast on screen.
+
+**A Kitbash tool can answer for itself, so that one is a default plus a list.**
+`launcher.after.tool` is the descriptor every tool follows and `launcher.after.tools` is an
+array of tables, one `id` and `action` per tool that differs, edited through
+`ToolActionsEditor`. A tool with no block follows the default, which is what
+`IAfterLaunchSettings.ForTool` resolves, and choosing Default again takes the block out
+rather than writing the default into it.
+
+**The editor lists the installed tools and writes the whole list.** A block naming a tool
+that is not installed has no row and is written back exactly as it was, so uninstalling a
+tool and putting it back keeps the answer. Stored blocks keep their positions, since the
+document writer matches blocks to rows by position and a file that did not change has to
+come back as it was. Measured headlessly: a row per installed tool by name, one pick
+staging one change and writing one block, Default taking the block out again, and an absent
+tool's block surviving a save that changed another tool. The editor's own markup is drawn
+in a window of its own, because the template that reaches it lives in `App.axaml` and a
+headless app does not load that.
 
 **A descriptor does not have to be on a page.** `updates.feed` is the first that is not:
 where releases come from is the app's answer rather than a person's, so its default is a

@@ -1,4 +1,5 @@
 using Kitbash.Core.Settings.Schema;
+using Kitbash.ViewModels;
 
 namespace Kitbash.Settings;
 
@@ -8,8 +9,10 @@ namespace Kitbash.Settings;
 /// </summary>
 public sealed class AfterLaunchSettingsSchema
 {
-    public AfterLaunchSettingsSchema()
+    public AfterLaunchSettingsSchema(ToolActionsEditor tools)
     {
+        ArgumentNullException.ThrowIfNull(tools);
+
         AfterProjectManager = Action(
             "launcher.after.projectManager",
             "After opening the project manager",
@@ -27,11 +30,24 @@ public sealed class AfterLaunchSettingsSchema
             "What Kitbash does once the project has started. A launch that failed or was "
             + "cancelled leaves it alone.");
 
+        AfterTool = Action(
+            "launcher.after.tool",
+            "After starting a tool",
+            "What Kitbash does once a tool has started, for every tool that says nothing "
+            + "of its own.");
+
         AfterExternalTool = Action(
             "launcher.after.externalTool",
             "After opening an external tool",
             "What Kitbash does once a tool from the Open in menu has started. Opening the "
             + "workspace folder is not one of them.");
+
+        ToolsThatDiffer = new SettingsEditorRow
+        {
+            Name = "Tools that differ",
+            Description = "Every tool installed here. Default follows the setting above.",
+            Editor = tools,
+        };
 
         Page = new SettingsPage
         {
@@ -43,7 +59,8 @@ public sealed class AfterLaunchSettingsSchema
                 new SettingsSection(
                     "After starting Godot",
                     [AfterProjectManager, AfterEditor, AfterPlay]),
-                new SettingsSection("After starting a tool", [AfterExternalTool]),
+                new SettingsSection("After starting a Kitbash tool", [AfterTool, ToolsThatDiffer]),
+                new SettingsSection("After opening an external tool", [AfterExternalTool]),
             ],
         };
     }
@@ -57,8 +74,14 @@ public sealed class AfterLaunchSettingsSchema
     /// <summary>Follows a project run rather than edited. A rebuild starts nothing, so it never follows.</summary>
     public SettingDescriptor<AfterLaunchAction> AfterPlay { get; }
 
+    /// <summary>Follows a tool the tools page starts, unless that tool has an answer of its own.</summary>
+    public SettingDescriptor<AfterLaunchAction> AfterTool { get; }
+
     /// <summary>Follows an editor, a terminal or a custom tool from the Open in menu.</summary>
     public SettingDescriptor<AfterLaunchAction> AfterExternalTool { get; }
+
+    /// <summary>The per tool answers, which are an array of tables rather than a setting.</summary>
+    public SettingsEditorRow ToolsThatDiffer { get; }
 
     public SettingsPage Page { get; }
 

@@ -1,6 +1,7 @@
 using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Openers;
 using Kitbash.Settings;
+using Kitbash.Tools;
 using Kitbash.Ui.Toasts;
 using Kitbash.ViewModels;
 
@@ -283,6 +284,10 @@ public sealed class OpenInRowTests
         public AfterLaunchAction AfterPlay => AfterLaunchAction.DoNothing;
 
         public AfterLaunchAction AfterExternalTool => externalTool;
+
+        public AfterLaunchAction AfterTool => AfterLaunchAction.DoNothing;
+
+        public AfterLaunchAction ForTool(ToolId id) => AfterLaunchAction.DoNothing;
     }
 
     private sealed class FakeAfterLaunchActions : IAfterLaunchActions

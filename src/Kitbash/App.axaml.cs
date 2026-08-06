@@ -193,6 +193,8 @@ public partial class App : Application
             .AddSingleton<UpdateSettingsSchema>()
             .AddSingleton<UpdateLog>()
             .AddSingleton<IApplicationUpdates, VelopackUpdates>()
+            .AddSingleton<ToolActionsEditor>()
+            .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
             .AddSingleton<LauncherSettingsSchema>()

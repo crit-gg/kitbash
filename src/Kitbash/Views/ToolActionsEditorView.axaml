@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kitbash.ViewModels"
+             xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+             x:Class="Kitbash.Views.ToolActionsEditorView"
+             x:DataType="vm:ToolActionsEditor"
+             x:CompileBindings="True">
+
+    <StackPanel Spacing="7">
+        <!-- A well, so the rows read as one list rather than as loose fields. Same fill
+             the read only lists on this page use. -->
+        <Border Background="{DynamicResource SurfaceRowAlt}"
+                BorderBrush="{DynamicResource LineControlOff}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource RadiusControl}"
+                Padding="7"
+                IsVisible="{Binding !IsEmpty}">
+            <ItemsControl ItemsSource="{Binding Rows}" ClipToBounds="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="6" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ToolActionRowViewModel">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Name}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       FontSize="{DynamicResource FontSizeBody}"
+                                       Foreground="{DynamicResource InkBody}" />
+
+                            <ui:Segmented Grid.Column="1"
+                                          IsEnabled="{Binding CanEdit}"
+                                          ItemsSource="{Binding Options}">
+                                <!-- The row reads which radio is checked, so the option
+                                     and its container answer each other rather than the
+                                     row being told twice. -->
+                                <ui:Segmented.Styles>
+                                    <Style Selector="RadioButton">
+                                        <Setter Property="IsChecked"
+                                                Value="{ReflectionBinding IsChosen, Mode=TwoWay}" />
+                                    </Style>
+                                </ui:Segmented.Styles>
+                                <ui:Segmented.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ToolActionOptionViewModel">
+                                        <TextBlock Text="{Binding Label}" />
+                                    </DataTemplate>
+                                </ui:Segmented.ItemTemplate>
+                            </ui:Segmented>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <TextBlock Text="No tools are installed, so there is nothing here to answer for itself."
+                   IsVisible="{Binding IsEmpty}"
+                   FontSize="{DynamicResource FontSizeBody}"
+                   Foreground="{DynamicResource InkMuted}" />
+
+        <TextBlock Text="A tool that was uninstalled keeps its answer for the day it comes back."
+                   TextWrapping="Wrap"
+                   FontSize="{DynamicResource FontSizeSmall}"
+                   Foreground="{DynamicResource InkMuted}" />
+    </StackPanel>
+</UserControl>

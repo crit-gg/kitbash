@@ -3,6 +3,8 @@ using Kitbash.Core.IO;
 using Kitbash.Core.Settings;
 using Kitbash.Core.Settings.Schema;
 using Kitbash.Settings;
+using Kitbash.Tools;
+using Kitbash.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kitbash.Tests;
@@ -13,6 +15,9 @@ namespace Kitbash.Tests;
 /// </summary>
 public sealed class AfterLaunchSettingsTests : IDisposable
 {
+    /// <summary>What the fake says is installed. Named the way a real id has to be.</summary>
+    private static readonly string[] InstalledIds = ["splice", "hoard"];
+
     private readonly string _root = Path.Combine(
         Path.GetTempPath(),
         $"kitbash-after-{Guid.NewGuid():N}");
@@ -20,17 +25,25 @@ public sealed class AfterLaunchSettingsTests : IDisposable
     private readonly ServiceProvider _services;
     private readonly AfterLaunchSettingsSchema _schema;
     private readonly IApplicationSettings _settings;
+    private readonly IAfterLaunchSettings _reader;
+    private readonly IAfterLaunchOverrides _overrides;
 
     public AfterLaunchSettingsTests()
     {
         _services = new ServiceCollection()
             .AddSingleton<IUserDirectories>(new FakeUserDirectories(_root))
             .AddKitbashApplicationStorage()
+            .AddSingleton<IInstalledTools>(new FakeInstalledTools(InstalledIds))
+            .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
+            .AddSingleton<ToolActionsEditor>()
             .AddSingleton<AfterLaunchSettingsSchema>()
+            .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
             .BuildServiceProvider();
 
         _schema = _services.GetRequiredService<AfterLaunchSettingsSchema>();
         _settings = _services.GetRequiredService<IApplicationSettings>();
+        _reader = _services.GetRequiredService<IAfterLaunchSettings>();
+        _overrides = _services.GetRequiredService<IAfterLaunchOverrides>();
     }
 
     public void Dispose()
@@ -106,6 +119,72 @@ public sealed class AfterLaunchSettingsTests : IDisposable
             offered.Select(choice => choice.Value));
 
         Assert.Equal(SettingEditor.Segment, _schema.AfterEditor.Editor);
+    }
+
+    /// <summary>A tool with no row of its own is what the default is for.</summary>
+    [Fact]
+    public void AToolWithNoRowFollowsTheDefault()
+    {
+        Write(_schema.AfterTool.Key, AfterLaunchAction.Minimize);
+
+        Assert.Equal(AfterLaunchAction.Minimize, _reader.ForTool(Id("splice")));
+    }
+
+    /// <summary>A tool with a row answers for itself, and only for itself.</summary>
+    [Fact]
+    public void AToolWithARowAnswersForItself()
+    {
+        Write(_schema.AfterTool.Key, AfterLaunchAction.Minimize);
+        _overrides.Write([new AfterLaunchOverride(Id("splice"), AfterLaunchAction.Close)]);
+
+        Assert.Equal(AfterLaunchAction.Close, _reader.ForTool(Id("splice")));
+        Assert.Equal(AfterLaunchAction.Minimize, _reader.ForTool(Id("hoard")));
+    }
+
+    /// <summary>The list is written as blocks, with the action spelled out the same way.</summary>
+    [Fact]
+    public void TheListIsWrittenAsTables()
+    {
+        _overrides.Write([new AfterLaunchOverride(Id("splice"), AfterLaunchAction.Close)]);
+
+        var text = File.ReadAllText(SettingsFile);
+
+        Assert.Contains("[[launcher.after.tools]]", text, StringComparison.Ordinal);
+        Assert.Contains("id = \"splice\"", text, StringComparison.Ordinal);
+        Assert.Contains("action = \"Close\"", text, StringComparison.Ordinal);
+
+        Assert.Equal(
+            [new AfterLaunchOverride(Id("splice"), AfterLaunchAction.Close)],
+            _overrides.Read());
+    }
+
+    /// <summary>A hand written block is read, and a row that makes no sense is skipped.</summary>
+    [Fact]
+    public void AHandWrittenBlockIsReadAndNonsenseIsSkipped()
+    {
+        WriteFile("""
+            [[launcher.after.tools]]
+            id = "splice"
+            action = "minimize"
+
+            [[launcher.after.tools]]
+            id = "hoard"
+            action = "quit"
+
+            [[launcher.after.tools]]
+            action = "Close"
+            """);
+
+        Assert.Equal(
+            [new AfterLaunchOverride(Id("splice"), AfterLaunchAction.Minimize)],
+            _overrides.Read());
+    }
+
+    private static ToolId Id(string value)
+    {
+        Assert.True(ToolId.TryParse(value, out var id));
+
+        return id;
     }
 
     private string SettingsFile =>

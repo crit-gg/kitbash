@@ -443,6 +443,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         try
         {
             await Task.Run(() => _starter.Start(tool, workspace)).ConfigureAwait(true);
+
+            // Only once the tool really started, so a start that failed leaves the
+            // launcher up with its toast on screen.
+            _actions.Apply(_afterLaunch.ForTool(tool.Id));
         }
         catch (ProcessStartException exception)
         {

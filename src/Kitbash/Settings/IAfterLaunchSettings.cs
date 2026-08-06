@@ -1,3 +1,5 @@
+using Kitbash.Tools;
+
 namespace Kitbash.Settings;
 
 /// <summary>
@@ -17,4 +19,10 @@ public interface IAfterLaunchSettings
 
     /// <summary>Once a tool from the Open in menu is running.</summary>
     AfterLaunchAction AfterExternalTool { get; }
+
+    /// <summary>Once a Kitbash tool is running, for every tool that says nothing itself.</summary>
+    AfterLaunchAction AfterTool { get; }
+
+    /// <summary>This tool's own answer, and <see cref="AfterTool"/> when it has none.</summary>
+    AfterLaunchAction ForTool(ToolId id);
 }
