@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using Kitbash.Tools;
 using Kitbash.Ui.Controls;
@@ -13,10 +15,14 @@ public partial class ToolRunDialog : DialogWindow
     /// <summary>How many lines the log keeps. A script that writes more loses the oldest.</summary>
     private const int KeptLines = 500;
 
+    /// <summary>How long the button says Copied before it goes back to its own word.</summary>
+    private static readonly TimeSpan Confirmation = TimeSpan.FromMilliseconds(1400);
+
     private readonly CancellationTokenSource _cancellation = new();
     private readonly Queue<string> _lines = new();
 
     private bool _refreshing;
+    private bool _copying;
 
     /// <summary>
     /// The generated InitializeComponent, since that is what assigns the named fields.
@@ -26,6 +32,7 @@ public partial class ToolRunDialog : DialogWindow
         InitializeComponent();
 
         CloseButton.Click += (_, _) => Close(false);
+        CopyButton.Click += async (_, _) => await CopyAsync();
         Log.PropertyChanged += (_, e) =>
         {
             if (e.Property == Expander.IsExpandedProperty)
@@ -143,8 +150,7 @@ public partial class ToolRunDialog : DialogWindow
     /// The script ended and the window is being kept. The bar and Cancel go, the log
     /// opens, and the one button left closes the window.
     /// </summary>
-    /// <param name="exitCode">Zero for a run that worked, which only says so here when
-    /// the script wrote something worth reading.</param>
+    /// <param name="exitCode">Zero for a run that worked, which is kept only for its log.</param>
     public void Finish(string subject, int exitCode)
     {
         var worked = exitCode == 0;
@@ -173,6 +179,37 @@ public partial class ToolRunDialog : DialogWindow
     }
 
     /// <summary>
+    /// Puts the whole log on the clipboard and says so on the button for a moment. What
+    /// lands is what the log holds, so a script that wrote past the limit is short of its
+    /// oldest lines here too.
+    /// </summary>
+    private async Task CopyAsync()
+    {
+        if (_copying || TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
+        {
+            return;
+        }
+
+        _copying = true;
+
+        try
+        {
+            // Avalonia 12 replaced SetTextAsync with a format and a value.
+            await clipboard.SetValueAsync(DataFormat.Text, string.Join(Environment.NewLine, _lines));
+
+            CopyButton.Content = "Copied";
+
+            await Task.Delay(Confirmation);
+
+            CopyButton.Content = "Copy details";
+        }
+        finally
+        {
+            _copying = false;
+        }
+    }
+
+    /// <summary>
     /// Keeps the line and asks for one redraw. A script can write faster than the screen
     /// can follow, so the text is rebuilt when the thread is next idle rather than per line.
     /// </summary>
@@ -186,6 +223,7 @@ public partial class ToolRunDialog : DialogWindow
         }
 
         Log.IsVisible = true;
+        CopyButton.IsVisible = true;
 
         if (_refreshing || !Log.IsExpanded)
         {
@@ -206,7 +244,11 @@ public partial class ToolRunDialog : DialogWindow
         }
 
         LogText.Text = string.Join(Environment.NewLine, _lines);
-        LogScroll.ScrollToEnd();
+
+        // The newest line is what is followed, so the offset moves down its own axis
+        // alone. ScrollToEnd also goes hard left, which takes back a sideways scroll
+        // every time the script writes.
+        LogScroll.Offset = LogScroll.Offset.WithY(double.PositiveInfinity);
     }
 
     /// <summary>

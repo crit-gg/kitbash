@@ -183,6 +183,18 @@ has nothing to read, so its modal closes.
 line. A script can write faster than a screen can follow, and the text is only built at all
 while Details is open.
 
+**A line is never folded onto the next one.** A script writes lines and a wrapped one reads
+as two, so a long line runs off the side and the log scrolls both ways. Following the newest
+line moves down alone, since taking somebody back to the left edge every time the script
+writes would make reading sideways impossible. Measured: with the offset put at 200 across,
+a new line leaves it there and still lands on the last line.
+
+**Copy details is in the footer, hard left away from the decision**, the same shape
+`ui:ErrorDialog` and `LaunchFailedDialog` use, and it says Copied for 1.4 seconds after a
+press. It appears with the first line and stays whether or not Details is open, so the whole
+log is one press away at any point in a run. What lands is what the log holds, so a script
+that wrote past 500 lines is short of its oldest ones there too.
+
 **Nothing about a script tool reaches `launcher.after.tool`.** Getting out of the way
 follows a program that outlives the launcher, and a script does not, so the setting is not
 consulted and the launcher stays where it is.
@@ -220,7 +232,7 @@ drawing them.
 
 ## What was measured
 
-On this machine, Linux, 116 checks in `tests/Kitbash.Tests`.
+On this machine, Linux, 118 checks in `tests/Kitbash.Tests`.
 
 **Real scripts, started by the real runner over the real process runner**: both report
 forms arriving in order, a plain line becoming a log line, standard error arriving marked,
@@ -233,7 +245,9 @@ rather than failing quietly.
 disabled while a required answer is missing and enabled once it is typed, a folder input
 being a path field whose value reaches the arguments, the modal drawing every part of a
 step and leaving alone what a step does not mention, the spinner coming back, the log
-appearing with its first line and filling in when it is opened, a failed run keeping
+appearing with its first line and filling in when it is opened, a long line scrolling
+sideways rather than wrapping and staying where it was scrolled to as more arrive, the whole
+log landing on the clipboard in one press, a failed run keeping
 its window with Cancel gone, the code said and the log open, and a run that worked and
 wrote something keeping its window with nothing marked wrong about it.
 

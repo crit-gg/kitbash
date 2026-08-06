@@ -2,6 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Kitbash.Tools;
 using Kitbash.Ui.Controls;
@@ -224,6 +227,93 @@ public sealed class ToolScriptDialogTests
 
             Assert.True(log.IsExpanded);
             Assert.Equal("that did not work", Opened(dialog).Text);
+        }
+        finally
+        {
+            dialog.Close();
+        }
+    }
+
+    /// <summary>
+    /// A line longer than the window runs off the side and is scrolled to, rather than
+    /// being folded onto the next line.
+    /// </summary>
+    [AvaloniaFact]
+    public void ALongLineScrollsSidewaysRatherThanWrapping()
+    {
+        var dialog = new ToolRunDialog();
+
+        dialog.Show();
+
+        try
+        {
+            dialog.Report(new ToolProgressStep { Log = new string('x', 400) });
+
+            Named<Expander>(dialog, "Log").IsExpanded = true;
+
+            var text = Opened(dialog);
+            var scroll = Named<ScrollViewer>(dialog, "LogScroll");
+
+            Assert.Equal(TextWrapping.NoWrap, text.TextWrapping);
+            Assert.True(
+                scroll.Extent.Width > scroll.Viewport.Width,
+                $"The line fitted: {scroll.Extent.Width} inside {scroll.Viewport.Width}.");
+
+            // And a line arriving while somebody is reading sideways does not take them
+            // back to the left edge, though it is still followed downwards.
+            for (var line = 0; line < 40; line++)
+            {
+                dialog.Report(new ToolProgressStep { Log = $"line {line}" });
+            }
+
+            Pump(dialog);
+
+            scroll.Offset = scroll.Offset.WithX(200);
+
+            dialog.Report(new ToolProgressStep { Log = "one more" });
+
+            Pump(dialog);
+
+            Assert.Equal(200, scroll.Offset.X);
+            Assert.Equal(scroll.Extent.Height - scroll.Viewport.Height, scroll.Offset.Y);
+        }
+        finally
+        {
+            dialog.Close();
+        }
+    }
+
+    /// <summary>
+    /// The copy button appears with the first line and puts the whole log on the
+    /// clipboard, which is one press from anywhere in the run.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task TheWholeLogCopiesInOnePress()
+    {
+        var dialog = new ToolRunDialog();
+
+        dialog.Show();
+
+        try
+        {
+            var copy = Named<Button>(dialog, "CopyButton");
+
+            Assert.False(copy.IsVisible);
+
+            dialog.Report(new ToolProgressStep { Log = "copied foo.png" });
+            dialog.Report(new ToolProgressStep { Log = "copied bar.png" });
+
+            Assert.True(copy.IsVisible);
+
+            copy.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+
+            Pump(dialog);
+
+            using var held = await dialog.Clipboard!.TryGetDataAsync();
+
+            Assert.Equal(
+                $"copied foo.png{Environment.NewLine}copied bar.png",
+                await held!.TryGetValueAsync(DataFormat.Text));
         }
         finally
         {

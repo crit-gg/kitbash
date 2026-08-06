@@ -29,12 +29,17 @@
 
             <ui:Alert Name="Failure" Margin="0,12,0,0" Tier="Error" IsVisible="False" />
 
+            <!-- A script writes lines rather than prose, so a long one runs off the side
+                 and is scrolled to rather than folded onto the next line. -->
             <Expander Name="Log" Header="Details" Margin="0,12,0,0" IsVisible="False">
-                <ScrollViewer Name="LogScroll" MaxHeight="180">
+                <ScrollViewer Name="LogScroll" MaxHeight="180"
+                              HorizontalScrollBarVisibility="Auto"
+                              ui:ScrollLane.Kind="Tracked">
                     <SelectableTextBlock Name="LogText"
                                          FontFamily="{DynamicResource FontFamilyMono}"
                                          FontSize="{DynamicResource FontSizeSmall}"
-                                         Foreground="{DynamicResource InkSecondary}" />
+                                         Foreground="{DynamicResource InkSecondary}"
+                                         TextWrapping="NoWrap" />
                 </ScrollViewer>
             </Expander>
 
@@ -47,12 +52,18 @@
         </StackPanel>
 
         <!-- No primary while work runs. A run that failed has nothing left to do, so its
-             one button closes and carries no role either. -->
-        <ui:DialogFooter Grid.Row="2">
-            <Panel>
-                <Button Name="CancelButton" Content="Cancel" ui:Dialog.Role="Cancel" />
-                <Button Name="CloseButton" Content="Close" IsVisible="False" />
-            </Panel>
+             one button closes and carries no role either. Copying is a utility, so it sits
+             hard left away from the decision. -->
+        <ui:DialogFooter Grid.Row="2" HorizontalContentAlignment="Stretch">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Name="CopyButton" Classes="ghost"
+                        Content="Copy details" IsVisible="False" />
+
+                <Panel Grid.Column="2">
+                    <Button Name="CancelButton" Content="Cancel" ui:Dialog.Role="Cancel" />
+                    <Button Name="CloseButton" Content="Close" IsVisible="False" />
+                </Panel>
+            </Grid>
         </ui:DialogFooter>
     </Grid>
 </ui:DialogWindow>
