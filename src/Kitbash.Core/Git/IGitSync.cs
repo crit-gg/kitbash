@@ -102,9 +102,36 @@ public interface IGitSync
     Task<IReadOnlyList<string>> ReadRemotesAsync(
         string root, CancellationToken cancellation = default);
 
+    /// <summary>
+    /// What a remote says the named branches point at, over the wire and with no objects
+    /// transferred, so a repository of any size can be asked often.
+    /// </summary>
+    /// <param name="branches">Branch names with no ref prefix. Empty asks nothing.</param>
+    /// <param name="limit">
+    /// How long to wait. This runs behind a person rather than in front of one, so it gives
+    /// up sooner than the network limit every other call takes.
+    /// </param>
+    Task<GitRemoteTips> ReadRemoteTipsAsync(
+        string root,
+        string remote,
+        IReadOnlyList<string> branches,
+        TimeSpan? limit = null,
+        CancellationToken cancellation = default);
+
     /// <summary>Brings the remote tracking refs up to date without touching any branch.</summary>
     Task<GitSyncResult> FetchAsync(
         string root, string? remote = null, CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Brings one branch's tracking ref up to date and nothing else. A repository whose
+    /// objects are large is why this exists, since catching up on one branch should not
+    /// bring down every other.
+    /// </summary>
+    Task<GitSyncResult> FetchBranchAsync(
+        string root,
+        string remote,
+        string branch,
+        CancellationToken cancellation = default);
 
     Task<GitSyncResult> PushAsync(
         string root, GitPushRequest? request = null, CancellationToken cancellation = default);

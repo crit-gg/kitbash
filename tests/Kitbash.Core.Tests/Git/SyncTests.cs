@@ -258,4 +258,124 @@ public class SyncTests
 
         Assert.Equal(["backup", "origin"], remotes);
     }
+
+    // The whole point of asking this way: the answer arrives without the objects behind it,
+    // so a client can ask often and a repository of any size can afford it.
+    [Fact]
+    public async Task TheRemoteTipIsReadWithoutTakingTheCommitItNames()
+    {
+        var (remote, local) = Pair();
+        using var _ = remote;
+        using var __ = local;
+        Assert.SkipUnless(local.HasGit, "no git on this machine");
+
+        using var other = Second(remote);
+        other.Commit("someone else got there first", ("theirs.txt", "theirs\n"));
+        other.Git("push", "origin", "main");
+
+        var tips = await local.Sync.ReadRemoteTipsAsync(local.Root, "origin", ["main"], null, Stop);
+
+        Assert.True(tips.Reached);
+
+        var tip = Assert.IsType<string>(tips.Tip("main"));
+
+        Assert.Equal(40, tip.Length);
+
+        // The commit is named and is not here, which is what says nothing came down with it.
+        Assert.False(await local.Refs.ExistsAsync(local.Root, tip, Stop));
+    }
+
+    [Fact]
+    public async Task SeveralBranchesComeBackFromOneAsk()
+    {
+        var (remote, local) = Pair();
+        using var _ = remote;
+        using var __ = local;
+        Assert.SkipUnless(local.HasGit, "no git on this machine");
+
+        local.Git("switch", "-c", "feature");
+        local.Commit("on the branch", ("two.txt", "two\n"));
+        local.Git("push", "origin", "feature");
+
+        var tips = await local.Sync
+            .ReadRemoteTipsAsync(local.Root, "origin", ["main", "feature", "nothing"], null, Stop);
+
+        Assert.NotNull(tips.Tip("main"));
+        Assert.NotNull(tips.Tip("feature"));
+
+        // A branch the remote does not have is absent rather than an error, since a branch
+        // nobody has pushed yet is the ordinary case.
+        Assert.Null(tips.Tip("nothing"));
+    }
+
+    // Reached and holding nothing has to be told apart from not answering at all, since one
+    // means there is no such branch and the other means we do not know.
+    [Fact]
+    public async Task ARemoteThatCannotBeAskedIsNotTheSameAsOneWithNothingOnIt()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", Path.Combine(repository.Root, "nowhere"));
+
+        var tips = await repository.Sync
+            .ReadRemoteTipsAsync(repository.Root, "origin", ["main"], null, Stop);
+
+        Assert.False(tips.Reached);
+        Assert.Null(tips.Tip("main"));
+    }
+
+    [Fact]
+    public async Task OneBranchIsFetchedAndTheOthersAreLeftWhereTheyWere()
+    {
+        var (remote, local) = Pair();
+        using var _ = remote;
+        using var __ = local;
+        Assert.SkipUnless(local.HasGit, "no git on this machine");
+
+        using var other = Second(remote);
+
+        other.Commit("on main", ("theirs.txt", "theirs\n"));
+        other.Git("push", "origin", "main");
+
+        other.Git("switch", "-c", "elsewhere");
+        other.Commit("on another branch", ("other.txt", "other\n"));
+        other.Git("push", "origin", "elsewhere");
+
+        var fetched = await local.Sync.FetchBranchAsync(local.Root, "origin", "main", Stop);
+
+        Assert.True(fetched.Succeeded);
+        Assert.True(await local.Refs.ExistsAsync(local.Root, "refs/remotes/origin/main", Stop));
+        Assert.False(await local.Refs.ExistsAsync(local.Root, "refs/remotes/origin/elsewhere", Stop));
+    }
+
+    // A branch somebody rewrote upstream still updates here, which is what the plus on git's
+    // own default refspec is for. Without it the tracking ref would stay where it was.
+    [Fact]
+    public async Task ABranchRewrittenUpstreamStillUpdatesHere()
+    {
+        var (remote, local) = Pair();
+        using var _ = remote;
+        using var __ = local;
+        Assert.SkipUnless(local.HasGit, "no git on this machine");
+
+        using var other = Second(remote);
+        other.Commit("first", ("theirs.txt", "theirs\n"));
+        other.Git("push", "origin", "main");
+
+        await local.Sync.FetchBranchAsync(local.Root, "origin", "main", Stop);
+
+        var before = local.Git("rev-parse", "refs/remotes/origin/main").Trim();
+
+        other.Git("reset", "--hard", "HEAD~1");
+        other.Commit("rewritten", ("different.txt", "different\n"));
+        other.Git("push", "--force", "origin", "main");
+
+        var fetched = await local.Sync.FetchBranchAsync(local.Root, "origin", "main", Stop);
+
+        Assert.True(fetched.Succeeded);
+
+        Assert.NotEqual(before, local.Git("rev-parse", "refs/remotes/origin/main").Trim());
+    }
 }

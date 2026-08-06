@@ -23,6 +23,87 @@ public sealed class GitSync : IGitSync
         return result.Succeeded ? result.Lines : [];
     }
 
+    /// <summary>How long a passive ask waits before it is treated as unreachable.</summary>
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(20);
+
+    public async Task<GitRemoteTips> ReadRemoteTipsAsync(
+        string root,
+        string remote,
+        IReadOnlyList<string> branches,
+        TimeSpan? limit = null,
+        CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(remote);
+        ArgumentNullException.ThrowIfNull(branches);
+
+        if (branches.Count == 0)
+        {
+            return new GitRemoteTips(true, new Dictionary<string, string>(StringComparer.Ordinal));
+        }
+
+        // --refs drops the peeled tag lines, and naming the refs in full means a branch
+        // called something a pattern would match cannot bring another one back with it.
+        var arguments = new List<string> { "ls-remote", "--refs", remote };
+
+        arguments.AddRange(branches.Select(branch => "refs/heads/" + branch));
+
+        var result = await _git
+            .RunAsync(
+                root,
+                new GitCommand(arguments).OverTheNetwork().Within(limit ?? Patience),
+                cancellation)
+            .ConfigureAwait(false);
+
+        if (!result.Succeeded)
+        {
+            return GitRemoteTips.Unreachable;
+        }
+
+        Dictionary<string, string> tips = new(StringComparer.Ordinal);
+
+        foreach (var line in result.Lines)
+        {
+            // One hash, a tab, then the full ref name.
+            var tab = line.IndexOf('\t', StringComparison.Ordinal);
+
+            if (tab <= 0)
+            {
+                continue;
+            }
+
+            var name = line[(tab + 1)..].Trim();
+
+            if (name.StartsWith("refs/heads/", StringComparison.Ordinal))
+            {
+                tips[name["refs/heads/".Length..]] = line[..tab].Trim();
+            }
+        }
+
+        return new GitRemoteTips(true, tips);
+    }
+
+    public async Task<GitSyncResult> FetchBranchAsync(
+        string root, string remote, string branch, CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(remote);
+        ArgumentException.ThrowIfNullOrWhiteSpace(branch);
+
+        // The leading plus is what git's own default refspec carries, so a branch somebody
+        // rewrote upstream updates here the same way a plain fetch would update it.
+        var arguments = new List<string>
+        {
+            "fetch",
+            remote,
+            $"+refs/heads/{branch}:refs/remotes/{remote}/{branch}",
+        };
+
+        var result = await _git
+            .RunAsync(root, new GitCommand(arguments).OverTheNetwork(), cancellation)
+            .ConfigureAwait(false);
+
+        return Read(result, GitSyncOutcome.Done);
+    }
+
     public async Task<GitSyncResult> FetchAsync(
         string root, string? remote = null, CancellationToken cancellation = default)
     {

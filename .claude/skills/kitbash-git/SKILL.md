@@ -255,6 +255,26 @@ can only fail, so this is what it asks before drawing the button.
 **Never a rebase.** A rebase settles the same conflict once per commit, which for a binary
 file is once too many.
 
+### Asking a remote where it is, without taking anything
+
+`ReadRemoteTipsAsync` is `ls-remote --refs <remote> refs/heads/<name>...`, which answers
+with hashes and transfers no objects. That is what lets a client watch a branch it does not
+have on a repository of any size, rather than fetching to find out whether it needed to.
+
+- **Reached with nothing is not the same as not reached.** A remote that answered and has
+  no such branch is the ordinary case for a branch nobody pushed. `GitRemoteTips.Reached`
+  is what tells that apart from being offline, and a caller that conflates them tells
+  somebody they are up to date when nobody asked anyone.
+- **The refs are named in full.** A pattern would bring back a branch whose name merely
+  matched.
+- **It waits 20 seconds rather than the network limit.** This runs behind a person instead
+  of in front of one, so it gives up rather than holding a beat open.
+
+`FetchBranchAsync` is the other half, `fetch <remote> +refs/heads/<b>:refs/remotes/<remote>/<b>`,
+which brings one branch's tracking ref up to date and leaves every other where it was. **The
+leading plus is git's own default refspec**, so a branch somebody rewrote upstream updates
+here rather than silently staying put.
+
 ### One file whole
 
 `IGitBlobReader` is `git show <revision>:<path>`, which is what a client showing a change
