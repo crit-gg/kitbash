@@ -10,24 +10,20 @@ namespace Kitbash.ViewModels;
 /// </summary>
 public partial class ToolGroupViewModel : ObservableObject
 {
-    private readonly Func<Task>? _check;
     private readonly bool _offersUpdates;
-
-    [ObservableProperty]
-    private bool _isChecking;
 
     public ToolGroupViewModel(
         string label,
         IReadOnlyList<ToolCardViewModel> tools,
         bool offersUpdates,
-        Func<Task>? check = null)
+        ToolCheckViewModel? check = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
         Label = label;
         Tools = tools;
         _offersUpdates = offersUpdates;
-        _check = check;
+        Check = check;
 
         foreach (var tool in tools)
         {
@@ -38,6 +34,9 @@ public partial class ToolGroupViewModel : ObservableObject
     public string Label { get; }
 
     public IReadOnlyList<ToolCardViewModel> Tools { get; }
+
+    /// <summary>The page's own check, which the empty state draws too.</summary>
+    public ToolCheckViewModel? Check { get; }
 
     /// <summary>
     /// How many cards fit across. A compact card is narrower, so its group fits more.
@@ -61,39 +60,11 @@ public partial class ToolGroupViewModel : ObservableObject
 
     public string UpdateAllLabel => $"Update all ({Pending.Count})";
 
-    public string CheckLabel => IsChecking ? "Checking" : "Check for updates";
-
     private IReadOnlyList<ToolCardViewModel> Pending => [.. Tools.Where(tool => tool.HasUpdate)];
 
     [RelayCommand]
     private Task UpdateAll() =>
         Task.WhenAll(Pending.Select(tool => tool.InstallCommand.ExecuteAsync(null)));
-
-    /// <summary>
-    /// Asks every repository now rather than using what was cached. Reports on itself in
-    /// place rather than raising a toast, the way the status bar does.
-    /// </summary>
-    [RelayCommand]
-    private async Task Check()
-    {
-        if (IsChecking || _check is null)
-        {
-            return;
-        }
-
-        IsChecking = true;
-
-        try
-        {
-            await _check().ConfigureAwait(true);
-        }
-        finally
-        {
-            IsChecking = false;
-        }
-    }
-
-    partial void OnIsCheckingChanged(bool value) => OnPropertyChanged(nameof(CheckLabel));
 
     private void OnToolChanged(object? sender, PropertyChangedEventArgs e)
     {

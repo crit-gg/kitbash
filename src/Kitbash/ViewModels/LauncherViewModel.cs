@@ -180,6 +180,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         Engines = engines;
         OpenIn = openIn;
+        ToolCheck = new ToolCheckViewModel(() => RefreshToolsAsync(refresh: true));
 
         // The monitor reads on its own threads, so what it says has to be carried over
         // before anything bound to it is touched.
@@ -238,6 +239,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     /// <summary>False shows the empty state instead of the cards.</summary>
     public bool HasTools => ToolGroups.Count > 0;
+
+    /// <summary>
+    /// Check for updates, which the first heading and the empty state both draw. A
+    /// repository list with nothing to offer yet is the case that needs the empty one.
+    /// </summary>
+    public ToolCheckViewModel ToolCheck { get; }
 
     /// <summary>
     /// Reads what is installed, draws it, then asks the repositories and draws again. Two
@@ -316,20 +323,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         if (mine.Count > 0)
         {
-            groups.Add(new ToolGroupViewModel(
-                "INSTALLED TOOLS",
-                mine,
-                offersUpdates: true,
-                () => RefreshToolsAsync(refresh: true)));
+            groups.Add(new ToolGroupViewModel("INSTALLED TOOLS", mine, offersUpdates: true, ToolCheck));
         }
 
         if (scripts.Count > 0)
         {
-            groups.Add(new ToolGroupViewModel(
-                "SCRIPTS",
-                scripts,
-                offersUpdates: true,
-                () => RefreshToolsAsync(refresh: true))
+            groups.Add(new ToolGroupViewModel("SCRIPTS", scripts, offersUpdates: true, ToolCheck)
             {
                 Columns = 4,
             });
@@ -337,7 +336,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         if (theirs.Count > 0)
         {
-            groups.Add(new ToolGroupViewModel("AVAILABLE TO INSTALL", theirs, offersUpdates: false));
+            groups.Add(new ToolGroupViewModel(
+                "AVAILABLE TO INSTALL", theirs, offersUpdates: false, ToolCheck));
         }
 
         // The page has no bar of its own, so its actions ride on the first heading.
@@ -345,7 +345,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         if (groups.Count > 0)
         {
             groups[0].ShowsFolderInstall = true;
-            groups[0].ShowsCheck = mine.Count > 0 || scripts.Count > 0;
+            groups[0].ShowsCheck = true;
         }
 
         ToolGroups = groups;
