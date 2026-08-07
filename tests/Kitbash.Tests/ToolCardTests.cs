@@ -58,17 +58,68 @@ public sealed class ToolCardTests
     }
 
     /// <summary>
-    /// A script is run and gone, so its card keeps two lines of description where a tool
-    /// card keeps four, and drops the promoted actions. Plainly shorter is the point of a
-    /// separate section, not an incidental few pixels.
+    /// A script is run and gone, so its card carries a smaller tile, tighter padding and
+    /// compact buttons. Both keep two lines of description, so what is left between them
+    /// is the chrome alone and the script card is still the shorter of the two.
     /// </summary>
     [AvaloniaFact]
-    public void AScriptCardIsMuchShorterThanAToolCard()
+    public void AScriptCardIsShorterThanAToolCard()
     {
         var full = Card_(Draw(Card(icon: null))).Bounds.Height;
         var compact = Card_(Draw(Card(icon: null, script: true))).Bounds.Height;
 
-        Assert.True(compact <= full * 0.65, $"a script card is {compact} and a tool card is {full}");
+        Assert.True(compact < full, $"a script card is {compact} and a tool card is {full}");
+    }
+
+    /// <summary>
+    /// Two lines and no more, however much a tool has to say about itself. The whole of a
+    /// trimmed summary is on hover, so nothing is lost by the card being short.
+    /// </summary>
+    [AvaloniaFact]
+    public void AToolCardKeepsTwoLinesOfDescription()
+    {
+        const string Long =
+            "Slices sprite sheets, writes the atlas Godot imports, and reports every frame "
+            + "it could not place so a person can fix the source art before the next run. "
+            + "It reads every sheet under the source folder, including the ones nested "
+            + "inside it, and leaves anything it did not recognise exactly where it was.";
+
+        var text = Description_(Draw(Card(icon: null, summary: Long)), Long);
+
+        Assert.Equal(2, text.MaxLines);
+        Assert.True(text.Bounds.Height <= 36, $"the description is {text.Bounds.Height} tall");
+        Assert.Equal(Long, ToolTip.GetTip(text));
+    }
+
+    /// <summary>
+    /// A card promoting actions out of its menu carries a second row of buttons and is
+    /// taller for it. Every card in the section takes that height, so the lead buttons
+    /// across a row land on one line rather than stepping. Four cards over three columns,
+    /// with the tall one on the second row, so both rows are covered.
+    /// </summary>
+    [AvaloniaFact]
+    public void EveryCardInASectionIsAsTallAsTheTallest()
+    {
+        var plain = Card(icon: null);
+        var promoted = Card(icon: null, actions: ["Reveal", "Copy path"]);
+
+        Assert.False(plain.HasExtras);
+        Assert.True(promoted.HasExtras);
+
+        var cards = Cards_(Draw(plain, Card(icon: null), Card(icon: null), promoted));
+
+        Assert.Equal(4, cards.Count);
+        Assert.Single(cards.Select(card => card.Bounds.Height).Distinct());
+    }
+
+    /// <summary>Nothing was made wider to buy the height back.</summary>
+    [AvaloniaFact]
+    public void ThreeCardsStillGoAcross()
+    {
+        var cards = Cards_(Draw(Card(icon: null), Card(icon: null), Card(icon: null)));
+
+        Assert.Single(cards.Select(card => card.Bounds.Width).Distinct());
+        Assert.Equal(3, cards.Select(card => card.TranslatePoint(default, cards[0])!.Value.X).Distinct().Count());
     }
 
     /// <summary>
@@ -177,7 +228,7 @@ public sealed class ToolCardTests
     /// shown in the launcher itself, since the tile's stroke and radius are styles the
     /// launcher window carries and a card hosted anywhere else draws without them.
     /// </summary>
-    private static Control Draw(ToolCardViewModel card)
+    private static Control Draw(params ToolCardViewModel[] cards)
     {
         var launcher = new LauncherWindow();
 
@@ -185,7 +236,7 @@ public sealed class ToolCardTests
             launcher.GetLogicalDescendants().OfType<ItemsControl>(),
             items => items.Name == "ToolGroups");
 
-        var group = new ToolGroupViewModel("INSTALLED TOOLS", [card], offersUpdates: false);
+        var group = new ToolGroupViewModel("INSTALLED TOOLS", cards, offersUpdates: false);
         var built = Assert.IsAssignableFrom<Control>(groups.ItemTemplate!.Build(group));
 
         built.DataContext = group;
@@ -234,8 +285,15 @@ public sealed class ToolCardTests
             block => block.Classes.Contains("toolName"));
 
     /// <summary>The card itself, whichever of the two templates drew it.</summary>
-    private static Border Card_(Control drawn) =>
-        Assert.Single(drawn.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("toolCard"));
+    private static Border Card_(Control drawn) => Assert.Single(Cards_(drawn));
+
+    /// <summary>Every card the group drew, in the order the grid laid them out.</summary>
+    private static IReadOnlyList<Border> Cards_(Control drawn) =>
+        [.. drawn.GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("toolCard"))];
+
+    /// <summary>The card's description, found by what it says.</summary>
+    private static TextBlock Description_(Control drawn, string text) =>
+        Assert.Single(drawn.GetLogicalDescendants().OfType<TextBlock>(), block => block.Text == text);
 
     /// <summary>
     /// The tile as drawn, indexed by column and row. The whole page is what gets rendered
@@ -299,12 +357,18 @@ public sealed class ToolCardTests
     }
 
     /// <param name="script">A script, which is what the compact card is drawn for.</param>
-    private static ToolCardViewModel Card(Bitmap? icon, bool script = false, string name = "Foundry")
+    /// <param name="actions">What the card promotes out of its menu, which grows it.</param>
+    private static ToolCardViewModel Card(
+        Bitmap? icon,
+        bool script = false,
+        string name = "Foundry",
+        string summary = "A tool",
+        params string[] actions)
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
 
         var payload = new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run");
-        var manifest = Manifest(id, name, script);
+        var manifest = Manifest(id, name, script) with { Summary = summary };
 
         return new ToolCardViewModel(
             new InstalledTool(
@@ -313,7 +377,8 @@ public sealed class ToolCardTests
                 "/tools/foundry",
                 manifest,
                 ToolCommand.For(payload, "/tools/foundry")),
-            null)
+            null,
+            actions: actions)
         {
             Icon = icon,
             IsCompact = script,

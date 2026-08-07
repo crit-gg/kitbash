@@ -60,19 +60,24 @@ public class TextTip : AvaloniaObject
     }
 
     /// <summary>
-    /// Asks the lines the label drew. HasCollapsed is what puts the ellipsis there, so this
-    /// is the same answer rather than a width worked out again here.
+    /// Asks the lines the label drew. HasCollapsed is what puts the ellipsis there, and a
+    /// label held to MaxLines drops the rest without one, so the lines are counted against
+    /// the text as well.
     /// </summary>
     private static bool IsTrimmed(TextBlock label)
     {
+        var drawn = 0;
+
         foreach (var line in label.TextLayout.TextLines)
         {
             if (line.HasCollapsed)
             {
                 return true;
             }
+
+            drawn += line.Length;
         }
 
-        return false;
+        return drawn < (label.Text?.Length ?? 0);
     }
 }

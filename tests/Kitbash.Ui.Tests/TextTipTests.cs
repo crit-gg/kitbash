@@ -56,7 +56,37 @@ public class TextTipTests
         Assert.Null(ToolTip.GetTip(label));
     }
 
-    // The compact card's description, which wraps to two lines and trims the second.
+    /// <summary>
+    /// The same wrapped label in the family the app actually draws in. Trimming collapses a
+    /// line that runs past its own width and a wrapped line ends at a break under it, so
+    /// nothing collapses and the text simply stops. Counting the lines against the text is
+    /// what catches that, and the font is what decides which way it goes.
+    /// </summary>
+    [AvaloniaFact]
+    public void WrappedTextIsFoundWhenNoLineCollapsed()
+    {
+        const string Words =
+            "Slices sprite sheets, writes the atlas Godot imports, and reports every frame " +
+            "it could not place so a person can fix the source art before the next run.";
+
+        var label = Draw(
+            new TextBlock
+            {
+                Text = Words,
+                FontFamily = new FontFamily("avares://Kitbash.Ui/Assets/Fonts#Archivo"),
+                FontSize = 12,
+                TextWrapping = TextWrapping.Wrap,
+                MaxLines = 2,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                [TextTip.ShowsProperty] = true,
+            },
+            width: 277);
+
+        Assert.DoesNotContain(label.TextLayout.TextLines, line => line.HasCollapsed);
+        Assert.Equal(Words, ToolTip.GetTip(label));
+    }
+
+    // The compact card's description, wrapped to two lines with the rest dropped.
     [AvaloniaFact]
     public void WrappedTextIsTrimmedAtItsLastLine()
     {

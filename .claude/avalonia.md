@@ -720,6 +720,27 @@ home directory as a tilde, and `TextTrimming` decides what fits.
 The default ellipsis is the single character form. `TextPathSegmentTrimming` takes a
 custom ellipsis string in its constructor, so plain dots can be used instead.
 
+### MaxLines with wrapping drops the rest and draws no ellipsis
+
+`MaxLines` and `TextTrimming` together do not mean what they read as. Trimming works on one
+line's width, so the last line a `MaxLines` cap allows is only collapsed when that line
+overflows on its own. A wrapped line ends at a word break and is therefore under the width
+already, so nothing collapses, `HasCollapsed` stays false, and the text simply stops.
+
+**Measured**, the same 298 character summary in a 277px card at 12px:
+
+| Font | Lines | Text drawn | `HasCollapsed` |
+|---|---|---|---|
+| the headless default | 2 | 91 characters | true, so an ellipsis |
+| Archivo, which is ours | 2 | 102 characters | false, so none |
+
+The font is what decides it, which makes this the worst kind of behaviour to rely on. The
+default font happened to leave a line over the width and ours does not.
+
+So **`HasCollapsed` alone is not a test for hidden text**. `ui:TextTip` counts the lines
+against `Text.Length` as well, which is what makes a clamped description carry its own
+tooltip. Anything else asking the same question has to count too.
+
 ## Threading
 
 Avalonia 12 supports one dispatcher per thread. Library and control code should use

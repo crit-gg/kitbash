@@ -19,21 +19,26 @@ draws the form, runs the script, and reports what it writes over a modal.
 - `Kitbash/Views` grew `ToolInputsDialog` and `ToolRunDialog`, and
   `Kitbash/ViewModels` grew `ToolInputsViewModel` and `ToolInputRowViewModel`.
 - The card's lead button says Run rather than Launch for one.
-- **A script has its own section on both sides, and a card half the height.** Running one
-  and opening an app are different things to want, so they are separate sections rather
+- **A script has its own section on both sides, and a shorter card.** Running one and
+  opening an app are different things to want, so they are separate sections rather
   than one list. The four are INSTALLED TOOLS, INSTALLED SCRIPTS, AVAILABLE TOOLS and
   AVAILABLE SCRIPTS, and like every section each is drawn only when it holds something. A
   script that is only offered is drawn small too, so no section ever mixes card sizes.
-- The small card drops the promoted actions and keeps the name, the version, two lines of
-  description and the buttons, against the full card's four lines. Both are three across,
-  so a script row and a tool row line up down the page. `ToolCardTemplates` is what picks
-  between the two, off `IsCompact` on the card, so the group a card lands in decides how
-  it is drawn.
-- Its description has a two line floor for the same reason the full card's has a four line
-  one. Without it a one line description leaves that card's buttons above its neighbour's.
-- **A card name and a small card description are trimmed, so both carry `ui:TextTip.Shows`**,
+- The small card drops the promoted actions and takes a smaller tile, tighter padding and
+  compact buttons. **Both cards keep two lines of description**, so what is left between
+  them is the chrome alone. Both are three across, so a script row and a tool row line up
+  down the page. `ToolCardTemplates` is what picks between the two, off `IsCompact` on the
+  card, so the group a card lands in decides how it is drawn.
+- Each description has a two line floor. Without it a one line description leaves that
+  card's buttons above its neighbour's.
+- **Neither card pins a height.** The cell decides, and `UniformGrid` gives every cell the
+  tallest card's size, so a card promoting actions out of its menu lifts the whole grid and
+  the lead buttons stay on one line. Measured: 153 with no promoted actions, 186 with two.
+- **A card name and either description are trimmed, so all three carry `ui:TextTip.Shows`**,
   which puts the whole text in a tooltip while it does not fit and takes the tooltip away
-  again while it does.
+  again while it does. **A clamped description draws no ellipsis**, since trimming only
+  collapses a line wider than its own box, so the tooltip is the whole of what says there is
+  more. `.claude/avalonia.md` has the measurement.
 - Checking for updates moved off the installed group and onto whichever heading is first,
   since two installed sections would otherwise each draw their own Check for updates.
 

@@ -229,13 +229,22 @@ that says its meaning in colour alone cannot be built. The tiers are `Ok`, `Modi
 
 It puts the label's own text in its tooltip while the text is trimmed and takes the tooltip
 away again while it fits, so a pointer resting on a label that fits says nothing at all. Put
-it on a label that can trim and nowhere else: text that wraps and grows is never hidden, so a
-tooltip there only repeats what is on screen.
+it on a label that can hide text, which is one that trims and one that wraps under a
+`MaxLines` cap. A label that wraps and grows is never hidden, so a tooltip there only repeats
+what is on screen.
 
-**It reads the lines the label drew rather than comparing widths.** `TextLine.HasCollapsed` is
-what puts the ellipsis there, so the answer is the layout's own, and it holds for a wrapped
-label trimmed at `MaxLines` as well as a single line. Read on `LayoutUpdated`, since a text or
-size change is answered by a layout that has not run yet.
+**It reads the lines the label drew rather than comparing widths.** Read on `LayoutUpdated`,
+since a text or size change is answered by a layout that has not run yet.
+
+**It asks two questions, because a clamped label answers neither on its own.**
+`TextLine.HasCollapsed` is what puts the ellipsis there, and a wrapped label held to
+`MaxLines` drops the rest without one, since trimming only collapses a line that overflows
+its own width and a wrapped line ends at a word break under it. So the lines are counted
+against `Text.Length` as well. Measured, and the font is what decides which way it goes.
+`.claude/avalonia.md` has the numbers.
+
+**A clamped label therefore stops rather than trailing off.** No ellipsis is drawn at all,
+so the tooltip is the whole of what says there is more.
 
 It is code and not a setter for the reason `ui:TextMenu` is: whether text fits is not
 something a selector can ask.

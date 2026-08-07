@@ -476,7 +476,9 @@
                                                   <views:ToolCardTemplates>
                                                     <views:ToolCardTemplates.Full>
                                                     <DataTemplate x:DataType="vm:ToolCardViewModel">
-                                                        <Border Classes="toolCard" MinHeight="226" Margin="0,0,9,9">
+                                                        <!-- No pinned height. The cell decides, so a row of cards
+                                                             is as tall as the one carrying the most buttons. -->
+                                                        <Border Classes="toolCard" Margin="0,0,9,9">
                                                             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="11">
                                                                 <Grid Grid.Row="0" ColumnDefinitions="40,*,Auto"
                                                                       ColumnSpacing="12">
@@ -549,14 +551,17 @@
                                                                     </StackPanel>
                                                                 </Grid>
 
-                                                                <!-- The floor keeps every card in a row ending its
-                                                                     actions on the same line. -->
+                                                                <!-- Two lines, with a floor, so every card in the
+                                                                     row ends its buttons on the same line. -->
                                                                 <TextBlock Grid.Row="1" Text="{Binding Description}"
-                                                                           MinHeight="69"
-                                                                           VerticalAlignment="Top"
-                                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                                           MinHeight="35"
+                                                                           MaxLines="2"
                                                                            LineHeight="17.4"
+                                                                           VerticalAlignment="Top"
                                                                            TextWrapping="Wrap"
+                                                                           FontSize="{DynamicResource FontSizeControl}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           ui:TextTip.Shows="True"
                                                                            Foreground="{DynamicResource InkSecondary}" />
 
                                                                 <StackPanel Grid.Row="2" Spacing="7">
