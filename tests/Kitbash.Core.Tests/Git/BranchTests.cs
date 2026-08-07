@@ -183,6 +183,26 @@ public class BranchTests
         Assert.DoesNotContain(branches, b => b.IsRemote);
     }
 
+    // Git shortens refs/remotes/origin/HEAD to origin, so leaving it in gives a list a row
+    // named after the remote that no gesture can act on.
+    [Fact]
+    public async Task TheRemotesOwnDefaultPointerIsNotABranch()
+    {
+        using var remote = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", remote.Root);
+        repository.Git("push", "--set-upstream", "origin", "main");
+        repository.Git("remote", "set-head", "origin", "--auto");
+
+        var branches = await repository.Branches.ReadAsync(repository.Root, true, Stop);
+
+        Assert.DoesNotContain(branches, b => b.Name == "origin");
+        Assert.Contains(branches, b => b.Name == "origin/main");
+    }
+
     [Fact]
     public async Task ABranchWithNothingLeftOnItReadsAsMerged()
     {

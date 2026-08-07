@@ -214,6 +214,11 @@ separator, one line per ref. A ref name cannot hold a newline, so line based is 
 in a way it would not be for a path. `%(upstream:track)` is git's own note,
 `[ahead 1, behind 2]` or `[gone]` or empty.
 
+**`refs/remotes/<remote>/HEAD` is dropped, because it is not a branch.** It is the pointer
+a clone writes at the remote's default branch, and git shortens it to the remote's own name,
+so leaving it in gives a list a row called `origin` that no gesture can act on. SourceGit
+drops it the same way. `IGitRefReader` is what reads it, through `symbolic-ref`.
+
 `switch` rather than `checkout`, so a branch and a path can never be confused for each
 other, and `switch --detach` for a commit.
 

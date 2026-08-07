@@ -161,6 +161,14 @@ public sealed class GitBranches : IGitBranches
             return null;
         }
 
+        // refs/remotes/<remote>/HEAD is the remote's default branch pointer, and git shortens
+        // it to the remote's own name, so a caller listing branches gets a row called origin.
+        if (fields[0].StartsWith("refs/remotes/", StringComparison.Ordinal)
+            && fields[0].EndsWith("/HEAD", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
         Track(fields[4], out var ahead, out var behind, out var gone);
 
         return new GitBranch(
