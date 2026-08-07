@@ -139,6 +139,44 @@ public class SplashWindow : Window
 
     private static readonly BoxShadows MarkShadow = BoxShadows.Parse("0 6 18 0 #6b000000");
 
+    // A mark that is already a badge takes no frame, so what settles it onto the
+    // backdrop is drawn around it instead: a soft light behind, and a shadow that
+    // follows the mark's own silhouette rather than a box. The art is never touched.
+    private const double MarkLightSize = 100;
+
+    // The settled shadow, in two passes with no offset, so it is a glow on the mark's
+    // own silhouette rather than something cast. The contact line goes on the image and
+    // the falloff on the border around it: an effect applies to everything beneath it,
+    // so nesting is what layers them. Side by side they would each shadow the mark on
+    // its own and the contact line would be lost under the falloff.
+    private static readonly IEffect MarkContact =
+        Avalonia.Media.Effect.Parse("drop-shadow(0 0 1.9 #d4000000)");
+
+    private static readonly IEffect MarkFalloff =
+        Avalonia.Media.Effect.Parse("drop-shadow(0 0 5 #99000000)");
+
+    // The settled light, a quarter brighter than the drawing it came from. Still far
+    // fainter than it sounds, peaking at eight percent of an alpha channel, and it
+    // cools as it falls: a pale white at the middle, through a mid blue, to the
+    // accent going out. It is gone by 0.64 of the radius, so the last third of the
+    // box is empty and the size is headroom.
+    private static readonly IBrush MarkLight = new RadialGradientBrush
+    {
+        Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+        GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+        RadiusX = new RelativeScalar(0.5, RelativeUnit.Relative),
+        RadiusY = new RelativeScalar(0.5, RelativeUnit.Relative),
+        GradientStops =
+        {
+            new GradientStop(Color.FromArgb(49, 0xd6, 0xe4, 0xf6), 0),
+            new GradientStop(Color.FromArgb(36, 0xd6, 0xe4, 0xf6), 0.22),
+            new GradientStop(Color.FromArgb(22, 0x8c, 0xaf, 0xdc), 0.40),
+            new GradientStop(Color.FromArgb(11, 0x56, 0x9e, 0xff), 0.52),
+            new GradientStop(Color.FromArgb(0, 0x56, 0x9e, 0xff), 0.64),
+            new GradientStop(Color.FromArgb(0, 0x56, 0x9e, 0xff), 1),
+        },
+    };
+
     private static readonly FontFamily UiFont =
         new("avares://Kitbash.Ui/Assets/Fonts#Archivo");
 
@@ -155,6 +193,8 @@ public class SplashWindow : Window
 
     private readonly SplashBackdrop _backdrop = new() { Name = "Backdrop" };
     private readonly Border _markFrame;
+    private readonly Border _markLight;
+    private readonly Border _markShadow;
     private readonly Image _markImage;
     private readonly TextBlock _name;
     private readonly Border _versionPill;
@@ -189,6 +229,21 @@ public class SplashWindow : Window
 
         RenderOptions.SetBitmapInterpolationMode(_markImage, BitmapInterpolationMode.HighQuality);
 
+        // The light draws at its full size and takes the mark's room in layout, so a
+        // 100px glow does not grow the head of the splash. Nothing clips it.
+        _markLight = new Border
+        {
+            Name = "MarkLight",
+            Width = MarkLightSize,
+            Height = MarkLightSize,
+            Margin = new Thickness(-(MarkLightSize - 48) / 2),
+            Background = MarkLight,
+            IsHitTestVisible = false,
+            IsVisible = false,
+        };
+
+        _markShadow = new Border { Name = "MarkShadow", Child = _markImage };
+
         _markFrame = new Border
         {
             Name = "Mark",
@@ -200,7 +255,7 @@ public class SplashWindow : Window
             BorderThickness = new Thickness(1),
             BoxShadow = MarkShadow,
             VerticalAlignment = VerticalAlignment.Center,
-            Child = _markImage,
+            Child = new Panel { Children = { _markLight, _markShadow } },
         };
 
         _name = new TextBlock
@@ -733,6 +788,11 @@ public class SplashWindow : Window
 
         _markImage.Width = framed ? 26 : 48;
         _markImage.Height = framed ? 26 : 48;
+
+        // A framed mark already sits on a ground of its own and takes neither.
+        _markLight.IsVisible = !framed;
+        _markShadow.Effect = framed ? null : MarkFalloff;
+        _markImage.Effect = framed ? null : MarkContact;
     }
 
     /// <summary>
