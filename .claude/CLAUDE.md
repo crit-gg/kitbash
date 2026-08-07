@@ -243,6 +243,9 @@ the problem:
 - `.claude/plans/projects-window.md` the welcome window every app opens with, what the app
   gets to define about it and where it departs from the design. Read before touching
   `Kitbash.Ui/Projects` or `Kitbash.Core/Projects`.
+- `.claude/plans/splash-window.md` the window an app starts behind, why it depends on no
+  styles at all and what that forbids. Read before touching `SplashWindow` or
+  `SplashBackdrop`.
 - `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken
   from the asset tool designs. Read before building any of them.
 - `.claude/plans/` the twelve design stages and the plans not yet started
@@ -498,6 +501,24 @@ empty states are all real, and an app adds its own pages to the rail under the l
 **Nothing hosts it yet**, since no tool exists, so the gallery is where it runs, carrying
 the design's three apps. `ui:Badge` gained a `tile` kind for the mark at the head of a row.
 Read `.claude/plans/projects-window.md` before touching it.
+
+**The splash window is built and it needs no theme.** `ui:SplashWindow` is the window an app
+shows while it starts, from the `Splash Screen` design, and it is the third whole window
+`Kitbash.Ui` owns. **It draws with no styles loaded at all**, which is verified headlessly by
+clearing `Application.Styles` and rendering it: it supplies its own template, uses no
+templated control, holds every colour as a literal and loads nothing from disk. The lozenge
+lattice, the four corner brackets and the veil are geometry in `SplashBackdrop.Render` rather
+than the SVG files they were transcribed from. The host gives it a mark, a name, a version and
+a line, owns the lifecycle entirely, and **progress stays hidden until it calls `Report`**, so
+a splash that never reports never runs a frame of animation. **The bar does both forms**, a
+sweep when nothing says how far along the work is and a fill when something does. The whole
+card drags the window, and it is not topmost. **It is the one window
+`window.nativeChrome` does not reach**, since the desktop drawing a title bar over a splash
+would repeat everything the card already says. **A person dismissing it before the app has a window
+ends the app**, whatever the host had planned. **The gallery opens behind one**, which is the
+worked example of the order a host uses, and its SPLASH section drives both bar forms by hand.
+The launcher does not host one yet. Read `.claude/plans/splash-window.md` before touching
+it.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in
 `.claude/plans/settings-schema.md` are done and only probes are left. `SettingsWindow` is in

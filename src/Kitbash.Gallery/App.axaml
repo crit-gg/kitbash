@@ -3,14 +3,8 @@
              x:Class="Kitbash.Gallery.App"
              RequestedThemeVariant="Dark">
 
-    <!-- One line, the same one every tool takes. The gallery holds no palette of its
-         own, so anything that looks wrong here is wrong in the library. -->
-    <Application.Styles>
-        <FluentTheme />
-        <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
-
-        <!-- The second line, taken only by an app that docks. -->
-        <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashDocking.axaml" />
-    </Application.Styles>
+    <!-- The look is added in code rather than here. Parsing it is the slowest thing this
+         app does before any window exists, and the splash needs none of it, so it is
+         loaded after the splash is already on screen. App.axaml.cs has the order. -->
 
 </Application>

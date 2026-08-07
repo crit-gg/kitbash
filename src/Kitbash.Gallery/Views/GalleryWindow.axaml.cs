@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
@@ -47,6 +48,9 @@ public partial class GalleryWindow : ChromelessWindow
 
     /// <summary>One at a time, so switching host closes the one that was open.</summary>
     private ProjectsWindow? _projects;
+
+    private SplashWindow? _splash;
+    private int _splashStep;
 
     private bool _disabled;
 
@@ -122,7 +126,7 @@ public partial class GalleryWindow : ChromelessWindow
     /// The version this was built at. The SDK appends the commit as build metadata, which
     /// is not part of the product version, so everything after the plus goes.
     /// </summary>
-    private static string BuildVersion()
+    internal static string BuildVersion()
     {
         var informational = Assembly.GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
@@ -473,6 +477,95 @@ public partial class GalleryWindow : ChromelessWindow
         var removed = await dialog.ShowDialog<bool>(this);
         DialogAnswer.Text = removed ? "The dialog said remove." : "The dialog said no.";
     }
+
+    /// <summary>
+    /// A mark drawn here rather than loaded, since the gallery ships no icon and the point
+    /// is that the mark belongs to the host.
+    /// </summary>
+    internal static IImage SplashMark()
+    {
+        var group = new DrawingGroup();
+
+        group.Children.Add(new GeometryDrawing
+        {
+            Geometry = StreamGeometry.Parse("M16 3 L28 10 L16 17 L4 10 Z"),
+            Brush = new SolidColorBrush(Color.FromRgb(0x56, 0x9e, 0xff)),
+        });
+
+        group.Children.Add(new GeometryDrawing
+        {
+            Geometry = StreamGeometry.Parse("M4 15 L16 22 L28 15 L28 18 L16 25 L4 18 Z"),
+            Brush = new SolidColorBrush(Color.FromArgb(158, 0x8f, 0xbe, 0xf5)),
+        });
+
+        group.Children.Add(new GeometryDrawing
+        {
+            Geometry = StreamGeometry.Parse("M4 22 L16 29 L28 22 L28 24.5 L16 31.5 L4 24.5 Z"),
+            Brush = new SolidColorBrush(Color.FromArgb(77, 0x8f, 0xbe, 0xf5)),
+        });
+
+        return new DrawingImage { Drawing = group };
+    }
+
+    private void OnOpenSplash(object? sender, RoutedEventArgs e)
+    {
+        _splash?.Close();
+        _splashStep = 0;
+
+        _splash = new SplashWindow
+        {
+            Mark = SplashMark(),
+            AppName = "Workbench",
+            AppVersion = "1.4.2",
+            Description = "Game data tooling for Godot projects",
+        };
+
+        _splash.Closed += (_, _) =>
+        {
+            _splash = null;
+            SplashAnswer.Text = "The splash closed.";
+        };
+
+        _splash.Show();
+
+        SplashAnswer.Text = "No progress until it is asked for.";
+    }
+
+    private static readonly string[] SplashSteps =
+    [
+        "Checking for an update",
+        "Reading the workspace registry",
+        "Loading workspace index",
+        "Finding installed engines",
+        "Opening the launcher",
+    ];
+
+    private void OnSplashStep(object? sender, RoutedEventArgs e) => ReportSplash(false);
+
+    private void OnSplashFraction(object? sender, RoutedEventArgs e) => ReportSplash(true);
+
+    private void ReportSplash(bool measured)
+    {
+        if (_splash is null)
+        {
+            SplashAnswer.Text = "Open one first.";
+
+            return;
+        }
+
+        _splashStep = Math.Min(_splashStep + 1, SplashSteps.Length);
+
+        var count = $"{_splashStep} of {SplashSteps.Length}";
+        var fraction = measured ? _splashStep / (double)SplashSteps.Length : (double?)null;
+
+        _splash.Report(SplashSteps[_splashStep - 1], fraction, count);
+
+        SplashAnswer.Text = measured
+            ? "The bar is filling to a fraction."
+            : "The bar is sweeping, since nothing said how far along it is.";
+    }
+
+    private void OnCloseSplash(object? sender, RoutedEventArgs e) => _splash?.Close();
 
     /// <summary>Where the tier buttons send their toasts.</summary>
     private ToastAnchor Chosen =>

@@ -1830,6 +1830,26 @@
                     </StackPanel>
                 </Border>
 
+                <!-- section -->
+                <TextBlock Classes="section" Text="SPLASH" />
+                <Border Classes="panel">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="note"
+                                   Text="The window an app shows while it starts. It carries no theme, no icons and no control themes, so it can open before any of them are loaded, and it draws its own frame for the same reason. The mark, the name, the version and the line under them all come from the host." />
+
+                        <TextBlock Classes="note"
+                                   Text="Progress is off until the host asks for it. Reporting turns the row on. A report with no fraction sweeps, so nothing has to invent a percentage it does not have, and a report with one fills the track to it. The count on the right is dropped by leaving it blank, and turning the lattice off leaves a plain slate card." />
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Open a splash" Click="OnOpenSplash" />
+                            <Button Classes="ghost" Content="Report a step" Click="OnSplashStep" />
+                            <Button Classes="ghost" Content="Report a fraction" Click="OnSplashFraction" />
+                            <Button Classes="ghost" Content="Close it" Click="OnCloseSplash" />
+                            <TextBlock Name="SplashAnswer" Classes="caption" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
                 <TextBlock Classes="section" Text="WINDOW AND DIALOG" />
                 <Border Classes="panel">
                     <StackPanel Spacing="14">

@@ -287,3 +287,73 @@ the menu, a double click or Enter.
 
 **Search filters and never sorts.** Sorting is its own dropdown with the current answer
 written on it, so typing three letters never rearranges what is left.
+
+### The splash window
+
+`ui:SplashWindow` is the window an app shows while it starts, and it is the one window here
+that depends on no styles at all. `.claude/plans/splash-window.md` has the whole of it. Read
+it before changing anything in `SplashWindow.cs` or `SplashBackdrop.cs`.
+
+**The host owns the lifecycle.** The library never opens one and never closes one.
+
+Four rules, and breaking any of them makes the window draw nothing rather than draw badly,
+under a host that has not loaded a theme yet:
+
+- **It supplies its own `Template`.** A `Window` with no theme has no control template.
+- **Nothing in it is a templated control.** No `Button`, no `ProgressBar`, no `ToolTip`, no
+  `Viewbox`. `Border`, `Panel`, `Grid`, `StackPanel`, `Canvas`, `TextBlock`, `Image`, `Path`
+  and `ContentPresenter` are the whole list of what draws with no styles loaded.
+- **Every value is a literal.** No resource lookup of any kind. It is the one place in the
+  app allowed to write a colour outside `Themes/Tokens.axaml`, and the fields are named
+  after the tokens they copy, so a token change has to be repeated there.
+- **Nothing is loaded from disk.** The art is geometry in `SplashBackdrop.Render` and the
+  close glyph is `IconX` transcribed, not looked up.
+
+**The close mark takes the pointer on press and answers on release**, only when the release
+lands back on it. It is a `Border` rather than a `Button`, so that gesture is wired by hand
+rather than inherited.
+
+**The whole card drags the window.** There is no title bar, so the window handles
+`PointerPressed` on the bubble route and calls `BeginMoveDrag`. The close mark marks its own
+press handled, and a handled press never reaches that handler, which is the whole of how it
+is excluded.
+
+**It is not topmost**, since a window a person did not ask for should not sit over the one
+they are using. A host that wants it pinned sets `Topmost` itself.
+
+**The desktop never draws its frame, and `window.nativeChrome` does not apply to it.** That
+setting reaches a window through `ChromelessWindow.UsesNativeChrome` alone, which this window
+does not have, and `WindowDecorations` is put back to `None` if anything sets it otherwise.
+
+**Progress is off until the host calls `Report`**, and it does both forms: `Progress` null
+sweeps, and a value from 0 to 1 fills the track to that fraction over 180ms. The fill's
+starting width is set before its transition exists, since a transition from an unset width
+interpolates from `NaN` and the bar never draws. A filled bar also carries a faint
+sheen, so it never reads as frozen. The pulse follows the row, the sweep follows the bar
+having no fraction and the sheen follows it having one, so all three are cancelled separately
+and a splash that never reports never draws a frame of animation. Each start is idempotent,
+since `ApplyMotion` runs on every report and a restart would reset the motion each time.
+
+**An `Effect` renders its whole subtree offscreen**, which is why the soft shadow on the text
+is set per line rather than over a container. One over the progress row would take the pulsing
+dot with it and repaint the row every frame.
+
+**A person dismissing it before the app has a window of its own ends the app**, through
+`IClassicDesktopStyleApplicationLifetime.Shutdown`, which ignores `ShutdownMode`. A host
+closing it is a replacement and never ends anything. This is the one place in the window that
+reaches for `Application.Current`.
+
+**A host shows it as the temporary main window and swaps before closing it.** The lifetime
+ends the app when the last window closes, so the real window has to be assigned to
+`MainWindow` and shown before the splash is closed. `Kitbash.Gallery/App.axaml.cs` is the
+worked example.
+
+**Measured on this machine**, a published ReadyToRun build reaches a visible splash in about
+530ms, roughly half of which is process start and the Avalonia platform coming up before any
+of this code runs. Keeping the theme out of `App.Initialize` is worth about 150ms of that. The
+gallery carries the probe that measures it and `.claude/plans/splash-window.md` has the table.
+
+A host that wants the window up before its theme is parsed has to keep the theme out of
+`App.Initialize` and add it afterwards, since `AvaloniaXamlLoader.Load` on an `App.axaml`
+carrying `KitbashTheme` parses all of it before the first window exists. The gallery does
+exactly that: no styles in `App.axaml`, all three added once the splash is on screen.
