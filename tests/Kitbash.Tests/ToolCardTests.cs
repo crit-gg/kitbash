@@ -270,6 +270,48 @@ public sealed class ToolCardTests
         Assert.Equal(Colors.Transparent, Assert.IsAssignableFrom<ISolidColorBrush>(tile.Background).Color);
     }
 
+    /// <summary>
+    /// Art is published far larger than the tile, so the default filter, a bilinear tap
+    /// with no mipmaps, drops most of it and the edges alias.
+    /// </summary>
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ArtIsFilteredDownRatherThanSampled(bool script)
+    {
+        var drawn = Draw(Card(Filled(Colors.Red), script: script));
+
+        Assert.Equal(BitmapInterpolationMode.HighQuality, Filter(Art_(drawn), Tile_(drawn, script ? ScriptTile : Tile)));
+    }
+
+    /// <summary>
+    /// What the art is really drawn with. Render options merge down the visual tree at draw
+    /// time rather than through the property system, so an unspecified value on the image
+    /// takes whatever the nearest ancestor up to the tile sets.
+    /// </summary>
+    private static BitmapInterpolationMode Filter(Visual art, Visual tile)
+    {
+        foreach (var visual in new[] { art }.Concat(art.GetVisualAncestors()))
+        {
+            if (RenderOptions.GetBitmapInterpolationMode(visual) is var mode
+                && mode != BitmapInterpolationMode.Unspecified)
+            {
+                return mode;
+            }
+
+            if (ReferenceEquals(visual, tile))
+            {
+                break;
+            }
+        }
+
+        return BitmapInterpolationMode.Unspecified;
+    }
+
+    /// <summary>The image holding the tool's own art.</summary>
+    private static Image Art_(Control drawn) =>
+        Assert.Single(drawn.GetVisualDescendants().OfType<Image>());
+
     /// <summary>The tile is the plate a tool with no art of its own falls back to.</summary>
     [AvaloniaFact]
     public void ALetterKeepsItsPlate()

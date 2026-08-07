@@ -996,6 +996,16 @@ declare it later.
 - `ConicGradientBrush` starts at the top and sweeps clockwise, so a hue wheel drawn the way a
   colour wheel is read, hue zero on the right and rising anticlockwise, takes `Angle="90"` and
   stops of the negated hue.
+- `RenderOptions` has no `AvaloniaProperty` behind it, only a static getter and setter pair
+  over an internal `Visual.RenderOptions`, so `RenderOptions.BitmapInterpolationMode` works
+  as an attribute on an element and fails to compile in a `Setter` with `AVLN2000: Unable to
+  find BitmapInterpolationModeProperty field`. It cannot be styled, only set per element or
+  from code. It does still merge down the visual tree at draw time, where the value pushed
+  by the nearest ancestor wins over an unspecified one, so an ancestor set in code behind
+  reaches the whole subtree.
+- The default `BitmapInterpolationMode` is `Unspecified`, which Skia takes as bilinear with
+  no mipmaps, so a bitmap drawn much smaller than it was decoded aliases badly. Anything
+  shrinking a bitmap by more than about two needs `HighQuality`, which adds the mipmaps.
 - An `ItemsControl` makes a `ContentPresenter` per item unless `NeedsContainerOverride`
   and `CreateContainerForItemOverride` say otherwise, so a control that reads its own
   containers, such as `Segmented` reading which `RadioButton` is checked, works with items

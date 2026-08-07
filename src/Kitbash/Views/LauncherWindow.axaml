@@ -508,8 +508,12 @@
                                                                                     ClipToBounds="True"
                                                                                     IsVisible="{Binding HasIcon}"
                                                                                     CornerRadius="{DynamicResource RadiusSurface}">
+                                                                                <!-- Art is published far larger than the
+                                                                                     tile, and the default filter is a
+                                                                                     bilinear tap with no mipmaps. -->
                                                                                 <Image Source="{Binding Icon}"
-                                                                                       Stretch="UniformToFill" />
+                                                                                       Stretch="UniformToFill"
+                                                                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
                                                                             </Border>
                                                                         </Panel>
                                                                     </Border>
@@ -697,8 +701,12 @@
                                                                                     ClipToBounds="True"
                                                                                     IsVisible="{Binding HasIcon}"
                                                                                     CornerRadius="{DynamicResource RadiusSurface}">
+                                                                                <!-- Art is published far larger than the
+                                                                                     tile, and the default filter is a
+                                                                                     bilinear tap with no mipmaps. -->
                                                                                 <Image Source="{Binding Icon}"
-                                                                                       Stretch="UniformToFill" />
+                                                                                       Stretch="UniformToFill"
+                                                                                       RenderOptions.BitmapInterpolationMode="HighQuality" />
                                                                             </Border>
                                                                         </Panel>
                                                                     </Border>
