@@ -516,9 +516,10 @@ sweep when nothing says how far along the work is and a fill when something does
 card drags the window, and it is not topmost. **It is the one window
 `window.nativeChrome` does not reach**, since the desktop drawing a title bar over a splash
 would repeat everything the card already says. **A person dismissing it before the app has a window
-ends the app**, whatever the host had planned. **The gallery opens behind one**, which is the
-worked example of the order a host uses, and its SPLASH section drives both bar forms by hand.
-The launcher does not host one yet. Read `.claude/plans/splash-window.md` before touching
+ends the app**, whatever the host had planned. **Both apps open behind one.** The gallery is
+the worked example of the order a host uses, and **the launcher's update reports into it**, so
+the update dialog is gone: the splash is up before the feed is asked, it carries the download
+as a fraction, and a full bar is held before the update is applied. Read `.claude/plans/splash-window.md` before touching
 it.
 
 **The settings window is built and it is the launcher's.** Steps 1 to 5 of the six in

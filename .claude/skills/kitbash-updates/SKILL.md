@@ -59,22 +59,59 @@ and the executable is named after the project.
 live under the data directory, so a launcher update replaces the launcher and open tools
 carry on.
 
+## The splash is the update's surface
+
+**There is no update dialog.** `ui:SplashWindow` is the only window the launcher has until
+it opens, and the update reports into it. `.claude/plans/splash-window.md` has the window
+itself and the order a host shows one in.
+
+`App.StartAsync` is the whole of startup: build the splash, show it, ask the feed, fetch what
+it offers, then load the look and open the launcher. **The splash is up before the feed is
+asked**, so the check is a wait a person can see rather than a blank screen.
+
+**The wording lives in `UpdateStages`, not in the window.** It turns a whole percent into the
+status line, the fraction and the readout, so both of its rules can be tested without drawing
+anything: the size is the feed's stated one humanized once, and a hundred percent says
+Checking the download because Velopack runs the checksum inside the same call.
+
+**A full bar is stated rather than waited for, then held for 600ms.** Velopack's last report
+is not reliably a hundred, so `Downloading(100)` is called once the fetch returns, and the
+fill takes 180ms to travel, so moving on any sooner would mean a hundred percent was never
+seen.
+
+**The swap itself is indeterminate.** After the dwell the bar goes back to sweeping under
+"Restarting Kitbash", since replacing the copy on the machine reports nothing and takes what
+it takes.
+
+**A feed offering nothing takes the progress row back down**, so the card collapses to the
+mark and the name while the launcher is built. A failed download lands there too.
+
+**The splash is up for at least two seconds** before the launcher replaces it. Only the path
+that opens the launcher waits the floor out, since a download passes it many times over.
+
 ## Every path through startup ends with a window
 
 The rule the update path is built to. A copy that fails to update and shows nothing is
-worse than one that never tried.
+worse than one that never tried. **The one exception is a person dismissing the splash**,
+which is a request to leave rather than a failure.
 
 - **`CheckAsync` never throws**, cancellation included.
-- **A failed download closes the dialog and returns.** Measured with a package whose
+- **A failed download reports nothing further and returns**, and the launcher opens on the
+  copy already installed. Measured before the splash took this over, with a package whose
   SHA256 was made not to match: the launcher opened 1.9 seconds in and the AppImage on
   disk was untouched.
 - **Any failure in the update path is caught in `App.StartAsync`**, which opens the
   launcher afterwards whatever happened.
 
+**Dismissing the splash during a download quits Kitbash.** It cancels the fetch, and
+`SplashWindow` ends the app itself because no other window is up. This departs from what the
+dialog did, which was to cancel and open the launcher anyway. `StartAsync` checks for it after
+every await, so nothing opens a window after the app has been told to go.
+
 ### The check has a three second deadline
 
-Nothing is drawn until the update is settled, so the check is a blank screen and is
-bounded.
+The splash is drawn while the feed is asked, so this bounds a visible wait rather than a
+blank screen. The number has not moved since that changed.
 
 **A cancellation token does not bound it.** `UpdateManager.CheckForUpdatesAsync` takes no
 token, so one handed to `Task.Run` only stops it starting. Measured before this was
@@ -92,10 +129,10 @@ Measured, launch to window, against a baseline start of about 1.7 seconds: a ser
 accepts and never replies 4.8s, nothing listening 1.8s, a host that does not resolve 1.7s,
 a folder that is not there 1.6s.
 
-**The dialog is the only window while it runs.** It opens with `Show` rather than
-`ShowDialog`, centres on the screen and sits in the task bar. `ShutdownMode` is
-`OnExplicitShutdown` until the launcher is up, since the dialog closing would otherwise be
-a last window closing and end the app before anything opened.
+**`ShutdownMode` is `OnExplicitShutdown` until the launcher is up**, since the splash closing
+would otherwise be a last window closing and end the app before anything opened. `Open` puts
+it back. The splash is also `desktop.MainWindow` until the launcher replaces it, so a second
+copy asking this one to come forward has something to raise.
 
 ## The feed
 

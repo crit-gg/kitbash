@@ -1,7 +1,12 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Markup.Xaml.Styling;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using Avalonia.Themes.Fluent;
 using Microsoft.Extensions.DependencyInjection;
 using Kitbash.Core;
 using Kitbash.Core.Git;
@@ -15,6 +20,7 @@ using Kitbash.Tools;
 using Kitbash.Updates;
 using Kitbash.ViewModels;
 using Kitbash.Ui;
+using Kitbash.Ui.Controls;
 using Kitbash.Ui.Settings;
 using Kitbash.Ui.Toasts;
 using Kitbash.Views;
@@ -28,11 +34,25 @@ public partial class App : Application
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     /// <summary>
-    /// How long the launcher stays off screen while the feed is asked. Short, because
-    /// nothing is drawn during it. A check that does not answer in time is dropped and
-    /// tried again at the next launch, which costs one launch and never costs a start.
+    /// How long the launcher waits on the feed. The splash is up while it is asked, so this
+    /// bounds a wait a person can see rather than a blank screen. A check that does not
+    /// answer in time is dropped and tried again at the next launch, which costs one launch
+    /// and never costs a start.
     /// </summary>
     private static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(3);
+
+    /// <summary>
+    /// The least time the splash is up before the launcher replaces it. A splash that
+    /// flashes past reads as a fault rather than as a start.
+    /// </summary>
+    private static readonly TimeSpan SplashFloor = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// How long a full bar is held before the restart takes the bar back to indeterminate.
+    /// The fill takes 180ms to travel, so moving on from the last report any sooner would
+    /// mean a hundred percent was never seen.
+    /// </summary>
+    private static readonly TimeSpan SplashSettle = TimeSpan.FromMilliseconds(600);
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -40,9 +60,9 @@ public partial class App : Application
         {
             _services = BuildServices();
 
-            // Nothing is on screen until the update is settled, and the update dialog
-            // closing would otherwise be a last window closing and end the app before the
-            // launcher had opened. Put back in Open.
+            // The splash is the only window until the launcher opens, and its closing would
+            // otherwise be a last window closing and end the app before the launcher had
+            // opened. Put back in Open.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.ShutdownRequested += (_, _) => _services?.Dispose();
 
@@ -99,14 +119,31 @@ public partial class App : Application
         });
 
     /// <summary>
-    /// Updates first, then opens. **Every path through this ends with a window**, because
-    /// an app that fails to update and shows nothing is worse than one that never tried.
+    /// The splash, then the update, then the launcher. **Every path through this ends with a
+    /// window** unless a person dismissed the splash, because an app that fails to update and
+    /// shows nothing is worse than one that never tried.
     /// </summary>
     private async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop)
     {
+        var splash = BuildSplash(_services?.GetService<IApplicationVersion>()?.Current ?? string.Empty);
+
+        // Dismissing the splash ends the app from inside the window itself, so nothing after
+        // this may open one. It also stops a download that is still running.
+        using var dismissed = new CancellationTokenSource();
+
+        splash.Closed += (_, _) => dismissed.Cancel();
+
+        // The main window until the launcher exists, so a second copy asking this one to
+        // come forward has something to raise.
+        desktop.MainWindow = splash;
+
+        var since = Stopwatch.StartNew();
+
+        splash.Show();
+
         try
         {
-            await UpdateAsync();
+            await UpdateAsync(splash, dismissed.Token);
         }
         catch (Exception exception)
         {
@@ -115,27 +152,158 @@ public partial class App : Application
             _services?.GetService<UpdateLog>()?.Say("update could not run", exception);
         }
 
+        if (dismissed.IsCancellationRequested)
+        {
+            return;
+        }
+
+        // Nothing is being waited on any more, so the row goes and the card collapses back
+        // to the mark and the name. Reached by a feed with nothing to offer and by a
+        // download that failed alike.
+        splash.IsProgressVisible = false;
+
+        LoadTheme();
+
+        var left = SplashFloor - since.Elapsed;
+
+        if (left > TimeSpan.Zero)
+        {
+            await Task.Delay(left, CancellationToken.None);
+        }
+
+        if (dismissed.IsCancellationRequested)
+        {
+            return;
+        }
+
         Open(desktop);
+
+        // After the swap, so the splash closing is a replacement rather than the last window.
+        splash.Close();
     }
 
     /// <summary>
-    /// Asks the feed, and hands over to the dialog when it has something. Draws nothing
-    /// while asking, since a feed that has gone takes its own time to say so and a window
-    /// that flashed on every launch would be worse than the wait.
+    /// The splash the launcher starts behind. A static factory so a test builds the same
+    /// window this does, mark and all.
     /// </summary>
-    private async Task UpdateAsync()
+    public static SplashWindow BuildSplash(string version) =>
+        new()
+        {
+            Mark = new Bitmap(AssetLoader.Open(new Uri(MarkAsset))),
+
+            // The Kitbash mark is a finished badge already and wants no tile behind it.
+            ShowMarkFrame = false,
+            AppName = "Kitbash",
+            AppVersion = version,
+            Description = "Designer tools for Godot projects",
+        };
+
+    /// <summary>The launcher's own mark, the same file its title bar wears.</summary>
+    private const string MarkAsset = "avares://Kitbash/Assets/Icons/icon_64x64.png";
+
+    /// <summary>
+    /// Asks the feed and fetches what it offers, reporting into the splash throughout. The
+    /// splash is the only thing on screen while this runs.
+    /// </summary>
+    private async Task UpdateAsync(SplashWindow splash, CancellationToken dismissed)
     {
         if (_services?.GetService<IApplicationUpdates>() is not { } updates)
         {
             return;
         }
 
+        splash.Report("Checking for an update");
+
         using var limit = new CancellationTokenSource(CheckLimit);
 
-        if (await updates.CheckAsync(limit.Token) is { } found)
+        if (await updates.CheckAsync(limit.Token) is not { } found)
         {
-            await UpdateDialog.RunAsync(updates, found);
+            return;
         }
+
+        if (dismissed.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await FetchAsync(updates, found, splash, dismissed);
+    }
+
+    /// <summary>
+    /// Downloads, then applies and restarts. Anything that goes wrong leaves the machine as
+    /// it was and returns, so the launcher opens on the copy already installed.
+    /// </summary>
+    private static async Task FetchAsync(
+        IApplicationUpdates updates,
+        AvailableUpdate found,
+        SplashWindow splash,
+        CancellationToken dismissed)
+    {
+        var stages = new UpdateStages(found);
+
+        Report(splash, stages.Downloading(0));
+
+        // Progress captures this thread's context, so every report arrives back on the UI
+        // thread and Report touches the window directly.
+        var progress = new Progress<int>(percent => Report(splash, stages.Downloading(percent)));
+
+        try
+        {
+            await updates.DownloadAsync(found, progress, dismissed);
+        }
+        catch (OperationCanceledException)
+        {
+            // The close mark did this and the app is already going.
+            return;
+        }
+        catch (Exception)
+        {
+            // The service has already said what went wrong. Nothing has changed, so the
+            // launcher carries on as it was.
+            return;
+        }
+
+        // Velopack's last report is not reliably a hundred, so a full bar is stated rather
+        // than waited for, then held long enough to be seen.
+        Report(splash, stages.Downloading(100));
+
+        await Task.Delay(SplashSettle, CancellationToken.None);
+
+        // The swap reports nothing, so the bar goes back to saying only that work is
+        // happening.
+        Report(splash, stages.Restarting());
+
+        try
+        {
+            // Does not return when it works. The process is replaced by the new copy.
+            updates.ApplyAndRestart(found);
+        }
+        catch (Exception)
+        {
+            // Said by the service too.
+        }
+    }
+
+    /// <summary>The library knows nothing of an update, so a stage is unpacked here.</summary>
+    private static void Report(SplashWindow splash, UpdateStage stage) =>
+        splash.Report(stage.Status, stage.Fraction, stage.Detail);
+
+    /// <summary>
+    /// The look, added once the splash is on screen and only on the path that opens the
+    /// launcher. An update that applies never gets here.
+    /// </summary>
+    private void LoadTheme()
+    {
+        if (Styles.Count > 0)
+        {
+            return;
+        }
+
+        Styles.Add(new FluentTheme());
+        Styles.Add(new StyleInclude(new Uri("avares://Kitbash.Ui/Themes/"))
+        {
+            Source = new Uri("avares://Kitbash.Ui/Themes/KitbashTheme.axaml"),
+        });
     }
 
     /// <summary>Opens the launcher on whatever version this copy ended up being.</summary>

@@ -84,6 +84,9 @@ public class SplashWindow : Window
     // How wide the sheen crossing a determinate fill is.
     private const double ShimmerWidth = 120;
 
+    // How long the indeterminate sweep takes to cross the track.
+    private static readonly TimeSpan SweepCycle = TimeSpan.FromSeconds(1.3);
+
     // The Slate tokens this window draws with. They are literals because the window has to
     // stand up before Themes/Tokens.axaml is loaded, so a change there means a change here.
     private static readonly IBrush SurfaceRoot = new ImmutableSolidColorBrush(0xff1e1f22);
@@ -926,11 +929,14 @@ public class SplashWindow : Window
 
         _sweeping = new CancellationTokenSource();
 
-        var sweep = new Animation
+        // Linear, and from just off one edge to just off the other. An eased crossing spends
+        // its slow ends off the track, and one that stops short leaves a lit sliver at the
+        // right to vanish, so either way the eye reads a rush and then a wait.
+        var crossing = new Animation
         {
-            Duration = TimeSpan.FromSeconds(1.9),
+            Duration = SweepCycle,
             IterationCount = IterationCount.Infinite,
-            Easing = new SplineEasing(0.5, 0.05, 0.4, 0.95),
+            Easing = new LinearEasing(),
             Children =
             {
                 new KeyFrame
@@ -941,12 +947,12 @@ public class SplashWindow : Window
                 new KeyFrame
                 {
                     Cue = new Cue(1),
-                    Setters = { new Setter(TranslateTransform.XProperty, travel * 3.2) },
+                    Setters = { new Setter(TranslateTransform.XProperty, _trackWidth) },
                 },
             },
         };
 
-        _ = sweep.RunAsync(_sweep, _sweeping.Token);
+        _ = crossing.RunAsync(_sweep, _sweeping.Token);
     }
 
     /// <summary>

@@ -150,6 +150,30 @@ public class SplashWindowTests
     }
 
     [AvaloniaFact]
+    public void ProgressCanBeTakenBackDownAgain()
+    {
+        var splash = Open();
+
+        var card = Part<Border>(splash, "PART_ContentRoot");
+        var quiet = card.Bounds.Height;
+
+        splash.Report("Checking for an update");
+
+        Dispatcher.UIThread.RunJobs();
+        splash.UpdateLayout();
+
+        Assert.True(card.Bounds.Height > quiet);
+
+        splash.IsProgressVisible = false;
+
+        Dispatcher.UIThread.RunJobs();
+        splash.UpdateLayout();
+
+        Assert.False(Part<StackPanel>(splash, "Progress").IsVisible);
+        Assert.Equal(quiet, card.Bounds.Height);
+    }
+
+    [AvaloniaFact]
     public void TheBarIsIndeterminateUntilItIsGivenAFraction()
     {
         var splash = Open();

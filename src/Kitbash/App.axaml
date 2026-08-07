@@ -5,10 +5,10 @@
              x:Class="Kitbash.App"
              RequestedThemeVariant="Dark">
 
-    <Application.Styles>
-        <FluentTheme />
-        <StyleInclude Source="avares://Kitbash.Ui/Themes/KitbashTheme.axaml" />
-    </Application.Styles>
+    <!-- The look is added in code rather than here. Parsing it is the slowest thing the
+         launcher does before any window exists, and the splash needs none of it, so it is
+         loaded after the splash is already on screen. App.axaml.cs has the order. -->
+
 
     <!-- The settings window draws an app supplied editor as content, so its template is
          registered here rather than in the window. -->

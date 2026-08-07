@@ -82,8 +82,8 @@ without touching the layout, which is what every overload that does not take one
 as. A host with no countable stages never sets it.
 
 **The bar does both forms and `Progress` is which.** Null is indeterminate, a 30 percent wide
-sweep under the fading gradient travelling from off the left edge to past the right over 1.9
-seconds. A value from 0 to 1 fills the track to that fraction in flat `Accent`, which is what
+sweep under the fading gradient crossing the track linearly over 1.3 seconds, from just off
+one edge to just off the other. A value from 0 to 1 fills the track to that fraction in flat `Accent`, which is what
 the library's own `ProgressBar` theme uses. A fraction outside the range is clamped rather
 than refused, since a host counting its own stages should never be able to throw here.
 
@@ -367,6 +367,14 @@ styles, and it is the one number to re-check if the rule is ever relaxed.
   Deco Pattern component it would apply to is a static SVG, and a 56 by 56 translation does
   not loop on a 64 by 32 tile anyway. A drifting lattice would also repaint the whole window
   forever, which is the opposite of what this window is for.
+- **The indeterminate sweep is linear and crosses clean off both edges**, against the
+  design's `cubic-bezier(.5,.05,.4,.95)` ending at 320 percent. Two things made the design's
+  read as a rush followed by a wait, and both are fixed here. The easing spends its slow ends
+  off the track, so the only part a person sees is the fast middle. And ending at 320 percent
+  leaves a lit sliver at the right edge that vanishes on the wrap, which is a pop rather than
+  an exit. It now runs at a steady 534 pixels per second from fully off the left to fully off
+  the right, so there is a bar on the track at all times bar the instant of the wrap.
+  **One sweep, never two.** The pulse and the sheen keep their own timings.
 - **The text carries a soft shadow, which the design does not draw.** The design sets its
   words on a veil dark enough to carry them, and a shadow reads better over the lattice at
   the sizes this ends up at.
@@ -386,9 +394,30 @@ real desktop**, on either platform, and a compositor that refuses transparency w
 gutter as an opaque rectangle around the card. `TransparencyLevelHint` asks and does not
 promise, which is the same bargain every other Kitbash window makes.
 
-**The gallery opens behind one.** Its `App.axaml.cs` is the worked example of the order
-above, and its SPLASH section opens a second one on demand so both bar forms can be driven by
-hand. **The launcher does not**, and still opens straight into the update dialog.
+**Both apps open behind one.** The gallery's `App.axaml.cs` is the worked example of the
+order above, and its SPLASH section opens a second one on demand so both bar forms can be
+driven by hand.
+
+**A feed with nothing to offer takes the row back down.** `IsProgressVisible` goes false and
+the card collapses to the mark and the name for the rest of the wait, since nothing is being
+waited on any more. A download that failed lands there too.
+
+**The launcher hosts it and the update reports into it.** `Views/UpdateDialog` is deleted.
+The splash is up before the feed is asked, so the check is no longer a blank screen, and it
+carries the download as a fraction with the version and the size beside it. `UpdateStages` in
+`Kitbash/Updates` holds the wording, so it is tested without a window. Two numbers are the
+launcher's own: the splash is up for at least two seconds before the launcher replaces it, and
+a full bar is held for 600ms before the swap starts, since the fill takes 180ms to travel.
+The swap itself goes back to indeterminate under "Restarting Kitbash", because replacing the
+copy on the machine reports nothing.
+
+**Dismissing during a download quits.** It cancels the fetch and the window ends the app
+itself, which is the rule above applied rather than an exception to it. The dialog used to
+cancel and open the launcher anyway, and `.claude/skills/kitbash-updates/SKILL.md` records the
+change.
+
+**The launcher's mark wears no tile.** `ShowMarkFrame` is off, since the Kitbash badge is a
+finished mark and the accent tile fights its own shape. Rendered both ways before choosing.
 
 **The gallery's startup has not been launched here**, since this machine has no virtual
 display and driving the real desktop is not how this repository verifies UI. What is verified
