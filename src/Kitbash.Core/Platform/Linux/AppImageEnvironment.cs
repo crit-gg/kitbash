@@ -29,6 +29,10 @@ internal sealed class AppImageEnvironment : IBundleEnvironment
         "GTK_PATH",
         "GDK_PIXBUF_MODULE_FILE",
         "XDG_DATA_DIRS",
+
+        // Plasma's task manager reads APPDIR out of a window's own process and adopts the
+        // first desktop file it finds there, so a child still holding ours is drawn as us.
+        "APPDIR",
     ];
 
     public AppImageEnvironment(IEnvironment environment, IPathRules paths)
