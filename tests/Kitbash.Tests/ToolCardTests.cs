@@ -240,6 +240,22 @@ public sealed class ToolCardTests
         Assert.False(Mark_(Draw(card)).IsVisible);
     }
 
+    /// <summary>
+    /// An installed tool no repository is answering for still knows the workspaces providing
+    /// it, since that is worked out from what it was installed from. Every card is in that
+    /// state until the repositories answer, and all of them are when the network is down.
+    /// </summary>
+    [AvaloniaFact]
+    public void AnInstalledToolIsMarkedWithNoOffer()
+    {
+        var card = Card(icon: null, providedBy: ["Art", "Foundry"]);
+
+        Assert.Null(card.Offer);
+        Assert.True(card.IsFromWorkspace);
+        Assert.Equal("Provided by the Art and Foundry workspaces", card.WorkspaceTip);
+        Assert.True(Mark_(Draw(card)).IsVisible);
+    }
+
     private static void Clipped(ToolCardViewModel card, int side)
     {
         var page = Draw(card);
@@ -479,6 +495,7 @@ public sealed class ToolCardTests
 
     /// <param name="script">A script, which is what the compact card is drawn for.</param>
     /// <param name="development">The tool declares itself the loose way.</param>
+    /// <param name="providedBy">The workspaces whose lists name the repository it came from.</param>
     /// <param name="actions">What the card promotes out of its menu, which grows it.</param>
     private static ToolCardViewModel Card(
         Bitmap? icon,
@@ -486,6 +503,7 @@ public sealed class ToolCardTests
         string name = "Foundry",
         string summary = "A tool",
         bool development = false,
+        IReadOnlyList<string>? providedBy = null,
         params string[] actions)
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
@@ -509,6 +527,7 @@ public sealed class ToolCardTests
         {
             Icon = icon,
             IsCompact = script,
+            ProvidedBy = providedBy ?? [],
         };
     }
 

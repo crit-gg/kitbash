@@ -105,7 +105,7 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         [Desktop Entry]
         Type=Application
         Name=Kitbash
-        Comment=Designer tools for a Godot project
+        Comment=Godot, without the version wrangling.
         Icon={EntryName}
         Exec={Quote(image)}
         Categories=Development;

@@ -16,6 +16,12 @@ public interface IInstalledTools
     void SetActiveVersion(ToolId id, ToolVersion version);
 
     /// <summary>
+    /// Records the repository a version was installed from, so a tool a workspace provides
+    /// can be told from one the global list provides without asking the network.
+    /// </summary>
+    void SetOrigin(ToolId id, ToolRepositorySource source);
+
+    /// <summary>
     /// Points a tool at a folder somewhere else on this machine, which is then where it
     /// runs from. Nothing is copied, so a rebuild in that folder is picked up as it is.
     /// </summary>

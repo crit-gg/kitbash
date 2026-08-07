@@ -512,8 +512,10 @@ owns may go under the install root.
 **A tool's state file sits in the tool's own folder**, at `<state>/tools/<id>/state.toml`,
 beside the version folders installed for it, so everything about one tool is in one place.
 `ApplicationPaths.StateFileFor` is what says so and `Tools` is the directory. It holds
-`install.version` for a tool Kitbash installed and `install.directory` for one a person
-pointed at a folder. `.claude/plans/tool-distribution.md` has both.
+`install.version` for a tool Kitbash installed, `install.directory` for one a person
+pointed at a folder, and `install.repository` with `install.global` for the repository a
+version came from, which is what says whether the open workspace provides it.
+`.claude/plans/tool-distribution.md` has all of them.
 
 The application folder is lower case on Unix and keeps its written case on Windows,
 which is what each platform does with its own directories. `IUserDirectories` folds it,

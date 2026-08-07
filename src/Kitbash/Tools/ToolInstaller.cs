@@ -139,6 +139,10 @@ public sealed class ToolInstaller : IToolInstaller
 
             _installed.SetActiveVersion(tool.Id, tool.Version);
 
+            // An update runs this same path, so the origin follows whichever list offered
+            // the version that is actually here rather than the one that first installed it.
+            _installed.SetOrigin(tool.Id, tool.Source);
+
             progress?.Report(new ToolInstallProgress(ToolInstallStage.Done));
 
             return new InstalledTool(
@@ -146,7 +150,8 @@ public sealed class ToolInstaller : IToolInstaller
                 tool.Version,
                 version,
                 tool.Manifest,
-                ToolCommand.For(tool.Payload, version));
+                ToolCommand.For(tool.Payload, version),
+                Origin: ToolOrigin.For(tool.Source));
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ToolInstallException)
         {

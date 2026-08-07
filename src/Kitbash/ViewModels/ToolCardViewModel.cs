@@ -62,6 +62,12 @@ public partial class ToolCardViewModel : ObservableObject
     /// </summary>
     public bool IsCompact { get; init; }
 
+    /// <summary>
+    /// The workspaces providing an installed tool, worked out from what it was installed
+    /// from. Empty for one the global list provides and for one nothing offers.
+    /// </summary>
+    public IReadOnlyList<string> ProvidedBy { get; init; } = [];
+
     /// <summary>The letter on the card's tile, for a tool that supplies no icon.</summary>
     public string Mark => Name.Length == 0 ? "?" : Name[..1].ToUpperInvariant();
 
@@ -98,13 +104,14 @@ public partial class ToolCardViewModel : ObservableObject
 
     /// <summary>
     /// The workspaces offering the tool. The one the offer came through when the catalogue
-    /// named none, which is a workspace whose list could not be read a second time.
+    /// named none, which is a workspace whose list could not be read a second time, and
+    /// what the install recorded when no repository is offering it at all.
     /// </summary>
     private IReadOnlyList<string> Workspaces => Offer switch
     {
         { Workspaces.Count: > 0 } offer => offer.Workspaces,
         { Source.Workspace: { } workspace } => [workspace],
-        _ => [],
+        _ => ProvidedBy,
     };
 
     /// <summary>

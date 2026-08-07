@@ -12,6 +12,8 @@ public sealed class FakeInstalledTools(params string[] ids) : IInstalledTools
 
     public void SetActiveVersion(ToolId id, ToolVersion version) => throw new NotSupportedException();
 
+    public void SetOrigin(ToolId id, ToolRepositorySource source) => throw new NotSupportedException();
+
     public void Link(ToolId id, string directory) => throw new NotSupportedException();
 
     public void Unlink(ToolId id) => throw new NotSupportedException();

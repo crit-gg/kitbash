@@ -9,13 +9,18 @@ namespace Kitbash.Tools;
 /// The folder belongs to the person rather than to Kitbash, so removing the tool forgets
 /// the path and deletes nothing.
 /// </param>
+/// <param name="Origin">
+/// The repository the version came from, or null when nothing recorded one. A tool
+/// installed before this was written and a folder placed by hand both read as null.
+/// </param>
 public sealed record InstalledTool(
     ToolId Id,
     ToolVersion Version,
     string Directory,
     ToolManifest Manifest,
     ToolCommand Command,
-    bool IsLinked = false)
+    bool IsLinked = false,
+    ToolOrigin? Origin = null)
 {
     public string Name => Manifest.Name;
 

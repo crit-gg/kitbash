@@ -195,7 +195,7 @@ public partial class App : Application
             ShowMarkFrame = false,
             AppName = "Kitbash",
             AppVersion = version,
-            Description = "Designer tools for Godot projects",
+            Description = "Godot, without the version wrangling.",
         };
 
     /// <summary>The launcher's own mark, the same file its title bar wears.</summary>
@@ -374,6 +374,7 @@ public partial class App : Application
             .AddSingleton<IToolRuntime, ToolRuntime>()
             .AddSingleton<IToolFolderReader, ToolFolderReader>()
             .AddSingleton<IInstalledTools, InstalledTools>()
+            .AddSingleton<IProvidedTools, ProvidedTools>()
             .AddSingleton<IToolStarter, ToolStarter>()
             .AddSingleton<ToolProgressReader>()
             .AddSingleton<IToolScriptRunner, ToolScriptRunner>()
@@ -409,6 +410,7 @@ public partial class App : Application
                 provider.GetRequiredService<IWorkspacesSettings>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IInstalledTools>(),
+                provider.GetRequiredService<IProvidedTools>(),
                 provider.GetRequiredService<IToolStarter>(),
                 provider.GetRequiredService<IToolScriptRunner>(),
                 provider.GetRequiredService<IToolInputMemory>(),

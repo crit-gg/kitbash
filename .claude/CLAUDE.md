@@ -468,7 +468,15 @@ process, in its own folder, told which workspace is open. Installed and availabl
 groups on the page and Install, Update, Update all, Check for updates and Uninstall all
 work. **The global repository list is edited in the settings window**, on a Tool
 repositories page, and a workspace's own list is still only ever read. **A tool no global
-list offers is marked on its card**, and the mark names every workspace providing it. **Install from
+list offers is marked on its card**, and the mark names every workspace providing it.
+**A tool a workspace provides is on the page in the workspaces providing it and nowhere
+else**, installed or not, so switching workspaces moves the tools page the way it moves the
+git and engine strips. An install records the repository it came from, in
+`install.repository` and `install.global` in the tool's own state file, and `IProvidedTools`
+is what applies the rule. A repository that has left every list keeps a tool the global list
+installed and drops one a workspace installed. **An install that recorded nothing adopts the
+repository answering for it**, so a tool installed before this existed scopes itself the next
+time the workspace offering it is open, rather than staying everywhere forever. **Install from
 folder is the other way in**, outside the seven steps: a folder holding a manifest is a
 tool where it sits, under a `local.` id, and nothing is copied, so a build on this machine
 runs from the folder it was built in and a rebuild needs no reinstall. Removing one

@@ -36,6 +36,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGodotProjectReader _projects;
     private readonly IWorkspaceMaker _maker;
     private readonly IInstalledTools _installed;
+    private readonly IProvidedTools _provided;
     private readonly IToolStarter _starter;
     private readonly IToolScriptRunner _scripts;
     private readonly IToolInputMemory _memory;
@@ -55,6 +56,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private IReadOnlyList<ToolGroupViewModel> _toolGroups = [];
     private IReadOnlyList<OfferedTool> _offers = [];
     private bool _swept;
+
+    /// <summary>Counts the refreshes, so a draw from a superseded one is thrown away.</summary>
+    private int _drawing;
+
+    /// <summary>Which workspace the offers were read for, since a list is per workspace.</summary>
+    private string? _offersFor;
 
     [ObservableProperty]
     private bool _workspacesOpen;
@@ -88,6 +95,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IWorkspacesSettings workspaceSettings,
         IPathShortener paths,
         IInstalledTools installed,
+        IProvidedTools provided,
         IToolStarter starter,
         IToolScriptRunner scripts,
         IToolInputMemory memory,
@@ -120,6 +128,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(workspaceSettings);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(provided);
         ArgumentNullException.ThrowIfNull(starter);
         ArgumentNullException.ThrowIfNull(scripts);
         ArgumentNullException.ThrowIfNull(memory);
@@ -164,6 +173,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _projects = projects;
         _maker = maker;
         _installed = installed;
+        _provided = provided;
         _starter = starter;
         _scripts = scripts;
         _memory = memory;
@@ -254,21 +264,92 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <param name="refresh">Asks every repository now rather than using what was cached.</param>
     public async Task RefreshToolsAsync(bool refresh = false)
     {
-        var installed = await Task.Run(_installed.Read).ConfigureAwait(true);
+        // Switching workspaces starts one of these, so a person switching twice quickly has
+        // two running. The later one wins and the earlier one stops drawing.
+        var token = ++_drawing;
+        var root = _workspaces.Current?.Root;
+
+        if (!string.Equals(root, _offersFor, StringComparison.Ordinal))
+        {
+            // An offer belongs to the workspace whose list brought it in, so it says nothing
+            // here and the first pass draws what is installed alone.
+            _offers = [];
+        }
+
+        var (installed, provided) = await Task.Run(Provided).ConfigureAwait(true);
 
         if (!_swept)
         {
             // At launch, since a version is never removed while anything might be running
-            // from it. A failed install leaves its own leftovers here too.
+            // from it. A failed install leaves its own leftovers here too. Every tool here,
+            // not only the ones this workspace provides, since the folders are the machine's.
             _swept = true;
             _ = Task.Run(() => _installer.SweepOldVersions(installed));
         }
 
-        Draw(installed, _offers);
+        if (token != _drawing)
+        {
+            return;
+        }
 
-        _offers = await ReadOffersAsync(refresh).ConfigureAwait(true);
+        Draw(provided, _offers);
 
-        Draw(installed, _offers);
+        var offers = await ReadOffersAsync(refresh).ConfigureAwait(true);
+
+        if (token != _drawing)
+        {
+            return;
+        }
+
+        // An install made before the origin was recorded has none, and so is on the page
+        // everywhere. The repository answering for it now is what fills that in.
+        if (installed.Any(tool => tool.Origin is null))
+        {
+            var known = installed;
+
+            provided = await Task.Run(() =>
+            {
+                Adopt(known, offers);
+
+                return Provided().Provided;
+            }).ConfigureAwait(true);
+
+            if (token != _drawing)
+            {
+                return;
+            }
+        }
+
+        _offers = offers;
+        _offersFor = root;
+
+        Draw(provided, offers);
+    }
+
+    /// <summary>What is installed and which of it this workspace provides. Reads a disk.</summary>
+    private (IReadOnlyList<InstalledTool> Installed, IReadOnlyList<ProvidedTool> Provided) Provided()
+    {
+        var installed = _installed.Read();
+
+        return (installed, _provided.Here(installed));
+    }
+
+    /// <summary>
+    /// Records where an install that recorded nothing came from, from the repository that is
+    /// offering it now. A linked tool is never one of these, since a local id matches no
+    /// repository's. Writes a file, so it runs off the UI thread.
+    /// </summary>
+    private void Adopt(IReadOnlyList<InstalledTool> installed, IReadOnlyList<OfferedTool> offers)
+    {
+        var offered = offers.ToDictionary(offer => offer.Id.Value, StringComparer.Ordinal);
+
+        foreach (var tool in installed.Where(tool => tool.Origin is null))
+        {
+            if (offered.TryGetValue(tool.Id.Value, out var offer))
+            {
+                _installed.SetOrigin(tool.Id, offer.Source);
+            }
+        }
     }
 
     private async Task<IReadOnlyList<OfferedTool>> ReadOffersAsync(bool refresh)
@@ -287,17 +368,17 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void Draw(IReadOnlyList<InstalledTool> installed, IReadOnlyList<OfferedTool> offers)
+    private void Draw(IReadOnlyList<ProvidedTool> installed, IReadOnlyList<OfferedTool> offers)
     {
         var offered = offers.ToDictionary(offer => offer.Id.Value, StringComparer.Ordinal);
-        var held = installed.Select(tool => tool.Id.Value).ToHashSet(StringComparer.Ordinal);
+        var held = installed.Select(tool => tool.Tool.Id.Value).ToHashSet(StringComparer.Ordinal);
 
         // A script is its own section on both sides, since running one and opening an app
         // are different things to want, and a script card is a different shape.
         List<ToolCardViewModel> mine = [];
         List<ToolCardViewModel> scripts = [];
 
-        foreach (var tool in installed)
+        foreach (var (tool, workspaces) in installed)
         {
             var card = new ToolCardViewModel(
                 tool,
@@ -306,6 +387,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                 menu: MenuFor(tool))
             {
                 IsCompact = tool.Manifest.IsScript,
+                ProvidedBy = workspaces,
             };
 
             (tool.Manifest.IsScript ? scripts : mine).Add(card);
@@ -831,6 +913,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         // After the release, so a refresh can never be the thing holding the load open.
         await RefreshEngineAsync().ConfigureAwait(true);
+
+        // The page belongs to whichever workspace is open, since a workspace's own list
+        // offers a tool there alone, so switching moves it the way it moves the strips.
+        await RefreshToolsAsync().ConfigureAwait(true);
     }
 
     // The disk half. Everything here either reads a disk or hands a folder to something that

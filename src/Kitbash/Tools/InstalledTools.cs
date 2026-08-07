@@ -1,4 +1,5 @@
 using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 
 namespace Kitbash.Tools;
@@ -14,6 +15,12 @@ public sealed class InstalledTools : IInstalledTools
 
     /// <summary>Where a tool's state file records the folder it was pointed at.</summary>
     private const string LinkedDirectoryKey = "install.directory";
+
+    /// <summary>Where a tool's state file records the repository the version came from.</summary>
+    private const string OriginUrlKey = "install.repository";
+
+    /// <summary>Where a tool's state file records that the global list offered the version.</summary>
+    private const string OriginGlobalKey = "install.global";
 
     private readonly ApplicationPaths _paths;
     private readonly IFileSystem _files;
@@ -69,6 +76,18 @@ public sealed class InstalledTools : IInstalledTools
         ArgumentNullException.ThrowIfNull(version);
 
         _state.Set(SettingsScope.ForTool(id.Value), ActiveVersionKey, version.ToString());
+    }
+
+    public void SetOrigin(ToolId id, ToolRepositorySource source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        _state.Apply(
+            SettingsScope.ForTool(id.Value),
+            [
+                SettingsEdit.Set(OriginUrlKey, source.Url.ToString()),
+                SettingsEdit.Set(OriginGlobalKey, source.Workspace is null),
+            ]);
     }
 
     public void Link(ToolId id, string directory)
@@ -141,13 +160,38 @@ public sealed class InstalledTools : IInstalledTools
 
         var wanted = _state.ForTool(id.Value).Get(ActiveVersionKey, string.Empty);
 
-        if (ToolVersion.TryParse(wanted, out var pinned)
-            && versions.Find(version => version.Version == pinned) is { } chosen)
+        var chosen = ToolVersion.TryParse(wanted, out var pinned)
+                && versions.Find(version => version.Version == pinned) is { } pinnedVersion
+            ? pinnedVersion
+            : versions.MaxBy(version => version.Version)!;
+
+        // Per tool rather than per version, since the state file holds one repository.
+        return chosen with { Origin = Origin(id) };
+    }
+
+    /// <summary>
+    /// The repository the version was installed from, or null when the state file names
+    /// none. A tool installed before this was recorded reads as null and so is not scoped.
+    /// </summary>
+    private ToolOrigin? Origin(ToolId id)
+    {
+        var state = _state.ForTool(id.Value);
+        var url = state.Get(OriginUrlKey, string.Empty);
+
+        if (string.IsNullOrWhiteSpace(url))
         {
-            return chosen;
+            return null;
         }
 
-        return versions.MaxBy(version => version.Version);
+        try
+        {
+            return new ToolOrigin(WebAddress.Parse(url), state.Get(OriginGlobalKey, true));
+        }
+        catch (Exception exception) when (exception is ArgumentException or FormatException)
+        {
+            _log.Say($"{id} records '{url}', which is not an address", exception);
+            return null;
+        }
     }
 
     /// <summary>

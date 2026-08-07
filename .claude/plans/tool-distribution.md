@@ -264,6 +264,36 @@ repository is in the global list or in that workspace's list. Nothing records wh
 workspace a tool belongs to, two workspaces naming one repository both see it, and
 dropping the entry stops it being offered without touching what is installed.
 
+**Installing a tool does not make it the machine's.** A tool a workspace provides is on the
+page in the workspaces whose lists name its repository and nowhere else, installed or not,
+and a tool the global list provides is on the page everywhere. The rule is the same on both
+sides of it, so switching workspaces moves the installed half the way it moves the offered
+half. One that this workspace does not provide is simply absent, the way an unreachable
+repository and a version with no payload are absent, since a card a person cannot use says
+nothing worth the room.
+
+**An install records the repository it came from, and that is not the same as storing
+availability.** `<state>/tools/<id>/state.toml` gains `install.repository` and
+`install.global`, written beside `install.version` by every install and every update, so the
+page can be drawn from the disk alone before any repository has answered. Which workspaces
+provide the tool is still worked out from the lists as they stand, matched by address, so
+dropping an entry still stops the offer without touching the install. `ToolOrigin` is the
+pair and `IProvidedTools` is what applies the rule.
+
+**A repository that has left every list leaves the install to decide.** One the global list
+installed stays, since no workspace could bring it back and hiding it would leave no way to
+uninstall it. One a workspace installed goes with the entry. A tool that recorded nothing,
+which is anything installed before this was written, and a linked tool under a `local.` id
+are both kept, since neither has a repository to scope by.
+
+**An install that recorded nothing adopts the repository that answers for it.** The page
+writes the origin for any installed tool with none as soon as an offer claims its id, so an
+install made before this existed scopes itself without being reinstalled. It converges
+rather than fixing itself at once: a repository only answers where it is listed, so a tool
+installed from a workspace is adopted the next time that workspace is open, and until then
+it is on the page everywhere. There is no cheaper way, since working out which repository
+holds a tool costs a request per repository and the catalogue asks only the ones in force.
+
 **A workspace config travels in a clone**, so a repository list can name a program nobody
 in the room chose. That is safe because offering costs nothing and the install button is
 the only way in. **The card names the repository it came from**, so the person clicking
@@ -277,6 +307,12 @@ both and a person switching workspaces keeps it. A workspace naming a different
 repository that happens to hold the same tool is not one of them, because knowing that
 would cost a request per workspace. `ToolRepositorySource.Workspace` is what carries it,
 null for the global list, and `OfferedTool.Workspaces` is the set the tooltip reads.
+
+**An installed card carries the mark before any repository has answered.** `ProvidedTool`
+names the workspaces the same way, from the address the install recorded, and
+`ToolCardViewModel.ProvidedBy` is where the card takes it when there is no offer. Every card
+is in that state on the first of the two passes, and all of them are when the network is
+down.
 
 ### Ids carry their source
 
@@ -710,7 +746,9 @@ which is what a folder placed by hand is.
 **`state.toml` holds `install.version`, and it is read through `IApplicationState`.** A
 tool's scope already points at that file now `StateFileFor` is folded, so nothing new
 stores anything. **A version it names that is not installed falls back to the newest that
-is**, rather than leaving the tool missing.
+is**, rather than leaving the tool missing. It also holds `install.repository` and
+`install.global`, which are the origin, and `install.directory` for a linked tool. The
+origin is per tool rather than per version, so it is read once whichever version opens.
 
 **This machine's runtime identifier is `RuntimeInformation.RuntimeIdentifier`.** It is
 what .NET reports for the running host, so nothing here tests the operating system, and a
@@ -744,6 +782,17 @@ is ever touched by a list changing, which is what the rule was protecting.
 **The launcher reads the disk, draws, then asks the network and draws again.** A person
 who has a tool should not wait on a server to see it. The tools page fills in twice on
 every refresh and the second pass is the only one that can be slow.
+
+**A workspace change refreshes the page.** `LauncherViewModel.LoadAsync` is the funnel every
+workspace change goes through, so the refresh sits there beside the engine strip's, and
+adding, removing and renaming a workspace all reach it too. Switching twice quickly leaves
+two refreshes running, so each carries a token and only the newest one draws. Without this
+the page kept the offers worked out for the workspace that was open before.
+
+**The offers a refresh starts from belong to the workspace they were read in.** They are
+kept between refreshes so an install or an uninstall redraws without waiting on a network,
+and a workspace change drops them, so the first pass never draws another workspace's
+available tools while the repositories are being asked.
 
 **A repository type that is not github.com is not this type.** `GitHubToolRepository`
 refuses any other host rather than guessing at an API root, so a self hosted forge is a
