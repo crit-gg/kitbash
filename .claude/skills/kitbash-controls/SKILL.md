@@ -384,6 +384,27 @@ the rest at 13, and one size across the row was preferred to a 1px difference no
 see. The spinner is the toasts page's 1.1 seconds rather than this page's 0.9, since one
 spin speed in the app beats two.
 
+### A chip in the title bar
+
+`TitleBarButton` and `TitleBarDropDownButton` are the two chips a window's own chrome takes,
+and they live in `WindowChrome.axaml` with the caption buttons rather than with the status
+bar, because the row they sit in belongs to the window.
+
+**Slim, and one size at either density.** The bar is `HeightTitleBar`, 32, and is not
+restated in the comfortable set, so a chip in it takes `HeightTitleBarChip` at 24 and
+`RadiusTitleBarChip` at 5 and does not move either. A control that took the ordinary 26 and
+the comfortable radius would fill the bar and leave the row no air.
+
+**Quiet at rest.** No fill and no border until the pointer arrives, because a title bar is
+one strip rather than a line of buttons. The hover fill is the whole affordance, and on the
+drop down the chevron carries the rest. It takes `mono` for a value rather than a name, the
+same split every field draws.
+
+**`StatusBarButton` is the status bar's, not the title bar's**, and it does draw a border and
+a fill at rest even though its own comment says it should not. Nothing has been changed there,
+since the launcher's status bar is drawn with it and would move too. A button in a title bar
+takes the pair above instead.
+
 ### Inputs
 
 Everything that takes a value sits in a **well**, `SurfaceWell`, which is darker than
