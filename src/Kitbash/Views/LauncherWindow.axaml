@@ -47,10 +47,9 @@
             <Setter Property="Padding" Value="14" />
         </Style>
 
+        <!-- No stroke. The tile is a plate for the letter a tool with no art falls back to. -->
         <Style Selector="Border.toolMark">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}" />
-            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
         </Style>
 
@@ -62,7 +61,13 @@
 
         <Style Selector="Border.toolMark.available">
             <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        </Style>
+
+        <!-- A tool's own art is the tile. The fill is the plate a letter sits on, and behind
+             art it shows through wherever the art is transparent. After the available rule,
+             so a tool that is both keeps nothing behind its art. -->
+        <Style Selector="Border.toolMark.art">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
 
         <Style Selector="Border.toolMark.available > TextBlock">
@@ -486,6 +491,7 @@
                                                                          when a tool supplies none. -->
                                                                     <Border Grid.Column="0" Classes="toolMark"
                                                                             Classes.available="{Binding !IsInstalled}"
+                                                                            Classes.art="{Binding HasIcon}"
                                                                             Width="40" Height="40">
                                                                         <Panel>
                                                                             <TextBlock Text="{Binding Mark}"
@@ -495,13 +501,13 @@
                                                                                        FontSize="{DynamicResource FontSizeCardTitle}"
                                                                                        FontWeight="{DynamicResource FontWeightStrong}" />
 
-                                                                            <!-- A second border does the clipping,
-                                                                                 since clipping on the one that draws
-                                                                                 the stroke cuts at the outer curve. -->
+                                                                            <!-- The tile holds a letter as well, so
+                                                                                 the art is clipped by a border of its
+                                                                                 own rather than by the tile. -->
                                                                             <Border Name="ToolIconClip"
                                                                                     ClipToBounds="True"
                                                                                     IsVisible="{Binding HasIcon}"
-                                                                                    CornerRadius="{DynamicResource RadiusSurfaceInside}">
+                                                                                    CornerRadius="{DynamicResource RadiusSurface}">
                                                                                 <Image Source="{Binding Icon}"
                                                                                        Stretch="UniformToFill" />
                                                                             </Border>
@@ -528,12 +534,12 @@
                                                                         <!-- The tool declares itself the loose way, so
                                                                              it is one somebody is building. -->
                                                                         <Border Name="DevelopmentMark"
-                                                                        Background="Transparent"
-                                                                        Padding="3"
-                                                                        VerticalAlignment="Center"
-                                                                        IsVisible="{Binding IsInDevelopment}"
-                                                                        ToolTip.Tip="{Binding DevelopmentTip}"
-                                                                        AutomationProperties.Name="{Binding DevelopmentTip}">
+                                                                                Background="Transparent"
+                                                                                Padding="3"
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding IsInDevelopment}"
+                                                                                ToolTip.Tip="{Binding DevelopmentTip}"
+                                                                                AutomationProperties.Name="{Binding DevelopmentTip}">
                                                                             <ui:Icon Glyph="Atom"
                                                                                      Size="{DynamicResource IconSizeStatus}"
                                                                                      Foreground="{DynamicResource Warn}" />
@@ -677,6 +683,7 @@
                                                                       ColumnSpacing="10">
                                                                     <Border Grid.Column="0" Classes="toolMark"
                                                                             Classes.available="{Binding !IsInstalled}"
+                                                                            Classes.art="{Binding HasIcon}"
                                                                             Width="32" Height="32">
                                                                         <Panel>
                                                                             <TextBlock Text="{Binding Mark}"
@@ -689,7 +696,7 @@
                                                                             <Border Name="ToolIconClip"
                                                                                     ClipToBounds="True"
                                                                                     IsVisible="{Binding HasIcon}"
-                                                                                    CornerRadius="{DynamicResource RadiusSurfaceInside}">
+                                                                                    CornerRadius="{DynamicResource RadiusSurface}">
                                                                                 <Image Source="{Binding Icon}"
                                                                                        Stretch="UniformToFill" />
                                                                             </Border>
@@ -715,12 +722,12 @@
                                                                                 Orientation="Horizontal" Spacing="2"
                                                                                 VerticalAlignment="Top">
                                                                         <Border Name="DevelopmentMark"
-                                                                        Background="Transparent"
-                                                                        Padding="3"
-                                                                        VerticalAlignment="Center"
-                                                                        IsVisible="{Binding IsInDevelopment}"
-                                                                        ToolTip.Tip="{Binding DevelopmentTip}"
-                                                                        AutomationProperties.Name="{Binding DevelopmentTip}">
+                                                                                Background="Transparent"
+                                                                                Padding="3"
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding IsInDevelopment}"
+                                                                                ToolTip.Tip="{Binding DevelopmentTip}"
+                                                                                AutomationProperties.Name="{Binding DevelopmentTip}">
                                                                             <ui:Icon Glyph="Atom"
                                                                                      Size="{DynamicResource IconSizeStatus}"
                                                                                      Foreground="{DynamicResource Warn}" />

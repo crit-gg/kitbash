@@ -220,10 +220,18 @@ install that otherwise worked still works.
 A tool installed before it published an icon has none in its folder, so the card falls
 back to the offer's until the next update, and nothing has to be reinstalled to gain art.
 
-The tile clips the icon to its own rounded corner with a second border inside the one that
-draws the stroke, which is the rule in `.claude/avalonia.md`, and `RadiusSurfaceInside` is
-the token for it. `ToolIconTileTests` renders the real card template inside the real
-launcher window and reads the four corner pixels back.
+**The tile draws no stroke, and nothing at all behind art.** Its fill is the plate the
+letter falls back onto, and a tool's own art is the tile itself, so the fill goes when there
+is art. Both matter for the same reason: art is rarely square to its own edge, so anything
+drawn behind it comes through the transparent room around it and reads as a border around
+the art. The stroke was the obvious half of that and the tint was the half that was left.
+`Border.toolMark.art` is what drops it, after the `available` rule so a tool that is both
+keeps nothing.
+
+The icon is still clipped by a border of its own rather than by the tile, since the tile
+holds the letter as well, and with no stroke between them the two carry the same
+`RadiusSurface`. `ToolCardTests` renders the real card template inside the real launcher
+window and reads the four corner pixels back.
 
 `executable` is a path inside the payload, and it is what gets run.
 

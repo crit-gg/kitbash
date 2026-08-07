@@ -256,6 +256,34 @@ public sealed class ToolCardTests
         Assert.NotEqual(Colors.Red, drawn[side - 3, side - 3]);
     }
 
+    /// <summary>
+    /// A tool's own art is the tile. Art is rarely square to its own edge, so a fill behind
+    /// it shows through the transparent room around it and reads as a border around the art.
+    /// </summary>
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ArtHasNothingBehindIt(bool script)
+    {
+        var tile = Tile_(Draw(Card(Filled(Colors.Red), script: script)), script ? ScriptTile : Tile);
+
+        Assert.Equal(Colors.Transparent, Assert.IsAssignableFrom<ISolidColorBrush>(tile.Background).Color);
+    }
+
+    /// <summary>The tile is the plate a tool with no art of its own falls back to.</summary>
+    [AvaloniaFact]
+    public void ALetterKeepsItsPlate()
+    {
+        var drawn = Draw(Card(icon: null));
+        var tile = Assert.Single(
+            drawn.GetVisualDescendants().OfType<Border>(), border => border.Classes.Contains("toolMark"));
+
+        Assert.True(drawn.TryFindResource("AccentTint", out var tint));
+        Assert.Equal(
+            Assert.IsAssignableFrom<ISolidColorBrush>(tint).Color,
+            Assert.IsAssignableFrom<ISolidColorBrush>(tile.Background).Color);
+    }
+
     /// <summary>The letter goes when there is art, so the two never draw over each other.</summary>
     [AvaloniaFact]
     public void TheLetterGivesWayToTheIcon()
@@ -269,7 +297,7 @@ public sealed class ToolCardTests
 
     /// <summary>
     /// One card, built out of the real card template inside the real group template and
-    /// shown in the launcher itself, since the tile's stroke and radius are styles the
+    /// shown in the launcher itself, since the tile's fill and radius are styles the
     /// launcher window carries and a card hosted anywhere else draws without them.
     /// </summary>
     private static Control Draw(params ToolCardViewModel[] cards)
@@ -296,8 +324,8 @@ public sealed class ToolCardTests
     }
 
     /// <summary>
-    /// The bordered tile itself, found from the border that does the clipping. The clip sits
-    /// inside the tile's own one pixel stroke, which is what its radius is a step under.
+    /// The tile itself, found from the border that does the clipping. The tile draws no
+    /// stroke, so the clip fills it and the two carry the same radius.
     /// </summary>
     private static Border Tile_(Control drawn, int side)
     {
@@ -306,11 +334,12 @@ public sealed class ToolCardTests
             border => border.Name == "ToolIconClip");
 
         Assert.True(clip.ClipToBounds);
-        Assert.Equal(new CornerRadius(7), clip.CornerRadius);
-        Assert.Equal(new Size(side - 2, side - 2), clip.Bounds.Size);
+        Assert.Equal(new CornerRadius(8), clip.CornerRadius);
+        Assert.Equal(new Size(side, side), clip.Bounds.Size);
 
         var tile = clip.GetVisualAncestors().OfType<Border>().First(border => border.Classes.Contains("toolMark"));
 
+        Assert.Equal(new Thickness(0), tile.BorderThickness);
         Assert.Equal(new Size(side, side), tile.Bounds.Size);
 
         return tile;
