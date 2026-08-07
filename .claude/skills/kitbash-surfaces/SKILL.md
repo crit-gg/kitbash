@@ -413,6 +413,19 @@ part of it click through.
 That is why the room is `Padding` on a wrapper rather than `Margin` on the card. A margin
 is outside the element and belongs to nothing that can be clicked.
 
+**A tooltip takes the same room with nothing above it.** `TooltipRoom` is `28,0,28,38`
+against the menus' `28,22,28,38`, because a tooltip opens at the pointer rather than off a
+control: Avalonia places it 20px below the cursor, so room above would put the popup window
+back under the cursor and take the hover and the click that belong to the control the tip
+came from. The shadow above the card is the part that is given up, and it is the faintest
+part, since `ShadowPopup` is already offset 10 down.
+
+**Its pull is the room's own left inset, read off the room.** `ui:Popups.PullsRoom="True"`
+on the wrapper, not the offsets the other overlays take from the tokens, because a tooltip's
+offsets are bound from the control the tip belongs to and a theme cannot reach them.
+`MinHeight` and `MaxWidth` sit on the card for the same reason a margin does not work: on
+the tooltip they would measure the room as well.
+
 **An overlay is at least as wide as what opened it.** A menu narrower than the button that
 opened it reads as a mistake. `ui:Popups.MatchesTarget` puts a floor under the width, read
 off the placement target the popup already holds, so an overlay with more to say is still

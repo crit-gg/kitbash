@@ -193,20 +193,25 @@
     <!-- Small, the same surface, and it never takes the pointer. -->
     <ControlTheme x:Key="{x:Type ToolTip}" TargetType="ToolTip">
         <Setter Property="Padding" Value="9,0" />
-        <Setter Property="MinHeight" Value="{DynamicResource HeightTooltip}" />
         <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
-        <Setter Property="MaxWidth" Value="320" />
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Theme="{StaticResource OverlayRoot}"
-                        Padding="{TemplateBinding Padding}">
-                    <ContentPresenter Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                      VerticalAlignment="Center" />
+                <!-- The room a shadow falls into is padding on a wrapper rather than a margin
+                     on the card, for the reason a menu's shadow room is. The size is the tip's
+                     own, so it is capped and floored here rather than on the tooltip. -->
+                <Border Padding="{DynamicResource TooltipRoom}" ui:Popups.PullsRoom="True">
+                    <Border Theme="{StaticResource OverlayRoot}"
+                            Padding="{TemplateBinding Padding}"
+                            MinHeight="{DynamicResource HeightTooltip}"
+                            MaxWidth="320">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Center" />
+                    </Border>
                 </Border>
             </ControlTemplate>
         </Setter>

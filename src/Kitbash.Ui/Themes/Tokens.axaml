@@ -240,6 +240,11 @@
     <x:Double x:Key="OverlayRoomX">-28</x:Double>
     <x:Double x:Key="OverlayRoomY">-18</x:Double>
 
+    <!-- The same room for a tooltip, with nothing above it. A tooltip opens 20px under the
+         pointer, and room above would put the popup window back under the pointer, where it
+         takes the hover and the click that belong to the control the tip came from. -->
+    <Thickness x:Key="TooltipRoom">28,0,28,38</Thickness>
+
     <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these
          stay soft and are never stacked. Overlays are the one place the theme uses
          elevation rather than a seam, because a popup has no panel to belong to. -->

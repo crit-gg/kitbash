@@ -51,6 +51,40 @@ public class Popups
         KeepsWheelProperty.Changed.AddClassHandler<Control, bool>(OnKeepsWheelChanged);
         MatchesTargetProperty.Changed.AddClassHandler<Control, bool>(OnMatchesTargetChanged);
         RoomProperty.Changed.AddClassHandler<Control, bool>(OnRoomChanged);
+        PullsRoomProperty.Changed.AddClassHandler<Decorator, bool>(OnPullsRoomChanged);
+    }
+
+    /// <summary>
+    /// This element is a popup's room and the popup is placed at the pointer, so the popup
+    /// is pulled back by the room's own left inset and the overlay stays where it was.
+    /// For a tooltip, whose offsets are bound from the control it belongs to.
+    /// </summary>
+    public static readonly AttachedProperty<bool> PullsRoomProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Decorator, bool>("PullsRoom");
+
+    public static bool GetPullsRoom(Decorator room) => room.GetValue(PullsRoomProperty);
+
+    public static void SetPullsRoom(Decorator room, bool value) => room.SetValue(PullsRoomProperty, value);
+
+    private static void OnPullsRoomChanged(Decorator room, AvaloniaPropertyChangedEventArgs<bool> change)
+    {
+        room.AttachedToVisualTree -= OnRoomAttached;
+
+        if (change.GetNewValue<bool>())
+        {
+            room.AttachedToVisualTree += OnRoomAttached;
+        }
+    }
+
+    // A tooltip binds the offset from its control on every open, so the pull is written each
+    // time the room is attached rather than once. The room has none above it, so only the
+    // horizontal offset moves.
+    private static void OnRoomAttached(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        if (sender is Decorator room && Containing(room) is { } popup)
+        {
+            popup.SetCurrentValue(Popup.HorizontalOffsetProperty, -room.Padding.Left);
+        }
     }
 
     /// <summary>
