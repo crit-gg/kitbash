@@ -1,6 +1,6 @@
 ---
 name: kitbash-appmark
-description: "The app mark every Kitbash tool wears. The badge, the joint, the wells, the letters and the palette, what a tool may change and what it may not, and the generator that draws it. Read before making or changing a tool's icon."
+description: "The app mark every Kitbash tool wears. The badge, the joint, the wells, the letters and the palette, what a tool may change and what it may not, the generator that draws it, and the launcher's own mark under icons/. Read before making or changing any app icon."
 ---
 
 ## What a mark is
@@ -81,6 +81,42 @@ covers about half the pixels on it and the background shows between. Nothing
 in this mark relies on that: the wells and letters are painted over whole
 parts, and the only place the background is visible is the gap, where it
 belongs. Anything added to the badge later has to keep that property.
+
+## The launcher's mark
+
+`icons/icon.svg` is the launcher's own, three fitted blocks rather than a
+lettered badge, and nothing generates it. A person draws it and the icon files
+are drawn off it:
+
+```
+tools/appmark/rasterise.py icons/icon.svg --ico 16,24,32,48,64,128,256
+```
+
+That writes the six PNG sizes and the ICO beside it, and `--check` compares
+with what is on disk and writes nothing. The ICO carries a 24 the PNG set does
+not, which is the only thing about this set a generated one lacks.
+
+Everything downstream reads that folder, so a new mark moves nothing else.
+`Kitbash.csproj` links the PNGs in as `Assets/Icons` and names the ICO as the
+`ApplicationIcon`, `LauncherWindow` takes the 256, the splash takes the 64, and
+`build/release.sh` hands the 256 to vpk on Linux and the ICO on Windows.
+
+**No two fills in it meet along an edge.** Three blocks in nine faces butt along
+eight seams, and the background shows through every one of them. So each block
+is painted over a silhouette that already runs under every block painted after
+it: the whole mark in the dark blue, the blue faces, red and gold together in
+the dark red, the red faces, gold alone in the dark gold, the gold faces. Every
+pixel inside the mark is then covered whole by one fill, and antialiasing is
+left with the outer edge alone.
+
+To prove it, draw every outline again as one path with one fill, which is the
+true coverage of the union, and compare the alpha channel. Anywhere the mark is
+thinner than that union is a seam. Rendering at 16 and 32 and looking at the
+joins finds the same thing by eye.
+
+**A drawing program will undo this.** Opening the file and saving it is safe.
+Merging paths that look like duplicates, or deleting a silhouette because the
+faces already cover it, puts every seam back.
 
 ## Chroma is not always available
 

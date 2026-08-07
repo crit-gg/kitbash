@@ -41,6 +41,9 @@ coverage*.xml
 # Partial writes left behind by an interrupted save
 *.tmp
 
+# Left by one generator importing another under tools/
+__pycache__/
+
 # Operating system
 .DS_Store
 Thumbs.db

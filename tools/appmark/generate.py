@@ -319,14 +319,14 @@ def png_width(blob):
     return struct.unpack(">I", blob[16:20])[0]
 
 
-def write_ico(pngs, target):
+def write_ico(pngs, target, sizes=None):
     """An ICO of PNG frames. Windows has read these since Vista and they are a
     twentieth of the size of the bitmap form."""
     blobs = [p.read_bytes() for p in pngs]
     head = struct.pack("<HHH", 0, 1, len(blobs))
     offset = len(head) + 16 * len(blobs)
     entries, body = b"", b""
-    for size, blob in zip(SIZES, blobs):
+    for size, blob in zip(sizes or SIZES, blobs):
         entries += struct.pack("<BBBBHHII", size % 256, size % 256, 0, 0, 1, 32,
                                len(blob), offset)
         offset += len(blob)

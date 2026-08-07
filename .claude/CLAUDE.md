@@ -224,7 +224,7 @@ part of the app, and each is the only place those rules are written.
 | `kitbash-godot` | engine matching or launching a project |
 | `kitbash-git` | anything that runs git |
 | `kitbash-updates` | `Program.cs`, the update path, `build/release.sh` or the release workflow |
-| `kitbash-appmark` | a tool's app icon, or anything under `tools/appmark/` |
+| `kitbash-appmark` | any app icon, the launcher's under `icons/` included, or anything under `tools/appmark/` |
 
 Deeper reference, read when a skill sends you there or when the framework itself is
 the problem:
