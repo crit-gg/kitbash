@@ -33,6 +33,12 @@ public sealed record ToolManifest(
     /// </summary>
     public IReadOnlyList<ToolInput> Inputs { get; init; } = [];
 
+    /// <summary>
+    /// The command line a folder on this machine runs, the program first. Empty for every
+    /// published manifest, which runs the one file its payload carries.
+    /// </summary>
+    public IReadOnlyList<string> Command { get; init; } = [];
+
     /// <summary>The launcher waits for it and reports on it rather than letting it go.</summary>
     public bool IsScript => Kind == ToolKind.Script;
 }

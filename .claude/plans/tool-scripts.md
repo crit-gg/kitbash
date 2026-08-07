@@ -97,6 +97,10 @@ though it were a window that never opens.
 
 `kind` is `app` or `script`, and absent means `app`.
 
+**A script being worked on says the same things in `kitbash-tool.dev.json`**, which names a
+command line instead of payloads and declares no format. `kind` and `inputs` read exactly
+as they do here. `.claude/plans/tool-distribution.md` has that file.
+
 ### What an input may say
 
 | Field | What it is |

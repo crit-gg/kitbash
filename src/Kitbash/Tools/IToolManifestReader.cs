@@ -12,4 +12,13 @@ public interface IToolManifestReader
     /// <summary>Reads the manifest inside an installed version's folder.</summary>
     /// <exception cref="ToolManifestException">It is missing, unreadable or unusable.</exception>
     ToolManifest ReadFrom(string directory);
+
+    /// <summary>Reads the loose form a folder on this machine may use instead.</summary>
+    /// <param name="folderName">What the tool is called when the file does not say.</param>
+    /// <exception cref="ToolManifestException">It is unreadable or unusable.</exception>
+    ToolManifest ReadDevelopment(string json, string folderName);
+
+    /// <summary>Reads the loose form out of a folder somebody pointed at.</summary>
+    /// <exception cref="ToolManifestException">It is missing, unreadable or unusable.</exception>
+    ToolManifest ReadDevelopmentFrom(string directory);
 }

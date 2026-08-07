@@ -17,7 +17,9 @@ is what a check costs.
 
 **Install from folder is built as well**, which is outside the seven steps. A folder
 holding a manifest is a tool where it sits, under a `local.` id, and nothing is copied.
-See A folder on this machine is the other way in.
+**A tool being worked on declares far less**: `kitbash-tool.dev.json` names a command line
+and defaults the rest, and a folder holding one project needs no file at all. See A folder
+on this machine is the other way in.
 
 **A tool can also be a script**, which is outside the seven steps too. The manifest says
 `"kind": "script"` and declares what to ask for, and the launcher runs it under a modal
@@ -487,15 +489,65 @@ fetch a file for one, and a build output folder has one version and nothing to f
 `IToolFolderInstaller` is its own seam, the repository lists are untouched, and the
 catalogue never sees it.
 
-**The manifest is still the whole contract.** `kitbash-tool.json` at the folder's root,
-the payload matching this machine, and the program `executable` names sitting inside it.
-`asset`, `size` and `sha256` are already optional in the reader, so a folder needs none of
-them.
+**A published manifest works and is not required.** `kitbash-tool.json` at the folder's
+root is read the strict way, the payload matching this machine, and the program
+`executable` names sitting inside it. `asset`, `size` and `sha256` are already optional in
+the reader, so a folder needs none of them. A tool being worked on has two looser ways in,
+below.
 
 **The id is `local.<name>`.** `local` is reserved and no repository type may take it, so a
 folder build and a released copy of the same tool are two ids and can both be installed.
 Nothing a repository offers ever matches a `local.` id, so a linked tool is never shown an
 update.
+
+### A tool being worked on declares a command, not a payload
+
+**`kitbash-tool.dev.json` is the loose form and it wins over the manifest**, so a tool can
+keep the manifest it publishes and still be run from the folder it is built in. It is read
+for a folder somebody pointed at and never for anything downloaded, which is what lets it
+name a program the folder does not carry.
+
+```json
+{
+  "id": "sprites",
+  "name": "Sprite import",
+  "kind": "script",
+  "command": ["dotnet", "run", "--project", "src/tools/Sprites", "--"]
+}
+```
+
+`command` is the whole command line, the program first, one word per argument. Everything
+the launcher adds follows it, so the trailing `--` is what stops `dotnet run` reading
+`--workspace` as an option of its own. Nothing splits a string, so a path holding a space
+needs no quoting and no quoting is honoured.
+
+| Field | What happens when it is absent |
+|---|---|
+| `id` | the folder name, lower cased, with anything an id cannot hold turned into a dash |
+| `name` | the folder name as it is written |
+| `version` | `0.0.0-dev`, which is what the card then shows |
+| `kind`, `inputs`, `icon`, `summary`, `category` | the same as a manifest, and with no format to declare |
+| `command` | `payloads` is read instead, and a file naming neither is refused |
+
+**The loose form carries no format number.** It never leaves this machine, so there is no
+older launcher to keep out of it, and it is read as the newest format the launcher knows.
+That is also why `command` is refused in a published manifest: it runs a program a payload
+does not carry, and a repository has no business naming one.
+
+**The program is a file or a name on PATH.** One holding a separator, and one a file in the
+folder is named after, is that file, resolved against the folder. Anything else is handed
+over as written and the operating system looks it up, which is how `dotnet` and `python3`
+work with nothing about them written down.
+
+### A folder holding one project needs no file at all
+
+A folder with no `kitbash-tool.dev.json` and no `kitbash-tool.json` is read as a project.
+Exactly one `.csproj` at its root is the tool: the project's name is the tool's name, its
+slug is the id, and the command is `dotnet run --project <the project> --`. Two projects
+are refused rather than guessed between, and the message says to add the loose form.
+
+`dotnet run` builds before it runs, so a rebuild is what launching does and there is no
+step between changing the tool and seeing the change.
 
 ### What the state file holds
 
@@ -515,10 +567,16 @@ separator.
 
 ### What it refuses, all before anything is written
 
-A folder that is not there, one holding no manifest, a manifest whose format is newer than
-this launcher reads, a manifest with no payload for this runtime identifier, a manifest
-naming a program that is not in the folder, and a folder inside `<state>/tools/`, which is
-already listed through the tool it belongs to.
+A folder that is not there, one holding no declaration and no project, one holding more
+than one project, a manifest whose format is newer than this launcher reads, a manifest
+with no payload for this runtime identifier, a manifest naming a program that is not in the
+folder, a command whose program is not installed, and a folder inside `<state>/tools/`,
+which is already listed through the tool it belongs to.
+
+**A command naming a file the folder does not hold yet is allowed.** A tool being worked on
+is often pointed at before its first build, and refusing that would mean installing it in
+an order nobody would guess. A payload's own file still has to be there, since a published
+tool carries it.
 
 ### Removing one deletes nothing
 
@@ -542,6 +600,14 @@ each of the eight refusals; a payload marked `any`; a trailing separator trimmed
 folder moved away and the tool dropping out while its neighbour kept working; remove
 leaving every file where it was; the sweep leaving a linked folder alone; and adding it
 again finding it as it was left.
+
+**The two loose forms are covered by `ToolFolderReaderTests`**, fourteen of them against
+real folders in a temporary directory. The inferred command was also run for real here:
+`dotnet run --project "<folder>/Sprite Import.csproj" -- --workspace "<a path with a
+space>"` reached the program as two arguments with the space intact, in the tool's own
+folder. **The Windows half of the program lookup has not been executed**, since this
+machine is Linux, so PATHEXT finding `dotnet.exe` is `ExecutableFinder`'s existing rule
+being trusted rather than something measured.
 
 ## Uninstalling
 

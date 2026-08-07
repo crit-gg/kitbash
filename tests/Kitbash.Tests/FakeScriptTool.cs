@@ -30,6 +30,7 @@ public sealed class FakeScriptTool
             Inputs = inputs,
         };
 
-        return new InstalledTool(id, version, directory, manifest, payload);
+        return new InstalledTool(
+            id, version, directory, manifest, ToolCommand.For(payload, directory));
     }
 }

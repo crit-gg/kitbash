@@ -38,7 +38,7 @@ public sealed class ToolScriptRunner : IToolScriptRunner
 
         var request = new ProcessRequest(
             tool.Executable,
-            [.. workspace, .. arguments],
+            [.. tool.Arguments, .. workspace, .. arguments],
             UseShellExecute: false,
             tool.Directory)
         {

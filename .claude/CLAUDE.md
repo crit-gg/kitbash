@@ -468,7 +468,11 @@ list offers is marked on its card**, and the mark names every workspace providin
 folder is the other way in**, outside the seven steps: a folder holding a manifest is a
 tool where it sits, under a `local.` id, and nothing is copied, so a build on this machine
 runs from the folder it was built in and a rebuild needs no reinstall. Removing one
-forgets the path and deletes nothing. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
+forgets the path and deletes nothing. **A tool being worked on declares almost nothing**:
+`kitbash-tool.dev.json` names a command line such as `dotnet run` and takes the id, the name
+and the version from the folder, and a folder holding one `.csproj` and no declaration at
+all is read as that project. A command is refused in a published manifest, since it runs a
+program a payload does not carry. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
 read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation`,
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured

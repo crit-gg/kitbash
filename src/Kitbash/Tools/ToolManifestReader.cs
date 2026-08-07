@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Kitbash.Core.IO;
@@ -12,6 +13,15 @@ public sealed class ToolManifestReader : IToolManifestReader
 {
     /// <summary>The name a manifest always has, so nothing has to guess at it.</summary>
     public const string FileName = "kitbash-tool.json";
+
+    /// <summary>
+    /// The loose form, for a tool being worked on in a folder on this machine. It is read
+    /// only for a folder somebody pointed at, never for anything downloaded.
+    /// </summary>
+    public const string DevelopmentFileName = "kitbash-tool.dev.json";
+
+    /// <summary>What a folder runs as when it names no version of its own.</summary>
+    public static readonly ToolVersion DevelopmentVersion = new(0, 0, 0, "dev");
 
     /// <summary>The format a manifest declares before it may carry a kind or any inputs.</summary>
     private const int ScriptFormat = 2;
@@ -45,6 +55,56 @@ public sealed class ToolManifestReader : IToolManifestReader
     {
         ArgumentNullException.ThrowIfNull(json);
 
+        return Check(Parse(json));
+    }
+
+    public ToolManifest ReadFrom(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
+        return Read(Text(directory, FileName));
+    }
+
+    public ToolManifest ReadDevelopment(string json, string folderName)
+    {
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(folderName);
+
+        // The loose form carries no format number, so it is read as the newest one. It
+        // never leaves this machine, so there is no older launcher to keep out of it.
+        return Development(Parse(json) with { Manifest = NewestFormat }, folderName);
+    }
+
+    public ToolManifest ReadDevelopmentFrom(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
+        return ReadDevelopment(
+            Text(directory, DevelopmentFileName),
+            Path.GetFileName(Path.TrimEndingDirectorySeparator(directory)));
+    }
+
+    private string Text(string directory, string name)
+    {
+        var file = Path.Combine(directory, name);
+
+        if (!_files.FileExists(file))
+        {
+            throw new ToolManifestException($"'{directory}' holds no {name}.");
+        }
+
+        try
+        {
+            return _files.ReadAllText(file);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            throw new ToolManifestException($"'{file}' could not be read.", exception);
+        }
+    }
+
+    private static Document Parse(string json)
+    {
         Document? document;
 
         try
@@ -56,33 +116,7 @@ public sealed class ToolManifestReader : IToolManifestReader
             throw new ToolManifestException("The manifest is not valid JSON.", exception);
         }
 
-        if (document is null)
-        {
-            throw new ToolManifestException("The manifest is empty.");
-        }
-
-        return Check(document);
-    }
-
-    public ToolManifest ReadFrom(string directory)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
-
-        var file = Path.Combine(directory, FileName);
-
-        if (!_files.FileExists(file))
-        {
-            throw new ToolManifestException($"'{directory}' holds no {FileName}.");
-        }
-
-        try
-        {
-            return Read(_files.ReadAllText(file));
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            throw new ToolManifestException($"'{file}' could not be read.", exception);
-        }
+        return document ?? throw new ToolManifestException("The manifest is empty.");
     }
 
     private ToolManifest Check(Document document)
@@ -99,11 +133,14 @@ public sealed class ToolManifestReader : IToolManifestReader
                 + $"reads up to {NewestFormat}. Update Kitbash to install this tool.");
         }
 
-        if (!ToolId.TryParse(document.Id, out var id) || id.Source is not null)
+        if (document.Command is { Count: > 0 })
         {
             throw new ToolManifestException(
-                $"'{document.Id}' is not a tool id. Use lower case letters, digits and dashes.");
+                $"A command is named in {DevelopmentFileName} alone, since a published tool "
+                + "runs the payload it ships.");
         }
+
+        var id = Identifier(document.Id);
 
         if (string.IsNullOrWhiteSpace(document.Name))
         {
@@ -136,6 +173,117 @@ public sealed class ToolManifestReader : IToolManifestReader
         {
             Inputs = Inputs(document),
         };
+    }
+
+    /// <summary>
+    /// The loose form. Everything a published manifest has to say is worked out from the
+    /// folder instead, so a tool being built here declares only what it runs.
+    /// </summary>
+    private ToolManifest Development(Document document, string folderName)
+    {
+        if (Blank(document.Id) && Slug(folderName).Length == 0)
+        {
+            throw new ToolManifestException(
+                $"'{folderName}' cannot be a tool id, so {DevelopmentFileName} has to give one.");
+        }
+
+        var id = Blank(document.Id) ? Identifier(Slug(folderName)) : Identifier(document.Id);
+        var name = Blank(document.Name) ? folderName.Trim() : document.Name!.Trim();
+
+        var version = DevelopmentVersion;
+
+        if (!Blank(document.Version) && !ToolVersion.TryParse(document.Version, out version))
+        {
+            throw new ToolManifestException($"'{document.Version}' is not a version.");
+        }
+
+        List<ToolPayload> payloads = [.. (document.Payloads ?? []).Select(Payload)];
+        var command = Command(document);
+
+        if (command.Count == 0 && payloads.Count == 0)
+        {
+            throw new ToolManifestException(
+                $"{DevelopmentFileName} names neither a command to run nor a payload.");
+        }
+
+        return new ToolManifest(
+            NewestFormat,
+            id.Name,
+            name,
+            document.Summary?.Trim() ?? string.Empty,
+            document.Category?.Trim() ?? string.Empty,
+            Icon(document.Icon),
+            version,
+            document.Required,
+            payloads,
+            Kind(document))
+        {
+            Inputs = Inputs(document),
+            Command = command,
+        };
+    }
+
+    private static ToolId Identifier(string? value)
+    {
+        if (!ToolId.TryParse(value, out var id) || id.Source is not null)
+        {
+            throw new ToolManifestException(
+                $"'{value}' is not a tool id. Use lower case letters, digits and dashes.");
+        }
+
+        return id;
+    }
+
+    /// <summary>
+    /// A folder or project name as a tool id. Anything an id cannot hold becomes a dash,
+    /// so Sprite Import and Sprite.Import are both sprite-import.
+    /// </summary>
+    public static string Slug(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        var slug = new StringBuilder(name.Length);
+
+        foreach (var letter in name.Trim().ToLowerInvariant())
+        {
+            if (char.IsAsciiLetterLower(letter) || char.IsAsciiDigit(letter))
+            {
+                slug.Append(letter);
+            }
+            else if (slug.Length > 0 && slug[^1] != '-')
+            {
+                slug.Append('-');
+            }
+        }
+
+        return slug.ToString().Trim('-');
+    }
+
+    /// <summary>
+    /// The words of a command line, the program first. A blank word is refused rather than
+    /// dropped, since the program is handed a list and a blank one would reach it as an
+    /// argument nobody wrote.
+    /// </summary>
+    private static IReadOnlyList<string> Command(Document document)
+    {
+        if (document.Command is not { Count: > 0 } words)
+        {
+            return [];
+        }
+
+        List<string> command = [];
+
+        foreach (var word in words)
+        {
+            if (Blank(word))
+            {
+                throw new ToolManifestException("A word of the command is empty.");
+            }
+
+            command.Add(word.Trim());
+        }
+
+        return command;
     }
 
     /// <summary>
@@ -417,6 +565,8 @@ public sealed class ToolManifestReader : IToolManifestReader
         public IReadOnlyList<PayloadDocument>? Payloads { get; init; }
 
         public IReadOnlyList<InputDocument>? Inputs { get; init; }
+
+        public IReadOnlyList<string>? Command { get; init; }
     }
 
     private sealed record InputDocument

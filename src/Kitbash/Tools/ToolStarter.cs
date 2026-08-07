@@ -27,11 +27,12 @@ public sealed class ToolStarter : IToolStarter
     {
         ArgumentNullException.ThrowIfNull(tool);
 
-        string[] arguments = string.IsNullOrWhiteSpace(workspaceRoot)
+        string[] workspace = string.IsNullOrWhiteSpace(workspaceRoot)
             ? []
             : [WorkspaceArgument, workspaceRoot];
 
         _platform.StartDetached(
-            ProcessRequest.CommandIn(tool.Directory, tool.Executable, arguments));
+            ProcessRequest.CommandIn(
+                tool.Directory, tool.Executable, [.. tool.Arguments, .. workspace]));
     }
 }

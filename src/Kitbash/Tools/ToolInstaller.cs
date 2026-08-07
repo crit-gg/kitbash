@@ -141,7 +141,12 @@ public sealed class ToolInstaller : IToolInstaller
 
             progress?.Report(new ToolInstallProgress(ToolInstallStage.Done));
 
-            return new InstalledTool(tool.Id, tool.Version, version, tool.Manifest, tool.Payload);
+            return new InstalledTool(
+                tool.Id,
+                tool.Version,
+                version,
+                tool.Manifest,
+                ToolCommand.For(tool.Payload, version));
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ToolInstallException)
         {

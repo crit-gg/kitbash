@@ -307,7 +307,12 @@ public sealed class ToolCardTests
         var manifest = Manifest(id, name, script);
 
         return new ToolCardViewModel(
-            new InstalledTool(id, manifest.Version, "/tools/foundry", manifest, payload),
+            new InstalledTool(
+                id,
+                manifest.Version,
+                "/tools/foundry",
+                manifest,
+                ToolCommand.For(payload, "/tools/foundry")),
             null)
         {
             Icon = icon,

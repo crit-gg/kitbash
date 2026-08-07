@@ -18,6 +18,7 @@ public sealed class InstalledTools : IInstalledTools
     private readonly ApplicationPaths _paths;
     private readonly IFileSystem _files;
     private readonly IToolManifestReader _manifests;
+    private readonly IToolFolderReader _folders;
     private readonly IToolRuntime _runtime;
     private readonly IApplicationState _state;
     private readonly ToolLog _log;
@@ -26,6 +27,7 @@ public sealed class InstalledTools : IInstalledTools
         ApplicationPaths paths,
         IFileSystem files,
         IToolManifestReader manifests,
+        IToolFolderReader folders,
         IToolRuntime runtime,
         IApplicationState state,
         ToolLog log)
@@ -33,6 +35,7 @@ public sealed class InstalledTools : IInstalledTools
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(manifests);
+        ArgumentNullException.ThrowIfNull(folders);
         ArgumentNullException.ThrowIfNull(runtime);
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(log);
@@ -40,6 +43,7 @@ public sealed class InstalledTools : IInstalledTools
         _paths = paths;
         _files = files;
         _manifests = manifests;
+        _folders = folders;
         _runtime = runtime;
         _state = state;
         _log = log;
@@ -91,14 +95,19 @@ public sealed class InstalledTools : IInstalledTools
                 return null;
             }
 
-            var tool = Describe(id, linked);
-
-            if (tool is null)
+            try
             {
-                _log.Say($"{id} is pointed at '{linked}', which holds no tool this machine can run");
-            }
+                var tool = _folders.Read(linked);
 
-            return tool is null ? null : tool with { IsLinked = true };
+                // The folder is the id, so one whose tool renamed itself is left alone
+                // rather than opened under a name nothing on the list holds.
+                return tool.Id == id ? tool : null;
+            }
+            catch (ToolManifestException exception)
+            {
+                _log.Say($"{id} is pointed at '{linked}' and cannot run. {exception.Message}");
+                return null;
+            }
         }
 
         return Versioned(id, folder);
@@ -166,7 +175,8 @@ public sealed class InstalledTools : IInstalledTools
         }
 
         return _runtime.PayloadFor(manifest) is { } payload
-            ? new InstalledTool(id, manifest.Version, directory, manifest, payload)
+            ? new InstalledTool(
+                id, manifest.Version, directory, manifest, ToolCommand.For(payload, directory))
             : null;
     }
 }

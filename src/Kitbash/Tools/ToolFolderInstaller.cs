@@ -1,40 +1,41 @@
 using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 
 namespace Kitbash.Tools;
 
 /// <summary>
-/// Checks a folder a person picked and remembers it. The manifest is the whole contract,
-/// so a folder holding one and the program it names is a tool wherever it sits.
+/// Checks a folder a person picked and remembers it. What the folder says it is is the
+/// whole contract, so a folder describing a tool is one wherever it sits.
 /// </summary>
 public sealed class ToolFolderInstaller : IToolFolderInstaller
 {
-    private readonly IToolManifestReader _manifests;
-    private readonly IToolRuntime _runtime;
+    private readonly IToolFolderReader _folders;
     private readonly IInstalledTools _installed;
     private readonly IFileSystem _files;
+    private readonly IExecutableFinder _programs;
     private readonly IPathRules _rules;
     private readonly ApplicationPaths _paths;
 
     public ToolFolderInstaller(
-        IToolManifestReader manifests,
-        IToolRuntime runtime,
+        IToolFolderReader folders,
         IInstalledTools installed,
         IFileSystem files,
+        IExecutableFinder programs,
         IPathRules rules,
         ApplicationPaths paths)
     {
-        ArgumentNullException.ThrowIfNull(manifests);
-        ArgumentNullException.ThrowIfNull(runtime);
+        ArgumentNullException.ThrowIfNull(folders);
         ArgumentNullException.ThrowIfNull(installed);
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(programs);
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(paths);
 
-        _manifests = manifests;
-        _runtime = runtime;
+        _folders = folders;
         _installed = installed;
         _files = files;
+        _programs = programs;
         _rules = rules;
         _paths = paths;
     }
@@ -58,29 +59,48 @@ public sealed class ToolFolderInstaller : IToolFolderInstaller
                 "That folder is inside the folder Kitbash installs tools into, so it is already listed.");
         }
 
-        var manifest = Read(root);
-        var id = ToolId.For(ToolId.LocalSource, manifest.Id);
+        var tool = Read(root);
 
-        if (_runtime.PayloadFor(manifest) is not { } payload)
+        Runnable(tool);
+
+        _installed.Link(tool.Id, root);
+
+        return tool;
+    }
+
+    /// <summary>
+    /// What can be told before the tool is on the list. A build that has not happened yet
+    /// is no reason to refuse a folder somebody is working in, so only a payload has to
+    /// have its file there already.
+    /// </summary>
+    private void Runnable(InstalledTool tool)
+    {
+        if (!tool.Command.IsFile)
         {
-            throw new ToolInstallException(
-                $"{manifest.Name} {manifest.Version} has nothing to run on {_runtime.Identifier}.");
+            if (_programs.Find(tool.Command.Program) is null)
+            {
+                throw new ToolInstallException(
+                    $"'{tool.Command.Program}' is not installed, so {tool.Name} has nothing to run it.");
+            }
+
+            return;
         }
 
-        var executable = payload.ExecutableIn(root);
-
-        if (!_files.FileExists(executable))
+        if (!_files.FileExists(tool.Executable))
         {
-            throw new ToolInstallException($"That folder holds no executable named {payload.Executable}.");
+            if (tool.Manifest.Command.Count > 0)
+            {
+                return;
+            }
+
+            throw new ToolInstallException(
+                "That folder holds no executable named "
+                + $"{Path.GetRelativePath(tool.Directory, tool.Executable)}.");
         }
 
         // The same bit an unpacked payload gets. A build that wrote the file without it
         // would otherwise install and then fail to start with nothing saying why.
-        _files.MakeExecutableFile(executable);
-
-        _installed.Link(id, root);
-
-        return new InstalledTool(id, manifest.Version, root, manifest, payload, IsLinked: true);
+        _files.MakeExecutableFile(tool.Executable);
     }
 
     /// <summary>
@@ -100,14 +120,14 @@ public sealed class ToolFolderInstaller : IToolFolderInstaller
     }
 
     /// <summary>
-    /// The manifest, with its refusal carried across as an install failure so the caller
-    /// has one exception to catch. Its message is already written for a person.
+    /// What the folder holds, with its refusal carried across as an install failure so the
+    /// caller has one exception to catch. Its message is already written for a person.
     /// </summary>
-    private ToolManifest Read(string root)
+    private InstalledTool Read(string root)
     {
         try
         {
-            return _manifests.ReadFrom(root);
+            return _folders.Read(root);
         }
         catch (ToolManifestException exception)
         {

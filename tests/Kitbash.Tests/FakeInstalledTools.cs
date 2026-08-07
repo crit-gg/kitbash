@@ -35,6 +35,9 @@ public sealed class FakeInstalledTools(params string[] ids) : IInstalledTools
             Required: false,
             [payload]);
 
-        return new InstalledTool(id, version, $"/tools/{id.Value}", manifest, payload);
+        var directory = $"/tools/{id.Value}";
+
+        return new InstalledTool(
+            id, version, directory, manifest, ToolCommand.For(payload, directory));
     }
 }

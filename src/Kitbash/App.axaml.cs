@@ -204,6 +204,7 @@ public partial class App : Application
             .AddSingleton<ToolLog>()
             .AddSingleton<IToolManifestReader, ToolManifestReader>()
             .AddSingleton<IToolRuntime, ToolRuntime>()
+            .AddSingleton<IToolFolderReader, ToolFolderReader>()
             .AddSingleton<IInstalledTools, InstalledTools>()
             .AddSingleton<IToolStarter, ToolStarter>()
             .AddSingleton<ToolProgressReader>()
