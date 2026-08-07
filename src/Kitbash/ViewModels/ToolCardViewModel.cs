@@ -76,6 +76,32 @@ public partial class ToolCardViewModel : ObservableObject
     public bool IsInstalled => Tool is not null;
 
     /// <summary>
+    /// A workspace's own repository list is what offers this tool, so it is gone from the
+    /// page in a workspace that does not list it.
+    /// </summary>
+    public bool IsFromWorkspace => Workspaces.Count > 0;
+
+    /// <summary>What the mark says on hover, naming every workspace offering the tool.</summary>
+    public string WorkspaceTip => Workspaces.Count switch
+    {
+        0 => string.Empty,
+        1 => $"Provided by the {Workspaces[0]} workspace",
+        _ => $"Provided by the {string.Join(", ", Workspaces.Take(Workspaces.Count - 1))} "
+            + $"and {Workspaces[^1]} workspaces",
+    };
+
+    /// <summary>
+    /// The workspaces offering the tool. The one the offer came through when the catalogue
+    /// named none, which is a workspace whose list could not be read a second time.
+    /// </summary>
+    private IReadOnlyList<string> Workspaces => Offer switch
+    {
+        { Workspaces.Count: > 0 } offer => offer.Workspaces,
+        { Source.Workspace: { } workspace } => [workspace],
+        _ => [],
+    };
+
+    /// <summary>
     /// What the menu's last line says. A linked tool is removed from the list and a tool
     /// Kitbash installed is uninstalled, since only one of the two deletes anything.
     /// </summary>

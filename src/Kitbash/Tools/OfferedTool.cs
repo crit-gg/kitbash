@@ -18,6 +18,12 @@ public sealed record OfferedTool(
     ToolRelease Release,
     ToolRepositorySource Source)
 {
+    /// <summary>
+    /// The workspaces whose own list names this repository, in the order the workspace list
+    /// holds them. Empty when the global list is what offers the tool.
+    /// </summary>
+    public IReadOnlyList<string> Workspaces { get; init; } = [];
+
     public string Name => Manifest.Name;
 
     public string Summary => Manifest.Summary;

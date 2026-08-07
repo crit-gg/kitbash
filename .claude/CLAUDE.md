@@ -319,7 +319,7 @@ numbers are the order**, and every stage depended only on lower ones, so the pla
 straight through. Each stage file records what it built and where it departed from the
 design.
 
-**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 49
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 52
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -463,7 +463,8 @@ scan of `<state>/tools/<id>/<version>/` that says what is here. A tool starts as
 process, in its own folder, told which workspace is open. Installed and available are two
 groups on the page and Install, Update, Update all, Check for updates and Uninstall all
 work. **The global repository list is edited in the settings window**, on a Tool
-repositories page, and a workspace's own list is still only ever read. **Install from
+repositories page, and a workspace's own list is still only ever read. **A tool no global
+list offers is marked on its card**, and the mark names every workspace providing it. **Install from
 folder is the other way in**, outside the seven steps: a folder holding a manifest is a
 tool where it sits, under a `local.` id, and nothing is copied, so a build on this machine
 runs from the folder it was built in and a rebuild needs no reinstall. Removing one

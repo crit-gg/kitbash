@@ -520,16 +520,33 @@
                                                                                    Foreground="{DynamicResource InkMuted}" />
                                                                     </StackPanel>
 
-                                                                    <!-- A plain menu rather than a split button, so
-                                                                         the primary has one target and one meaning. -->
-                                                                    <Button Grid.Column="2" Classes="icon"
-                                                                            VerticalAlignment="Top"
-                                                                            IsVisible="{Binding HasMenu}"
-                                                                            ToolTip.Tip="More"
-                                                                            AutomationProperties.Name="More"
-                                                                            Click="OnToolMenuClick">
-                                                                        <ui:Icon Glyph="DotsVerticalRounded" />
-                                                                    </Button>
+                                                                    <StackPanel Grid.Column="2"
+                                                                                Orientation="Horizontal" Spacing="2"
+                                                                                VerticalAlignment="Top">
+                                                                        <!-- A workspace list offers the tool, so it
+                                                                             goes when that workspace does. -->
+                                                                        <Border Name="WorkspaceMark"
+                                                                                Background="Transparent"
+                                                                                Padding="3"
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding IsFromWorkspace}"
+                                                                                ToolTip.Tip="{Binding WorkspaceTip}"
+                                                                                AutomationProperties.Name="{Binding WorkspaceTip}">
+                                                                            <ui:Icon Glyph="GroupAlt"
+                                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                                     Foreground="{DynamicResource InkSecondary}" />
+                                                                        </Border>
+
+                                                                        <!-- A plain menu rather than a split button, so
+                                                                             the primary has one target and one meaning. -->
+                                                                        <Button Classes="icon"
+                                                                                IsVisible="{Binding HasMenu}"
+                                                                                ToolTip.Tip="More"
+                                                                                AutomationProperties.Name="More"
+                                                                                Click="OnToolMenuClick">
+                                                                            <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                        </Button>
+                                                                    </StackPanel>
                                                                 </Grid>
 
                                                                 <!-- The floor keeps every card in a row ending its
@@ -675,14 +692,29 @@
                                                                                    Foreground="{DynamicResource InkMuted}" />
                                                                     </StackPanel>
 
-                                                                    <Button Grid.Column="2" Classes="icon"
-                                                                            VerticalAlignment="Top"
-                                                                            IsVisible="{Binding HasMenu}"
-                                                                            ToolTip.Tip="More"
-                                                                            AutomationProperties.Name="More"
-                                                                            Click="OnToolMenuClick">
-                                                                        <ui:Icon Glyph="DotsVerticalRounded" />
-                                                                    </Button>
+                                                                    <StackPanel Grid.Column="2"
+                                                                                Orientation="Horizontal" Spacing="2"
+                                                                                VerticalAlignment="Top">
+                                                                        <Border Name="WorkspaceMark"
+                                                                                Background="Transparent"
+                                                                                Padding="3"
+                                                                                VerticalAlignment="Center"
+                                                                                IsVisible="{Binding IsFromWorkspace}"
+                                                                                ToolTip.Tip="{Binding WorkspaceTip}"
+                                                                                AutomationProperties.Name="{Binding WorkspaceTip}">
+                                                                            <ui:Icon Glyph="GroupAlt"
+                                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                                     Foreground="{DynamicResource InkSecondary}" />
+                                                                        </Border>
+
+                                                                        <Button Classes="icon"
+                                                                                IsVisible="{Binding HasMenu}"
+                                                                                ToolTip.Tip="More"
+                                                                                AutomationProperties.Name="More"
+                                                                                Click="OnToolMenuClick">
+                                                                            <ui:Icon Glyph="DotsVerticalRounded" />
+                                                                        </Button>
+                                                                    </StackPanel>
                                                                 </Grid>
 
                                                                 <!-- Two lines, with a floor, so every card in the

@@ -31,6 +31,7 @@ public enum IconGlyph
     GitBranch,
     GitCommit,
     Godot,
+    GroupAlt,
     History,
     InfoCircle,
     Layout,

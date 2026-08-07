@@ -22,6 +22,12 @@ public interface IToolRepositoryList
     IReadOnlyList<ToolRepositorySource> ReadGlobal();
 
     /// <summary>
+    /// Every registered workspace's list, whichever one is open. Only the open workspace
+    /// offers anything, so this says which workspaces a tool travels with. Touches a disk.
+    /// </summary>
+    IReadOnlyList<ToolRepositorySource> ReadWorkspaces();
+
+    /// <summary>
     /// Replaces the global list, in the order given. A workspace's own list is a team
     /// file that travels in a clone, so it is never written from here.
     /// </summary>

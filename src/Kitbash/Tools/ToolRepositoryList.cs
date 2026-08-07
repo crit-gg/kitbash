@@ -53,6 +53,18 @@ public sealed class ToolRepositoryList : IToolRepositoryList
         return sources;
     }
 
+    public IReadOnlyList<ToolRepositorySource> ReadWorkspaces()
+    {
+        List<ToolRepositorySource> sources = [];
+
+        foreach (var workspace in _workspaces.All.Where(workspace => workspace.Exists))
+        {
+            sources.AddRange(Workspace(workspace));
+        }
+
+        return sources;
+    }
+
     public IReadOnlyList<ToolRepositorySource> ReadGlobal()
     {
         // The file has not been read since the last write from here, so it is read again.
@@ -82,7 +94,7 @@ public sealed class ToolRepositoryList : IToolRepositoryList
         {
             var settings = _workspaceSettings.For(new WorkspacePaths(workspace.Root)).Global;
 
-            return In(settings, $"the {workspace.Name} workspace");
+            return In(settings, $"the {workspace.Name} workspace", workspace.Name);
         }
         catch (SettingsFileUnreadableException exception)
         {
@@ -96,7 +108,7 @@ public sealed class ToolRepositoryList : IToolRepositoryList
     /// An array of tables reads back as an array of tables, so the rows are dictionaries
     /// rather than a type the converter knows. A row missing either key is skipped.
     /// </summary>
-    private IReadOnlyList<ToolRepositorySource> In(ISettings settings, string origin)
+    private IReadOnlyList<ToolRepositorySource> In(ISettings settings, string origin, string? workspace = null)
     {
         if (!settings.TryGet<object[]>(Key, out var rows))
         {
@@ -115,7 +127,8 @@ public sealed class ToolRepositoryList : IToolRepositoryList
 
             try
             {
-                sources.Add(new ToolRepositorySource(type.ToLowerInvariant(), WebAddress.Parse(url), origin));
+                sources.Add(
+                    new ToolRepositorySource(type.ToLowerInvariant(), WebAddress.Parse(url), origin, workspace));
             }
             catch (Exception exception) when (exception is ArgumentException or FormatException)
             {

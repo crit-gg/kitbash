@@ -27,6 +27,7 @@ folder-open
 git-branch
 git-commit
 godot
+group-alt
 history
 info-circle
 layout

@@ -9,7 +9,14 @@ namespace Kitbash.Tools;
 /// <param name="Origin">
 /// Where the entry is listed, in words, so a refusal can say which file to edit.
 /// </param>
-public sealed record ToolRepositorySource(string Type, WebAddress Url, string Origin)
+/// <param name="Workspace">
+/// The name of the workspace whose list holds it, or null for the global list.
+/// </param>
+public sealed record ToolRepositorySource(
+    string Type,
+    WebAddress Url,
+    string Origin,
+    string? Workspace = null)
 {
     /// <summary>GitHub releases, the first and so far only kind.</summary>
     public const string GitHub = "github";

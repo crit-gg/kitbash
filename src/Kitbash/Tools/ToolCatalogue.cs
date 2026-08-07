@@ -71,7 +71,48 @@ public sealed class ToolCatalogue : IToolCatalogue
             }
         }
 
-        return [.. offered.OrderBy(tool => tool.Name, StringComparer.CurrentCulture)];
+        return [.. WithWorkspaces(offered).OrderBy(tool => tool.Name, StringComparer.CurrentCulture)];
+    }
+
+    /// <summary>
+    /// Names the workspaces behind every offer a workspace list brought in. One read of all
+    /// of them, and only when there is such an offer to name.
+    /// </summary>
+    private IReadOnlyList<OfferedTool> WithWorkspaces(IReadOnlyList<OfferedTool> offered)
+    {
+        if (!offered.Any(tool => tool.Source.Workspace is not null))
+        {
+            return offered;
+        }
+
+        var lists = _list.ReadWorkspaces();
+
+        return
+        [
+            .. offered.Select(tool => tool.Source.Workspace is null
+                ? tool
+                : tool with { Workspaces = Naming(lists, tool.Source) }),
+        ];
+    }
+
+    /// <summary>
+    /// Every workspace listing the same repository, so a tool two workspaces share says
+    /// both. A workspace listing a different repository that happens to hold the same tool
+    /// is not one of these, since knowing that costs a request per workspace.
+    /// </summary>
+    private static IReadOnlyList<string> Naming(
+        IReadOnlyList<ToolRepositorySource> lists,
+        ToolRepositorySource source)
+    {
+        var url = source.Url.ToString();
+
+        return
+        [
+            .. lists
+                .Where(other => string.Equals(other.Url.ToString(), url, StringComparison.OrdinalIgnoreCase))
+                .Select(other => other.Workspace!)
+                .Distinct(StringComparer.Ordinal),
+        ];
     }
 
     private async Task<OfferedTool?> OfferAsync(

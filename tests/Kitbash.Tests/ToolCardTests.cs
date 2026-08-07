@@ -8,6 +8,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Kitbash.Core.Platform;
 using Kitbash.Tools;
 using Kitbash.ViewModels;
 using Kitbash.Views;
@@ -95,6 +96,55 @@ public sealed class ToolCardTests
             button => button.IsVisible && Equals(button.Content, "Run"));
     }
 
+    /// <summary>
+    /// A tool no global list offers goes when the workspace offering it does, so the card
+    /// carries a mark saying which workspaces bring it.
+    /// </summary>
+    [AvaloniaFact]
+    public void AToolAWorkspaceOffersIsMarked()
+    {
+        var card = Offered("Art", "Foundry", "Docs");
+
+        Assert.True(card.IsFromWorkspace);
+        Assert.Equal("Provided by the Art, Foundry and Docs workspaces", card.WorkspaceTip);
+
+        var drawn = Draw(card);
+        var mark = Mark_(drawn);
+
+        Assert.True(mark.IsVisible);
+        Assert.Equal(card.WorkspaceTip, ToolTip.GetTip(mark));
+
+        // Top right, and drawn rather than merely present.
+        var at = mark.TranslatePoint(new Point(0, 0), Card_(drawn));
+
+        Assert.NotNull(at);
+        Assert.True(mark.Bounds.Width >= 12 && mark.Bounds.Height >= 12, $"the mark is {mark.Bounds.Size}");
+        Assert.True(at!.Value.Y < 30, $"the mark sits {at.Value.Y} down the card");
+        Assert.True(
+            at.Value.X + mark.Bounds.Width > Card_(drawn).Bounds.Width - 60,
+            $"the mark ends {at.Value.X + mark.Bounds.Width} across a card {Card_(drawn).Bounds.Width} wide");
+    }
+
+    /// <summary>One workspace reads as one rather than as a list of one.</summary>
+    [AvaloniaFact]
+    public void OneWorkspaceIsNamedOnItsOwn()
+    {
+        Assert.Equal("Provided by the Art workspace", Offered("Art").WorkspaceTip);
+    }
+
+    /// <summary>
+    /// The global list offers a tool wherever a person is, so there is nothing for the mark
+    /// to say and it is not drawn.
+    /// </summary>
+    [AvaloniaFact]
+    public void AToolTheGlobalListOffersIsNotMarked()
+    {
+        var card = Offered();
+
+        Assert.False(card.IsFromWorkspace);
+        Assert.False(Mark_(Draw(card)).IsVisible);
+    }
+
     private static void Clipped(ToolCardViewModel card, int side)
     {
         var page = Draw(card);
@@ -171,6 +221,12 @@ public sealed class ToolCardTests
         return tile;
     }
 
+    /// <summary>The mark saying a workspace is what offers the tool.</summary>
+    private static Border Mark_(Control drawn) =>
+        Assert.Single(
+            drawn.GetLogicalDescendants().OfType<Border>(),
+            border => border.Name == "WorkspaceMark");
+
     /// <summary>The card's name, whichever of the two templates drew it.</summary>
     private static TextBlock Name_(Control drawn) =>
         Assert.Single(
@@ -246,11 +302,56 @@ public sealed class ToolCardTests
     private static ToolCardViewModel Card(Bitmap? icon, bool script = false, string name = "Foundry")
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
-        Assert.True(ToolVersion.TryParse("1.0.0", out var version));
 
         var payload = new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run");
+        var manifest = Manifest(id, name, script);
 
-        var manifest = new ToolManifest(
+        return new ToolCardViewModel(
+            new InstalledTool(id, manifest.Version, "/tools/foundry", manifest, payload),
+            null)
+        {
+            Icon = icon,
+            IsCompact = script,
+        };
+    }
+
+    /// <summary>
+    /// A card for a tool nothing has installed, offered by the repository the given
+    /// workspaces list. None of them means the global list is what offers it.
+    /// </summary>
+    private static ToolCardViewModel Offered(params string[] workspaces)
+    {
+        Assert.True(ToolId.TryParse("github.foundry", out var id));
+
+        var payload = new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run");
+        var manifest = Manifest(id, "Foundry", script: false);
+        var url = WebAddress.Parse("https://github.com/owner/foundry");
+
+        var source = new ToolRepositorySource(
+            ToolRepositorySource.GitHub,
+            url,
+            workspaces.Length == 0 ? "the global config" : $"the {workspaces[0]} workspace",
+            workspaces.FirstOrDefault());
+
+        var release = new ToolRelease(
+            manifest.Version,
+            manifest.Version.ToString(),
+            IsPrerelease: false,
+            new Dictionary<string, WebAddress>(StringComparer.Ordinal));
+
+        var offer = new OfferedTool(id, manifest.Version, manifest, "{}", payload, release, source)
+        {
+            Workspaces = workspaces,
+        };
+
+        return new ToolCardViewModel(null, offer);
+    }
+
+    private static ToolManifest Manifest(ToolId id, string name, bool script)
+    {
+        Assert.True(ToolVersion.TryParse("1.0.0", out var version));
+
+        return new ToolManifest(
             script ? 2 : 1,
             id.Name,
             name,
@@ -259,14 +360,8 @@ public sealed class ToolCardTests
             "foundry.png",
             version,
             Required: false,
-            [payload],
+            [new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run")],
             script ? ToolKind.Script : ToolKind.App);
-
-        return new ToolCardViewModel(new InstalledTool(id, version, "/tools/foundry", manifest, payload), null)
-        {
-            Icon = icon,
-            IsCompact = script,
-        };
     }
 
     /// <summary>One pixel, so a failure names three numbers rather than a packed integer.</summary>

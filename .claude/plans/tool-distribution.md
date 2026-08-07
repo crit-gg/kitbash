@@ -259,6 +259,15 @@ in the room chose. That is safe because offering costs nothing and the install b
 the only way in. **The card names the repository it came from**, so the person clicking
 has been told.
 
+**A tool no global list offers is marked on its card.** A small mark at the top right,
+whose tooltip names every workspace providing it, so a tool that travels with a workspace
+is told apart from one offered everywhere. It reads every registered workspace's list
+rather than the open one alone, since a repository two workspaces share is offered by
+both and a person switching workspaces keeps it. A workspace naming a different
+repository that happens to hold the same tool is not one of them, because knowing that
+would cost a request per workspace. `ToolRepositorySource.Workspace` is what carries it,
+null for the global list, and `OfferedTool.Workspaces` is the set the tooltip reads.
+
 ### Ids carry their source
 
 The manifest says `foundry`. The launcher stores `github.foundry`. A manifest author does
