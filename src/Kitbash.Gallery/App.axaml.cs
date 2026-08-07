@@ -49,7 +49,10 @@ public partial class App : Application
 
         var splash = new SplashWindow
         {
+            // The mark is a badge with its own shape and ground, so it takes no frame.
+            // Framed is for a glyph, and the gallery still demonstrates that form.
             Mark = GalleryWindow.SplashMark(),
+            ShowMarkFrame = false,
             AppName = "Kitbash Gallery",
             AppVersion = GalleryWindow.BuildVersion(),
             Description = "Every control in the library, live",

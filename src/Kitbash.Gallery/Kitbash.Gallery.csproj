@@ -10,7 +10,17 @@
          reach it by URI. Nothing loads it that way: the XAML is compiled and the window
          is resolved in App. -->
     <NoWarn>$(NoWarn);AVLN3001</NoWarn>
+
+    <!-- Gives the executable its icon in Explorer and on the Windows task bar.
+         Ignored on Linux, where the desktop reads the icon from a .desktop entry. -->
+    <ApplicationIcon>../../icons/gallery/icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Linked rather than copied, so icons/gallery stays the one source for the mark
+         and the appmark generator still has something to check against. -->
+    <AvaloniaResource Include="../../icons/gallery/icon_*.png" Link="Assets/Icons/%(Filename)%(Extension)" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />

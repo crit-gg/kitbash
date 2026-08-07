@@ -4,6 +4,7 @@
         xmlns:views="clr-namespace:Kitbash.Gallery.Views"
         x:Class="Kitbash.Gallery.Views.GalleryWindow"
         Title="Kitbash Gallery"
+        Icon="avares://Kitbash.Gallery/Assets/Icons/icon_256x256.png"
         Width="1024" Height="784"
         MinWidth="760" MinHeight="480"
         WindowStartupLocation="CenterScreen"
@@ -71,7 +72,8 @@
              stays while the launcher's disappears.
              Version is the quiet readout after the name, set from the build. The dialog
              below sets none, so both states are here. -->
-        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar" Title="Kitbash Gallery">
+        <ui:WindowTitleBar Grid.Row="0" Name="TitleBar" Title="Kitbash Gallery"
+                           Icon="avares://Kitbash.Gallery/Assets/Icons/icon_64x64.png">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Right" VerticalAlignment="Center"
                         Margin="0,0,8,0">

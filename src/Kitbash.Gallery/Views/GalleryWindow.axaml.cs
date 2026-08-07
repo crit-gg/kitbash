@@ -7,6 +7,8 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Dock.Model.Controls;
@@ -482,7 +484,19 @@ public partial class GalleryWindow : ChromelessWindow
     /// A mark drawn here rather than loaded, since the gallery ships no icon and the point
     /// is that the mark belongs to the host.
     /// </summary>
-    internal static IImage SplashMark()
+    // The mark comes off icons/gallery through the csproj, so the splash and the
+    // window draw the same file tools/appmark/generate.py wrote.
+    private static readonly Uri MarkUri =
+        new("avares://Kitbash.Gallery/Assets/Icons/icon_256x256.png");
+
+    /// <summary>The app mark, at the largest size, for the splash to draw.</summary>
+    internal static IImage SplashMark() => new Bitmap(AssetLoader.Open(MarkUri));
+
+    /// <summary>
+    /// A glyph mark, for the sample splash. The real one is a badge and wears no frame,
+    /// so without this nothing here would still show the framed form.
+    /// </summary>
+    private static IImage DemoMark()
     {
         var group = new DrawingGroup();
 
@@ -514,7 +528,7 @@ public partial class GalleryWindow : ChromelessWindow
 
         _splash = new SplashWindow
         {
-            Mark = SplashMark(),
+            Mark = DemoMark(),
             AppName = "Workbench",
             AppVersion = "1.4.2",
             Description = "Game data tooling for Godot projects",
