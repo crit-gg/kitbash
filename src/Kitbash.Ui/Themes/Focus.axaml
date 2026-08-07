@@ -8,4 +8,11 @@
         <Setter Property="FocusAdorner" Value="{x:Null}" />
     </Style>
 
+    <!-- A halo reaches 2px past its control and an ItemsControl clips to its bounds, so a
+         field stretched across a form row loses its ring down both sides. A view that wants
+         the clip back writes it, since a local value beats a style. -->
+    <Style Selector="ItemsControl">
+        <Setter Property="ClipToBounds" Value="False" />
+    </Style>
+
 </Styles>

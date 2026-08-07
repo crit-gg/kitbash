@@ -15,9 +15,7 @@
                 CornerRadius="{DynamicResource RadiusControl}"
                 Padding="7"
                 IsVisible="{Binding !IsEmpty}">
-            <!-- A field's focus halo reaches outside the field, and an ItemsControl clips
-                 to its bounds, which would cut it off along every row. -->
-            <ItemsControl ItemsSource="{Binding Rows}" ClipToBounds="False">
+            <ItemsControl ItemsSource="{Binding Rows}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Spacing="6" />

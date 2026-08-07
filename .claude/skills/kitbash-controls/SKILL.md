@@ -848,6 +848,16 @@ leaves a hard ring. So the theme sets `ClipToBounds="False"` on the control and
 `ClipToBounds="True"` on the frame inside the template, which keeps content in while
 letting the halo out.
 
+**Nothing above it may clip either, and that is what a form runs into.** A control turning
+its own clip off is only half of it: a clipping ancestor takes the same slice. `ItemsControl`
+clips to its bounds, and a form is rows of fields inside one, so a field stretched across a
+row lost the ring down both sides. `Themes/Focus.axaml` turns that clip off for the type, and
+a view that wants it back writes `ClipToBounds="True"`, since a local value beats a style.
+
+**A field inside a `ScrollViewer` needs the room to be padding.** A scroll presenter has to
+clip, so a form with no inset cuts the halo of anything against its edge. The tool inputs
+dialog leaves 16.
+
 **Ring the thing that actually takes focus.** A `SplitButton` is not focusable and its
 two halves are, so each half carries its own halo and rounds only its outer end. That is
 why the frame does not clip: a clip would take both halos with it.

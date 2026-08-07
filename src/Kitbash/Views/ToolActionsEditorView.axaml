@@ -15,7 +15,7 @@
                 CornerRadius="{DynamicResource RadiusControl}"
                 Padding="7"
                 IsVisible="{Binding !IsEmpty}">
-            <ItemsControl ItemsSource="{Binding Rows}" ClipToBounds="False">
+            <ItemsControl ItemsSource="{Binding Rows}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Spacing="6" />
