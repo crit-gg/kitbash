@@ -144,7 +144,7 @@ public sealed partial class NewWorkspaceViewModel : ObservableObject
     public string EngineNote => Engine is null
         ? "Reading what is installed and what Godot has published."
         : Engine.IsInstalled
-            ? "Installed and ready. The workspace pins this version, so opening it later never picks a different engine."
+            ? "Installed and ready. The workspace pins this build, so opening it later never picks a different engine."
             : "Not installed. Kitbash installs it before the project is created.";
 
     public string VersionControlNote => VersionControl == 0
@@ -169,7 +169,7 @@ public sealed partial class NewWorkspaceViewModel : ObservableObject
         Path = Path.Trim(),
         CreatesFolder = CreatesFolder,
         HasGodotProject = HasGodotProject,
-        Engine = HasGodotProject ? Engine?.Tag : null,
+        Engine = HasGodotProject ? Engine?.Id : null,
         Renderer = _renderer,
         UsesGit = VersionControl == 1,
     };
@@ -216,26 +216,32 @@ public sealed partial class NewWorkspaceViewModel : ObservableObject
     /// </summary>
     private void Fill(IReadOnlyList<InstalledEngine> installed, IReadOnlyList<EngineRelease> releases)
     {
+        // A version installed both ways is two rows, so picking the .NET one pins the .NET
+        // one. A release nothing published for is offered as a plain build alone, since a
+        // manifest per release is a request per release and this dialog reads none.
         var here = installed
             .Where(engine => !engine.IsMissing)
-            .Select(engine => engine.Tag)
+            .Select(engine => engine.Id)
             .Distinct()
-            .OrderByDescending(tag => tag)
+            .OrderByDescending(id => id.Tag)
+            .ThenBy(id => id.IsMono)
             .ToList();
+
+        var tags = here.Select(id => id.Tag).ToHashSet();
 
         Engines.Clear();
 
-        foreach (var tag in here)
+        foreach (var id in here)
         {
-            Engines.Add(new EngineChoiceViewModel(tag, isInstalled: true));
+            Engines.Add(new EngineChoiceViewModel(id, isInstalled: true));
         }
 
         foreach (var release in releases
-            .Where(release => !here.Contains(release.Tag))
+            .Where(release => !tags.Contains(release.Tag))
             .OrderByDescending(release => release.Released)
             .ThenByDescending(release => release.Tag))
         {
-            Engines.Add(new EngineChoiceViewModel(release.Tag, isInstalled: false));
+            Engines.Add(new EngineChoiceViewModel(new EngineId(release.Tag, IsMono: false), isInstalled: false));
         }
 
         Engine = Opening();
@@ -248,7 +254,7 @@ public sealed partial class NewWorkspaceViewModel : ObservableObject
     private EngineChoiceViewModel? Opening()
     {
         if (_godot.DefaultEngine is { } theDefault
-            && Engines.FirstOrDefault(row => row.Tag == theDefault.Tag) is { } chosen)
+            && Engines.FirstOrDefault(row => row.Id == theDefault) is { } chosen)
         {
             return chosen;
         }

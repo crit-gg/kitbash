@@ -178,7 +178,8 @@ internal sealed class WorkspaceMaker : IWorkspaceMaker
 
         if (request.HasGodotProject && request.Engine is { } engine)
         {
-            _projects.Write(new NewGodotProject(target, name, engine, request.Renderer));
+            // The tag alone, since config/features carries a version and never a runtime.
+            _projects.Write(new NewGodotProject(target, name, engine.Tag, request.Renderer));
 
             if (request.UsesGit)
             {

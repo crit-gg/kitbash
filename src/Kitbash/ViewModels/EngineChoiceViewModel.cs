@@ -4,20 +4,23 @@ using Kitbash.Ui.Controls;
 namespace Kitbash.ViewModels;
 
 /// <summary>
-/// One version in the new workspace dialog's engine list. A row is a release rather than
-/// an install, so a release with any build of it on this machine reads as installed.
+/// One engine in the new workspace dialog's list. A row is a build rather than a release,
+/// so a version installed both ways is two rows and the .NET one pins the .NET one.
 /// </summary>
 public sealed class EngineChoiceViewModel
 {
-    public EngineChoiceViewModel(EngineTag tag, bool isInstalled)
+    public EngineChoiceViewModel(EngineId id, bool isInstalled)
     {
-        Tag = tag;
+        Id = id;
         IsInstalled = isInstalled;
-        Title = EngineRowViewModel.NameOf(tag);
-        Channel = EngineRowViewModel.ChannelOf(tag);
+        Title = EngineRowViewModel.NameOf(id.Tag);
+        Channel = EngineRowViewModel.ChannelOf(id.Tag);
     }
 
-    public EngineTag Tag { get; }
+    /// <summary>The build this row is, which is what the workspace is pinned to.</summary>
+    public EngineId Id { get; }
+
+    public EngineTag Tag => Id.Tag;
 
     public string Title { get; }
 
@@ -33,6 +36,8 @@ public sealed class EngineChoiceViewModel
         EngineChannel.Alpha => BadgeTier.Error,
         _ => BadgeTier.Neutral,
     };
+
+    public bool IsMono => Id.IsMono;
 
     public bool IsInstalled { get; }
 

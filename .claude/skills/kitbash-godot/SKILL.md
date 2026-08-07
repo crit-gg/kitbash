@@ -153,8 +153,17 @@ default, since the mobile renderer would otherwise take over there. That is Godo
 and it is the only asymmetry between the three.
 
 **The workspace is pinned to the engine it was made with**, through `godot.engine` in the
-team config, so opening it later never picks a different one. The pin is the plain tag,
-never `-mono`, since a project made here has no C# in it.
+team config, so opening it later never picks a different one. **The pin is the whole
+`EngineId` and carries `-mono`**, so a workspace made with a .NET engine asks for a .NET
+engine. The project written has no C# in it, and the pin is what says the person wants
+the runtime there anyway.
+
+**A row in the dialog's engine list is a build, not a release.** A version installed both
+ways is two rows, and a person picking the .NET one is how the suffix gets written. The
+available half is offered as a plain build alone, since knowing whether a release
+published a .NET build for this machine costs a manifest per release and the dialog reads
+none. Installing a .NET engine for a version that is not here yet is the engines page's
+job, and it appears in this list afterwards.
 
 ### Opening a project
 

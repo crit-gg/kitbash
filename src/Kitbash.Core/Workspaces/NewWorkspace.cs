@@ -25,10 +25,11 @@ public sealed record NewWorkspace
     public bool HasGodotProject { get; init; }
 
     /// <summary>
-    /// The engine the project is made for, and the version the workspace is pinned to.
+    /// The engine the project is made for, and the build the workspace is pinned to. The
+    /// .NET flag is part of it, so a workspace made with a mono engine asks for one later.
     /// Null when no project is being made.
     /// </summary>
-    public EngineTag? Engine { get; init; }
+    public EngineId? Engine { get; init; }
 
     public GodotRenderer Renderer { get; init; }
 

@@ -144,10 +144,15 @@
                                         <TextBlock Grid.Column="0" Text="{Binding Title}"
                                                    VerticalAlignment="Center" />
 
-                                        <ui:Badge Grid.Column="1" Tier="{Binding ChannelTier}"
-                                                  Content="{Binding Channel}"
-                                                  IsVisible="{Binding HasChannel}"
-                                                  VerticalAlignment="Center" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5"
+                                                    VerticalAlignment="Center">
+                                            <ui:Badge Tier="{Binding ChannelTier}"
+                                                      Content="{Binding Channel}"
+                                                      IsVisible="{Binding HasChannel}" />
+
+                                            <ui:Badge Tier="Data" Content=".NET"
+                                                      IsVisible="{Binding IsMono}" />
+                                        </StackPanel>
 
                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="5"
                                                     IsVisible="{Binding IsInstalled}"

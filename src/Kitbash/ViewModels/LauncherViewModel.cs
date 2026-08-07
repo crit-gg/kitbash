@@ -736,8 +736,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         if (needsInstall && request.Engine is { } wanted)
         {
-            // A plain build, since a project made here has no C# in it yet.
-            await InstallEngineAsync(EngineVersionPattern.Parse(wanted.ToString()), mono: false)
+            // The runtime the dialog picked, since the workspace is pinned to that build.
+            await InstallEngineAsync(EngineVersionPattern.Parse(wanted.Tag.ToString()), mono: wanted.IsMono)
                 .ConfigureAwait(true);
         }
 
