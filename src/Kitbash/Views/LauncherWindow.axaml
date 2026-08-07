@@ -1022,10 +1022,42 @@
                                    Foreground="{DynamicResource InkSecondary}"
                                    Text="A workspace is a project folder. Tools and settings follow the one you have open." />
 
-                        <Button Classes="primary" Content="Choose a folder"
-                                Margin="0,22,0,0"
-                                HorizontalAlignment="Center"
-                                Click="OnChooseFolderClick" />
+                        <!-- The same three ways in as the workspace dropdown's footer,
+                             in the same order and with the same words. -->
+                        <StackPanel Name="NoWorkspacesActions"
+                                    Spacing="8" Margin="0,22,0,0" Width="260"
+                                    HorizontalAlignment="Center">
+                            <Button Classes="primary"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Click="OnNewWorkspaceClick">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
+                                    <TextBlock Text="Create new workspace"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Click="OnAddWorkspaceClick">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                                    <TextBlock Text="Add workspace from folder"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Click="OnCloneWorkspaceClick">
+                                <StackPanel Orientation="Horizontal" Spacing="9">
+                                    <ui:Icon Glyph="GitBranch" VerticalAlignment="Center" />
+                                    <TextBlock Text="Clone workspace from git"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
               </Panel>

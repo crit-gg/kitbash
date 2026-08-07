@@ -303,9 +303,6 @@ public partial class LauncherWindow : ChromelessWindow
         }
     }
 
-    private async void OnChooseFolderClick(object? sender, RoutedEventArgs e) =>
-        await AddWorkspaceFromFolderAsync();
-
     // Every tool is a placeholder today, so opening one reports that it is not built.
     // The result has nowhere to go until the launcher grows an error surface.
     private void OnLaunchToolClick(object? sender, RoutedEventArgs e)
