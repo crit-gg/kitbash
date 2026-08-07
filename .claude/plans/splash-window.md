@@ -402,6 +402,16 @@ driven by hand.
 the card collapses to the mark and the name for the rest of the wait, since nothing is being
 waited on any more. A download that failed lands there too.
 
+**A check that answers straight away never draws the row.** The report waits a second, so an
+ordinary launch against a feed that answers in a few hundred milliseconds shows the quiet card
+throughout rather than flashing the row up and down. `App.SayIfSlow` holds the rule and
+`tests/Kitbash.Tests/SlowCheckTests` drives it over a `TaskCompletionSource`, so no clock is
+guessed at. **Once the row is up it is held for 600ms**, measured from the report, since a
+check landing at 1.1 seconds would otherwise blink. A check that ran to the three second
+deadline has paid the hold already and waits no further. Driven live on this desktop: a 300ms
+check drew nothing and a 1.1 second check put the row up at 1002ms and took it down at 1604ms,
+both still opening at the two second floor.
+
 **The launcher hosts it and the update reports into it.** `Views/UpdateDialog` is deleted.
 The splash is up before the feed is asked, so the check is no longer a blank screen, and it
 carries the download as a fraction with the version and the size beside it. `UpdateStages` in

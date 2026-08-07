@@ -42,6 +42,19 @@ public partial class App : Application
     private static readonly TimeSpan CheckLimit = TimeSpan.FromSeconds(3);
 
     /// <summary>
+    /// How long a check runs before it is worth saying so. A feed that answers sooner never
+    /// draws the row at all, since a row going up and straight back down is a flash on every
+    /// ordinary launch.
+    /// </summary>
+    private static readonly TimeSpan CheckPatience = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// The least time the row is up once it has appeared. Measured from the report, so a
+    /// check that ran long has already paid it and waits no further.
+    /// </summary>
+    private static readonly TimeSpan CheckDwell = TimeSpan.FromMilliseconds(600);
+
+    /// <summary>
     /// The least time the splash is up before the launcher replaces it. A splash that
     /// flashes past reads as a fault rather than as a start.
     /// </summary>
@@ -212,21 +225,62 @@ public partial class App : Application
             return;
         }
 
-        splash.Report("Checking for an update");
-
         using var limit = new CancellationTokenSource(CheckLimit);
 
-        if (await updates.CheckAsync(limit.Token) is not { } found)
-        {
-            return;
-        }
+        // Null until the row goes up, and running from the moment it does.
+        Stopwatch? shown = null;
+
+        var found = await SayIfSlow(
+            updates.CheckAsync(limit.Token),
+            CheckPatience,
+            () =>
+            {
+                shown = Stopwatch.StartNew();
+                splash.Report("Checking for an update");
+            });
 
         if (dismissed.IsCancellationRequested)
         {
             return;
         }
 
+        if (found is null)
+        {
+            // The row may have only just gone up, so it is held rather than collapsing
+            // straight back. StartAsync takes it away as soon as this returns.
+            if (shown is { } since)
+            {
+                var left = CheckDwell - since.Elapsed;
+
+                if (left > TimeSpan.Zero)
+                {
+                    await Task.Delay(left, CancellationToken.None);
+                }
+            }
+
+            return;
+        }
+
         await FetchAsync(updates, found, splash, dismissed);
+    }
+
+    /// <summary>
+    /// Awaits work, calling say once if it is still running after patience. Work that
+    /// answers sooner says nothing at all.
+    /// </summary>
+    public static async Task<T> SayIfSlow<T>(Task<T> work, TimeSpan patience, Action say)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        ArgumentNullException.ThrowIfNull(say);
+
+        await Task.WhenAny(work, Task.Delay(patience, CancellationToken.None));
+
+        if (!work.IsCompleted)
+        {
+            say();
+        }
+
+        return await work;
     }
 
     /// <summary>

@@ -113,6 +113,13 @@ every await, so nothing opens a window after the app has been told to go.
 The splash is drawn while the feed is asked, so this bounds a visible wait rather than a
 blank screen. The number has not moved since that changed.
 
+**The check says nothing for its first second.** A feed that answers sooner never draws the
+progress row at all, since a row going up and straight back down is a flash on every ordinary
+launch. `App.SayIfSlow` is the rule: `Task.WhenAny` the check against the patience, and report
+only if the check is still running. **Once the row is up it is held for 600ms**, measured from
+the report, so a check that answered at 1.1 seconds does not blink and a check that ran to the
+deadline waits no further. The two second splash floor usually swallows the hold entirely.
+
 **A cancellation token does not bound it.** `UpdateManager.CheckForUpdatesAsync` takes no
 token, so one handed to `Task.Run` only stops it starting. Measured before this was
 understood: a server that accepted the connection and never replied held the window back
