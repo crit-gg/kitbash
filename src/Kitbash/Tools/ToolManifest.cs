@@ -39,6 +39,12 @@ public sealed record ToolManifest(
     /// </summary>
     public IReadOnlyList<string> Command { get; init; } = [];
 
+    /// <summary>
+    /// The loose form declared it, or a project in the folder stood in for one. Never true
+    /// of a manifest a repository published.
+    /// </summary>
+    public bool IsDevelopment { get; init; }
+
     /// <summary>The launcher waits for it and reports on it rather than letting it go.</summary>
     public bool IsScript => Kind == ToolKind.Script;
 }

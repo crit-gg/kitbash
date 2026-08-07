@@ -220,6 +220,7 @@ public sealed class ToolManifestReader : IToolManifestReader
         {
             Inputs = Inputs(document),
             Command = command,
+            IsDevelopment = true,
         };
     }
 

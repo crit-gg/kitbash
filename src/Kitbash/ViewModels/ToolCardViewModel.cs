@@ -81,6 +81,12 @@ public partial class ToolCardViewModel : ObservableObject
     /// </summary>
     public bool IsFromWorkspace => Workspaces.Count > 0;
 
+    /// <summary>The tool declares itself the loose way, so it is one somebody is building.</summary>
+    public bool IsInDevelopment => Tool?.Manifest.IsDevelopment == true;
+
+    /// <summary>What that mark says on hover.</summary>
+    public string DevelopmentTip => "In development, from a folder on this machine";
+
     /// <summary>What the mark says on hover, naming every workspace offering the tool.</summary>
     public string WorkspaceTip => Workspaces.Count switch
     {

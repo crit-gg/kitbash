@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kitbash.Core.Platform;
 using Kitbash.Tools;
+using Kitbash.Ui.Controls;
 using Kitbash.ViewModels;
 using Kitbash.Views;
 
@@ -176,6 +177,49 @@ public sealed class ToolCardTests
             $"the mark ends {at.Value.X + mark.Bounds.Width} across a card {Card_(drawn).Bounds.Width} wide");
     }
 
+    /// <summary>
+    /// A tool declaring itself the loose way is one somebody is building, which is worth
+    /// saying on the card, since it runs from a folder rather than from anything installed.
+    /// </summary>
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AToolInDevelopmentIsMarked(bool script)
+    {
+        var card = Card(icon: null, script: script, development: true);
+
+        Assert.True(card.IsInDevelopment);
+
+        var drawn = Draw(card);
+        var mark = DevelopmentMark_(drawn);
+
+        Assert.True(mark.IsVisible);
+        Assert.Equal(card.DevelopmentTip, ToolTip.GetTip(mark));
+
+        // The warning tint, so it reads as a state rather than as another quiet mark.
+        Assert.True(drawn.TryFindResource("Warn", out var warn));
+        Assert.Equal(warn, Assert.Single(mark.GetLogicalDescendants().OfType<Icon>()).Foreground);
+
+        // Top right, beside the workspace mark and the menu.
+        var at = mark.TranslatePoint(new Point(0, 0), Card_(drawn));
+
+        Assert.NotNull(at);
+        Assert.True(at!.Value.Y < 30, $"the mark sits {at.Value.Y} down the card");
+        Assert.True(
+            at.Value.X + mark.Bounds.Width > Card_(drawn).Bounds.Width - 60,
+            $"the mark ends {at.Value.X + mark.Bounds.Width} across a card {Card_(drawn).Bounds.Width} wide");
+    }
+
+    /// <summary>A tool that published a manifest is not one being built, so it says nothing.</summary>
+    [AvaloniaFact]
+    public void APublishedToolIsNotMarked()
+    {
+        var card = Card(icon: null);
+
+        Assert.False(card.IsInDevelopment);
+        Assert.False(DevelopmentMark_(Draw(card)).IsVisible);
+    }
+
     /// <summary>One workspace reads as one rather than as a list of one.</summary>
     [AvaloniaFact]
     public void OneWorkspaceIsNamedOnItsOwn()
@@ -272,6 +316,12 @@ public sealed class ToolCardTests
         return tile;
     }
 
+    /// <summary>The mark saying the tool is one somebody is building.</summary>
+    private static Border DevelopmentMark_(Control drawn) =>
+        Assert.Single(
+            drawn.GetLogicalDescendants().OfType<Border>(),
+            border => border.Name == "DevelopmentMark");
+
     /// <summary>The mark saying a workspace is what offers the tool.</summary>
     private static Border Mark_(Control drawn) =>
         Assert.Single(
@@ -357,18 +407,24 @@ public sealed class ToolCardTests
     }
 
     /// <param name="script">A script, which is what the compact card is drawn for.</param>
+    /// <param name="development">The tool declares itself the loose way.</param>
     /// <param name="actions">What the card promotes out of its menu, which grows it.</param>
     private static ToolCardViewModel Card(
         Bitmap? icon,
         bool script = false,
         string name = "Foundry",
         string summary = "A tool",
+        bool development = false,
         params string[] actions)
     {
         Assert.True(ToolId.TryParse("foundry", out var id));
 
         var payload = new ToolPayload(ToolPayload.AnyRuntime, null, 0, null, "run");
-        var manifest = Manifest(id, name, script) with { Summary = summary };
+        var manifest = Manifest(id, name, script) with
+        {
+            Summary = summary,
+            IsDevelopment = development,
+        };
 
         return new ToolCardViewModel(
             new InstalledTool(

@@ -549,6 +549,17 @@ are refused rather than guessed between, and the message says to add the loose f
 `dotnet run` builds before it runs, so a rebuild is what launching does and there is no
 step between changing the tool and seeing the change.
 
+### A tool in development is marked on its card
+
+Either loose form sets `ToolManifest.IsDevelopment`, and no published manifest ever can, so
+the card draws the atom in `Warn` at its top right beside the workspace mark. It says the
+tool is one somebody is building and that it runs from a folder rather than from anything
+installed, which nothing else on the card says: a linked tool otherwise looks like any
+other, and its version is `0.0.0-dev` only when the folder named none.
+
+The tint is the point. The workspace mark is quiet because it is a fact about where a tool
+came from. This one is a state, and a state the person put the launcher in themselves.
+
 ### What the state file holds
 
 ```

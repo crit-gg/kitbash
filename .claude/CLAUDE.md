@@ -319,7 +319,7 @@ numbers are the order**, and every stage depended only on lower ones, so the pla
 straight through. Each stage file records what it built and where it departed from the
 design.
 
-**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 52
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 53
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -472,7 +472,8 @@ forgets the path and deletes nothing. **A tool being worked on declares almost n
 `kitbash-tool.dev.json` names a command line such as `dotnet run` and takes the id, the name
 and the version from the folder, and a folder holding one `.csproj` and no declaration at
 all is read as that project. A command is refused in a published manifest, since it runs a
-program a payload does not carry. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
+program a payload does not carry. **A tool in development is marked on its card**, the atom
+in the warning tint, since it runs from a folder rather than from anything installed. **Step 7, the GitHub login, is what is left**, so a private repository cannot be
 read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation`,
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured

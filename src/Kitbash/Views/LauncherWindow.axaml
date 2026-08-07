@@ -525,6 +525,20 @@
                                                                     <StackPanel Grid.Column="2"
                                                                                 Orientation="Horizontal" Spacing="2"
                                                                                 VerticalAlignment="Top">
+                                                                        <!-- The tool declares itself the loose way, so
+                                                                             it is one somebody is building. -->
+                                                                        <Border Name="DevelopmentMark"
+                                                                        Background="Transparent"
+                                                                        Padding="3"
+                                                                        VerticalAlignment="Center"
+                                                                        IsVisible="{Binding IsInDevelopment}"
+                                                                        ToolTip.Tip="{Binding DevelopmentTip}"
+                                                                        AutomationProperties.Name="{Binding DevelopmentTip}">
+                                                                            <ui:Icon Glyph="Atom"
+                                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                                     Foreground="{DynamicResource Warn}" />
+                                                                        </Border>
+
                                                                         <!-- A workspace list offers the tool, so it
                                                                              goes when that workspace does. -->
                                                                         <Border Name="WorkspaceMark"
@@ -700,6 +714,18 @@
                                                                     <StackPanel Grid.Column="2"
                                                                                 Orientation="Horizontal" Spacing="2"
                                                                                 VerticalAlignment="Top">
+                                                                        <Border Name="DevelopmentMark"
+                                                                        Background="Transparent"
+                                                                        Padding="3"
+                                                                        VerticalAlignment="Center"
+                                                                        IsVisible="{Binding IsInDevelopment}"
+                                                                        ToolTip.Tip="{Binding DevelopmentTip}"
+                                                                        AutomationProperties.Name="{Binding DevelopmentTip}">
+                                                                            <ui:Icon Glyph="Atom"
+                                                                                     Size="{DynamicResource IconSizeStatus}"
+                                                                                     Foreground="{DynamicResource Warn}" />
+                                                                        </Border>
+
                                                                         <Border Name="WorkspaceMark"
                                                                                 Background="Transparent"
                                                                                 Padding="3"

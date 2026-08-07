@@ -12,6 +12,7 @@ public enum IconGlyph
     ArrowBigDownLine,
     ArrowOutUpLeftStrokeSquare,
     ArrowToBottom,
+    Atom,
     Bolt,
     Check,
     CheckShield,

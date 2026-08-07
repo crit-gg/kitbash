@@ -113,6 +113,7 @@ public sealed class ToolFolderReader : IToolFolderReader
             // The last word is what stops dotnet reading the launcher's own arguments as
             // options of its own.
             Command = [ProjectProgram, "run", "--project", projects[0], "--"],
+            IsDevelopment = true,
         };
     }
 
