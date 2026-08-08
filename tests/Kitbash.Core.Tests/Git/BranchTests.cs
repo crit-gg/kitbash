@@ -32,7 +32,7 @@ public class BranchTests
 
         repository.Commit("start", ("one.txt", "one\n"));
 
-        var made = await repository.Branches.CreateAsync(repository.Root, "feature", null, true, Stop);
+        var made = await repository.Branches.CreateAsync(repository.Root, "feature", null, true, true, Stop);
 
         Assert.True(made.Succeeded, made.Message);
 
@@ -51,7 +51,7 @@ public class BranchTests
         repository.Commit("second", ("two.txt", "two\n"));
 
         var made = await repository.Branches.CreateAsync(
-            repository.Root, "from-the-start", "HEAD~1", false, Stop);
+            repository.Root, "from-the-start", "HEAD~1", false, true, Stop);
 
         Assert.True(made.Succeeded, made.Message);
 
@@ -237,5 +237,63 @@ public class BranchTests
         repository.Commit("start", ("one.txt", "one\n"));
 
         Assert.Empty(await repository.Branches.ReadMergedAsync(repository.Root, "nowhere", true, Stop));
+    }
+
+    // Measured on git 2.55, with branch.autoSetupMerge at its own default: a branch started
+    // from a remote one is given that branch as its upstream. Right for taking up somebody
+    // else's branch, wrong for starting work from the base, and the caller says which it is.
+    [Fact]
+    public async Task ABranchStartedFromARemoteOneTracksItOnlyWhenAsked()
+    {
+        using var remote = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", remote.Root);
+        repository.Git("push", "--set-upstream", "origin", "main");
+
+        var inherited = await repository.Branches.CreateAsync(
+            repository.Root, "inherits", "origin/main", false, true, Stop);
+
+        Assert.True(inherited.Succeeded, inherited.Message);
+
+        var own = await repository.Branches.CreateAsync(
+            repository.Root, "its-own", "origin/main", false, false, Stop);
+
+        Assert.True(own.Succeeded, own.Message);
+
+        var branches = await repository.Branches.ReadAsync(repository.Root, false, Stop);
+
+        Assert.Equal("origin/main", Assert.Single(branches, b => b.Name == "inherits").Upstream);
+        Assert.Null(Assert.Single(branches, b => b.Name == "its-own").Upstream);
+    }
+
+    [Fact]
+    public async Task WhatABranchTracksIsSetAndUnset()
+    {
+        using var remote = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", remote.Root);
+        repository.Git("push", "--set-upstream", "origin", "main");
+        repository.Git("switch", "--create", "feature", "--no-track", "origin/main");
+
+        var set = await repository.Branches.SetUpstreamAsync(
+            repository.Root, "feature", "origin/main", Stop);
+
+        Assert.True(set.Succeeded, set.Message);
+        Assert.Equal(
+            "origin/main",
+            await repository.Refs.ReadUpstreamAsync(repository.Root, "feature", Stop)
+                is { } tracking ? tracking.Ref : "");
+
+        var unset = await repository.Branches.SetUpstreamAsync(
+            repository.Root, "feature", null, Stop);
+
+        Assert.True(unset.Succeeded, unset.Message);
+        Assert.Null(await repository.Refs.ReadUpstreamAsync(repository.Root, "feature", Stop));
     }
 }

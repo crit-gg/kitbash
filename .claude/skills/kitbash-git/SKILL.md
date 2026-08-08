@@ -222,6 +222,20 @@ drops it the same way. `IGitRefReader` is what reads it, through `symbolic-ref`.
 `switch` rather than `checkout`, so a branch and a path can never be confused for each
 other, and `switch --detach` for a commit.
 
+**A new branch inherits an upstream unless it is told not to.** `branch.autoSetupMerge` is on
+by default, so a branch started from a remote one is given that branch as its upstream.
+Measured on git 2.55: `switch --create feature origin/main` leaves feature tracking
+`origin/main`, and a push from it then goes to main. `CreateAsync` takes `track`, which is
+`--no-track`. SourceGit sidesteps the whole rule by naming the commit rather than the ref.
+`SetUpstreamAsync` is the other half, `--set-upstream-to` and `--unset-upstream`.
+
+**What a branch tracks is asked of git, never split off the name.** `ReadUpstreamAsync` is
+`for-each-ref` over the one ref with `%(upstream:remotename)`, `%(upstream:remoteref)` and
+`%(upstream:track)`, so a remote and a branch that both hold a slash are never taken for each
+other. `GitUpstream` carries the three. Two things a client that reads `origin/main` as a
+string gets wrong: **a branch does not have to be called what it tracks**, and a dot where the
+remote's name would be is an upstream on this machine rather than on a remote.
+
 `ReadMergedAsync` is `for-each-ref --merged`, which is what says a branch has nothing left
 on it. **A branch is merged into itself**, so the ref asked about is always in the answer
 and a caller listing finished branches has to drop it. A revision that does not resolve
@@ -255,7 +269,19 @@ would go back to the network to learn what it just learned. `--ff-only` by defau
 
 **A repository with no remote at all is ordinary, not broken.** `ReadRemotesAsync` is
 `git remote`, and empty is a real answer. A client that assumed one would offer a push that
-can only fail, so this is what it asks before drawing the button.
+can only fail, so this is what it asks before drawing the button. **Nothing here requires one
+called origin either**, and a client that looked only for that name reads a repository with a
+remote as a repository with none.
+
+**A push spells out both sides**, `push <remote> <local>:<target>`, which is what SourceGit
+does. A plain `git push` turns on the person's `push.default` instead. Measured on git 2.55
+with it unset: a branch tracking one under another name is refused outright, with git telling
+the person to name the ref itself. `GitPushRequest.Target` is that name.
+
+**An upstream the remote no longer has resolves to nothing.** Measured: `status --porcelain=v2
+--branch` still writes `# branch.upstream`, writes no `# branch.ab` line at all, and `@{u}`
+fails to resolve rather than answering empty. So a count against it is missing rather than
+zero, and a client that read it as zero says a branch with commits on it has nothing to send.
 
 **Never a rebase.** A rebase settles the same conflict once per commit, which for a binary
 file is once too many.

@@ -24,11 +24,26 @@ public interface IGitBranches
     /// Makes a branch, and moves to it unless told not to. A start point is anything git
     /// accepts as a revision, and null means the head.
     /// </summary>
+    /// <param name="track">
+    /// False passes <c>--no-track</c>. Git otherwise gives a branch started from a remote one
+    /// that branch as its upstream, so a branch made from <c>origin/main</c> tracks main.
+    /// </param>
     Task<GitResult> CreateAsync(
         string root,
         string name,
         string? startPoint = null,
         bool switchTo = true,
+        bool track = true,
+        CancellationToken cancellation = default);
+
+    /// <summary>
+    /// Records what a branch tracks, or unsets it when <paramref name="upstream"/> is null.
+    /// The upstream is a short name such as <c>origin/main</c>.
+    /// </summary>
+    Task<GitResult> SetUpstreamAsync(
+        string root,
+        string branch,
+        string? upstream,
         CancellationToken cancellation = default);
 
     /// <summary>

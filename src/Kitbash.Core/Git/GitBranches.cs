@@ -94,6 +94,7 @@ public sealed class GitBranches : IGitBranches
         string name,
         string? startPoint = null,
         bool switchTo = true,
+        bool track = true,
         CancellationToken cancellation = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -102,10 +103,30 @@ public sealed class GitBranches : IGitBranches
             ? new List<string> { "switch", "--create", name }
             : ["branch", name];
 
+        // Git's own rule is branch.autoSetupMerge, which gives a branch started from a remote
+        // one that branch as its upstream. That is right for taking up somebody else's branch
+        // and wrong for starting work from the base.
+        if (!track)
+        {
+            arguments.Add("--no-track");
+        }
+
         if (startPoint is { Length: > 0 } start)
         {
             arguments.Add(start);
         }
+
+        return _git.RunAsync(root, new GitCommand(arguments), cancellation);
+    }
+
+    public Task<GitResult> SetUpstreamAsync(
+        string root, string branch, string? upstream, CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(branch);
+
+        var arguments = upstream is { Length: > 0 } named
+            ? new List<string> { "branch", "--set-upstream-to=" + named, branch }
+            : ["branch", "--unset-upstream", branch];
 
         return _git.RunAsync(root, new GitCommand(arguments), cancellation);
     }
