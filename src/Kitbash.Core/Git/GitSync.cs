@@ -150,7 +150,14 @@ public sealed class GitSync : IGitSync
         if (settings.Remote is { Length: > 0 } remote)
         {
             arguments.Add(remote);
-            arguments.Add(settings.Branch is { Length: > 0 } branch ? branch : "HEAD");
+
+            var branch = settings.Branch is { Length: > 0 } named ? named : "HEAD";
+
+            // Both sides spelled out, so what is sent does not turn on push.default and a
+            // branch tracking one under another name still goes where it tracks. Measured on
+            // git 2.55: a plain push refuses outright when the two names differ.
+            arguments.Add(
+                settings.Target is { Length: > 0 } target ? $"{branch}:{target}" : branch);
         }
 
         var result = await _git

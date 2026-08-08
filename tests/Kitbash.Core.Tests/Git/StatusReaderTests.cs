@@ -104,6 +104,46 @@ public class StatusReaderTests
         Assert.Equal(7, status.Branch.Length);
     }
 
+    /// <summary>
+    /// The head is what says a branch moved, so a reader that only named the branch could
+    /// not tell a pull or a merge from nothing happening at all.
+    /// </summary>
+    [Fact]
+    public async Task TheHeadCommitIsReadAndMovesWithTheBranch()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("first", ("one.txt", "one\n"));
+
+        var first = await repository.Status.ReadAsync(repository.Root, Stop);
+
+        Assert.NotNull(first);
+        Assert.Equal(40, first.Commit.Length);
+
+        repository.Commit("second", ("two.txt", "two\n"));
+
+        var second = await repository.Status.ReadAsync(repository.Root, Stop);
+
+        Assert.NotNull(second);
+        Assert.Equal(second.Branch, first.Branch);
+        Assert.NotEqual(second.Commit, first.Commit);
+    }
+
+    /// <summary>Git writes "(initial)" for a head that is on no commit yet.</summary>
+    [Fact]
+    public async Task ARepositoryWithNoCommitsNamesNoCommit()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        var status = await repository.Status.ReadAsync(repository.Root, Stop);
+
+        Assert.NotNull(status);
+        Assert.Equal("", status.Commit);
+        Assert.False(status.IsDetached);
+    }
+
     [Fact]
     public async Task AFolderThatIsNotARepositoryAnswersWithNothing()
     {

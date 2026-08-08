@@ -129,6 +129,38 @@ public class SyncTests
         Assert.Equal("origin/main", main.Upstream);
     }
 
+    // A branch can track one named differently, and a plain push then refuses rather than
+    // sending it. Measured on git 2.55, with push.default at its own default: git says the
+    // upstream branch does not match the name of the current branch and stops.
+    [Fact]
+    public async Task ABranchIsSentWhereItTracksEvenWhenTheNamesDiffer()
+    {
+        var (remote, local) = Pair();
+        using var _ = remote;
+        using var __ = local;
+        Assert.SkipUnless(local.HasGit, "no git on this machine");
+
+        local.Git("switch", "--create", "feature");
+        local.Commit("mine", ("mine.txt", "mine\n"));
+        local.Git("push", "origin", "feature:theirs");
+        local.Git("branch", "--set-upstream-to=origin/theirs", "feature");
+        local.Commit("more of mine", ("more.txt", "more\n"));
+
+        var plain = await local.Sync.PushAsync(local.Root, null, Stop);
+
+        Assert.False(plain.Succeeded);
+
+        var named = await local.Sync.PushAsync(
+            local.Root,
+            new GitPushRequest { Remote = "origin", Branch = "feature", Target = "theirs" },
+            Stop);
+
+        Assert.Equal(GitSyncOutcome.Done, named.Outcome);
+        Assert.Equal(
+            local.Try("rev-parse", "HEAD").Output.Trim(),
+            local.Try("rev-parse", "refs/remotes/origin/theirs").Output.Trim());
+    }
+
     [Fact]
     public async Task APullTakesTheNewCommitsWhenItIsAStraightLine()
     {

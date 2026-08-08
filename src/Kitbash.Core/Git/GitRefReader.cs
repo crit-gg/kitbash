@@ -97,6 +97,46 @@ public sealed class GitRefReader : IGitRefReader
         return result.Succeeded && result.Output.Trim() is { Length: > 0 } name ? name : null;
     }
 
+    public async Task<GitUpstream?> ReadUpstreamAsync(
+        string root, string branch, CancellationToken cancellation = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(branch);
+
+        // remotename and remoteref are git's own split of what the config records, which is
+        // the only reading that cannot be fooled by a slash in either name. track carries
+        // [gone] when the remote no longer has it.
+        var result = await _git
+            .RunAsync(
+                root,
+                GitCommand.Of(
+                    "for-each-ref",
+                    "--format=%(upstream:remotename)%1f%(upstream:remoteref)%1f%(upstream:track)",
+                    "refs/heads/" + branch),
+                cancellation)
+            .ConfigureAwait(false);
+
+        if (!result.Succeeded || result.Lines.Count == 0)
+        {
+            return null;
+        }
+
+        var fields = result.Lines[0].Split('\x1f');
+
+        if (fields.Length < 3 || fields[0].Length == 0 || fields[1].Length == 0)
+        {
+            return null;
+        }
+
+        const string Heads = "refs/heads/";
+
+        var name = fields[1].StartsWith(Heads, StringComparison.Ordinal)
+            ? fields[1][Heads.Length..]
+            : fields[1];
+
+        return new GitUpstream(
+            fields[0], name, fields[2].Contains("gone", StringComparison.Ordinal));
+    }
+
     public async Task<string?> ReadMergeBaseAsync(
         string root, string first, string second, CancellationToken cancellation = default)
     {

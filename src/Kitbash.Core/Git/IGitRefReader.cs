@@ -41,6 +41,13 @@ public interface IGitRefReader
     Task<string?> ReadHeadBranchAsync(string root, CancellationToken cancellation = default);
 
     /// <summary>
+    /// What a branch tracks, or null when it tracks nothing. Git splits the name itself, so a
+    /// remote and a branch that both hold a slash are never confused for each other.
+    /// </summary>
+    Task<GitUpstream?> ReadUpstreamAsync(
+        string root, string branch, CancellationToken cancellation = default);
+
+    /// <summary>
     /// The commit two revisions last had in common, as a full hash. Null when either does not
     /// resolve or the two share no history at all.
     /// </summary>

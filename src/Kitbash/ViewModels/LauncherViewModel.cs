@@ -54,6 +54,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IAfterLaunchActions _actions;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
+    private readonly GitHeadTracker _head = new();
 
     private IReadOnlyList<ToolGroupViewModel> _toolGroups = [];
     private IReadOnlyList<OfferedTool> _offers = [];
@@ -869,8 +870,24 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         Engines.InstallsChanged -= OnInstallsChanged;
     }
 
-    private void OnGitChanged(object? sender, EventArgs e) =>
-        _dispatcher.Post(() => Git.Status = _git.Status);
+    private void OnGitChanged(object? sender, EventArgs e) => _dispatcher.Post(() =>
+    {
+        var status = _git.Status;
+
+        Git.Status = status;
+
+        // The workspace's config travels in the repository, so switching branch or taking
+        // in commits can change its name, its links, the engine it asks for and the tools
+        // it offers. Everything else the monitor reports is the working tree, which the
+        // strip draws and nothing else follows.
+        if (_head.Moved(status))
+        {
+            // Waits for a load already running rather than giving up on this one. Nothing
+            // else would come round to notice, since the monitor speaks on a difference and
+            // the head has already been taken.
+            _ = LoadAsync(waits: true);
+        }
+    });
 
     /// <summary>
     /// Brings the open workspace's repository up to date, then reads it again so the counts
@@ -897,19 +914,28 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     }
 
-    /// <summary>
-    /// Does a piece of work that touches disk, then reads the list back, both away from the
-    /// UI thread, and puts the answer on screen when it lands.
-    /// </summary>
     partial void OnPageChanged(int value)
     {
         OnPropertyChanged(nameof(OnWorkspacePage));
         OnPropertyChanged(nameof(OnEnginesPage));
     }
 
-    private async Task LoadAsync(Action? work = null)
+    /// <summary>
+    /// Does a piece of work that touches disk, then reads the list back, both away from the
+    /// UI thread, and puts the answer on screen when it lands.
+    /// </summary>
+    /// <param name="work">Done on the other thread before the list is read back.</param>
+    /// <param name="waits">
+    /// Takes its turn behind a load already running instead of giving up. For a caller
+    /// that is following something rather than answering a gesture.
+    /// </param>
+    private async Task LoadAsync(Action? work = null, bool waits = false)
     {
-        if (!await _loading.WaitAsync(0).ConfigureAwait(true))
+        if (waits)
+        {
+            await _loading.WaitAsync().ConfigureAwait(true);
+        }
+        else if (!await _loading.WaitAsync(0).ConfigureAwait(true))
         {
             return;
         }

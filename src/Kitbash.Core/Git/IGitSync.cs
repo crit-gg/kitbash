@@ -61,6 +61,12 @@ public sealed record GitPushRequest
     /// <summary>What to send. Null is the current branch.</summary>
     public string? Branch { get; init; }
 
+    /// <summary>
+    /// What it is called on the remote. Null sends it under its own name. A branch can track
+    /// one named differently, and git refuses a push that does not say which it meant.
+    /// </summary>
+    public string? Target { get; init; }
+
     /// <summary>Records the remote branch as what this one tracks from now on.</summary>
     public bool SetUpstream { get; init; }
 

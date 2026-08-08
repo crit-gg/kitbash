@@ -469,6 +469,15 @@ up, since a read still running belongs to the folder nobody is looking at any mo
 Following the folder already followed does nothing, which is why the launcher takes what
 the monitor holds rather than blanking the strip itself.
 
+**A head that moved is what says the workspace has to be read again.** `GitStatus.Commit`
+is the full oid, empty in a repository with no commits, and it is on the status so a
+branch switch, a pull or a merge can be told apart from an edit to the working tree. The
+launcher tracks it through `Kitbash/Workspaces/GitHeadTracker` and loads the workspace
+again on a move, since the config a workspace keeps is committed to the repository and a
+branch can hold different links, a different engine and a different tool list. The first
+status for a repository is never a move, since it arrives with the load that asked for it,
+and neither is losing one, since switching workspaces already reads everything.
+
 Measured on this machine, both ref backends: a branch switch, a branch rename and a
 staging all show up in about 400ms, a working tree edit within the beat, and an idle
 repository produces no git processes at all. Counted from the kernel: a files repository

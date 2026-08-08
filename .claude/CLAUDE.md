@@ -388,6 +388,12 @@ over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
 
+**A branch that moves reloads the workspace.** A workspace's config is committed to its
+repository, so switching branch, updating or merging can change its name, its links, the
+engine it asks for and the tools it offers. The launcher watches the head through
+`GitHeadTracker` and reads the whole workspace again on a move. An edit to the working
+tree is not one. The `kitbash-git` skill has the rule.
+
 **The tools page opens with the open workspace's own links.** A WORKSPACE LINKS section above
 the tools, from the `Workbench Launcher` design, drawing whatever `workspace.links` names in
 the workspace config. A row is a label, the workspace's own mark and the link mark that says

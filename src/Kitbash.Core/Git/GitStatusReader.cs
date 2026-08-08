@@ -141,8 +141,14 @@ public sealed class GitStatusReader : IGitStatusReader
             else if (line.StartsWith("# branch.oid ", StringComparison.Ordinal))
             {
                 // Kept whether or not this head turns out to be detached, since git writes
-                // this line before the one that says which it is.
+                // this line before the one that says which it is. A repository with no
+                // commits reads "(initial)" here, which names no commit.
                 commit = line["# branch.oid ".Length..].Trim();
+
+                if (commit == "(initial)")
+                {
+                    commit = "";
+                }
             }
             else if (line.StartsWith("# branch.upstream ", StringComparison.Ordinal))
             {
@@ -183,6 +189,7 @@ public sealed class GitStatusReader : IGitStatusReader
         return new GitStatus(
             places,
             branch,
+            commit,
             detached,
             hasUpstream,
             ahead,

@@ -5,6 +5,10 @@ namespace Kitbash.Core.Git;
 /// </summary>
 /// <param name="Places">Where git keeps this repository's own files.</param>
 /// <param name="Branch">The branch name, or the short commit when the head is detached.</param>
+/// <param name="Commit">
+/// The commit the head is on, in full. Empty in a repository with no commits yet, which is
+/// what git reports as an initial head.
+/// </param>
 /// <param name="IsDetached">True when the head is a commit rather than a branch.</param>
 /// <param name="HasUpstream">
 /// False when the branch tracks nothing, which is not the same as being level with it.
@@ -22,6 +26,7 @@ namespace Kitbash.Core.Git;
 public sealed record GitStatus(
     GitPlaces Places,
     string Branch,
+    string Commit,
     bool IsDetached,
     bool HasUpstream,
     int Ahead,

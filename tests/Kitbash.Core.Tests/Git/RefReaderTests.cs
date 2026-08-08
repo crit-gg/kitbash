@@ -190,4 +190,72 @@ public class RefReaderTests
 
         Assert.Null(await repository.Refs.ReadHeadBranchAsync(repository.Root, Stop));
     }
+
+    // A branch does not have to be called what it tracks, and a client that assumed it was
+    // would ask the remote about a branch nobody has.
+    [Fact]
+    public async Task ABranchTracksWhateverItWasToldTo()
+    {
+        using var remote = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", remote.Root);
+        repository.Git("push", "--set-upstream", "origin", "main");
+
+        repository.Git("switch", "--create", "feature");
+        repository.Commit("mine", ("two.txt", "two\n"));
+        repository.Git("push", "origin", "feature:something-else");
+        repository.Git("branch", "--set-upstream-to=origin/something-else", "feature");
+
+        var tracking = await repository.Refs.ReadUpstreamAsync(repository.Root, "feature", Stop);
+
+        Assert.NotNull(tracking);
+        Assert.Equal("origin", tracking.Remote);
+        Assert.Equal("something-else", tracking.Branch);
+        Assert.Equal("origin/something-else", tracking.Ref);
+        Assert.False(tracking.IsGone);
+    }
+
+    [Fact]
+    public async Task ABranchThatTracksNothingAnswersNothing()
+    {
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+
+        Assert.Null(await repository.Refs.ReadUpstreamAsync(repository.Root, "main", Stop));
+        Assert.Null(await repository.Refs.ReadUpstreamAsync(repository.Root, "nothing", Stop));
+    }
+
+    // The config still names it, so the branch tracks something that is not there. Every
+    // count measured against it is missing rather than zero, which is what a client has to
+    // tell apart from being level.
+    [Fact]
+    public async Task AnUpstreamTheRemoteNoLongerHasIsSaidToBeGone()
+    {
+        using var remote = new TestRepository(bare: true);
+        using var repository = new TestRepository();
+        Assert.SkipUnless(repository.HasGit, "no git on this machine");
+
+        repository.Commit("start", ("one.txt", "one\n"));
+        repository.Git("remote", "add", "origin", remote.Root);
+        repository.Git("push", "--set-upstream", "origin", "main");
+
+        repository.Git("switch", "--create", "feature");
+        repository.Commit("mine", ("two.txt", "two\n"));
+        repository.Git("push", "--set-upstream", "origin", "feature");
+
+        repository.Git("push", "origin", "--delete", "feature");
+        repository.Git("fetch", "--prune", "origin");
+
+        var tracking = await repository.Refs.ReadUpstreamAsync(repository.Root, "feature", Stop);
+
+        Assert.NotNull(tracking);
+        Assert.Equal("origin", tracking.Remote);
+        Assert.Equal("feature", tracking.Branch);
+        Assert.True(tracking.IsGone);
+    }
 }
