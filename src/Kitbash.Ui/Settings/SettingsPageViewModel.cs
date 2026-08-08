@@ -265,6 +265,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         foreach (var editor in _editors)
         {
             editor.IsPageWritable = IsWritable;
+            editor.Layer = IsLayered ? Layer : null;
             await editor.LoadAsync(token).ConfigureAwait(true);
         }
 
@@ -313,6 +314,7 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         foreach (var editor in _editors)
         {
             editor.IsPageWritable = IsWritable;
+            editor.Layer = IsLayered ? Layer : null;
         }
 
         Announce();
@@ -343,9 +345,13 @@ public sealed partial class SettingsPageViewModel : ObservableObject
                         break;
 
                     case SettingsEditorRow editor:
-                        editor.Editor.Changed += OnEditorChanged;
-                        _editors.Add(editor.Editor);
-                        rows.Add(new SettingsEditorRowViewModel(editor));
+                        // One editor per page, since this page is one place and the row is
+                        // shared by every place the home keeps.
+                        var editing = editor.Editor(_place);
+
+                        editing.Changed += OnEditorChanged;
+                        _editors.Add(editing);
+                        rows.Add(new SettingsEditorRowViewModel(editor, editing));
                         break;
                 }
             }

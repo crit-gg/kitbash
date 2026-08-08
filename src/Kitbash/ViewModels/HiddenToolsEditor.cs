@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Kitbash.Core.Platform.Openers;
+using Kitbash.Core.Settings;
 using Kitbash.Core.Settings.Schema;
 
 namespace Kitbash.ViewModels;
@@ -49,6 +50,10 @@ public sealed partial class HiddenToolsEditor : ObservableObject, ISettingsEdito
     public bool IsValid => true;
 
     public event EventHandler? Changed;
+
+    /// <summary>Unused. This page is the application's own file, which has no layers.</summary>
+    public SettingsLayer? Layer { get; set; }
+
 
     public async Task LoadAsync(CancellationToken token = default)
     {

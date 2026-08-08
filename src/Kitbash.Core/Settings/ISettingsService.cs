@@ -10,6 +10,13 @@ public interface ISettingsService
     ISettings ForTool(string toolId);
 
     /// <summary>
+    /// One layer's own values, with nothing merged over or under them. For a caller that
+    /// has to say which file a value came from, or that adds the layers up rather than
+    /// letting the top one win.
+    /// </summary>
+    ISettings In(SettingsScope scope, SettingsLayer layer);
+
+    /// <summary>
     /// Writes one value to one layer and saves that file. The layer is explicit
     /// because writing to the shared layer changes the setting for everyone.
     /// </summary>

@@ -23,6 +23,7 @@ cube
 database
 dots-vertical-rounded
 factory
+file
 filter
 folder-open
 git-branch

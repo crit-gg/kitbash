@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kitbash.Core.Settings;
 using Kitbash.Core.Settings.Schema;
 using Kitbash.Tools;
 
@@ -60,6 +61,10 @@ public sealed partial class ToolRepositoriesEditor : ObservableObject, ISettings
     public bool IsValid => Rows.All(row => row.IsValid);
 
     public event EventHandler? Changed;
+
+    /// <summary>Unused. This page is the application's own file, which has no layers.</summary>
+    public SettingsLayer? Layer { get; set; }
+
 
     public async Task LoadAsync(CancellationToken token = default)
     {

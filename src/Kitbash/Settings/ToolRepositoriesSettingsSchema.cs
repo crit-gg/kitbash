@@ -22,7 +22,7 @@ public sealed class ToolRepositoriesSettingsSchema
             Name = "Repositories",
             Description = "Kitbash offers the tools these publish. Nothing installs on its own.",
             Layout = SettingsRowLayout.Below,
-            Editor = editor,
+            Editor = _ => editor,
         };
 
         // The open workspace has a list of its own, and it travels in a clone, so what is

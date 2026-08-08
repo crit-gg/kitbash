@@ -22,6 +22,7 @@ public sealed class LauncherSettingsSchema
         AfterLaunchSettingsSchema afterLaunch,
         WorkspacesSettingsSchema workspaces,
         WorkspaceGodotSettingsSchema workspaceGodot,
+        WorkspaceLinksSettingsSchema workspaceLinks,
         ToolRepositoriesSettingsSchema toolRepositories,
         CustomToolsSettingsSchema customTools,
         UpdateSettingsSchema updates,
@@ -35,6 +36,7 @@ public sealed class LauncherSettingsSchema
         ArgumentNullException.ThrowIfNull(afterLaunch);
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceGodot);
+        ArgumentNullException.ThrowIfNull(workspaceLinks);
         ArgumentNullException.ThrowIfNull(toolRepositories);
         ArgumentNullException.ThrowIfNull(customTools);
         ArgumentNullException.ThrowIfNull(updates);
@@ -92,6 +94,7 @@ public sealed class LauncherSettingsSchema
                 afterLaunch.Page,
                 workspaces.Page,
                 workspaceGodot.Page,
+                workspaceLinks.Page,
                 toolRepositories.Page,
                 updates.Page,
                 State,

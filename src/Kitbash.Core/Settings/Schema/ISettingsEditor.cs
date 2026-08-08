@@ -20,6 +20,12 @@ public interface ISettingsEditor
     /// </summary>
     bool IsPageWritable { get; set; }
 
+    /// <summary>
+    /// Which layer the page is pointed at, or null on a home that does not layer. The
+    /// window sets it before every load and again whenever the picker moves.
+    /// </summary>
+    SettingsLayer? Layer { get; set; }
+
     /// <summary>Raised whenever <see cref="IsDirty"/> or <see cref="IsValid"/> changes.</summary>
     event EventHandler? Changed;
 

@@ -11,6 +11,7 @@ using Kitbash.Settings;
 using Kitbash.Tools;
 using Kitbash.Ui;
 using Kitbash.Ui.Toasts;
+using Kitbash.Workspaces;
 
 namespace Kitbash.ViewModels;
 
@@ -22,6 +23,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     private readonly IWorkspaceRegistry _workspaces;
     private readonly IWorkspacesSettings _workspaceSettings;
+    private readonly IWorkspaceLinks _links;
     private readonly IPathShortener _paths;
     private readonly IGitStatusMonitor _git;
     private readonly IGitUpdater _updater;
@@ -93,6 +95,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public LauncherViewModel(
         IWorkspaceRegistry workspaces,
         IWorkspacesSettings workspaceSettings,
+        IWorkspaceLinks links,
         IPathShortener paths,
         IInstalledTools installed,
         IProvidedTools provided,
@@ -126,6 +129,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     {
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceSettings);
+        ArgumentNullException.ThrowIfNull(links);
         ArgumentNullException.ThrowIfNull(paths);
         ArgumentNullException.ThrowIfNull(installed);
         ArgumentNullException.ThrowIfNull(provided);
@@ -159,6 +163,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         _workspaces = workspaces;
         _workspaceSettings = workspaceSettings;
+        _links = links;
         _paths = paths;
         _git = git;
         _updater = updater;
@@ -216,6 +221,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
+
+    /// <summary>
+    /// What the open workspace points at, above the tools. A readout, so nothing here adds
+    /// to it or takes anything off it.
+    /// </summary>
+    public ObservableCollection<WorkspaceLinkViewModel> Links { get; } = [];
+
+    /// <summary>False leaves the whole section out, which is a workspace naming none.</summary>
+    public bool HasLinks => Links.Count > 0;
 
     /// <summary>The engines page, which the rail's second item opens.</summary>
     public EnginesViewModel Engines { get; }
@@ -947,6 +961,9 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                 workspace,
                 workspace.Root == current?.Root,
                 _paths.Shorten(workspace.Root, RowPathLength)))],
+            // The workspace's own file, so the set changes with the workspace the way the
+            // git and engine strips do.
+            [.. _links.Read().Select(link => new WorkspaceLinkViewModel(link, OpenLink))],
             current?.Name ?? "No workspace",
             current is null
                 ? "Add one to get started"
@@ -963,6 +980,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             Workspaces.Add(workspace);
         }
 
+        Links.Clear();
+
+        foreach (var link in loaded.Links)
+        {
+            Links.Add(link);
+        }
+
+        OnPropertyChanged(nameof(HasLinks));
+
         HasWorkspaces = Workspaces.Count > 0;
         WorkspaceName = loaded.Name;
         WorkspaceSubtitle = loaded.Subtitle;
@@ -973,6 +999,27 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // nothing coming to fill it.
         Git.Status = _git.Status;
     }
+
+    /// <summary>
+    /// Hands a workspace link to the desktop. Starting the browser can block, so it runs
+    /// off the UI thread the way the release notes do.
+    /// </summary>
+    private void OpenLink(WorkspaceLink link) => Task.Run(() =>
+    {
+        try
+        {
+            _platform.OpenInBrowser(link.Address);
+        }
+        catch (Exception exception) when (exception is ProcessStartException or ArgumentException)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"Could not open {link.Label}",
+                Body = exception.Message,
+            });
+        }
+    });
 
     /// <summary>
     /// Rebuilds the engine strip from what is on disk.
@@ -1147,6 +1194,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <summary>Everything one load read off disk, ready to be put on screen.</summary>
     private sealed record Loaded(
         IReadOnlyList<WorkspaceViewModel> Workspaces,
+        IReadOnlyList<WorkspaceLinkViewModel> Links,
         string Name,
         string Subtitle);
 }

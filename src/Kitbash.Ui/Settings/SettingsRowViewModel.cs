@@ -81,12 +81,13 @@ public sealed partial class SettingsReadoutRowViewModel : SettingsRowViewModel
 /// </summary>
 public sealed class SettingsEditorRowViewModel : SettingsRowViewModel
 {
-    public SettingsEditorRowViewModel(SettingsEditorRow row)
+    public SettingsEditorRowViewModel(SettingsEditorRow row, ISettingsEditor editor)
         : base(row)
     {
         ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(editor);
 
-        Editor = row.Editor;
+        Editor = editor;
     }
 
     public ISettingsEditor Editor { get; }

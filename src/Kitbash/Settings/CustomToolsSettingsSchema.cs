@@ -24,14 +24,14 @@ public sealed class CustomToolsSettingsSchema
             Name = "Tools",
             Description = "Programs the Open in button offers, beside the ones Kitbash found.",
             Layout = SettingsRowLayout.Below,
-            Editor = editor,
+            Editor = _ => editor,
         };
 
         var detected = new SettingsEditorRow
         {
             Name = "Found on this machine",
             Description = "Turn one off to keep it out of the Open in menu.",
-            Editor = found,
+            Editor = _ => found,
         };
 
         // Kitbash finds most of these itself, so this is what tells somebody whether the

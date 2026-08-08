@@ -64,7 +64,7 @@ public sealed class SettingsRowLayoutTests : IDisposable
         Assert.Equal(SettingsRowLayout.Beside, new SettingsEditorRow
         {
             Name = "Editor",
-            Editor = new FakeEditor(),
+            Editor = _ => new FakeEditor(),
         }.Layout);
     }
 
@@ -186,6 +186,8 @@ public sealed class SettingsRowLayoutTests : IDisposable
         public bool IsValid => true;
 
         public bool IsPageWritable { get; set; } = true;
+
+        public SettingsLayer? Layer { get; set; }
 
         public event EventHandler? Changed
         {

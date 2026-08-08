@@ -54,7 +54,9 @@ the rest of the shared config. Keys are dotted paths onto nested TOML tables, su
 as `editor.font.size`. A value that exists but will not convert to the requested
 type counts as absent and falls through to the layer below.
 
-Reads go through `ISettings`. Writes go through `ISettingsService.Set`, which names
+Reads go through `ISettings`, which merges. `ISettingsService.In` is the same read for one
+layer alone, for a caller that has to say which file a value came from or that adds the
+layers up rather than letting the top one win. Writes go through `ISettingsService.Set`, which names
 its layer explicitly because writing to `TeamShared` changes the setting for
 everyone. `Apply` writes a batch to one file, so saving a page of edits is one read
 and one write rather than one of each per key, and `Set` is one edit through it. A
@@ -96,6 +98,36 @@ as `a.b = [{ }]`, keeps that spelling, since writing blocks beside it would leav
 in the file twice and no later read could open it. `tools.repositories`, `tools.custom` and
 `launcher.after.tools` are the three such keys. `.claude/plans/tool-distribution.md` and
 `.claude/plans/external-tools.md` have what the first two hold.
+
+**`workspace.links` is the fourth such key**, a workspace's own list of addresses, drawn
+above the tools on the launcher's workspace page and edited on the Links page under each
+workspace. Each block holds `label`, `url` and an optional `icon`. The url goes through
+`WebAddress.Parse`, so http and https are the only schemes and a bare host such as
+`example.com/design` is refused rather than guessed at. The icon names an `IconGlyph` with
+the hyphens optional, and a name outside the set draws the link mark rather than taking the
+row away. A row missing its label or its url is left out of what the launcher draws and the
+rest of the list still draws. `Kitbash/Workspaces/WorkspaceLinks` reads and writes it.
+
+**It is the one key whose layers add up rather than one winning.** Every other setting is a
+value, so the personal layer masks the team's. A list of links is a set, and a person's own
+links are meant to sit beside the team's rather than take them off the page, so the launcher
+reads each layer on its own through `ISettingsService.In` and concatenates, team first. A
+page edits one layer, so nothing a page writes can ever remove the other layer's links.
+
+**The reader has two ways in and the editor takes the raw one.** `Read` gives the links the
+launcher draws, parsed, with anything unusable dropped and logged. `ReadEntries` gives one
+layer's rows exactly as the file spells them, including a row Kitbash cannot draw, which is
+what the settings page edits. Without that a save would quietly delete a row somebody typed
+half of. For the same reason a row keeps the icon name the file gave it until its dropdown
+is actually moved, so a blank stays blank and a name outside the set survives a save.
+
+**The workspace scaffold carries a commented sample of it, and its header is commented
+too.** Every other setting there writes a live table header with the key under it commented,
+because uncommenting one line has to land the key in the right table. An array of tables
+goes the other way: a live `[[workspace.links]]` with every key under it commented is a link
+with no label and no address, so the whole block is commented and a person uncomments all
+four lines. It is written where the workspace table is left rather than at the end of the
+file, so it does not read as part of `[godot]`.
 
 **A comment above a key is not owned by that key and is left where it is.** The scaffolded
 workspace file settles it: every setting there sits under a paragraph and a commented out
@@ -343,13 +375,30 @@ the writer's guard on undeclared keys is unaffected.
 ### An app's own editor
 
 **`SettingsEditorRow` is for a value no descriptor can describe**, which today means an
-array of tables. The app writes an `ISettingsEditor`, the row carries it, and the window
+array of tables. The app writes an `ISettingsEditor`, the row builds it, and the window
 draws it as content, so the app registers a `DataTemplate` for its own type in
-`App.axaml`. There are four, `Kitbash/ViewModels/ToolRepositoriesEditor` on
+`App.axaml`. There are five, `Kitbash/ViewModels/ToolRepositoriesEditor` on
 `ToolRepositoriesSettingsSchema`, `Kitbash/ViewModels/CustomToolsEditor` and
-`Kitbash/ViewModels/HiddenToolsEditor` both on `CustomToolsSettingsSchema`, and
-`Kitbash/ViewModels/ToolActionsEditor` on `AfterLaunchSettingsSchema`, and each was written
-by copying the one before it.
+`Kitbash/ViewModels/HiddenToolsEditor` both on `CustomToolsSettingsSchema`,
+`Kitbash/ViewModels/ToolActionsEditor` on `AfterLaunchSettingsSchema`, and
+`Kitbash/ViewModels/WorkspaceLinksEditor` on `WorkspaceLinksSettingsSchema`, and each was
+written by copying the one before it.
+
+**`Editor` is a factory over the place, not an instance, and that is forced.** A schema is
+built once and a home with several places keeps a page for each, so one editor object would
+carry one place's staged changes onto the next and a page switch would draw the wrong list.
+The row is handed the place and returns an editor for it, which is how the launcher's Links
+page edits the right workspace. An editor on a home with one place ignores the argument.
+
+**An editor is told its layer through `ISettingsEditor.Layer`**, set by the window before
+every load and again whenever the picker moves, and null on a home that does not layer. A
+descriptor row does not need this, since the merged view is what it draws and the layer only
+decides where a write lands. An editor reads its own files, so it has to know which.
+
+**`WorkspaceLinksEditor` holds both layers at once**, which is the shape to copy for any
+layered editor. It reads both files, draws the picked layer's list, and stages against each
+separately, so moving the picker loses nothing and Save writes each layer that changed. A
+layer whose file will not parse is read as empty and never written over.
 
 **A page can carry more than one, and each counts as one change.** The Open in page has
 two, the tools a person added and the toggles over the tools Kitbash found, so a save that
@@ -400,6 +449,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.tool`, `launcher.after.externalTool`, the launcher's, and `launcher.after.tools` **through an editor rather than a descriptor** |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
 | `CustomToolsSettingsSchema` | `tools.custom` and `tools.hidden`, the launcher's, and both through an editor too |
+| `WorkspaceLinksSettingsSchema` | `workspace.links`, the launcher's, in the `Workspace` home and **through an editor rather than a descriptor** |
 
 **A `launcher.` key is the launcher's own behaviour and Core never declares one.** Minimizing
 or closing once a project opens is something only the launcher can do, so the keys, the page

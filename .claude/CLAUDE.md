@@ -323,7 +323,7 @@ numbers are the order**, and every stage depended only on lower ones, so the pla
 straight through. Each stage file records what it built and where it departed from the
 design.
 
-**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 53
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 54
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -387,6 +387,28 @@ the status bar in place, which is rule 8 of that row and not something a toast s
 over. The gallery is still where the toast service is exercised in full.
 
 The git strip and the engine strip are both real and both read the open workspace.
+
+**The tools page opens with the open workspace's own links.** A WORKSPACE LINKS section above
+the tools, from the `Workbench Launcher` design, drawing whatever `workspace.links` names in
+the workspace config. A row is a label, the workspace's own mark and the link mark that says
+the click leaves Kitbash, and the address is the tooltip rather than a second line. **It is a
+readout**: nothing on the page adds a link or takes one off, so a workspace naming none has
+no section at all, and the empty state stands down for a workspace that has links and no
+tools. The reader is `Kitbash/Workspaces/WorkspaceLinks`. The icon set gained `file` for it,
+which is the design's own first row.
+
+**The links are edited in the settings window, on a Links page under each workspace.** Both
+layers, the team file that travels in a clone and the person's own, picked with the layer
+picker every workspace page has. **This is the one key whose layers add up rather than one
+winning**, so a person's links join the team's on the launcher instead of replacing them,
+and a page can only ever change its own layer. The icon is picked from a dropdown of all 54
+glyphs rather than typed. **Two things in the settings library had to change for it**:
+`SettingsEditorRow.Editor` is now a factory over the place, since a home with a place per
+workspace would otherwise share one editor across every page, and `ISettingsEditor` gained
+`Layer`, since an editor reads its own files and has to know which. `WorkspaceLinksEditor`
+holds both layers at once, so moving the picker loses nothing staged. The `kitbash-settings`
+skill has the key, the contract and the rule that keeps a save from dropping a row somebody
+typed half of.
 
 **The engine strip has a second button, Open in external tool.** `IWorkspaceOpeners` in
 Core finds the VS Code family, JetBrains Toolbox IDEs, Visual Studio through vswhere and
@@ -542,8 +564,7 @@ declares is drawn, `workspaces.directory` included. A setting nothing rereads ca
 `NeedsRestart`, and the footer grows a Save and restart button while one is waiting.
 
 **A page can also hold an editor an app wrote itself.** `SettingsEditorRow` is the other
-half of the readout row, for a value no descriptor can describe, and the tool repository
-list is the one that exists. It stages and saves with the rest of the page, so the unsaved
+half of the readout row, for a value no descriptor can describe, and there are five. It stages and saves with the rest of the page, so the unsaved
 count and the Save button still mean what they say.
 
 The design's red Reset Workbench button is deliberately not built. It deletes a person's

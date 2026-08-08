@@ -47,6 +47,17 @@
             <Setter Property="Padding" Value="14" />
         </Style>
 
+        <!-- A workspace link. The secondary button already rests, hovers and presses on
+             the values the design draws, so only the shape of the row is here. -->
+        <!-- No height, so the row is the icon plus its padding and grows with the type
+             rather than being pinned to one density's number. -->
+        <Style Selector="Button.workspaceLink">
+            <Setter Property="Height" Value="NaN" />
+            <Setter Property="Padding" Value="11,7" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        </Style>
+
         <!-- No stroke. The tile is a plate for the letter a tool with no art falls back to. -->
         <Style Selector="Border.toolMark">
             <Setter Property="Background" Value="{DynamicResource AccentTint}" />
@@ -417,7 +428,62 @@
 
                     <!-- tools -->
                     <Border Grid.Row="2" Classes="page" BorderThickness="0">
-                      <Panel>
+                      <!-- The links sit above the tools rather than inside their scroller,
+                           so the empty state below can never land under them. -->
+                      <Grid RowDefinitions="Auto,*">
+                            <!-- The links the open workspace points at. A readout, so the
+                                 heading carries no action and the section is simply absent
+                                 when a workspace names none. -->
+                            <StackPanel Grid.Row="0" Name="WorkspaceLinks"
+                                        Margin="20,16,20,0"
+                                        IsVisible="{Binding HasLinks}">
+                                <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                        Header="WORKSPACE LINKS"
+                                                        Margin="0,0,0,11" />
+
+                                <!-- Three across on the tools grid, so a link and a card
+                                     line up down the page. -->
+                                <ItemsControl ItemsSource="{Binding Links}" Margin="0,0,-9,-9">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <UniformGrid Columns="3" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WorkspaceLinkViewModel">
+                                            <!-- The address is the tooltip rather than a
+                                                 second line, since the label is what the
+                                                 team already calls the thing. -->
+                                            <Button Classes="workspaceLink"
+                                                    Margin="0,0,9,9"
+                                                    Command="{Binding OpenCommand}"
+                                                    ToolTip.Tip="{Binding Address}">
+                                                <Grid ColumnDefinitions="Auto,*,Auto"
+                                                      ColumnSpacing="9">
+                                                    <ui:Icon Grid.Column="0"
+                                                             Glyph="{Binding Icon}"
+                                                             Size="{DynamicResource IconSizeSmall}"
+                                                             Foreground="{DynamicResource InkRail}"
+                                                             VerticalAlignment="Center" />
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Label}"
+                                                               VerticalAlignment="Center"
+                                                               TextTrimming="CharacterEllipsis" />
+
+                                                    <!-- Says the click leaves Kitbash. -->
+                                                    <ui:Icon Grid.Column="2" Glyph="Link"
+                                                             Size="{DynamicResource IconSizeField}"
+                                                             Foreground="{DynamicResource InkMuted}"
+                                                             VerticalAlignment="Center" />
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                      <Panel Grid.Row="1">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                       IsVisible="{Binding HasTools}">
                             <ItemsControl Name="ToolGroups" ItemsSource="{Binding ToolGroups}"
@@ -846,7 +912,8 @@
                         </ScrollViewer>
 
                         <!-- Nothing installed and nothing offered. Same shape as the empty
-                             workspace page. -->
+                             workspace page. It sits under the links rather than over them,
+                             since it is the tools half of the page saying it is empty. -->
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                                     MaxWidth="400"
                                     IsVisible="{Binding !HasTools}">
@@ -899,6 +966,7 @@
                             </StackPanel>
                         </StackPanel>
                       </Panel>
+                      </Grid>
                     </Border>
 
                     <!-- The status bar. Two of them, one row, and which one shows is

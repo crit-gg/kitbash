@@ -26,8 +26,8 @@ public sealed class SettingsEditorRow : ISettingsRow
     public SettingsRowLayout Layout { get; init; } = SettingsRowLayout.Beside;
 
     /// <summary>
-    /// The editor, which is also what the window draws. It is presented as content, so
-    /// the app supplies a template for its own type.
+    /// Builds the editor the window draws, one per place, so a page never carries another
+    /// place's staged changes. Presented as content, so the app templates its own type.
     /// </summary>
-    public required ISettingsEditor Editor { get; init; }
+    public required Func<SettingsPlace?, ISettingsEditor> Editor { get; init; }
 }

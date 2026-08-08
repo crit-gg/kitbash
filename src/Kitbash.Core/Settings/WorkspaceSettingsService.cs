@@ -14,6 +14,7 @@ internal sealed class WorkspaceSettingsService : ISettingsService
     private readonly IFileSystem _fileSystem;
 
     private readonly Dictionary<SettingsScope, ISettings> _cache = [];
+    private readonly Dictionary<(SettingsScope Scope, SettingsLayer Layer), ISettings> _layers = [];
     private readonly Lock _gate = new();
 
     public WorkspaceSettingsService(
@@ -36,6 +37,22 @@ internal sealed class WorkspaceSettingsService : ISettingsService
     public ISettings Global => ForScope(SettingsScope.Global);
 
     public ISettings ForTool(string toolId) => ForScope(SettingsScope.ForTool(toolId));
+
+    public ISettings In(SettingsScope scope, SettingsLayer layer)
+    {
+        lock (_gate)
+        {
+            if (_layers.TryGetValue((scope, layer), out var cached))
+            {
+                return cached;
+            }
+
+            var settings = new LayeredSettings([_store.Read(_paths.FileFor(scope, layer))], _converter);
+
+            _layers[(scope, layer)] = settings;
+            return settings;
+        }
+    }
 
     public void Set<T>(SettingsScope scope, SettingsLayer layer, string key, T value)
         where T : notnull
@@ -67,6 +84,7 @@ internal sealed class WorkspaceSettingsService : ISettingsService
             }
 
             _cache.Remove(scope);
+            _layers.Remove((scope, layer));
         }
     }
 
@@ -75,6 +93,7 @@ internal sealed class WorkspaceSettingsService : ISettingsService
         lock (_gate)
         {
             _cache.Clear();
+            _layers.Clear();
         }
     }
 

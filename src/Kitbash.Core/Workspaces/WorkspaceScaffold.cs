@@ -13,6 +13,9 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
     /// <summary>Where a comment line is wrapped, chosen to sit inside 80 with its hash.</summary>
     private const int Width = 74;
 
+    /// <summary>The table the links block follows.</summary>
+    private const string WorkspaceTable = "workspace";
+
     private readonly IFileSystem _fileSystem;
     private readonly WorkspaceGodotSettingsSchema _godot;
 
@@ -90,11 +93,15 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
         text.AppendLine();
 
         var table = string.Empty;
+        var links = false;
 
         foreach (var row in Rows())
         {
             if (!string.Equals(row.Table, table, StringComparison.Ordinal))
             {
+                // The links belong with the rest of the workspace, so they go in as that
+                // table is left rather than at the end under whatever table came last.
+                links = links || Leaving(text, table);
                 table = row.Table;
 
                 if (table.Length > 0)
@@ -105,6 +112,11 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
             }
 
             Section(text, row);
+        }
+
+        if (!links)
+        {
+            Leaving(text, table);
         }
 
         // One trailing newline rather than the blank line each section leaves behind.
@@ -137,6 +149,38 @@ internal sealed class WorkspaceScaffold : IWorkspaceScaffold
                     descriptor.Default as string ?? string.Empty);
             }
         }
+    }
+
+    /// <summary>Writes the links block as the workspace table is left.</summary>
+    /// <returns>Whether it was written, so it is never written twice.</returns>
+    private static bool Leaving(StringBuilder text, string table)
+    {
+        if (!string.Equals(table, WorkspaceTable, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        Links(text);
+
+        return true;
+    }
+
+    /// <summary>
+    /// The links the launcher draws above the tools. The header is commented too, unlike
+    /// every setting above, because a live [[workspace.links]] with no keys under it is a
+    /// link with no label and no address rather than a table that sets nothing.
+    /// </summary>
+    private static void Links(StringBuilder text)
+    {
+        text.AppendLine("# Workspace links");
+        Comment(text, "Links for this workspace, shown above the tools. Repeat the four "
+            + "lines for each one. The icon is optional.");
+        text.AppendLine("#");
+        text.AppendLine("# [[workspace.links]]");
+        text.AppendLine("# label = \"Design docs\"");
+        text.AppendLine("# url = \"https://example.com/design\"");
+        text.AppendLine("# icon = \"file\"");
+        text.AppendLine();
     }
 
     private static void Section(StringBuilder text, Row row)

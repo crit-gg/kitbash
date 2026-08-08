@@ -27,6 +27,7 @@ public enum IconGlyph
     Database,
     DotsVerticalRounded,
     Factory,
+    File,
     Filter,
     FolderOpen,
     GitBranch,

@@ -24,6 +24,7 @@ using Kitbash.Ui.Controls;
 using Kitbash.Ui.Settings;
 using Kitbash.Ui.Toasts;
 using Kitbash.Views;
+using Kitbash.Workspaces;
 
 namespace Kitbash;
 
@@ -423,6 +424,10 @@ public partial class App : Application
             .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IApplicationShutdown, AvaloniaApplicationShutdown>()
             .AddSingleton<IAfterLaunchActions, AvaloniaAfterLaunchActions>()
+            .AddSingleton<WorkspaceLog>()
+            .AddSingleton<WorkspaceLinkIcons>()
+            .AddSingleton<IWorkspaceLinks, WorkspaceLinks>()
+            .AddSingleton<WorkspaceLinksSettingsSchema>()
             .AddSingleton<ToolLog>()
             .AddSingleton<IToolManifestReader, ToolManifestReader>()
             .AddSingleton<IToolRuntime, ToolRuntime>()
@@ -463,6 +468,7 @@ public partial class App : Application
             .AddSingleton(provider => new LauncherViewModel(
                 provider.GetRequiredService<IWorkspaceRegistry>(),
                 provider.GetRequiredService<IWorkspacesSettings>(),
+                provider.GetRequiredService<IWorkspaceLinks>(),
                 provider.GetRequiredService<IPathShortener>(),
                 provider.GetRequiredService<IInstalledTools>(),
                 provider.GetRequiredService<IProvidedTools>(),
