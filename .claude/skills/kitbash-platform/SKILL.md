@@ -170,6 +170,24 @@ program is checked before it becomes a row.
 whether `xdg-open` or `gio open` ran. Everybody notices being handed Konsole on a machine
 where they use Ptyxis.
 
+**Any found tool can be hidden, and only a found one.** `IHiddenOpeners` is `tools.hidden`
+in the global config, a list of opener ids, and the Open in settings page draws a toggle
+per detected tool over it. A tool a person added is removed from `tools.custom` instead, so
+there is one way to get rid of each kind rather than two ways to get rid of one.
+
+**The filter is in `WorkspaceOpeners`, never in a finder.** What is held is what this
+machine has, so turning a tool back on costs no second detection, and the hidden list is
+read on every call the way the custom list is. `ReadAsync` is what the menu offers and
+`ReadAllAsync` is everything found, which only the page that hides them wants.
+
+**An id nothing answers to is kept.** Uninstalling a tool and putting it back keeps the
+answer, which is the rule `launcher.after.tools` already follows for a tool that is gone.
+
+**The menu is gathered, so something has to say when to gather it again.**
+`ISettingsWindows.Closed` is that, and `LauncherWindow` reads the menu again on it. Without
+it a tool stays in the menu until the workspace changes, which is also true of a custom
+tool being added.
+
 **A terminal takes no path argument.** It is told where it is by `WorkingDirectory`, and a
 path in argv would be read as a command to run. `TakesPathArgument` is what says so, and a
 terminal needing its own flag carries it in `FixedArguments`, such as `wt -d .`.

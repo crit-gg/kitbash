@@ -11,6 +11,12 @@ public interface IWorkspaceOpeners
     Task<IReadOnlyList<WorkspaceOpener>> ReadAsync(CancellationToken cancellation = default);
 
     /// <summary>
+    /// The same list with the hidden ones still in it, for the page that hides them. Every
+    /// other caller wants <see cref="ReadAsync"/>.
+    /// </summary>
+    Task<IReadOnlyList<WorkspaceOpener>> ReadAllAsync(CancellationToken cancellation = default);
+
+    /// <summary>
     /// The files in this workspace one tool would open. Walks a disk, so it runs wherever
     /// its caller runs and never on the UI thread.
     /// </summary>

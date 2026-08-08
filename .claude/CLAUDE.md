@@ -390,7 +390,8 @@ The git strip and the engine strip are both real and both read the open workspac
 
 **The engine strip has a second button, Open in external tool.** `IWorkspaceOpeners` in
 Core finds the VS Code family, JetBrains Toolbox IDEs, Visual Studio through vswhere and
-every terminal installed, and a person adds their own on the Open in settings page. It
+every terminal installed, and a person adds their own on the Open in settings page. **Any
+tool it found can be hidden there too**, one toggle each, kept in `tools.hidden`. It
 opens the workspace folder, or a `.sln` or `.code-workspace` found inside it. Ported from
 SourceGit, and each tool wears its own brand PNG rather than a glyph, which is the one
 place the launcher carries art the icon generator did not make. `tests/Kitbash.Tests` is a

@@ -17,6 +17,10 @@ public sealed class WorkspaceOpenersTests
         return services.BuildServiceProvider();
     }
 
+    /// <summary>
+    /// Everything found is in the whole list. It is not in the offered one, since this
+    /// machine's own settings may hide some, which is what HiddenOpenersTests covers.
+    /// </summary>
     [Fact]
     public async Task ReadingGivesEverythingTheFinderGave()
     {
@@ -25,7 +29,7 @@ public sealed class WorkspaceOpenersTests
         var found = await provider.GetRequiredService<IWorkspaceOpenerFinder>()
             .FindAsync(TestContext.Current.CancellationToken);
         var read = await provider.GetRequiredService<IWorkspaceOpeners>()
-            .ReadAsync(TestContext.Current.CancellationToken);
+            .ReadAllAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(found.Count, read.Count(opener => opener.Kind is not WorkspaceOpenerKind.Custom));
     }

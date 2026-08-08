@@ -839,6 +839,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public void SetActive(bool active) => _git.IsActive = active;
 
     /// <summary>
+    /// Reads the Open in menu again. The settings window hides a tool and adds one, and
+    /// neither shows up until this runs, since the menu is gathered rather than watched.
+    /// </summary>
+    public Task RefreshOpenInAsync() =>
+        OpenIn.RefreshAsync(_workspaces.Current is { IsMissing: false } current ? current.Root : null);
+
+    /// <summary>
     /// Lets go of the monitor. The container owns the monitor itself and disposes it, so
     /// this only takes back what this class added to it.
     /// </summary>

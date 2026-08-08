@@ -37,8 +37,13 @@ dotnet are. The new concept is `WorkspaceOpener`.
 **A custom tool can be a new tool.** SourceGit's `external_editors.json` only re points or
 hides a tool it already knows, with no name and no arguments. Here `tools.custom` is an
 array of tables in the global config with a name, a path and an argument template, edited
-on the Open in settings page. There is no exclude list, since a tool nobody wants can be
-left alone.
+on the Open in settings page.
+
+**Hiding is a second key and it covers detected tools alone.** `tools.hidden` is a list of
+opener ids in the same file, and the Open in page draws a toggle per found tool over it. A
+tool a person added is taken off its own list instead, so nothing is hidden twice.
+SourceGit re points and hides through one file, which is why this reads as a split of that
+one idea rather than as a new one.
 
 **A terminal is offered by name.** SourceGit makes the terminal a preference and opens the
 one that was chosen. Every terminal found is a row here.

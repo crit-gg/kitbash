@@ -13,4 +13,10 @@ public interface ISettingsWindows
     /// so the app stays usable behind it.
     /// </summary>
     void Open(Window owner);
+
+    /// <summary>
+    /// Raised on the UI thread when the window closes, so an app can reread a setting it
+    /// holds. Nothing says what changed, since the window writes whatever a page declares.
+    /// </summary>
+    event EventHandler? Closed;
 }

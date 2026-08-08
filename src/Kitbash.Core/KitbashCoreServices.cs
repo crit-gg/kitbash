@@ -386,6 +386,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IWorkspaceFileFinder, WorkspaceFileFinder>();
         services.TryAddSingleton<IOpenerArguments, OpenerArguments>();
         services.TryAddSingleton<ICustomOpeners, CustomOpeners>();
+        services.TryAddSingleton<IHiddenOpeners, HiddenOpeners>();
         services.TryAddSingleton(CreateOpenerFinder);
         services.TryAddSingleton<IWorkspaceOpeners, WorkspaceOpeners>();
 

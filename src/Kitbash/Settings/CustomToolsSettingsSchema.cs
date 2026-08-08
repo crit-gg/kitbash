@@ -10,9 +10,13 @@ namespace Kitbash.Settings;
 /// </summary>
 public sealed class CustomToolsSettingsSchema
 {
-    public CustomToolsSettingsSchema(CustomToolsEditor editor, IWorkspaceOpeners openers)
+    public CustomToolsSettingsSchema(
+        CustomToolsEditor editor,
+        HiddenToolsEditor found,
+        IWorkspaceOpeners openers)
     {
         ArgumentNullException.ThrowIfNull(editor);
+        ArgumentNullException.ThrowIfNull(found);
         ArgumentNullException.ThrowIfNull(openers);
 
         var list = new SettingsEditorRow
@@ -20,6 +24,13 @@ public sealed class CustomToolsSettingsSchema
             Name = "Tools",
             Description = "Programs the Open in button offers, beside the ones Kitbash found.",
             Editor = editor,
+        };
+
+        var detected = new SettingsEditorRow
+        {
+            Name = "Found on this machine",
+            Description = "Turn one off to keep it out of the Open in menu.",
+            Editor = found,
         };
 
         // Kitbash finds most of these itself, so this is what tells somebody whether the
@@ -48,6 +59,7 @@ public sealed class CustomToolsSettingsSchema
             Home = SettingsHome.Application,
             Sections =
             [
+                new SettingsSection("What Kitbash found", [detected]),
                 new SettingsSection("Your own tools", [list]),
                 new SettingsSection("Everything offered", [inForce]),
             ],

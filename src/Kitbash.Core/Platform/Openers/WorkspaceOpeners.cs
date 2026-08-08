@@ -4,6 +4,7 @@ internal sealed class WorkspaceOpeners : IWorkspaceOpeners
 {
     private readonly IWorkspaceOpenerFinder _finder;
     private readonly ICustomOpeners _custom;
+    private readonly IHiddenOpeners _hidden;
     private readonly IWorkspaceFileFinder _files;
     private readonly IOpenerArguments _arguments;
     private readonly IPlatformServices _platform;
@@ -14,24 +15,43 @@ internal sealed class WorkspaceOpeners : IWorkspaceOpeners
     public WorkspaceOpeners(
         IWorkspaceOpenerFinder finder,
         ICustomOpeners custom,
+        IHiddenOpeners hidden,
         IWorkspaceFileFinder files,
         IOpenerArguments arguments,
         IPlatformServices platform)
     {
         ArgumentNullException.ThrowIfNull(finder);
         ArgumentNullException.ThrowIfNull(custom);
+        ArgumentNullException.ThrowIfNull(hidden);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(platform);
 
         _finder = finder;
         _custom = custom;
+        _hidden = hidden;
         _files = files;
         _arguments = arguments;
         _platform = platform;
     }
 
+    /// <summary>
+    /// The hidden list is read here rather than filtered in the finder, so what is held is
+    /// what this machine has and turning a tool back on needs no second detection.
+    /// </summary>
     public async Task<IReadOnlyList<WorkspaceOpener>> ReadAsync(CancellationToken cancellation = default)
+    {
+        var hidden = _hidden.Read().ToHashSet(StringComparer.Ordinal);
+
+        return
+        [
+            .. (await DetectedAsync(cancellation).ConfigureAwait(false))
+                .Where(opener => !hidden.Contains(opener.Id)),
+            .. Custom(),
+        ];
+    }
+
+    public async Task<IReadOnlyList<WorkspaceOpener>> ReadAllAsync(CancellationToken cancellation = default)
     {
         return [.. await DetectedAsync(cancellation).ConfigureAwait(false), .. Custom()];
     }

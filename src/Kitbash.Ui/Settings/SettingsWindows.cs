@@ -44,6 +44,8 @@ internal sealed class SettingsWindows : ISettingsWindows
         _restart = restart;
     }
 
+    public event EventHandler? Closed;
+
     public void Open(Window owner)
     {
         ArgumentNullException.ThrowIfNull(owner);
@@ -63,7 +65,11 @@ internal sealed class SettingsWindows : ISettingsWindows
                 _schema, _inspector, _writer, _converter, _shortener, _restart),
         };
 
-        window.Closed += (_, _) => _open = null;
+        window.Closed += (_, _) =>
+        {
+            _open = null;
+            Closed?.Invoke(this, EventArgs.Empty);
+        };
         _open = window;
         window.Show(owner);
     }

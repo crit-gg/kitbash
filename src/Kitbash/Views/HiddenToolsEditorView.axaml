@@ -1,9 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Kitbash.ViewModels"
-             xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
-             x:Class="Kitbash.Views.ToolActionsEditorView"
-             x:DataType="vm:ToolActionsEditor"
+             x:Class="Kitbash.Views.HiddenToolsEditorView"
+             x:DataType="vm:HiddenToolsEditor"
              x:CompileBindings="True">
 
     <StackPanel Spacing="7">
@@ -22,45 +21,38 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ToolActionRowViewModel">
+                    <DataTemplate x:DataType="vm:HiddenToolRowViewModel">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+                            <!-- Two builds of one IDE read the same, so the program is what
+                                 tells them apart, and it is long enough to be a tip. -->
+                            <!-- Transparent rather than no background, or the text is not
+                                 hit tested and the pointer never reaches the tip. -->
                             <TextBlock Grid.Column="0"
                                        Text="{Binding Name}"
+                                       ToolTip.Tip="{Binding Program}"
+                                       Background="Transparent"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
                                        FontSize="{DynamicResource FontSizeBody}"
                                        Foreground="{DynamicResource InkPrimary}" />
 
-                            <ui:Segmented Grid.Column="1"
+                            <ToggleSwitch Grid.Column="1"
+                                          VerticalAlignment="Center"
+                                          IsChecked="{Binding IsOffered, Mode=TwoWay}"
                                           IsEnabled="{Binding CanEdit}"
-                                          ItemsSource="{Binding Options}">
-                                <!-- The row reads which radio is checked, so the option
-                                     and its container answer each other rather than the
-                                     row being told twice. -->
-                                <ui:Segmented.Styles>
-                                    <Style Selector="RadioButton">
-                                        <Setter Property="IsChecked"
-                                                Value="{ReflectionBinding IsChosen, Mode=TwoWay}" />
-                                    </Style>
-                                </ui:Segmented.Styles>
-                                <ui:Segmented.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:ToolActionOptionViewModel">
-                                        <TextBlock Text="{Binding Label}" />
-                                    </DataTemplate>
-                                </ui:Segmented.ItemTemplate>
-                            </ui:Segmented>
+                                          AutomationProperties.Name="{Binding Name}" />
                         </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </Border>
 
-        <TextBlock Text="No tools are installed, so there is nothing here to answer for itself."
+        <TextBlock Text="Kitbash found nothing on this machine to open a workspace in."
                    IsVisible="{Binding IsEmpty}"
                    FontSize="{DynamicResource FontSizeBody}"
                    Foreground="{DynamicResource InkMuted}" />
 
-        <TextBlock Text="A tool that was uninstalled keeps its answer for the day it comes back."
+        <TextBlock Text="A tool turned off keeps its answer if it is uninstalled and put back."
                    TextWrapping="Wrap"
                    FontSize="{DynamicResource FontSizeSmall}"
                    Foreground="{DynamicResource InkMuted}" />

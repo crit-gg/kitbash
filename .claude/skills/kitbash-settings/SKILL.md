@@ -327,10 +327,15 @@ the writer's guard on undeclared keys is unaffected.
 **`SettingsEditorRow` is for a value no descriptor can describe**, which today means an
 array of tables. The app writes an `ISettingsEditor`, the row carries it, and the window
 draws it as content, so the app registers a `DataTemplate` for its own type in
-`App.axaml`. There are three, `Kitbash/ViewModels/ToolRepositoriesEditor` on
-`ToolRepositoriesSettingsSchema`, `Kitbash/ViewModels/CustomToolsEditor` on
-`CustomToolsSettingsSchema` and `Kitbash/ViewModels/ToolActionsEditor` on
-`AfterLaunchSettingsSchema`, and each was written by copying the one before it.
+`App.axaml`. There are four, `Kitbash/ViewModels/ToolRepositoriesEditor` on
+`ToolRepositoriesSettingsSchema`, `Kitbash/ViewModels/CustomToolsEditor` and
+`Kitbash/ViewModels/HiddenToolsEditor` both on `CustomToolsSettingsSchema`, and
+`Kitbash/ViewModels/ToolActionsEditor` on `AfterLaunchSettingsSchema`, and each was written
+by copying the one before it.
+
+**A page can carry more than one, and each counts as one change.** The Open in page has
+two, the tools a person added and the toggles over the tools Kitbash found, so a save that
+touched both reads as two.
 
 **An editor row can sit under a descriptor that it qualifies.** The Kitbash tool section is
 one setting and one editor: the default, then the tools that differ from it. The editor
@@ -376,7 +381,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
 | `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.tool`, `launcher.after.externalTool`, the launcher's, and `launcher.after.tools` **through an editor rather than a descriptor** |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
-| `CustomToolsSettingsSchema` | `tools.custom`, the launcher's, and through an editor too |
+| `CustomToolsSettingsSchema` | `tools.custom` and `tools.hidden`, the launcher's, and both through an editor too |
 
 **A `launcher.` key is the launcher's own behaviour and Core never declares one.** Minimizing
 or closing once a project opens is something only the launcher can do, so the keys, the page
@@ -558,6 +563,11 @@ so no schema ever crosses a process boundary. `ISettingsWindows.Open(owner)` is 
 app opens its own, and opening it again brings the one already open to the front rather
 than making a second. Register it with `AddKitbashSettingsWindow`, plus a
 `SettingsSchema` of the app's own.
+
+**`ISettingsWindows.Closed` is how the app behind it catches up.** Nothing watches a
+settings file, so anything an app read once and holds is stale until it reads again, and
+this is the moment to do it. It says nothing about what changed, since the window writes
+whatever a page declares. The launcher reads the Open in menu again on it.
 
 ```csharp
 services.AddKitbashSettingsSchema()

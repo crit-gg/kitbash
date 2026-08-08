@@ -15,6 +15,8 @@ namespace Kitbash.Views;
 
 public partial class LauncherWindow : ChromelessWindow
 {
+    private readonly ISettingsWindows? _settings;
+
     public LauncherWindow()
     {
         InitializeComponent();
@@ -76,7 +78,21 @@ public partial class LauncherWindow : ChromelessWindow
     }
 
     /// <summary>Where the rail's Settings item goes. Handed over by the composition root.</summary>
-    public ISettingsWindows? Settings { get; init; }
+    public ISettingsWindows? Settings
+    {
+        get => _settings;
+        init
+        {
+            _settings = value;
+
+            // The menu is gathered rather than watched, so hiding a tool or adding one
+            // shows up when the window that changed it closes.
+            if (value is { } windows)
+            {
+                windows.Closed += (_, _) => _ = Model?.RefreshOpenInAsync();
+            }
+        }
+    }
 
     /// <summary>Builds the Open in menu's controls. Handed over by the composition root.</summary>
     public OpenInMenu? OpenIn { get; init; }

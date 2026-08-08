@@ -223,6 +223,10 @@ public sealed class OpenInRowTests
         public Task<IReadOnlyList<WorkspaceOpener>> ReadAsync(CancellationToken cancellation = default) =>
             Task.FromResult(openers);
 
+        // Nothing here hides one, so the menu's list and the whole list are the same.
+        public Task<IReadOnlyList<WorkspaceOpener>> ReadAllAsync(CancellationToken cancellation = default) =>
+            Task.FromResult(openers);
+
         public IReadOnlyList<OpenChoice> ChoicesFor(WorkspaceOpener opener, string workspaceRoot) =>
             choices.TryGetValue(opener.Id, out var found) ? found : [];
 

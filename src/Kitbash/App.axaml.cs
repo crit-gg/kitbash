@@ -443,6 +443,7 @@ public partial class App : Application
             .AddSingleton<ToolRepositoriesEditor>()
             .AddSingleton<ToolRepositoriesSettingsSchema>()
             .AddSingleton<CustomToolsEditor>()
+            .AddSingleton<HiddenToolsEditor>()
             .AddSingleton<CustomToolsSettingsSchema>()
             .AddSingleton<ExternalToolIcons>()
             .AddSingleton<OpenInMenu>()

@@ -265,6 +265,15 @@ public sealed class AfterLaunchPageTests : IDisposable
             radios[3].IsChecked = true;
 
             Assert.Equal(AfterLaunchAction.Close, Editor.Rows[0].Action);
+
+            // A resource key that does not resolve leaves the foreground unset, which draws
+            // black on this surface.
+            Assert.True(view.TryFindResource("InkPrimary", out var ink));
+            Assert.All(
+                view.GetVisualDescendants()
+                    .OfType<TextBlock>()
+                    .Where(text => Editor.Rows.Any(row => row.Name == text.Text)),
+                text => Assert.Same(ink, text.Foreground));
         }
         finally
         {

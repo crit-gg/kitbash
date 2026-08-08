@@ -15,36 +15,36 @@ public sealed class AfterLaunchSettingsSchema
 
         AfterProjectManager = Action(
             "launcher.after.projectManager",
-            "After opening the project manager",
+            "When opening the project manager",
             "What Kitbash does once a Godot project manager has started.");
 
         AfterEditor = Action(
             "launcher.after.editor",
-            "After opening a project in the editor",
+            "When opening a project in the editor",
             "What Kitbash does once the editor has started. A launch that failed or was "
             + "cancelled leaves it alone.");
 
         AfterPlay = Action(
             "launcher.after.play",
-            "After playing a project",
+            "When playing a project",
             "What Kitbash does once the project has started. A launch that failed or was "
             + "cancelled leaves it alone.");
 
         AfterTool = Action(
             "launcher.after.tool",
-            "After starting a tool",
+            "When starting a tool",
             "What Kitbash does once a tool has started, for every tool that says nothing "
             + "of its own.");
 
         AfterExternalTool = Action(
             "launcher.after.externalTool",
-            "After opening an external tool",
+            "When opening an external tool",
             "What Kitbash does once a tool from the Open in menu has started. Opening the "
             + "workspace folder is not one of them.");
 
         ToolsThatDiffer = new SettingsEditorRow
         {
-            Name = "Tools that differ",
+            Name = "Tools",
             Description = "Every tool installed here. Default follows the setting above.",
             Editor = tools,
         };
@@ -57,10 +57,10 @@ public sealed class AfterLaunchSettingsSchema
             Sections =
             [
                 new SettingsSection(
-                    "After starting Godot",
+                    "When starting Godot",
                     [AfterProjectManager, AfterEditor, AfterPlay]),
-                new SettingsSection("After starting a Kitbash tool", [AfterTool, ToolsThatDiffer]),
-                new SettingsSection("After opening an external tool", [AfterExternalTool]),
+                new SettingsSection("When starting a Kitbash tool", [AfterTool, ToolsThatDiffer]),
+                new SettingsSection("When opening an external tool", [AfterExternalTool]),
             ],
         };
     }

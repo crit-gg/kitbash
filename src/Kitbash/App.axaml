@@ -22,6 +22,9 @@
         <DataTemplate DataType="vm:ToolActionsEditor">
             <views:ToolActionsEditorView />
         </DataTemplate>
+        <DataTemplate DataType="vm:HiddenToolsEditor">
+            <views:HiddenToolsEditorView />
+        </DataTemplate>
     </Application.DataTemplates>
 
 </Application>
