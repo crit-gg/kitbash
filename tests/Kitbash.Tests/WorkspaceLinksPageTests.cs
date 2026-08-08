@@ -243,11 +243,131 @@ public sealed class WorkspaceLinksPageTests : IDisposable
     }
 
     /// <summary>
-    /// A row that says nothing usable is kept and blocks the save, rather than being
-    /// dropped as it would be if the page wrote only what it could parse.
+    /// Add puts a row on the grid and picks it, and the row says why it cannot be written
+    /// until it is filled in.
     /// </summary>
     [AvaloniaFact]
-    public async Task ARowThatSaysNothingBlocksTheSave()
+    public async Task AddingARowPutsItOnTheGridAndPicksIt()
+    {
+        var root = Workspace("Art", Link("Design docs", "https://example.com/design"));
+
+        var (window, model) = await Shown("Art");
+
+        try
+        {
+            model.Page!.Layer = SettingsLayer.TeamShared;
+
+            var editor = Editor(model);
+
+            editor.AddCommand.Execute(null);
+
+            var added = editor.Rows[1];
+
+            Assert.Same(added, editor.Selected);
+            Assert.Equal(editor.Rows.Count, editor.Grid.Count);
+
+            // A row with nothing in it stops the save rather than being dropped.
+            Assert.False(added.IsValid);
+            Assert.False(model.CanSave);
+
+            added.Label = "Issue tracker";
+            added.Address = "example.com/issues";
+            Assert.False(model.CanSave);
+            Assert.Contains("http", added.Problem, StringComparison.Ordinal);
+
+            added.Address = "https://example.com/issues";
+            Assert.True(model.CanSave);
+
+            await model.Page.SaveAsync(TestContext.Current.CancellationToken);
+
+            Assert.Equal(
+                ["Design docs", "Issue tracker"],
+                _services.GetRequiredService<IWorkspaceLinks>()
+                    .ReadEntries(root, SettingsLayer.TeamShared).Select(entry => entry.Label));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// Escape in the grid cancels the edit, which is the row's own IEditableObject putting
+    /// every field back.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task CancellingAnEditPutsTheRowBack()
+    {
+        Workspace("Art", Link("Design docs", "https://example.com/design", "file"));
+
+        var (window, model) = await Shown("Art");
+
+        try
+        {
+            model.Page!.Layer = SettingsLayer.TeamShared;
+
+            var row = Assert.Single(Editor(model).Rows);
+
+            row.BeginEdit();
+
+            row.Label = "Something else";
+            row.Address = "https://example.com/elsewhere";
+            row.Icon = row.Icons.Single(icon => icon.Glyph == IconGlyph.GitBranch);
+
+            row.CancelEdit();
+
+            Assert.Equal("Design docs", row.Label);
+            Assert.Equal("https://example.com/design", row.Address);
+            Assert.Equal(IconGlyph.File, row.Icon.Glyph);
+            Assert.Equal(0, model.DirtyCount);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>Remove takes the picked row and nothing else.</summary>
+    [AvaloniaFact]
+    public async Task RemoveTakesThePickedRow()
+    {
+        Workspace(
+            "Art",
+            Link("Design docs", "https://example.com/design"),
+            Link("Issue tracker", "https://example.com/issues"));
+
+        var (window, model) = await Shown("Art");
+
+        try
+        {
+            model.Page!.Layer = SettingsLayer.TeamShared;
+
+            var editor = Editor(model);
+
+            // Nothing picked, so there is nothing to take off.
+            Assert.False(editor.CanRemove);
+
+            editor.Selected = editor.Rows[0];
+            Assert.True(editor.CanRemove);
+
+            editor.RemoveCommand.Execute(null);
+
+            Assert.Equal(["Issue tracker"], editor.Rows.Select(row => row.Label));
+            Assert.Single(editor.Grid);
+            Assert.Equal(1, model.DirtyCount);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// The window reads every open page again when it comes back to the front, and an
+    /// unsaved change has to survive that.
+    /// </summary>
+    [AvaloniaFact]
+    public async Task ComingBackToTheWindowKeepsAnUnsavedChange()
     {
         Workspace("Art", Link("Design docs", "https://example.com/design"));
 
@@ -261,18 +381,15 @@ public sealed class WorkspaceLinksPageTests : IDisposable
 
             editor.AddCommand.Execute(null);
 
-            Assert.Equal(2, editor.Rows.Count);
-            Assert.False(model.CanSave);
-
             editor.Rows[1].Label = "Issue tracker";
-            Assert.False(model.CanSave);
-
-            editor.Rows[1].Address = "example.com/issues";
-            Assert.False(model.CanSave);
-            Assert.Contains("http", editor.Rows[1].Problem, StringComparison.Ordinal);
-
             editor.Rows[1].Address = "https://example.com/issues";
-            Assert.True(model.CanSave);
+
+            Assert.Equal(1, model.DirtyCount);
+
+            await model.ReloadAsync();
+
+            Assert.Equal(["Design docs", "Issue tracker"], editor.Rows.Select(row => row.Label));
+            Assert.Equal(1, model.DirtyCount);
         }
         finally
         {
@@ -281,13 +398,13 @@ public sealed class WorkspaceLinksPageTests : IDisposable
     }
 
     /// <summary>
-    /// A name outside the icon set is kept and offered back, so a save never rewrites it
-    /// into something the file did not say.
+    /// A field changing has to reach the page, or the unsaved count never moves once a
+    /// cell is left and Save stays grey over a real change.
     /// </summary>
     [AvaloniaFact]
-    public async Task AnIconNameKitbashDoesNotDrawIsKept()
+    public async Task ChangingAFieldReachesThePage()
     {
-        var root = Workspace("Art", Link("Design docs", "https://example.com/design", "teapot"));
+        Workspace("Art", Link("Design docs", "https://example.com/design"));
 
         var (window, model) = await Shown("Art");
 
@@ -297,47 +414,16 @@ public sealed class WorkspaceLinksPageTests : IDisposable
 
             var row = Assert.Single(Editor(model).Rows);
 
-            Assert.Equal("teapot", row.Icon.Name);
-            Assert.Equal(IconGlyph.Link, row.Icon.Glyph);
-            Assert.Equal("teapot", row.Icons[0].Name);
+            Assert.Equal(0, model.DirtyCount);
 
             row.Label = "The design docs";
 
-            await model.Page.SaveAsync(TestContext.Current.CancellationToken);
+            Assert.Equal(1, model.DirtyCount);
+            Assert.True(model.CanSave);
 
-            Assert.Equal(
-                "teapot",
-                Assert.Single(_services.GetRequiredService<IWorkspaceLinks>()
-                    .ReadEntries(root, SettingsLayer.TeamShared)).Icon);
-        }
-        finally
-        {
-            window.Close();
-        }
-    }
+            row.Label = "Design docs";
 
-    /// <summary>Picking a glyph writes the icon set's own spelling for it.</summary>
-    [AvaloniaFact]
-    public async Task PickingAGlyphWritesItsName()
-    {
-        var root = Workspace("Art", Link("Repository", "https://example.com/repo"));
-
-        var (window, model) = await Shown("Art");
-
-        try
-        {
-            model.Page!.Layer = SettingsLayer.TeamShared;
-
-            var row = Assert.Single(Editor(model).Rows);
-
-            row.Icon = row.Icons.Single(icon => icon.Glyph == IconGlyph.GitBranch);
-
-            await model.Page.SaveAsync(TestContext.Current.CancellationToken);
-
-            Assert.Equal(
-                "git-branch",
-                Assert.Single(_services.GetRequiredService<IWorkspaceLinks>()
-                    .ReadEntries(root, SettingsLayer.TeamShared)).Icon);
+            Assert.Equal(0, model.DirtyCount);
         }
         finally
         {
@@ -346,49 +432,37 @@ public sealed class WorkspaceLinksPageTests : IDisposable
     }
 
     /// <summary>
-    /// The editor's own markup, drawn for real. The settings window reaches it through a
-    /// template in App.axaml, which a headless app does not load, so it is shown directly.
+    /// A row that is no longer on the list must not still be marking the page dirty, which
+    /// is what a listener left on it would do.
     /// </summary>
     [AvaloniaFact]
-    public async Task TheEditorDrawsARowPerLink()
+    public async Task ARowThatWasDiscardedIsNoLongerHeard()
     {
-        Workspace(
-            "Art",
-            Link("Design docs", "https://example.com/design", "file"),
-            Link("Issue tracker", "https://example.com/issues"));
+        Workspace("Art", Link("Design docs", "https://example.com/design"));
 
-        var (settings, model) = await Shown("Art");
-
-        settings.Show();
-        model.Page!.Layer = SettingsLayer.TeamShared;
-
-        var view = new WorkspaceLinksEditorView { DataContext = Editor(model) };
-        var window = new Window { Content = view, Width = 900, Height = 400 };
+        var (window, model) = await Shown("Art");
 
         try
         {
-            window.Show();
+            model.Page!.Layer = SettingsLayer.TeamShared;
 
-            var fields = view.GetVisualDescendants().OfType<TextBox>().ToArray();
+            var editor = Editor(model);
+            var before = Assert.Single(editor.Rows);
 
-            Assert.Equal(
-                ["Design docs", "https://example.com/design", "Issue tracker", "https://example.com/issues"],
-                fields.Select(field => field.Text));
+            before.Label = "Changed";
+            Assert.Equal(1, model.DirtyCount);
 
-            // The mark is picked rather than typed, and the whole set is on offer.
-            var icons = view.GetVisualDescendants().OfType<ComboBox>().ToArray();
+            model.Page.Discard();
+            Assert.Equal(0, model.DirtyCount);
 
-            Assert.Equal(2, icons.Length);
-            Assert.Equal(Editor(model).Icons.Count, icons[1].ItemCount);
+            // The row the discard threw away, still being typed into by nothing.
+            before.Label = "Changed again";
 
-            // What is drawn and what the row holds are checked against each other.
-            fields[0].Text = "The design docs";
-            Assert.Equal("The design docs", Editor(model).Rows[0].Label);
+            Assert.Equal(0, model.DirtyCount);
         }
         finally
         {
             window.Close();
-            settings.Close();
         }
     }
 

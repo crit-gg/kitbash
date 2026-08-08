@@ -43,6 +43,7 @@ public enum IconGlyph
     Minimize,
     NetworkChart,
     Package,
+    Pencil,
     PlayCircle,
     Plus,
     PlusCircle,

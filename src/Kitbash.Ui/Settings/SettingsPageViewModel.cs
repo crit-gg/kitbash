@@ -266,7 +266,14 @@ public sealed partial class SettingsPageViewModel : ObservableObject
         {
             editor.IsPageWritable = IsWritable;
             editor.Layer = IsLayered ? Layer : null;
-            await editor.LoadAsync(token).ConfigureAwait(true);
+
+            // Reading again over an unsaved change would throw it away, and this runs
+            // every time the window comes back to the front. A value row keeps its staged
+            // value the same way.
+            if (!editor.IsDirty)
+            {
+                await editor.LoadAsync(token).ConfigureAwait(true);
+            }
         }
 
         Announce();

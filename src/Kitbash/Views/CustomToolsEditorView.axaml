@@ -7,81 +7,93 @@
              x:CompileBindings="True">
 
     <StackPanel Spacing="7">
-        <!-- A well, so the rows read as one list rather than as loose fields. Same fill
-             the read only lists on this page use. -->
-        <Border Background="{DynamicResource SurfaceRowAlt}"
-                BorderBrush="{DynamicResource LineControlOff}"
-                BorderThickness="1"
-                CornerRadius="{DynamicResource RadiusControl}"
-                Padding="7"
-                IsVisible="{Binding !IsEmpty}">
-            <ItemsControl ItemsSource="{Binding Rows}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Spacing="6" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:CustomToolRowViewModel">
-                        <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="7">
-                                <TextBox Grid.Column="0" Width="116"
-                                         Text="{Binding Name, Mode=TwoWay}"
-                                         IsEnabled="{Binding CanEdit}"
-                                         PlaceholderText="Name"
-                                         AutomationProperties.Name="Tool name" />
-
-                                <ui:PathField Grid.Column="1"
-                                              Target="File"
-                                              IsCompact="True"
-                                              Path="{Binding Path, Mode=TwoWay}"
-                                              IsEnabled="{Binding CanEdit}"
-                                              AutomationProperties.Name="Program to run" />
-
-                                <TextBox Grid.Column="2" Width="150"
-                                         Classes="mono"
-                                         Text="{Binding Arguments, Mode=TwoWay}"
-                                         IsEnabled="{Binding CanEdit}"
-                                         PlaceholderText="{}{workspace}"
-                                         AutomationProperties.Name="Arguments" />
-
-                                <Button Grid.Column="3" Classes="icon"
-                                        Width="26" Height="26"
-                                        Command="{Binding RemoveCommand}"
-                                        IsEnabled="{Binding CanEdit}"
-                                        ToolTip.Tip="Take this tool off the list"
-                                        AutomationProperties.Name="Take this tool off the list">
-                                    <ui:Icon Glyph="X" Size="13" />
-                                </Button>
-                            </Grid>
-
-                            <ui:Alert Tier="Error" Form="Inline"
-                                      IsVisible="{Binding HasProblem}"
-                                      Title="{Binding Problem}" />
+        <!-- A list already on a page, so the grid drops the rule, the stripe and the
+             header fill. Double click a cell to change it, Escape puts the row back. -->
+        <ui:DataGrid Classes="plain"
+                     MaxHeight="220"
+                     ItemsSource="{Binding Grid}"
+                     SelectedItem="{Binding Selected, Mode=TwoWay}">
+            <ui:DataGrid.Toolbar>
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Button Theme="{StaticResource CompactButton}"
+                            Command="{Binding AddCommand}"
+                            IsEnabled="{Binding IsPageWritable}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:Icon Glyph="Plus" Size="{DynamicResource IconSizeStatus}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="Add tool" VerticalAlignment="Center" />
                         </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+                    </Button>
 
-        <TextBlock Text="No tools of your own, so the menu offers only what Kitbash found."
-                   IsVisible="{Binding IsEmpty}"
-                   FontSize="{DynamicResource FontSizeBody}"
-                   Foreground="{DynamicResource InkMuted}" />
+                    <Button Theme="{StaticResource CompactButton}"
+                            Command="{Binding RemoveCommand}"
+                            IsEnabled="{Binding CanRemove}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:Icon Glyph="Trash" Size="{DynamicResource IconSizeStatus}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="Remove" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </ui:DataGrid.Toolbar>
+
+            <ui:DataGrid.Columns>
+                <ui:GridColumn Header="Name" Width="150" IsStrong="True">
+                    <ui:GridColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                       Classes.error="{Binding !IsValid}"
+                                       ToolTip.Tip="{Binding Problem}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </ui:GridColumn.CellTemplate>
+                    <ui:GridColumn.EditTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <TextBox Text="{Binding Name, Mode=TwoWay}"
+                                     PlaceholderText="Name"
+                                     AutomationProperties.Name="Tool name" />
+                        </DataTemplate>
+                    </ui:GridColumn.EditTemplate>
+                </ui:GridColumn>
+
+                <ui:GridColumn Header="Program" Width="*" IsMono="True">
+                    <ui:GridColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <TextBlock Text="{Binding Path}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" ui:TextTip.Shows="True" />
+                        </DataTemplate>
+                    </ui:GridColumn.CellTemplate>
+                    <ui:GridColumn.EditTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <ui:PathField Target="File"
+                                          IsCompact="True"
+                                          Path="{Binding Path, Mode=TwoWay}"
+                                          AutomationProperties.Name="Program to run" />
+                        </DataTemplate>
+                    </ui:GridColumn.EditTemplate>
+                </ui:GridColumn>
+
+                <ui:GridColumn Header="Arguments" Width="170" IsMono="True">
+                    <ui:GridColumn.CellTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <TextBlock Text="{Binding Arguments}" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </ui:GridColumn.CellTemplate>
+                    <ui:GridColumn.EditTemplate>
+                        <DataTemplate x:DataType="vm:CustomToolRowViewModel">
+                            <TextBox Text="{Binding Arguments, Mode=TwoWay}"
+                                     PlaceholderText="{}{workspace}"
+                                     AutomationProperties.Name="Arguments" />
+                        </DataTemplate>
+                    </ui:GridColumn.EditTemplate>
+                </ui:GridColumn>
+            </ui:DataGrid.Columns>
+        </ui:DataGrid>
 
         <TextBlock Text="Arguments are optional. Blank passes the workspace folder, and {workspace} places it yourself."
                    TextWrapping="Wrap"
                    FontSize="{DynamicResource FontSizeSmall}"
                    Foreground="{DynamicResource InkMuted}" />
-
-        <Button Classes="ghost"
-                Command="{Binding AddCommand}"
-                IsEnabled="{Binding IsPageWritable}"
-                HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
-                <TextBlock Text="Add tool" VerticalAlignment="Center" />
-            </StackPanel>
-        </Button>
     </StackPanel>
 </UserControl>

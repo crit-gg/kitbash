@@ -1,15 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Kitbash.Core.Platform;
 using Kitbash.Tools;
 
 namespace Kitbash.ViewModels;
 
 /// <summary>One repository in the settings window, while it is being edited.</summary>
-public sealed partial class ToolRepositoryRowViewModel : ObservableObject
+public sealed partial class ToolRepositoryRowViewModel : SettingsListRow
 {
-    private readonly Action _changed;
-    private readonly Action<ToolRepositoryRowViewModel> _remove;
+    private (string Kind, string Address)? _before;
 
     [ObservableProperty]
     private string _kind;
@@ -17,28 +15,17 @@ public sealed partial class ToolRepositoryRowViewModel : ObservableObject
     [ObservableProperty]
     private string _address;
 
-    [ObservableProperty]
-    private bool _canEdit = true;
-
     /// <param name="kind">
     /// The type as the file spells it. A type Kitbash does not know is still offered, so
     /// a file naming a forge this copy cannot read survives being saved.
     /// </param>
-    public ToolRepositoryRowViewModel(
-        string kind,
-        string address,
-        Action changed,
-        Action<ToolRepositoryRowViewModel> remove)
+    public ToolRepositoryRowViewModel(string kind, string address)
     {
         ArgumentNullException.ThrowIfNull(kind);
         ArgumentNullException.ThrowIfNull(address);
-        ArgumentNullException.ThrowIfNull(changed);
-        ArgumentNullException.ThrowIfNull(remove);
 
         _kind = kind;
         _address = address;
-        _changed = changed;
-        _remove = remove;
 
         Kinds = kind.Length > 0 && !ToolRepositorySource.Kinds.Contains(kind, StringComparer.Ordinal)
             ? [.. ToolRepositorySource.Kinds, kind]
@@ -69,28 +56,42 @@ public sealed partial class ToolRepositoryRowViewModel : ObservableObject
         }
     }
 
-    public bool IsValid => Source is not null;
+    /// <summary>Said under the field, so a person is told why the row cannot be kept.</summary>
+    public override string Problem
+    {
+        get
+        {
+            if (Kind.Length == 0)
+            {
+                return "Say where this repository is.";
+            }
 
-    /// <summary>Said under the field, so a person is told why Save will not go.</summary>
-    public string Problem =>
-        IsValid || string.IsNullOrWhiteSpace(Address)
-            ? string.Empty
-            : "This is not a web address. Use http or https.";
+            if (string.IsNullOrWhiteSpace(Address))
+            {
+                return "Give this repository an address.";
+            }
 
-    public bool HasProblem => Problem.Length > 0;
+            return Source is null ? "This is not a web address. Use http or https." : string.Empty;
+        }
+    }
 
-    [RelayCommand]
-    private void Remove() => _remove(this);
+    public override void BeginEdit() => _before = (Kind, Address);
+
+    public override void CancelEdit()
+    {
+        if (_before is not { } before)
+        {
+            return;
+        }
+
+        Kind = before.Kind;
+        Address = before.Address;
+        _before = null;
+    }
+
+    public override void EndEdit() => _before = null;
 
     partial void OnKindChanged(string value) => Announce();
 
     partial void OnAddressChanged(string value) => Announce();
-
-    private void Announce()
-    {
-        OnPropertyChanged(nameof(IsValid));
-        OnPropertyChanged(nameof(Problem));
-        OnPropertyChanged(nameof(HasProblem));
-        _changed();
-    }
 }

@@ -6,70 +6,70 @@
              x:DataType="vm:ToolRepositoriesEditor"
              x:CompileBindings="True">
 
-    <StackPanel Spacing="7">
-        <!-- A well, so the rows read as one list rather than as loose fields. Same fill
-             the read only lists on this page use. -->
-        <Border Background="{DynamicResource SurfaceRowAlt}"
-                BorderBrush="{DynamicResource LineControlOff}"
-                BorderThickness="1"
-                CornerRadius="{DynamicResource RadiusControl}"
-                Padding="7"
-                IsVisible="{Binding !IsEmpty}">
-            <ItemsControl ItemsSource="{Binding Rows}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Spacing="6" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ToolRepositoryRowViewModel">
-                        <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
-                                <ComboBox Grid.Column="0" Width="116"
-                                          ItemsSource="{Binding Kinds}"
-                                          SelectedItem="{Binding Kind, Mode=TwoWay}"
-                                          IsEnabled="{Binding CanEdit}"
-                                          AutomationProperties.Name="Repository kind" />
+    <!-- A list already on a page, so the grid drops the rule, the stripe and the header
+         fill. Double click a cell to change it, Escape puts the row back. -->
+    <ui:DataGrid Classes="plain"
+                 MaxHeight="220"
+                 ItemsSource="{Binding Grid}"
+                 SelectedItem="{Binding Selected, Mode=TwoWay}">
+        <ui:DataGrid.Toolbar>
+            <StackPanel Orientation="Horizontal" Spacing="7">
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding AddCommand}"
+                        IsEnabled="{Binding IsPageWritable}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Plus" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Add repository" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                                <TextBox Grid.Column="1"
-                                         Text="{Binding Address, Mode=TwoWay}"
-                                         Classes.error="{Binding HasProblem}"
-                                         IsEnabled="{Binding CanEdit}"
-                                         PlaceholderText="https://github.com/owner/repository"
-                                         AutomationProperties.Name="Repository address" />
-
-                                <Button Grid.Column="2" Classes="icon"
-                                        Width="26" Height="26"
-                                        Command="{Binding RemoveCommand}"
-                                        IsEnabled="{Binding CanEdit}"
-                                        ToolTip.Tip="Take this repository off the list"
-                                        AutomationProperties.Name="Take this repository off the list">
-                                    <ui:Icon Glyph="X" Size="13" />
-                                </Button>
-                            </Grid>
-
-                            <ui:Alert Tier="Error" Form="Inline"
-                                      IsVisible="{Binding HasProblem}"
-                                      Title="{Binding Problem}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
-
-        <TextBlock Text="No repositories, so no tool is offered."
-                   IsVisible="{Binding IsEmpty}"
-                   FontSize="{DynamicResource FontSizeBody}"
-                   Foreground="{DynamicResource InkMuted}" />
-
-        <Button Classes="ghost"
-                Command="{Binding AddCommand}"
-                IsEnabled="{Binding IsPageWritable}"
-                HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
-                <TextBlock Text="Add repository" VerticalAlignment="Center" />
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding RemoveCommand}"
+                        IsEnabled="{Binding CanRemove}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Trash" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Remove" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
-        </Button>
-    </StackPanel>
+        </ui:DataGrid.Toolbar>
+
+        <ui:DataGrid.Columns>
+            <ui:GridColumn Header="Where" Width="140" IsStrong="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:ToolRepositoryRowViewModel">
+                        <TextBlock Text="{Binding Kind}" VerticalAlignment="Center" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:ToolRepositoryRowViewModel">
+                        <ComboBox ItemsSource="{Binding Kinds}"
+                                  SelectedItem="{Binding Kind, Mode=TwoWay}"
+                                  AutomationProperties.Name="Repository kind" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
+
+            <ui:GridColumn Header="Address" Width="*" IsMono="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:ToolRepositoryRowViewModel">
+                        <TextBlock Text="{Binding Address}" VerticalAlignment="Center"
+                                   Classes.error="{Binding !IsValid}"
+                                   ToolTip.Tip="{Binding Problem}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:ToolRepositoryRowViewModel">
+                        <TextBox Text="{Binding Address, Mode=TwoWay}"
+                                 Classes.error="{Binding !IsValid}"
+                                 PlaceholderText="https://github.com/owner/repository"
+                                 AutomationProperties.Name="Repository address" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
+        </ui:DataGrid.Columns>
+    </ui:DataGrid>
 </UserControl>

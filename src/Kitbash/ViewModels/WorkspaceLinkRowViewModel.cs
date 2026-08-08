@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Kitbash.Core.Platform;
 using Kitbash.Ui.Controls;
 using Kitbash.Workspaces;
@@ -10,18 +9,17 @@ namespace Kitbash.ViewModels;
 public sealed record WorkspaceLinkIcon(IconGlyph Glyph, string Name);
 
 /// <summary>
-/// One row of the workspace links editor. It holds what a person typed, whether or not
-/// it is usable, so a row that says nothing yet stops the save rather than disappearing.
+/// One row of the workspace links editor. It holds what a person typed, whether or not it
+/// is usable, so a row the launcher cannot draw is still a row here.
 /// </summary>
-public sealed partial class WorkspaceLinkRowViewModel : ObservableObject
+public sealed partial class WorkspaceLinkRowViewModel : SettingsListRow
 {
-    private readonly Action _changed;
-    private readonly Action<WorkspaceLinkRowViewModel> _remove;
-
     /// <summary>What the file spelled, kept until the dropdown is actually moved.</summary>
-    private readonly string _stored;
+    private string _stored;
 
     private bool _picked;
+
+    private (string Label, string Address, WorkspaceLinkIcon Icon, string Stored, bool Picked)? _before;
 
     [ObservableProperty]
     private string _label;
@@ -32,28 +30,19 @@ public sealed partial class WorkspaceLinkRowViewModel : ObservableObject
     [ObservableProperty]
     private WorkspaceLinkIcon _icon;
 
-    [ObservableProperty]
-    private bool _canEdit = true;
-
     public WorkspaceLinkRowViewModel(
         string label,
         string address,
         WorkspaceLinkIcon icon,
         string storedIcon,
-        IReadOnlyList<WorkspaceLinkIcon> icons,
-        Action changed,
-        Action<WorkspaceLinkRowViewModel> remove)
+        IReadOnlyList<WorkspaceLinkIcon> icons)
     {
         ArgumentNullException.ThrowIfNull(icons);
-        ArgumentNullException.ThrowIfNull(changed);
-        ArgumentNullException.ThrowIfNull(remove);
 
         _label = label;
         _address = address;
         _icon = icon;
         _stored = storedIcon;
-        _changed = changed;
-        _remove = remove;
 
         Icons = icons;
     }
@@ -61,16 +50,11 @@ public sealed partial class WorkspaceLinkRowViewModel : ObservableObject
     /// <summary>The whole set, since a glyph a workspace may name is any of them.</summary>
     public IReadOnlyList<WorkspaceLinkIcon> Icons { get; }
 
-    public bool IsValid => Problem.Length == 0;
-
-    public bool HasProblem => Problem.Length > 0 && CanEdit;
-
     /// <summary>
-    /// Why this row cannot be written, in a person's words, or blank when it can be. The
-    /// address is judged the way the launcher judges it, so a row that saves is a row the
-    /// page will draw.
+    /// Why this row cannot be kept, in a person's words. The address is judged the way the
+    /// launcher judges it, so a row that is kept is a row the page will draw.
     /// </summary>
-    public string Problem
+    public override string Problem
     {
         get
         {
@@ -103,6 +87,25 @@ public sealed partial class WorkspaceLinkRowViewModel : ObservableObject
     /// </summary>
     public WorkspaceLinkEntry Entry => new(Label.Trim(), Address.Trim(), _picked ? Icon.Name : _stored);
 
+    public override void BeginEdit() => _before = (Label, Address, Icon, _stored, _picked);
+
+    public override void CancelEdit()
+    {
+        if (_before is not { } before)
+        {
+            return;
+        }
+
+        Label = before.Label;
+        Address = before.Address;
+        Icon = before.Icon;
+        _stored = before.Stored;
+        _picked = before.Picked;
+        _before = null;
+    }
+
+    public override void EndEdit() => _before = null;
+
     partial void OnLabelChanged(string value) => Announce();
 
     partial void OnAddressChanged(string value) => Announce();
@@ -111,19 +114,5 @@ public sealed partial class WorkspaceLinkRowViewModel : ObservableObject
     {
         _picked = true;
         Announce();
-    }
-
-    partial void OnCanEditChanged(bool value) => OnPropertyChanged(nameof(HasProblem));
-
-    [RelayCommand]
-    private void Remove() => _remove(this);
-
-    private void Announce()
-    {
-        OnPropertyChanged(nameof(Problem));
-        OnPropertyChanged(nameof(HasProblem));
-        OnPropertyChanged(nameof(IsValid));
-
-        _changed();
     }
 }

@@ -1,9 +1,4 @@
-using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Kitbash.Core.Platform.Openers;
-using Kitbash.Core.Settings;
-using Kitbash.Core.Settings.Schema;
 
 namespace Kitbash.ViewModels;
 
@@ -11,15 +6,12 @@ namespace Kitbash.ViewModels;
 /// The tools a person added, edited in the settings window. It is its own editor because
 /// <c>tools.custom</c> is an array of tables and no descriptor can describe one.
 /// </summary>
-public sealed partial class CustomToolsEditor : ObservableObject, ISettingsEditor
+public sealed class CustomToolsEditor : SettingsListEditor<CustomToolRowViewModel>
 {
     private readonly ICustomOpeners _openers;
 
     /// <summary>What the file said when it was last read. Dirty is measured against it.</summary>
     private IReadOnlyList<CustomOpener> _stored = [];
-
-    [ObservableProperty]
-    private bool _isPageWritable = true;
 
     public CustomToolsEditor(ICustomOpeners openers)
     {
@@ -27,74 +19,37 @@ public sealed partial class CustomToolsEditor : ObservableObject, ISettingsEdito
         _openers = openers;
     }
 
-    public ObservableCollection<CustomToolRowViewModel> Rows { get; } = [];
-
-    public bool IsEmpty => Rows.Count == 0;
-
-    public bool IsDirty
+    public override bool IsDirty
     {
         get
         {
-            if (Rows.Count != _stored.Count)
-            {
-                return true;
-            }
+            var rows = Kept();
 
-            for (var index = 0; index < Rows.Count; index++)
-            {
-                if (Rows[index].Opener != _stored[index])
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return rows.Count != _stored.Count
+                || rows.Where((row, index) => row != _stored[index]).Any();
         }
     }
 
-    /// <summary>
-    /// A row that says nothing usable stops the save rather than being dropped, since
-    /// dropping it would throw away what a person typed without saying so.
-    /// </summary>
-    public bool IsValid => Rows.All(row => row.IsValid);
-
-    public event EventHandler? Changed;
-
-    /// <summary>Unused. This page is the application's own file, which has no layers.</summary>
-    public SettingsLayer? Layer { get; set; }
-
-
-    public async Task LoadAsync(CancellationToken token = default)
+    public override async Task LoadAsync(CancellationToken token = default)
     {
         _stored = await Task.Run(_openers.Read, token).ConfigureAwait(true);
         Fill();
     }
 
-    public async Task SaveAsync(CancellationToken token = default)
+    public override async Task SaveAsync(CancellationToken token = default)
     {
-        var writing = Rows.Select(row => row.Opener).OfType<CustomOpener>().ToArray();
+        var writing = Kept();
 
         await Task.Run(() => _openers.Write(writing), token).ConfigureAwait(true);
     }
 
-    public void Discard() => Fill();
+    public override void Discard() => Fill();
 
-    [RelayCommand]
-    private void Add()
-    {
-        Rows.Add(Row(new CustomOpener(string.Empty, string.Empty, string.Empty)));
-        Announce();
-    }
+    protected override CustomToolRowViewModel NewRow() => new(string.Empty, string.Empty, string.Empty);
 
-    partial void OnIsPageWritableChanged(bool value)
-    {
-        foreach (var row in Rows)
-        {
-            row.CanEdit = value;
-        }
-
-        Announce();
-    }
+    /// <summary>What would be written, in the order the rows are drawn.</summary>
+    private IReadOnlyList<CustomOpener> Kept() =>
+        [.. Rows.Select(row => row.Opener).OfType<CustomOpener>()];
 
     /// <summary>Puts the rows back to what was read, which is both load and discard.</summary>
     private void Fill()
@@ -103,26 +58,9 @@ public sealed partial class CustomToolsEditor : ObservableObject, ISettingsEdito
 
         foreach (var opener in _stored)
         {
-            Rows.Add(Row(opener));
+            Rows.Add(new CustomToolRowViewModel(opener.Name, opener.Path, opener.Arguments));
         }
 
         Announce();
-    }
-
-    private CustomToolRowViewModel Row(CustomOpener opener) =>
-        new(opener.Name, opener.Path, opener.Arguments, Announce, Remove) { CanEdit = IsPageWritable };
-
-    private void Remove(CustomToolRowViewModel row)
-    {
-        Rows.Remove(row);
-        Announce();
-    }
-
-    private void Announce()
-    {
-        OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(IsDirty));
-        OnPropertyChanged(nameof(IsValid));
-        Changed?.Invoke(this, EventArgs.Empty);
     }
 }

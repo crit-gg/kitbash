@@ -39,6 +39,7 @@ message
 minimize
 network-chart
 package
+pencil
 play-circle
 plus
 plus-circle

@@ -1,8 +1,4 @@
-using System.Collections.ObjectModel;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Kitbash.Core.Settings;
-using Kitbash.Core.Settings.Schema;
 using Kitbash.Ui.Controls;
 using Kitbash.Workspaces;
 
@@ -12,7 +8,7 @@ namespace Kitbash.ViewModels;
 /// One workspace's links, edited in the settings window. It is its own editor because
 /// <c>workspace.links</c> is an array of tables and no descriptor can describe one.
 /// </summary>
-public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEditor
+public sealed class WorkspaceLinksEditor : SettingsListEditor<WorkspaceLinkRowViewModel>
 {
     /// <summary>Both files are held at once, so moving the picker loses no staged work.</summary>
     private static readonly SettingsLayer[] Layers = [SettingsLayer.TeamShared, SettingsLayer.User];
@@ -21,8 +17,9 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
     private readonly WorkspaceLinkIcons _icons;
     private readonly string _root;
 
-    private readonly Dictionary<SettingsLayer, ObservableCollection<WorkspaceLinkRowViewModel>> _rows =
-        Layers.ToDictionary(layer => layer, _ => new ObservableCollection<WorkspaceLinkRowViewModel>());
+    /// <summary>The rows of the layer that is not being drawn, held rather than reread.</summary>
+    private readonly Dictionary<SettingsLayer, List<WorkspaceLinkRowViewModel>> _staged =
+        Layers.ToDictionary(layer => layer, _ => new List<WorkspaceLinkRowViewModel>());
 
     /// <summary>What each file said when it was last read. Dirty is measured against it.</summary>
     private readonly Dictionary<SettingsLayer, IReadOnlyList<WorkspaceLinkEntry>> _stored =
@@ -32,9 +29,6 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
     private readonly HashSet<SettingsLayer> _unreadable = [];
 
     private SettingsLayer? _layer = SettingsLayer.TeamShared;
-
-    [ObservableProperty]
-    private bool _isPageWritable = true;
 
     public WorkspaceLinksEditor(IWorkspaceLinks links, WorkspaceLinkIcons icons, string root)
     {
@@ -52,16 +46,11 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
     /// <summary>Every glyph, which is what a row's dropdown offers.</summary>
     public IReadOnlyList<WorkspaceLinkIcon> Icons { get; }
 
-    /// <summary>The picked layer's own rows. The other layer's are held and not drawn.</summary>
-    public ObservableCollection<WorkspaceLinkRowViewModel> Rows => _rows[Current];
-
-    public bool IsEmpty => Rows.Count == 0;
-
     /// <summary>
-    /// Which file this page is pointed at. Moving it swaps what is drawn and nothing
-    /// else, so anything staged on the layer being left is still there on the way back.
+    /// Which file this page is pointed at. Moving it swaps what is drawn and nothing else,
+    /// so anything staged on the layer being left is still there on the way back.
     /// </summary>
-    public SettingsLayer? Layer
+    public override SettingsLayer? Layer
     {
         get => _layer;
         set
@@ -71,24 +60,16 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
                 return;
             }
 
+            _staged[Current] = [.. Rows];
             _layer = value;
 
-            OnPropertyChanged(nameof(Rows));
-            OnPropertyChanged(nameof(IsEmpty));
+            Show(Current);
         }
     }
 
-    public bool IsDirty => Layers.Any(Differs);
+    public override bool IsDirty => Layers.Any(Differs);
 
-    /// <summary>
-    /// A row that says nothing usable stops the save rather than being dropped, since
-    /// dropping it would throw away what a person typed without saying so.
-    /// </summary>
-    public bool IsValid => Layers.All(layer => _rows[layer].All(row => row.IsValid));
-
-    public event EventHandler? Changed;
-
-    public async Task LoadAsync(CancellationToken token = default)
+    public override async Task LoadAsync(CancellationToken token = default)
     {
         var read = await Task.Run(Read, token).ConfigureAwait(true);
 
@@ -109,8 +90,10 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
         Fill();
     }
 
-    public async Task SaveAsync(CancellationToken token = default)
+    public override async Task SaveAsync(CancellationToken token = default)
     {
+        _staged[Current] = [.. Rows];
+
         // Only the layer that changed, so saving on one page never rewrites the other
         // file, and a file this could not read is left exactly as it is.
         var writing = Layers
@@ -129,35 +112,27 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
             token).ConfigureAwait(true);
     }
 
-    public void Discard() => Fill();
+    public override void Discard() => Fill();
 
-    [RelayCommand]
-    private void Add()
-    {
-        _rows[Current].Add(Row(new WorkspaceLinkEntry(string.Empty, string.Empty, string.Empty)));
-        Announce();
-    }
-
-    partial void OnIsPageWritableChanged(bool value)
-    {
-        foreach (var row in Layers.SelectMany(layer => _rows[layer]))
-        {
-            row.CanEdit = value;
-        }
-    }
+    protected override WorkspaceLinkRowViewModel NewRow() =>
+        Row(new WorkspaceLinkEntry(string.Empty, string.Empty, string.Empty));
 
     private SettingsLayer Current => _layer ?? SettingsLayer.TeamShared;
 
-    private IReadOnlyList<WorkspaceLinkEntry> Entries(SettingsLayer layer) =>
-        [.. _rows[layer].Select(row => row.Entry)];
+    /// <summary>What a layer would be written as, in the order its rows are drawn.</summary>
+    private IReadOnlyList<WorkspaceLinkEntry> Entries(SettingsLayer layer)
+    {
+        var rows = layer == Current ? Rows.AsEnumerable() : _staged[layer];
+
+        return [.. rows.Select(row => row.Entry)];
+    }
 
     private bool Differs(SettingsLayer layer)
     {
-        var rows = _rows[layer];
+        var rows = Entries(layer);
         var stored = _stored[layer];
 
-        return rows.Count != stored.Count
-            || rows.Where((row, index) => row.Entry != stored[index]).Any();
+        return rows.Count != stored.Count || rows.Where((row, index) => row != stored[index]).Any();
     }
 
     /// <summary>Reads both files. A layer that will not parse comes back as null.</summary>
@@ -184,22 +159,28 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
     {
         foreach (var layer in Layers)
         {
-            _rows[layer].Clear();
-
-            foreach (var entry in _stored[layer])
-            {
-                _rows[layer].Add(Row(entry));
-            }
+            _staged[layer] = [.. _stored[layer].Select(Row)];
         }
 
-        OnPropertyChanged(nameof(Rows));
+        Show(Current);
+    }
+
+    private void Show(SettingsLayer layer)
+    {
+        Rows.Clear();
+
+        foreach (var row in _staged[layer])
+        {
+            Rows.Add(row);
+        }
+
         Announce();
     }
 
     private WorkspaceLinkRowViewModel Row(WorkspaceLinkEntry entry)
     {
         var icons = Icons;
-        var icon = Icons[0];
+        WorkspaceLinkIcon icon;
 
         if (entry.Icon.Length == 0)
         {
@@ -217,26 +198,6 @@ public sealed partial class WorkspaceLinksEditor : ObservableObject, ISettingsEd
             icons = [icon, .. Icons];
         }
 
-        return new WorkspaceLinkRowViewModel(
-            entry.Label,
-            entry.Url,
-            icon,
-            entry.Icon,
-            icons,
-            Announce,
-            row =>
-            {
-                _rows[Current].Remove(row);
-                Announce();
-            })
-        {
-            CanEdit = IsPageWritable,
-        };
-    }
-
-    private void Announce()
-    {
-        OnPropertyChanged(nameof(IsEmpty));
-        Changed?.Invoke(this, EventArgs.Empty);
+        return new WorkspaceLinkRowViewModel(entry.Label, entry.Url, icon, entry.Icon, icons);
     }
 }

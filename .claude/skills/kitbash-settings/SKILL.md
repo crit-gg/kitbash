@@ -395,6 +395,28 @@ every load and again whenever the picker moves, and null on a home that does not
 descriptor row does not need this, since the merged view is what it draws and the layer only
 decides where a write lands. An editor reads its own files, so it has to know which.
 
+**Every editor holding a list is a `ui:DataGrid`**, the library's own grid, rather than a
+stack of loose fields with an Add button under it. A column per field, `CellTemplate` to read
+and `EditTemplate` to change, `plain` since it is a list already on a page, and Add and Remove
+in the grid's own `Toolbar`. Sorting, selection, the row states and the footer count are the
+grid's. Read the `kitbash-surfaces` skill before changing any of it.
+
+**Editing is the grid's own**: double click a cell, click away to keep it, Escape to put the
+row back. That last one is `IEditableObject` on the row, which is what `SettingsListRow` is
+for. `SettingsListEditor<TRow>` is the other half, holding the rows, the `GridRows` the grid
+is given, and Add and Remove. **`GridRows` takes a snapshot**, so anything that changes the
+rows has to call `Announce`, which refreshes it.
+
+**A row that says nothing usable is kept and stops the save.** Dropping it would throw away
+what somebody typed without saying so. The cell goes red and carries the reason as its tip.
+Every list row is `Below`, full width under the name, since fields at a third of the page
+cannot be read.
+
+**A page is read again whenever the window comes back to the front, and an editor that has
+something staged is skipped.** Reading over an unsaved change would throw it away, which is
+what used to happen to a row somebody had just added. A value row already kept its staged
+value, so this only brings editors into line with it.
+
 **`WorkspaceLinksEditor` holds both layers at once**, which is the shape to copy for any
 layered editor. It reads both files, draws the picked layer's list, and stages against each
 separately, so moving the picker loses nothing and Save writes each layer that changed. A

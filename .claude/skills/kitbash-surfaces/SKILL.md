@@ -348,9 +348,11 @@ than because of anything the grid holds. An item that does not implement it comm
 was typed.
 
 An edit ends when focus leaves the cell, with one exception written into
-`DataGridCell.OnLostFocus`: a context menu opens in a popup and takes the focus with it, so
-the edit would end under the open menu. The cell holds on while any menu inside it is open.
-`TextBox.OnLostFocus` guards its own selection the same way.
+`DataGridCell.OnLostFocus`: **a popup opened from inside the cell takes the focus with it**,
+so the edit would end under whatever was opened. The cell holds on while a context menu, a
+context flyout, a combo box dropdown or a button flyout inside it is open. Without that a
+dropdown in an edit template cannot be used at all, since the list closes the cell that owns
+it. `TextBox.OnLostFocus` guards its own selection the same way.
 
 **`plain` is the other thing a table can be.** A grid is a document with chrome of its own,
 and this is a way of looking at a list that is already on a page, beside a second way of

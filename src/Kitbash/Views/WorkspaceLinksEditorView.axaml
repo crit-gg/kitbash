@@ -6,91 +6,103 @@
              x:DataType="vm:WorkspaceLinksEditor"
              x:CompileBindings="True">
 
-    <StackPanel Spacing="7">
-        <!-- A well, so the rows read as one list rather than as loose fields. Same fill
-             the read only lists on this page use. -->
-        <Border Background="{DynamicResource SurfaceRowAlt}"
-                BorderBrush="{DynamicResource LineControlOff}"
-                BorderThickness="1"
-                CornerRadius="{DynamicResource RadiusControl}"
-                Padding="7"
-                IsVisible="{Binding !IsEmpty}">
-            <ItemsControl ItemsSource="{Binding Rows}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Spacing="6" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+    <!-- A list already on a page, so the grid drops the rule, the stripe and the header
+         fill. Double click a cell to change it, Escape puts the row back. -->
+    <ui:DataGrid Classes="plain"
+                 MaxHeight="220"
+                 ItemsSource="{Binding Grid}"
+                 SelectedItem="{Binding Selected, Mode=TwoWay}">
+        <ui:DataGrid.Toolbar>
+            <StackPanel Orientation="Horizontal" Spacing="7">
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding AddCommand}"
+                        IsEnabled="{Binding IsPageWritable}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Plus" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Add link" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding RemoveCommand}"
+                        IsEnabled="{Binding CanRemove}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Trash" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Remove" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ui:DataGrid.Toolbar>
+
+        <ui:DataGrid.Columns>
+            <ui:GridColumn Header="Icon" Width="150">
+                <ui:GridColumn.CellTemplate>
                     <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
-                        <StackPanel Spacing="3">
-                            <Grid ColumnDefinitions="Auto,*,*,Auto" ColumnSpacing="7">
-                                <!-- The mark is picked rather than typed, since the set of
-                                     glyphs is closed. -->
-                                <ComboBox Grid.Column="0" Width="132"
-                                          ItemsSource="{Binding Icons}"
-                                          SelectedItem="{Binding Icon, Mode=TwoWay}"
-                                          IsEnabled="{Binding CanEdit}"
-                                          AutomationProperties.Name="Link icon">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:WorkspaceLinkIcon">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <ui:Icon Glyph="{Binding Glyph}"
-                                                         Size="{DynamicResource IconSizeSmall}"
-                                                         VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding Name}"
-                                                           VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-
-                                <TextBox Grid.Column="1"
-                                         Text="{Binding Label, Mode=TwoWay}"
-                                         Classes.error="{Binding HasProblem}"
-                                         IsEnabled="{Binding CanEdit}"
-                                         PlaceholderText="Design docs"
-                                         AutomationProperties.Name="Link name" />
-
-                                <TextBox Grid.Column="2"
-                                         Text="{Binding Address, Mode=TwoWay}"
-                                         Classes.error="{Binding HasProblem}"
-                                         IsEnabled="{Binding CanEdit}"
-                                         PlaceholderText="https://example.com/design"
-                                         AutomationProperties.Name="Link address" />
-
-                                <Button Grid.Column="3" Classes="icon"
-                                        Width="26" Height="26"
-                                        Command="{Binding RemoveCommand}"
-                                        IsEnabled="{Binding CanEdit}"
-                                        ToolTip.Tip="Take this link off the list"
-                                        AutomationProperties.Name="Take this link off the list">
-                                    <ui:Icon Glyph="X" Size="13" />
-                                </Button>
-                            </Grid>
-
-                            <ui:Alert Tier="Error" Form="Inline"
-                                      IsVisible="{Binding HasProblem}"
-                                      Title="{Binding Problem}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:Icon Glyph="{Binding Icon.Glyph}"
+                                     Size="{DynamicResource IconSizeStatus}"
+                                     Foreground="{DynamicResource InkRail}"
+                                     VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Icon.Name}" VerticalAlignment="Center" />
                         </StackPanel>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </Border>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
+                        <ComboBox ItemsSource="{Binding Icons}"
+                                  SelectedItem="{Binding Icon, Mode=TwoWay}"
+                                  AutomationProperties.Name="Link icon">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:WorkspaceLinkIcon">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ui:Icon Glyph="{Binding Glyph}"
+                                                 Size="{DynamicResource IconSizeSmall}"
+                                                 VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
 
-        <TextBlock Text="No links, so the launcher draws no section for this workspace."
-                   IsVisible="{Binding IsEmpty}"
-                   FontSize="{DynamicResource FontSizeBody}"
-                   Foreground="{DynamicResource InkMuted}" />
+            <ui:GridColumn Header="Name" Width="*" IsStrong="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
+                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" ui:TextTip.Shows="True" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
+                        <TextBox Text="{Binding Label, Mode=TwoWay}"
+                                 PlaceholderText="Design docs"
+                                 AutomationProperties.Name="Link name" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
 
-        <Button Classes="ghost"
-                Command="{Binding AddCommand}"
-                IsEnabled="{Binding IsPageWritable}"
-                HorizontalAlignment="Left">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
-                <TextBlock Text="Add link" VerticalAlignment="Center" />
-            </StackPanel>
-        </Button>
-    </StackPanel>
+            <ui:GridColumn Header="Address" Width="2*" IsMono="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
+                        <TextBlock Text="{Binding Address}" VerticalAlignment="Center"
+                                   Classes.error="{Binding !IsValid}"
+                                   ToolTip.Tip="{Binding Problem}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceLinkRowViewModel">
+                        <TextBox Text="{Binding Address, Mode=TwoWay}"
+                                 Classes.error="{Binding !IsValid}"
+                                 PlaceholderText="https://example.com/design"
+                                 AutomationProperties.Name="Link address" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
+        </ui:DataGrid.Columns>
+    </ui:DataGrid>
 </UserControl>

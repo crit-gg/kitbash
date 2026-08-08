@@ -90,7 +90,7 @@ public class DataGridCell : ContentControl
     {
         base.OnLostFocus(e);
 
-        if (IsEditing && !this.IsKeyboardFocusWithin && !HasMenuOpen &&
+        if (IsEditing && !this.IsKeyboardFocusWithin && !HasPopupOpen &&
             this.FindAncestorOfType<DataGrid>() is { } grid)
         {
             grid.CommitEdit();
@@ -98,13 +98,18 @@ public class DataGridCell : ContentControl
     }
 
     /// <summary>
-    /// A menu opens in a popup and takes the focus with it, which would end the edit under
-    /// the open menu. TextBox.OnLostFocus guards its own selection the same way.
+    /// A popup opened from inside the cell takes the focus with it, which would end the
+    /// edit under whatever was opened. A dropdown in an edit template is unusable without
+    /// this. TextBox.OnLostFocus guards its own selection the same way.
     /// </summary>
-    private bool HasMenuOpen =>
+    private bool HasPopupOpen =>
         this.GetVisualDescendants()
             .OfType<Control>()
-            .Any(child => child.ContextFlyout is { IsOpen: true } || child.ContextMenu is { IsOpen: true });
+            .Any(child =>
+                child.ContextFlyout is { IsOpen: true }
+                || child.ContextMenu is { IsOpen: true }
+                || child is ComboBox { IsDropDownOpen: true }
+                || child is Button { Flyout.IsOpen: true });
 
     private void Apply()
     {

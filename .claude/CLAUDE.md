@@ -323,7 +323,7 @@ numbers are the order**, and every stage depended only on lower ones, so the pla
 straight through. Each stage file records what it built and where it departed from the
 design.
 
-**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 54
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 55
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -564,7 +564,11 @@ declares is drawn, `workspaces.directory` included. A setting nothing rereads ca
 `NeedsRestart`, and the footer grows a Save and restart button while one is waiting.
 
 **A page can also hold an editor an app wrote itself.** `SettingsEditorRow` is the other
-half of the readout row, for a value no descriptor can describe, and there are five. It stages and saves with the rest of the page, so the unsaved
+half of the readout row, for a value no descriptor can describe, and there are five. **Every
+one of them that holds a list is a `ui:DataGrid`**, with a column per field, inline edit on a
+double click, Escape to put a row back, and Add and Remove in the grid's own toolbar. A page
+whose editor has something staged is not read again when the window comes back to the front,
+which is what used to lose a row somebody had just added. It stages and saves with the rest of the page, so the unsaved
 count and the Save button still mean what they say.
 
 The design's red Reset Workbench button is deliberately not built. It deletes a person's
