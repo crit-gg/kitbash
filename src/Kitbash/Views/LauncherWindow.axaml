@@ -436,19 +436,6 @@
                                                                     Header="{Binding Label}"
                                                                     Margin="0,0,0,11">
                                                 <StackPanel Orientation="Horizontal" Spacing="10">
-                                                    <!-- The page's own action, on the first heading only. -->
-                                                    <Button Theme="{StaticResource CompactButton}"
-                                                            IsVisible="{Binding ShowsFolderInstall}"
-                                                            Click="OnInstallFromFolderClick">
-                                                        <StackPanel Orientation="Horizontal" Spacing="7">
-                                                            <ui:Icon Glyph="FolderOpen"
-                                                                     Size="{DynamicResource IconSizeStatus}"
-                                                                     VerticalAlignment="Center" />
-                                                            <TextBlock Text="Install from folder"
-                                                                       VerticalAlignment="Center" />
-                                                        </StackPanel>
-                                                    </Button>
-
                                                     <Button Theme="{StaticResource CompactButton}"
                                                             IsVisible="{Binding ShowsUpdateAll}"
                                                             Command="{Binding UpdateAllCommand}">
@@ -466,6 +453,25 @@
                                                             IsVisible="{Binding ShowsCheck}"
                                                             Content="{Binding Check.Label}"
                                                             Command="{Binding Check.CheckCommand}" />
+
+                                                    <!-- The page's own actions, on the first heading only. The
+                                                         rare ones are in here so the row keeps the routine ones. -->
+                                                    <!-- Right aligned, since the button is at the end of the row
+                                                         and the menu is far wider than it. -->
+                                                    <Button Classes="icon"
+                                                            IsVisible="{Binding ShowsPageMenu}"
+                                                            ui:Popups.AlignsRight="True"
+                                                            VerticalAlignment="Center"
+                                                            ToolTip.Tip="More"
+                                                            AutomationProperties.Name="More">
+                                                        <ui:Icon Glyph="DotsVerticalRounded" />
+                                                        <Button.Flyout>
+                                                            <MenuFlyout>
+                                                                <MenuItem Header="Install from folder"
+                                                                          Click="OnInstallFromFolderClick" />
+                                                            </MenuFlyout>
+                                                        </Button.Flyout>
+                                                    </Button>
                                                 </StackPanel>
                                             </HeaderedContentControl>
 

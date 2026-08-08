@@ -51,10 +51,10 @@ public partial class ToolGroupViewModel : ObservableObject
     public bool ShowsCheck { get; set; }
 
     /// <summary>
-    /// Whether this heading carries the page's own action. Set on the first group before
+    /// Whether this heading carries the page's own menu. Set on the first group before
     /// the list is bound, so it never changes while a group is on screen.
     /// </summary>
-    public bool ShowsFolderInstall { get; set; }
+    public bool ShowsPageMenu { get; set; }
 
     /// <summary>Drawn only while something is pending, so an up to date group is quiet.</summary>
     public bool ShowsUpdateAll => _offersUpdates && Pending.Count > 0;

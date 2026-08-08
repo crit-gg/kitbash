@@ -434,7 +434,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // Whichever group that is, since a person with nothing installed still needs it.
         if (groups.Count > 0)
         {
-            groups[0].ShowsFolderInstall = true;
+            groups[0].ShowsPageMenu = true;
             groups[0].ShowsCheck = true;
         }
 
