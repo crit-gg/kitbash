@@ -16,6 +16,9 @@ public interface ISettingsRow
     /// blank is allowed on a readout whose name says the whole of it.
     /// </summary>
     string Description { get; }
+
+    /// <summary>Beside the name or under it. See <see cref="SettingsRowLayout"/>.</summary>
+    SettingsRowLayout Layout { get; }
 }
 
 /// <summary>

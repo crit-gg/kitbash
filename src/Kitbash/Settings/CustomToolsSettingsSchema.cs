@@ -23,6 +23,7 @@ public sealed class CustomToolsSettingsSchema
         {
             Name = "Tools",
             Description = "Programs the Open in button offers, beside the ones Kitbash found.",
+            Layout = SettingsRowLayout.Below,
             Editor = editor,
         };
 
@@ -39,6 +40,9 @@ public sealed class CustomToolsSettingsSchema
         {
             Name = "On offer",
             Style = SettingsReadoutStyle.List,
+
+            // Every line is a path, and a path is what elides first at a third of the page.
+            Layout = SettingsRowLayout.Below,
             Description = "Every program the menu offers right now, found or added.",
             // The page load runs off the UI thread, and what is installed is looked up
             // once and held, so only the first read here does any work.

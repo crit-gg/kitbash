@@ -235,6 +235,24 @@ so name a `SettingEditor` where they read wrong.
 so `ChoiceRule` is tested first and a descriptor carrying both draws a segment or a
 dropdown.
 
+**Where the editor sits is `SettingsRowLayout`, and it is on every row kind.** `Beside` is
+the default and is the column split every row has always had, one third for the name and
+its note and two thirds for the editor. `Below` puts the name across the whole row and the
+editor on the line under it, for something too wide to read at a third of the page: a table
+of its own, or a well of paths that would otherwise elide.
+
+**It is never derived**, for the same reason `SettingsReadoutStyle` is not: an editor that
+moved once its list grew would be a page that redraws itself as the data changes. A row
+says which it wants and keeps it.
+
+**One grid draws both.** The row is two columns by two rows, and the view model answers
+where each half goes, so there is one template per row kind rather than one per layout.
+`SettingsRowViewModel` is where `HeadSpan`, `BodyRow`, `BodyColumn` and `BodySpan` live.
+
+Four rows ask for `Below` today, all the launcher's: the tool repository list, the custom
+tool list, the tools that differ from the after launch default, and the readout of every
+program the Open in menu offers. Changing any other row is one line in its schema.
+
 **A path setting is drawn by `ui:PathField`, and the rule's `PathKind` picks the dialog.**
 `Directory` browses for a folder and both other kinds browse for a file, since a dialog is
 one or the other and `Any` has to choose. **No filters are passed.** A rule says the shape

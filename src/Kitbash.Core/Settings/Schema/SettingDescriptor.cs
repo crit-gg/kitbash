@@ -89,6 +89,9 @@ public sealed class SettingDescriptor<T> : ISettingDescriptor
         init => _editor = value;
     }
 
+    /// <summary>Beside the name by default, the way every other row is drawn.</summary>
+    public SettingsRowLayout Layout { get; init; } = SettingsRowLayout.Beside;
+
     /// <summary>Drawn after a number, such as px or ms.</summary>
     public string? Unit { get; init; }
 

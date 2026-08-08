@@ -46,6 +46,7 @@ public sealed class AfterLaunchSettingsSchema
         {
             Name = "Tools",
             Description = "Every tool installed here. Default follows the setting above.",
+            Layout = SettingsRowLayout.Below,
             Editor = tools,
         };
 

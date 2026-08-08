@@ -192,14 +192,21 @@
         <DataTemplate x:Key="SettingRow" DataType="s:SettingValueRowViewModel">
             <Border Classes="settingRow">
                 <!-- The editor takes two thirds and the name and its note take one, and
-                     both columns are shares, so the split holds at any width. -->
-                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
-                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                     both columns are shares, so the split holds at any width. A row asking
+                     to sit below spans both columns and takes the second line instead. -->
+                <Grid ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Grid.Row="0"
+                                Grid.ColumnSpan="{Binding HeadSpan}"
+                                Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
                         <TextBlock Classes="rowNote" Text="{Binding Description}" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Spacing="7">
+                    <StackPanel Grid.Column="{Binding BodyColumn}"
+                                Grid.Row="{Binding BodyRow}"
+                                Grid.ColumnSpan="{Binding BodySpan}"
+                                Margin="{Binding BodyGap}"
+                                Spacing="7">
                         <Grid ColumnDefinitions="57,*" ColumnSpacing="9">
                             <!-- Discard, reset and where the value came from, in a column
                                  the same width on every row so the editors line up. The
@@ -366,9 +373,12 @@
         <DataTemplate x:Key="ReadoutRow" DataType="s:SettingsReadoutRowViewModel">
             <Border Classes="settingRow">
                 <!-- The editor takes two thirds and the name and its note take one, and
-                     both columns are shares, so the split holds at any width. -->
-                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
-                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                     both columns are shares, so the split holds at any width. A row asking
+                     to sit below spans both columns and takes the second line instead. -->
+                <Grid ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Grid.Row="0"
+                                Grid.ColumnSpan="{Binding HeadSpan}"
+                                Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
 
                         <!-- Left out entirely rather than left empty, since an empty one
@@ -377,7 +387,10 @@
                                    IsVisible="{Binding HasDescription}" />
                     </StackPanel>
 
-                    <Panel Grid.Column="1" Margin="66,0,0,0">
+                    <Panel Grid.Column="{Binding BodyColumn}"
+                           Grid.Row="{Binding BodyRow}"
+                           Grid.ColumnSpan="{Binding BodySpan}"
+                           Margin="{Binding BodyIndent}">
                         <ItemsControl IsVisible="{Binding !IsList}"
                                       ItemsSource="{Binding Entries}"
                                       ItemTemplate="{StaticResource ReadoutValue}" />
@@ -395,14 +408,19 @@
              template the app registered for its editor. -->
         <DataTemplate x:Key="EditorRow" DataType="s:SettingsEditorRowViewModel">
             <Border Classes="settingRow">
-                <Grid ColumnDefinitions="*,2*" ColumnSpacing="18">
-                    <StackPanel Grid.Column="0" Margin="0,3,0,0">
+                <Grid ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="18">
+                    <StackPanel Grid.Column="0" Grid.Row="0"
+                                Grid.ColumnSpan="{Binding HeadSpan}"
+                                Margin="0,3,0,0">
                         <TextBlock Classes="rowName" Text="{Binding Name}" />
                         <TextBlock Classes="rowNote" Text="{Binding Description}"
                                    IsVisible="{Binding HasDescription}" />
                     </StackPanel>
 
-                    <ContentControl Grid.Column="1" Margin="66,0,0,0"
+                    <ContentControl Grid.Column="{Binding BodyColumn}"
+                                    Grid.Row="{Binding BodyRow}"
+                                    Grid.ColumnSpan="{Binding BodySpan}"
+                                    Margin="{Binding BodyIndent}"
                                     Content="{Binding Editor}" />
                 </Grid>
             </Border>

@@ -42,6 +42,9 @@ public sealed class SettingsReadoutRow : ISettingsRow
     /// <summary>Value unless it is a set of things. See <see cref="SettingsReadoutStyle"/>.</summary>
     public SettingsReadoutStyle Style { get; init; } = SettingsReadoutStyle.Value;
 
+    /// <summary>Beside the name by default, the way every other row is drawn.</summary>
+    public SettingsRowLayout Layout { get; init; } = SettingsRowLayout.Beside;
+
     /// <summary>
     /// Asked again every time the page loads, since what it says changes while the app
     /// runs. Runs off the UI thread with the rest of the page load.

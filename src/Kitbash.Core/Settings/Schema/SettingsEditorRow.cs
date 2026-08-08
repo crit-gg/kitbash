@@ -22,6 +22,9 @@ public sealed class SettingsEditorRow : ISettingsRow
     /// <summary>Optional here, as on a readout, since an app names its own row.</summary>
     public string Description { get; init; } = string.Empty;
 
+    /// <summary>Beside the name by default, the way every other row is drawn.</summary>
+    public SettingsRowLayout Layout { get; init; } = SettingsRowLayout.Beside;
+
     /// <summary>
     /// The editor, which is also what the window draws. It is presented as content, so
     /// the app supplies a template for its own type.

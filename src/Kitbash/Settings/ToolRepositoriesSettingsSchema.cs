@@ -21,6 +21,7 @@ public sealed class ToolRepositoriesSettingsSchema
         {
             Name = "Repositories",
             Description = "Kitbash offers the tools these publish. Nothing installs on its own.",
+            Layout = SettingsRowLayout.Below,
             Editor = editor,
         };
 
