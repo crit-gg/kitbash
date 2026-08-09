@@ -66,7 +66,7 @@ public sealed partial class EngineViewModel : ViewModelBase
                 Channel = ChannelOf(engine.Tag.Channel);
                 ChannelTier = TierOf(engine.Tag.Channel);
                 Note = paths.Shorten(engine.Directory, NoteLength);
-                Action = "Open in Editor";
+                Action = "Open Project";
 
                 break;
 
