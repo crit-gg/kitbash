@@ -15,6 +15,9 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     /// <summary>The AppImage specification's icon, whatever the file inside was called.</summary>
     private const string BundledIcon = ".DirIcon";
 
+    /// <summary>What says an entry is ours. An entry without it belongs to somebody else.</summary>
+    private const string Mark = "X-Kitbash-Entry=true";
+
     private const string EntryName = "kitbash";
     private const string IconSize = "256x256";
 
@@ -41,6 +44,11 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         try
         {
+            if (!Ours())
+            {
+                return;
+            }
+
             WriteIcon();
             WriteEntry(image);
         }
@@ -49,6 +57,19 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
             // The app works without a menu entry, so a data directory that cannot be
             // written is survived rather than reported.
         }
+    }
+
+    /// <summary>
+    /// Whether the entry that is there is one we wrote. An AppImage manager names its
+    /// entry after the app too, and theirs holds keys ours does not, so an unmarked one
+    /// is left alone and the icon beside it is not written either.
+    /// </summary>
+    private bool Ours()
+    {
+        var file = EntryFile;
+
+        return !_fileSystem.FileExists(file)
+            || _fileSystem.ReadAllText(file).Contains(Mark, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -87,8 +108,7 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     /// </summary>
     private void WriteEntry(string image)
     {
-        var directory = Path.Combine(DataRoot, "applications");
-        var file = Path.Combine(directory, EntryName + ".desktop");
+        var file = EntryFile;
         var wanted = Entry(image);
 
         if (_fileSystem.FileExists(file) && _fileSystem.ReadAllText(file) == wanted)
@@ -96,10 +116,14 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
             return;
         }
 
-        _fileSystem.CreateDirectory(directory);
+        _fileSystem.CreateDirectory(Path.Combine(DataRoot, "applications"));
         _fileSystem.WriteAllText(file, wanted);
     }
 
+    /// <summary>
+    /// TryExec is how an AppImage manager decides the file is still there, and it is a
+    /// path rather than a command line, so it carries no quoting.
+    /// </summary>
     private static string Entry(string image) =>
         $"""
         [Desktop Entry]
@@ -108,10 +132,14 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         Comment=Godot, without the version wrangling.
         Icon={EntryName}
         Exec={Quote(image)}
+        TryExec={image}
         Categories=Development;
         Terminal=false
+        {Mark}
 
         """;
+
+    private string EntryFile => Path.Combine(DataRoot, "applications", EntryName + ".desktop");
 
     /// <summary>
     /// The Exec value, quoted the way the desktop entry specification asks, so a path

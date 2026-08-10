@@ -106,6 +106,17 @@ the variable itself rather than going through `IUserDirectories`, because the ro
 is the data root and not Kitbash's folder inside it. The icon is `$APPDIR/.DirIcon`, the
 specification's own name for it whatever `--icon` was called.
 
+**An entry we did not write is never touched.** Ours carries `X-Kitbash-Entry=true` on its
+last line, and a file without that mark stops `Install` before either the entry or the icon
+is written. An AppImage manager names its entry after the app as well, so Gearlever writes
+that same `kitbash.desktop`, and theirs holds keys ours does not. Overwriting one took
+Kitbash out of Gearlever's list entirely.
+
+**`TryExec` is there for the manager rather than for the desktop.** Gearlever lists an
+installed AppImage only when the entry's `TryExec` names a file that exists, so an entry
+without it is skipped. It is a path and not a command line, so it carries no quoting, while
+`Exec` keeps the quoting the specification asks for.
+
 **There is no `Remove`.** Velopack runs no uninstall hook on Linux and an AppImage has no
 uninstaller, so nothing would call one. `WindowsDesktopIntegration` does nothing, since
 `Setup.exe` writes the shortcut and the uninstall entry.
