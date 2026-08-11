@@ -263,13 +263,14 @@ Row selection is all there is. A range is what makes copy worth having, what a f
 handle drags over, and what a status readout aggregates. Both are behind
 `SelectionUnit` and `CellActions`.
 
-### No row level edit transaction
+### No row level edit transaction. Built in phase 3
 
-`IEditableObject` is called around one cell: `BeginEdit` when the cell opens, `EndEdit`
+`IEditableObject` was called around one cell: `BeginEdit` when the cell opens, `EndEdit`
 or `CancelEdit` when it closes. The WPF model is two level, where the row edit opens on
-the first cell touched and closes when focus leaves the row. Without that there is no
+the first cell touched and closes when focus leaves the row. Without that there was no
 cross field validation and no way to cancel a whole row, and a row that is only valid
-once three fields agree cannot be expressed.
+once three fields agree could not be expressed. `EditUnit` is the switch and `Cell`, which
+is what the grid always did, is still the default.
 
 ### No validation surface
 
@@ -699,10 +700,9 @@ replaces, the selection and the scroll position held across a sort, source obser
 a filter predicate, a per column comparer, natural ordering and multi column sort. Defects
 2, 3 and 9 are answered here rather than patched.
 
-**3. The structural move. Done.** Then **the cell focus model** and the keyboard contract,
-**done**, which brought `BeginEditGestures` and drew the current cell mark and the editable
-cell hint. **What is left of this phase** is the edit lifecycle as a two level transaction,
-which brings `EditUnit`, and the modified mark at row scope.
+**3. Done.** The structural move, then the cell focus model and the keyboard contract, then
+the edit lifecycle as a two level transaction. Brought `BeginEditGestures` and `EditUnit`,
+and drew the current cell mark, the editable cell hint and the modified mark at row scope.
 
 **4. Copy, then range selection, then the three that write, then fill.** Brings
 `SelectionUnit` and `CellActions`. Draws the range wash, the anchor, the handle and the
@@ -898,9 +898,35 @@ The cell scope rules stayed in the theme.
 steps, and the row giving up its focus line while one of its cells holds the mark, which is
 the `:cell` state on the row.
 
-**Not built yet in this phase.** The two level edit transaction and `EditUnit`, the modified
-mark at row scope, and Control and Space for a column, which needs cell range selection and
-so belongs to phase 4.
+**Escape cancels the whole row, and there is no second press.** WPF reverts the cell on the
+first Escape and the row on the second, which it can do because it holds the cell's old
+value itself. `IEditableObject` has no per field undo, and keeping a shadow copy of every
+cell to fake one is a second model of the data. So under a row transaction Escape puts the
+row back, which is the thing the interface can actually do.
+
+**Enter commits and steps down, unless the editor wants the key.** The plan called this a
+decision that depends on the editor. The rule is exact: a `TextBox` with `AcceptsReturn`
+keeps Enter, and everything else gives it to the grid. Stepping down is also what closes a
+row transaction, so Enter reads as commit the row without a case of its own.
+
+**The modified mark needed an API the design does not describe.** The design says what the
+mark looks like and says nothing about how a grid learns a row is modified, because that is
+a tool's own idea of unsaved. `RowModified` is a `Func<object, bool>` on both grids, in the
+shape `GridColumn.SortKey` and `GridRows.Filter` already use, and a row reads it again
+whenever its item raises `PropertyChanged`, so a tool only has to notify. Null marks
+nothing, which is what every grid does today.
+
+**Only the row bar is built, not all three marks.** The design has three: the bar for which
+row, a wash with a corner mark for which field, and the state column for what kind of
+change. The plan put the bar in this phase. The wash is cell scope and belongs beside the
+range wash it has to avoid, so it waits for phase 4. The state column is the tool's own
+column and always was.
+
+**The bar is not pinned yet.** The design pins it with the first column so it cannot scroll
+away sideways. Pinning is phase 5, so today it scrolls with the row.
+
+**Not built in this phase.** Control and Space for a column, which needs cell range
+selection and so belongs to phase 4.
 
 ## Sources
 

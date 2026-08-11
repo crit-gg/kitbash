@@ -13,7 +13,7 @@
                                Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, drag the edge between two titles to resize, and double click a value to edit it in place. Escape puts the old one back." />
 
                     <TextBlock Classes="note"
-                               Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do." />
+                               Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do. Edit a value and the row wears the amber bar until it is saved." />
 
                     <ui:DataGrid Name="SampleGrid" Height="342" SelectionMode="Multiple">
                         <ui:DataGrid.Toolbar>
@@ -127,6 +127,7 @@
                         <Button Classes="ghost" Content="Group by kind" Click="OnGroupGrid" />
                         <Button Classes="ghost" Content="Turn paging off" Click="OnPageGrid" />
                         <Button Classes="ghost" Content="Count what is real" Click="OnCountCells" />
+                        <Button Classes="ghost" Content="Save the edits" Click="OnSaveEdits" />
 
                         <!-- Toggled on the grid above rather than drawn as a second one,
                              so the two looks can be read against the same rows. -->

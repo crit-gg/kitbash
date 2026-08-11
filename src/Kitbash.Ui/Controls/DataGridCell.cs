@@ -83,8 +83,10 @@ public class DataGridCell : ContentControl
         {
             switch (e.Key)
             {
-                case Key.Enter:
-                    host.Body.CommitEdit();
+                // An editor that takes a return keeps it. A multi line field is the whole
+                // reason the key cannot simply belong to the grid.
+                case Key.Enter when e.Source is not TextBox { AcceptsReturn: true }:
+                    host.Body.CommitAndStepDown();
                     e.Handled = true;
                     return;
 

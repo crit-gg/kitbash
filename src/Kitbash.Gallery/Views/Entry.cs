@@ -13,6 +13,7 @@ public sealed class Entry(string id, string name, string kind, double value, int
 {
     private double amount = value;
     private double saved;
+    private double committed = value;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -34,9 +35,13 @@ public sealed class Entry(string id, string name, string kind, double value, int
             }
 
             amount = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Value)));
+            Raise(nameof(Value));
+            Raise(nameof(IsModified));
         }
     }
+
+    /// <summary>Whether the value has moved since it was last saved.</summary>
+    public bool IsModified => !amount.Equals(committed);
 
     public int Tier { get; } = tier;
 
@@ -45,6 +50,16 @@ public sealed class Entry(string id, string name, string kind, double value, int
     public string State { get; } = state;
 
     public override string ToString() => Id;
+
+    /// <summary>Takes the value as saved, which is what clears the modified mark.</summary>
+    public void Save()
+    {
+        committed = amount;
+        Raise(nameof(IsModified));
+    }
+
+    private void Raise(string property) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 
     // The grid drives these, which is what makes Escape able to put the old value back.
 

@@ -56,6 +56,7 @@ public partial class GridsPage : GalleryPage
         Key(SampleGrid.Columns[6], entry => entry.State);
 
         SampleGrid.ItemsSource = new GridRows(entries);
+        SampleGrid.RowModified = item => ((Entry)item).IsModified;
         SampleGrid.SelectionChanged += (_, _) => ShowPickAll();
         SamplePager.Rows = SampleGrid.Rows;
 
@@ -167,6 +168,15 @@ public partial class GridsPage : GalleryPage
             ? null
             : item => ((Entry)item).Id.Contains(text, StringComparison.OrdinalIgnoreCase)
                 || ((Entry)item).Name.Contains(text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Takes every edit as saved, which is what clears the amber bars.</summary>
+    private void OnSaveEdits(object? sender, RoutedEventArgs e)
+    {
+        foreach (var row in SampleGrid.Rows ?? Enumerable.Empty<GridRow>())
+        {
+            (row.Item as Entry)?.Save();
+        }
     }
 
     /// <summary>Hides a column, which is the whole of what a column chooser would do.</summary>

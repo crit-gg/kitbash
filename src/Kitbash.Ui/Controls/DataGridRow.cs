@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.VisualTree;
 
 namespace Kitbash.Ui.Controls;
 
@@ -38,11 +39,23 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
             row.PropertyChanged -= OnRowChanged;
         }
 
+        if (row?.Item is INotifyPropertyChanged before)
+        {
+            before.PropertyChanged -= OnItemChanged;
+        }
+
         row = next;
 
         if (row is not null)
         {
             row.PropertyChanged += OnRowChanged;
+        }
+
+        // The row's own marks are read off the item, so a value changing has to reach the
+        // row rather than waiting for the next time the grid redraws.
+        if (row?.Item is INotifyPropertyChanged after)
+        {
+            after.PropertyChanged += OnItemChanged;
         }
 
         PseudoClasses.Set(":alt", row?.IsAlternate == true);
@@ -62,6 +75,10 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
 
     void IGridRowLayout.SetCurrent(bool current) => PseudoClasses.Set(":cell", current);
 
+    void IGridRowLayout.SetModified(bool modified) => PseudoClasses.Set(":modified", modified);
+
+    object? IGridRowLayout.Held => row?.Item;
+
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
@@ -78,6 +95,14 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
         if (sender is GridRow changed && ReferenceEquals(changed, row))
         {
             PseudoClasses.Set(":alt", changed.IsAlternate);
+        }
+    }
+
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (this.FindAncestorOfType<IGridHost>()?.Body is { Marks: true } body)
+        {
+            body.Mark(this);
         }
     }
 }

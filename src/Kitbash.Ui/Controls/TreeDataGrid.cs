@@ -28,6 +28,10 @@ public class TreeDataGrid : Tree, IGridHost
     public static readonly StyledProperty<BeginEditGestures> BeginEditGesturesProperty =
         DataGrid.BeginEditGesturesProperty.AddOwner<TreeDataGrid>();
 
+    /// <inheritdoc cref="BeginEditGesturesProperty"/>
+    public static readonly StyledProperty<GridEditUnit> EditUnitProperty =
+        DataGrid.EditUnitProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -47,7 +51,11 @@ public class TreeDataGrid : Tree, IGridHost
             body.Refresh();
         };
 
-        SelectionChanged += (_, _) => body.Refresh();
+        SelectionChanged += (_, _) =>
+        {
+            body.OnSelectionMoved();
+            body.Refresh();
+        };
     }
 
     /// <inheritdoc cref="DataGrid.BeginEditGesturesProperty"/>
@@ -55,6 +63,13 @@ public class TreeDataGrid : Tree, IGridHost
     {
         get => GetValue(BeginEditGesturesProperty);
         set => SetValue(BeginEditGesturesProperty, value);
+    }
+
+    /// <inheritdoc cref="GridEditUnit"/>
+    public GridEditUnit EditUnit
+    {
+        get => GetValue(EditUnitProperty);
+        set => SetValue(EditUnitProperty, value);
     }
 
     /// <summary>The columns, shared with the header and every row.</summary>
@@ -71,6 +86,26 @@ public class TreeDataGrid : Tree, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <summary>
+    /// Which rows hold changes that are not saved, which a tool alone knows. Null marks
+    /// none. It is read again whenever an item says one of its properties changed.
+    /// </summary>
+    public Func<object, bool>? RowModified
+    {
+        get => body.Modified;
+        set
+        {
+            body.Modified = value;
+            body.Refresh();
+        }
+    }
+
+    /// <inheritdoc cref="GridBody.CommitRow"/>
+    public void CommitRowEdit() => body.CommitRow();
+
+    /// <inheritdoc cref="GridBody.CancelRow"/>
+    public void CancelRowEdit() => body.CancelRow();
 
     GridBody IGridHost.Body => body;
 
@@ -182,6 +217,13 @@ public class TreeDataGrid : Tree, IGridHost
         if (change.Property == BeginEditGesturesProperty)
         {
             body.Gestures = change.GetNewValue<BeginEditGestures>();
+            return;
+        }
+
+        if (change.Property == EditUnitProperty)
+        {
+            body.CommitRow();
+            body.Unit = change.GetNewValue<GridEditUnit>();
             return;
         }
 

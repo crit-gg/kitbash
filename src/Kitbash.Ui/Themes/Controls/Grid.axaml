@@ -282,6 +282,16 @@
                             BorderThickness="1"
                             BorderBrush="Transparent"
                             IsHitTestVisible="False" />
+
+                    <!-- Which row has changes that are not saved. On the left edge, where a
+                         range handle never sits, and full height so it reads down a column
+                         of rows. -->
+                    <Border Name="PART_Modified"
+                            Width="{DynamicResource SizeMarkModified}"
+                            HorizontalAlignment="Left"
+                            Background="{DynamicResource Warn}"
+                            IsHitTestVisible="False"
+                            IsVisible="False" />
                 </Panel>
             </ControlTemplate>
         </Setter>
@@ -312,6 +322,10 @@
              wearing a fill, an outline and a cell border at once cannot be read. -->
         <Style Selector="^:cell /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <Style Selector="^:modified /template/ Border#PART_Modified">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
 
         <Style Selector="^:disabled">
@@ -453,6 +467,16 @@
                             BorderThickness="1"
                             BorderBrush="Transparent"
                             IsHitTestVisible="False" />
+
+                    <!-- Which row has changes that are not saved. On the left edge, where a
+                         range handle never sits, and full height so it reads down a column
+                         of rows. -->
+                    <Border Name="PART_Modified"
+                            Width="{DynamicResource SizeMarkModified}"
+                            HorizontalAlignment="Left"
+                            Background="{DynamicResource Warn}"
+                            IsHitTestVisible="False"
+                            IsVisible="False" />
                 </Panel>
             </ControlTemplate>
         </Setter>
@@ -484,6 +508,10 @@
              wearing a fill, an outline and a cell border at once cannot be read. -->
         <Style Selector="^:cell /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <Style Selector="^:modified /template/ Border#PART_Modified">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
 
         <Style Selector="^:disabled">

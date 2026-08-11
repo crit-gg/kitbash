@@ -20,6 +20,9 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
     private object? edited;
     private GridColumn? current;
 
+    /// <summary>The item whose row transaction is open, or null when none is.</summary>
+    private object? open;
+
     /// <summary>The cell being edited, or null when none is.</summary>
     public DataGridCell? EditingCell => editing;
 
@@ -30,6 +33,18 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
     public BeginEditGestures Gestures { get; set; } = BeginEditGestures.DoubleTap
         | BeginEditGestures.F2
         | BeginEditGestures.Enter;
+
+    /// <summary>What an edit is a transaction over. The grid holds the property.</summary>
+    public GridEditUnit Unit { get; set; } = GridEditUnit.Cell;
+
+    /// <summary>Which rows hold changes that are not saved. Null marks none of them.</summary>
+    public Func<object, bool>? Modified { get; set; }
+
+    /// <summary>Whether anything is being marked at all, so a row can stop early.</summary>
+    public bool Marks => Modified is not null;
+
+    /// <summary>Whether a row transaction is open. False whenever the unit is the cell.</summary>
+    public bool IsRowEditing => open is not null;
 
     /// <summary>
     /// The column that draws the caret, when the grid has one. Left and right belong to the
@@ -53,17 +68,92 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
 
         editing = cell;
         edited = cell.Content;
-        (edited as IEditableObject)?.BeginEdit();
+
+        if (Unit == GridEditUnit.Row)
+        {
+            // A row transaction spans every cell in one row, so moving to another row is
+            // what closes the one already open.
+            if (!ReferenceEquals(open, edited))
+            {
+                CommitRow();
+                open = edited;
+                (open as IEditableObject)?.BeginEdit();
+            }
+        }
+        else
+        {
+            (edited as IEditableObject)?.BeginEdit();
+        }
 
         cell.IsEditing = true;
         RowOf(cell)?.SetEditing(true);
     }
 
-    /// <summary>Keeps what was typed and closes the editor.</summary>
+    /// <summary>
+    /// Keeps what was typed and closes the editor. A row transaction stays open, since it
+    /// closes when the edit leaves the row rather than when a cell does.
+    /// </summary>
     public void CommitEdit() => End(commit: true);
 
-    /// <summary>Puts the old value back and closes the editor.</summary>
-    public void CancelEdit() => End(commit: false);
+    /// <summary>
+    /// Closes the editor and puts the value back. With a row transaction open there is no
+    /// per field undo to call on, so the whole row goes back.
+    /// </summary>
+    public void CancelEdit()
+    {
+        End(commit: false);
+        CancelRow();
+    }
+
+    /// <summary>
+    /// Keeps what was typed and moves down a row, staying in the same column. What a person
+    /// doing data entry expects from Enter, and it is what closes a row transaction.
+    /// </summary>
+    public void CommitAndStepDown()
+    {
+        CommitEdit();
+
+        var below = Next(owner.SelectedIndex, 1);
+
+        if (below >= 0 && current is { } column)
+        {
+            To(below, column);
+        }
+        else
+        {
+            CommitRow();
+        }
+    }
+
+    /// <summary>Ends the row transaction, keeping what was typed into it.</summary>
+    public void CommitRow()
+    {
+        var item = open;
+
+        open = null;
+        (item as IEditableObject)?.EndEdit();
+    }
+
+    /// <summary>Ends the row transaction, putting every field back.</summary>
+    public void CancelRow()
+    {
+        var item = open;
+
+        open = null;
+        (item as IEditableObject)?.CancelEdit();
+    }
+
+    /// <summary>
+    /// The selection has moved. A row transaction over a row nothing is editing any more is
+    /// closed here, which is the only thing that closes it in ordinary use.
+    /// </summary>
+    public void OnSelectionMoved()
+    {
+        if (open is not null && editing is null)
+        {
+            CommitRow();
+        }
+    }
 
     /// <summary>Whether the cell being edited is inside this container.</summary>
     public bool Holds(Control container) =>
@@ -135,8 +225,13 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
             }
 
             row.SetCurrent(here);
+            Mark(row);
         }
     }
+
+    /// <summary>Says whether one row holds unsaved changes, which its item decides.</summary>
+    public void Mark(IGridRowLayout row) =>
+        row.SetModified(Modified is { } modified && row.Held is { } item && modified(item));
 
     /// <summary>
     /// The keys that move the current cell or open an editor. Up and down are left to the
@@ -361,13 +456,18 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
         editing = null;
         edited = null;
 
-        if (commit)
+        // Under a row transaction the item is told nothing here. The transaction is what
+        // ends it, so a cell closing leaves the row still open.
+        if (Unit == GridEditUnit.Cell)
         {
-            (item as IEditableObject)?.EndEdit();
-        }
-        else
-        {
-            (item as IEditableObject)?.CancelEdit();
+            if (commit)
+            {
+                (item as IEditableObject)?.EndEdit();
+            }
+            else
+            {
+                (item as IEditableObject)?.CancelEdit();
+            }
         }
 
         cell.IsEditing = false;

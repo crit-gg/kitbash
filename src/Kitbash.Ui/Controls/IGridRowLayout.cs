@@ -23,4 +23,10 @@ internal interface IGridRowLayout
     /// row wearing a fill, an outline and a cell border at once cannot be read.
     /// </summary>
     void SetCurrent(bool current);
+
+    /// <summary>This row holds changes that have not been saved.</summary>
+    void SetModified(bool modified);
+
+    /// <summary>What this row is standing for, or null while it is spare.</summary>
+    object? Held { get; }
 }

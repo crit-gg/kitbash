@@ -38,6 +38,9 @@ public class DataGrid : ListBox, IGridHost
             nameof(BeginEditGestures),
             BeginEditGestures.DoubleTap | BeginEditGestures.F2 | BeginEditGestures.Enter);
 
+    public static readonly StyledProperty<GridEditUnit> EditUnitProperty =
+        AvaloniaProperty.Register<DataGrid, GridEditUnit>(nameof(EditUnit));
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -82,6 +85,7 @@ public class DataGrid : ListBox, IGridHost
         {
             DropHeadings();
             UpdateCounts();
+            body.OnSelectionMoved();
             body.Refresh();
         };
     }
@@ -91,6 +95,13 @@ public class DataGrid : ListBox, IGridHost
     {
         get => GetValue(BeginEditGesturesProperty);
         set => SetValue(BeginEditGesturesProperty, value);
+    }
+
+    /// <inheritdoc cref="GridEditUnit"/>
+    public GridEditUnit EditUnit
+    {
+        get => GetValue(EditUnitProperty);
+        set => SetValue(EditUnitProperty, value);
     }
 
     /// <summary>The columns, shared with the header and every row.</summary>
@@ -126,6 +137,26 @@ public class DataGrid : ListBox, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <summary>
+    /// Which rows hold changes that are not saved, which a tool alone knows. Null marks
+    /// none. It is read again whenever an item says one of its properties changed.
+    /// </summary>
+    public Func<object, bool>? RowModified
+    {
+        get => body.Modified;
+        set
+        {
+            body.Modified = value;
+            body.Refresh();
+        }
+    }
+
+    /// <inheritdoc cref="GridBody.CommitRow"/>
+    public void CommitRowEdit() => body.CommitRow();
+
+    /// <inheritdoc cref="GridBody.CancelRow"/>
+    public void CancelRowEdit() => body.CancelRow();
 
     GridBody IGridHost.Body => body;
 
@@ -246,6 +277,11 @@ public class DataGrid : ListBox, IGridHost
         if (change.Property == BeginEditGesturesProperty)
         {
             body.Gestures = change.GetNewValue<BeginEditGestures>();
+        }
+        else if (change.Property == EditUnitProperty)
+        {
+            body.CommitRow();
+            body.Unit = change.GetNewValue<GridEditUnit>();
         }
         else if (change.Property == ItemsSourceProperty)
         {

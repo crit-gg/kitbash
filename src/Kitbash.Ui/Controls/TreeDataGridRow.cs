@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.VisualTree;
 
 namespace Kitbash.Ui.Controls;
 
@@ -15,6 +17,7 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
     private readonly GridCellStrip strip;
 
     private GridColumn? lead;
+    private object? held;
 
     public TreeDataGridRow()
     {
@@ -36,6 +39,20 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
 
     internal override void Follow(TreeRow? next)
     {
+        if (held is INotifyPropertyChanged before)
+        {
+            before.PropertyChanged -= OnItemChanged;
+        }
+
+        held = next?.Item;
+
+        // The row's own marks are read off the item, so a value changing has to reach the
+        // row rather than waiting for the next time the grid redraws.
+        if (held is INotifyPropertyChanged after)
+        {
+            after.PropertyChanged += OnItemChanged;
+        }
+
         base.Follow(next);
 
         strip.Fill(next?.Item);
@@ -51,6 +68,10 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
     void IGridRowLayout.SetEditing(bool editing) => PseudoClasses.Set(":editing", editing);
 
     void IGridRowLayout.SetCurrent(bool current) => PseudoClasses.Set(":cell", current);
+
+    void IGridRowLayout.SetModified(bool modified) => PseudoClasses.Set(":modified", modified);
+
+    object? IGridRowLayout.Held => held;
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
@@ -83,6 +104,14 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
         var leading = lead is null ? index == 0 : ReferenceEquals(column, lead);
 
         return leading ? new TreeDataGridCell() : new DataGridCell();
+    }
+
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (this.FindAncestorOfType<IGridHost>()?.Body is { Marks: true } body)
+        {
+            body.Mark(this);
+        }
     }
 
     private void UpdateLead()
