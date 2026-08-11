@@ -263,6 +263,127 @@ public sealed class GridColumnGestureTests
         }
     }
 
+    /// <summary>Dragging a title moves the column to where the line was.</summary>
+    [AvaloniaFact]
+    public void DraggingATitleMovesTheColumn()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.Reorder;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(["ID", "NAME", "COLUMN 2"], Order(grid));
+
+            // Dropped in the gap before the last column, so it lands second rather than last.
+            Move(grid, grid.Columns[0], grid.Columns[2].Offset);
+
+            Assert.Equal(["NAME", "ID", "COLUMN 2"], Order(grid));
+
+            // And dropped past the far edge it goes to the end.
+            Move(grid, grid.Columns[1], grid.Columns.TotalWidth);
+
+            Assert.Equal(["NAME", "COLUMN 2", "ID"], Order(grid));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>Without the gesture a title drag does nothing at all.</summary>
+    [AvaloniaFact]
+    public void ReorderNeedsTheGesture()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            Move(grid, grid.Columns[0], grid.Columns[2].Offset);
+
+            Assert.Equal(["ID", "NAME", "COLUMN 2"], Order(grid));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>A drag too small to be one is still a click, so sorting survives.</summary>
+    [AvaloniaFact]
+    public void AShakeIsStillAClick()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.Reorder;
+            Dispatcher.UIThread.RunJobs();
+
+            var title = Title(grid, grid.Columns[0]);
+
+            title.RaiseEvent(Down(title, new Point(2, 8)));
+            title.RaiseEvent(Over(title, new Point(4, 8)));
+            title.RaiseEvent(Up(title));
+
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(["ID", "NAME", "COLUMN 2"], Order(grid));
+            Assert.Equal(GridSortDirection.Ascending, grid.Columns[0].SortDirection);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static List<string> Order(DataGrid grid) =>
+        [.. grid.Columns.Select(column => column.Header?.ToString() ?? string.Empty)];
+
+    /// <summary>Picks a title up and drops it at an offset measured across the header.</summary>
+    private static void Move(DataGrid grid, GridColumn column, double to)
+    {
+        var title = Title(grid, column);
+
+        title.RaiseEvent(Down(title, new Point(4, 8)));
+        title.RaiseEvent(Over(title, new Point(to, 8)));
+        title.RaiseEvent(Up(title));
+
+        Dispatcher.UIThread.RunJobs();
+        grid.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static PointerPressedEventArgs Down(Control target, Point at) => new(
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        at,
+        0,
+        new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
+        KeyModifiers.None);
+
+    private static PointerEventArgs Over(Control target, Point at) => new(
+        InputElement.PointerMovedEvent,
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        at,
+        0,
+        new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
+        KeyModifiers.None);
+
+    private static PointerReleasedEventArgs Up(Control target) => new(
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        default,
+        0,
+        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
+        KeyModifiers.None,
+        MouseButton.Left);
+
     /// <summary>
     /// What the menu offers for a column, in the order it offers it. The chevron is pressed
     /// and the items are read off the flyout that opens, so the menu itself is what is under

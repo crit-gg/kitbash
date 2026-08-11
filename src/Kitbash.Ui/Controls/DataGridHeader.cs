@@ -11,6 +11,7 @@ namespace Kitbash.Ui.Controls;
 public class DataGridHeader : TemplatedControl
 {
     private const string CellsPart = "PART_Cells";
+    private const string DropPart = "PART_Drop";
     private const string ScrollerPart = "PART_Scroller";
 
     public static readonly StyledProperty<GridColumns?> ColumnsProperty =
@@ -19,10 +20,109 @@ public class DataGridHeader : TemplatedControl
     private readonly List<DataGridHeaderCell> cells = [];
     private readonly List<ColumnDivider> dividers = [];
 
+    private Border? drop;
+    private GridColumn? moving;
+    private int at = -1;
+
     private GridCells? panel;
 
     /// <summary>Raised when an edge is double clicked. Only the grid can measure the cells.</summary>
     internal event EventHandler<GridColumn>? Fitting;
+
+    /// <summary>A title has started being dragged, so the drop line follows the pointer.</summary>
+    internal void BeginMove(GridColumn column)
+    {
+        moving = Columns?.Gestures.HasFlag(ColumnGestures.Reorder) == true ? column : null;
+        Show();
+    }
+
+    /// <summary>The pointer has moved while a title is being dragged.</summary>
+    internal void MoveOver(double x)
+    {
+        if (moving is null)
+        {
+            return;
+        }
+
+        at = Landing(x);
+        Show();
+    }
+
+    /// <summary>
+    /// The button came up, so the column lands where the line was. Dropping it back where it
+    /// started moves nothing.
+    /// </summary>
+    internal void EndMove()
+    {
+        var column = moving;
+        var landing = at;
+
+        moving = null;
+        at = -1;
+        Show();
+
+        if (column is null || landing < 0 || Columns is not { } owner)
+        {
+            return;
+        }
+
+        var from = owner.IndexOf(column);
+
+        // The line sits between columns, so landing after the one being moved is one place
+        // further along the list than the line's own index.
+        var to = Math.Clamp(landing > from ? landing - 1 : landing, 0, owner.Count - 1);
+
+        if (from >= 0 && from != to)
+        {
+            owner.Move(from, to);
+        }
+    }
+
+    /// <summary>Which gap the pointer is nearest, counting from the left of the first column.</summary>
+    private int Landing(double x)
+    {
+        if (Columns is not { } owner)
+        {
+            return -1;
+        }
+
+        var best = 0;
+        var near = double.MaxValue;
+
+        for (var index = 0; index <= owner.Count; index++)
+        {
+            var edge = index == owner.Count
+                ? owner.TotalWidth
+                : owner[index].Offset;
+
+            var apart = Math.Abs(edge - x);
+
+            if (apart < near)
+            {
+                near = apart;
+                best = index;
+            }
+        }
+
+        return best;
+    }
+
+    private void Show()
+    {
+        if (drop is null)
+        {
+            return;
+        }
+
+        drop.IsVisible = moving is not null && at >= 0;
+
+        if (drop.IsVisible && Columns is { } owner)
+        {
+            var edge = at >= owner.Count ? owner.TotalWidth : owner[at].Offset;
+
+            drop.Margin = new Thickness(Math.Max(0, edge - 1), 0, 0, 0);
+        }
+    }
 
     /// <summary>The title drawing a column, or null when it has none.</summary>
     internal DataGridHeaderCell? CellFor(GridColumn column) =>
@@ -108,6 +208,7 @@ public class DataGridHeader : TemplatedControl
         base.OnApplyTemplate(e);
 
         panel = e.NameScope.Find<GridCells>(CellsPart);
+        drop = e.NameScope.Find<Border>(DropPart);
         Scroller = e.NameScope.Find<ScrollViewer>(ScrollerPart);
 
         Rebuild();

@@ -710,9 +710,9 @@ built**, since it turns the one block into a list of them and every reader of th
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
 **5. Column power. Most of the way.** `ColumnGestures`, fit to contents, multi column sort
-from the header, the header menu and hiding a column are built, along with the caret on
-hover and the ordinal beside it. **Reorder, pin, the chooser and persistence in two layers
-are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
+from the header, the header menu, hiding a column and reorder are built, along with the
+caret on hover, the ordinal beside it and the drop line. **Pin, the chooser and persistence
+in two layers are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -896,6 +896,19 @@ since a hierarchy is already one.
 
 **The last column showing can never be hidden**, whatever the gesture says, since a grid
 with no columns has nothing left to put one back through.
+
+**A title drag has to earn itself.** Every title is already a click that sorts, so a drag
+only starts once the pointer has gone four pixels sideways. Under that it is still a click
+and the sort happens, which a test holds down.
+
+**The drop line sits in a gap, and a gap is not an index.** The line at gap two means
+between the second and third columns as they stand now, so moving a column from the left of
+it lands one place earlier than the gap number. Dropping in the gap before the last column
+puts a column second, not last, and only the far edge puts it last.
+
+**The line is the same dashed accent the docking targets use**, so a drop line means one
+thing across the app, and the title being dragged fades so the line is what says where it
+lands.
 
 ## Where phase 4 has departed so far
 

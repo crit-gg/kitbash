@@ -157,7 +157,19 @@
                     <ScrollViewer Name="PART_Scroller"
                                   HorizontalScrollBarVisibility="Hidden"
                                   VerticalScrollBarVisibility="Disabled">
-                        <ui:GridCells Name="PART_Cells" />
+                        <Panel>
+                            <ui:GridCells Name="PART_Cells" />
+
+                            <!-- Where a dragged title would land. The same dashed accent the
+                                 docking targets use, so a drop line means one thing. -->
+                            <Border Name="PART_Drop"
+                                    Width="2"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Stretch"
+                                    Background="{DynamicResource DropPreviewLine}"
+                                    IsHitTestVisible="False"
+                                    IsVisible="False" />
+                        </Panel>
                     </ScrollViewer>
                 </Border>
             </ControlTemplate>
@@ -248,6 +260,11 @@
 
         <Style Selector="^:menu">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <!-- The title being dragged fades, so the line is what says where it lands. -->
+        <Style Selector="^:moving">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
         </Style>
 
         <!-- An unsorted header reveals a muted caret on hover, so a sortable column says so

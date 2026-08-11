@@ -23,8 +23,13 @@ public class DataGridHeaderCell : ContentControl
 
     private const string MenuPart = "PART_Menu";
 
+    /// <summary>How far sideways a press has to travel before it is a drag and not a click.</summary>
+    private const double Slack = 4;
+
     private IDisposable? following;
     private IDisposable? ordering;
+    private Point? from;
+    private bool moving;
 
     public GridColumn? Column
     {
@@ -85,6 +90,19 @@ public class DataGridHeaderCell : ContentControl
     {
         base.OnPointerReleased(e);
 
+        var moved = moving;
+
+        from = null;
+        moving = false;
+        PseudoClasses.Set(":moving", false);
+
+        if (moved)
+        {
+            this.FindAncestorOfType<DataGridHeader>()?.EndMove();
+            e.Handled = true;
+            return;
+        }
+
         // Asked of whatever owns the columns rather than of a named grid. Naming DataGrid
         // here is what left a tree grid header showing a hand cursor and doing nothing.
         if (Column is { CanSort: true } column
@@ -104,13 +122,52 @@ public class DataGridHeaderCell : ContentControl
     {
         base.OnPointerPressed(e);
 
-        if (e.Source is not Visual source
-            || source.FindAncestorOfType<Border>(includeSelf: true) is not { Name: MenuPart })
+        if (e.Source is Visual source
+            && source.FindAncestorOfType<Border>(includeSelf: true) is { Name: MenuPart })
+        {
+            Open();
+            e.Handled = true;
+            return;
+        }
+
+        if (this.FindAncestorOfType<DataGridHeader>() is { } strip
+            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            from = e.GetPosition(strip);
+        }
+    }
+
+    /// <summary>
+    /// A title dragged sideways moves its column. It only starts once the pointer has gone
+    /// far enough that it cannot be the shake of a click, or every sort would move a column.
+    /// </summary>
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        if (Column is not { } column
+            || from is not { } start
+            || this.FindAncestorOfType<DataGridHeader>() is not { } strip
+            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             return;
         }
 
-        Open();
+        var here = e.GetPosition(strip);
+
+        if (!moving && Math.Abs(here.X - start.X) < Slack)
+        {
+            return;
+        }
+
+        if (!moving)
+        {
+            moving = true;
+            strip.BeginMove(column);
+            PseudoClasses.Set(":moving", true);
+        }
+
+        strip.MoveOver(here.X);
         e.Handled = true;
     }
 
