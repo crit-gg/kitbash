@@ -214,6 +214,12 @@ public class GridColumn : AvaloniaObject
     /// </summary>
     public Action<object, string?>? Write { get; set; }
 
+    /// <summary>
+    /// This column's own name, which is what ties a kept layout to it across runs. A column
+    /// with none is never kept, which is the opt in.
+    /// </summary>
+    public string? Key { get; set; }
+
     /// <summary>Whether a header click does anything.</summary>
     public bool CanSort => SortKey is not null;
 

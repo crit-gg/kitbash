@@ -15,6 +15,7 @@ public sealed class ApplicationPaths
     private const string ToolsDirectoryName = "tools";
     private const string EnginesDirectoryName = "engines";
     private const string LayoutsDirectoryName = "layouts";
+    private const string ColumnsDirectoryName = "columns";
 
     public ApplicationPaths(IUserDirectories directories)
     {
@@ -84,6 +85,26 @@ public sealed class ApplicationPaths
         var owner = scope.IsGlobal ? ApplicationName : scope.ToolId ?? ApplicationName;
 
         return Path.Combine(State, LayoutsDirectoryName, owner, view + ".json");
+    }
+
+    /// <summary>
+    /// Where one grid's column layout is kept. Per person and per machine, the way a dock
+    /// layout is, since what a person did to their columns is not somebody else's work.
+    /// </summary>
+    /// <param name="scope">Whose grid it is. A tool passes its own.</param>
+    /// <param name="key">Which grid inside that app.</param>
+    public string ColumnsFileFor(SettingsScope scope, string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+
+        if (key.AsSpan().IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            throw new ArgumentException($"'{key}' cannot be used as a file name.", nameof(key));
+        }
+
+        var owner = scope.IsGlobal ? ApplicationName : scope.ToolId ?? ApplicationName;
+
+        return Path.Combine(State, ColumnsDirectoryName, owner, key + ".json");
     }
 
     /// <summary>A named place in the cache. Nothing is created until something writes.</summary>

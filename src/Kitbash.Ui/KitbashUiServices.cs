@@ -7,6 +7,7 @@ using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Projects;
 using Kitbash.Core.Settings;
+using Kitbash.Ui.Controls;
 using Kitbash.Ui.Docking;
 using Kitbash.Ui.Projects;
 using Kitbash.Ui.Settings;
@@ -103,6 +104,21 @@ public static class KitbashUiServices
         // does. Substitute IDockSerializer to write the layout some other way.
         services.TryAddSingleton<IDockSerializer>(_ => new DockSerializer(typeof(ObservableCollection<>)));
         services.TryAddSingleton<IDockLayoutStore, DockLayoutStore>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Where a grid's column layout is kept between runs. Takes Core's
+    /// <c>AddKitbashApplicationStorage</c> and <c>AddKitbashIO</c>, since the file sits in
+    /// application state. A grid keeps nothing on its own, so an app that does not register
+    /// this has grids that start on the columns their tool declared, every time.
+    /// </summary>
+    public static IServiceCollection AddKitbashGridColumns(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IGridColumnStore, GridColumnStore>();
 
         return services;
     }

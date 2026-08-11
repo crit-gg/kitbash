@@ -710,9 +710,9 @@ built**, since it turns the one block into a list of them and every reader of th
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
 **5. Column power. Nearly done.** `ColumnGestures`, fit to contents, multi column sort from
-the header, the header menu, hiding a column, reorder and pinning are built, along with the
-caret on hover, the ordinal beside it, the drop line and the pinned seam. **The chooser and
-persistence in two layers are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
+the header, the header menu, hiding a column, reorder, pinning and column state are built,
+along with the caret on hover, the ordinal beside it, the drop line and the pinned seam.
+**The chooser is not**, and column state has one layer rather than two. Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -929,6 +929,26 @@ inside a panel anywhere in the theme.
 
 **The last column not pinned can never be pinned**, since pinning every column leaves
 nothing to go under them, and a column already pinned always offers to be let go.
+
+**Column state keeps only what changed.** `GridColumns` takes each column as the tool
+declared it the moment the column is added, and `Capture` writes only what differs. So a
+column nobody touched says nothing at all, and a tool that later changes a width or an order
+is not held to a layout kept before it. That is the plan's rule about a pin only being
+stored when it is not the default, applied to all four things a person can change.
+
+**A column with no `Key` is never kept**, which is the opt in. There is no state key on the
+grid: the store is a service the app calls, exactly as `IDockLayoutStore` is, and no control
+reaches for it. `Capture`, `Apply` and `Reset` are what the grid offers, and
+`AddKitbashGridColumns` registers the store for an app that wants one.
+
+**Nothing changed means nothing kept.** Writing an empty layout deletes the file rather than
+leaving one behind that says nothing, so a grid put back to its declaration leaves no trace.
+
+**Column state has one layer, not two.** The plan wants a saved workspace default under the
+person's own, so the chooser's Reset returns what the team agreed rather than what the code
+says. `Reset` today puts the declaration back. The second layer needs a workspace scoped
+store beside the per person one, and it belongs with the chooser, since the chooser is the
+only thing that offers Reset.
 
 ## Where phase 4 has departed so far
 

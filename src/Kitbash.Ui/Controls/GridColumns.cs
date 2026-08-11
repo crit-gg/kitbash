@@ -13,6 +13,11 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// <summary>How many times the solver hands out what clamping freed up.</summary>
     private const int Passes = 4;
 
+    /// <summary>Each column as the tool declared it, which is what a change is measured from.</summary>
+    private readonly Dictionary<GridColumn, Declared> declared = [];
+
+    private readonly record struct Declared(GridLength Width, bool IsVisible, bool IsPinned, int Order);
+
     public GridColumns()
     {
         CollectionChanged += OnCollectionChanged;
@@ -196,6 +201,101 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
         // the grid draws rather than leaving a column at nothing.
     }
 
+    /// <summary>
+    /// What a person has changed about the columns, and nothing else. A column left as the
+    /// tool declared it says nothing at all, so a layout kept from one run does not pin a
+    /// grid to a declaration that has since moved.
+    /// </summary>
+    public IReadOnlyList<GridColumnState> Capture()
+    {
+        var kept = new List<GridColumnState>();
+
+        for (var index = 0; index < Count; index++)
+        {
+            var column = this[index];
+
+            if (column.Key is not { Length: > 0 } key || !declared.TryGetValue(column, out var was))
+            {
+                continue;
+            }
+
+            var state = new GridColumnState(
+                key,
+                was.Width.Equals(column.Width) ? null : column.Width.Value,
+                was.IsVisible == column.IsVisible ? null : column.IsVisible,
+                was.IsPinned == column.IsPinned ? null : column.IsPinned,
+                was.Order == index ? null : index);
+
+            if (state.Matters)
+            {
+                kept.Add(state);
+            }
+        }
+
+        return kept;
+    }
+
+    /// <summary>
+    /// Puts a kept layout back. A column the layout does not name is left as the tool
+    /// declared it, and a name the grid no longer has is passed over.
+    /// </summary>
+    public void Apply(IEnumerable<GridColumnState> layout)
+    {
+        ArgumentNullException.ThrowIfNull(layout);
+
+        foreach (var state in layout)
+        {
+            if (Find(state.Key) is not { } column)
+            {
+                continue;
+            }
+
+            if (state.Width is { } width)
+            {
+                column.Width = new GridLength(Clamp(column, width), GridUnitType.Pixel);
+            }
+
+            if (state.IsVisible is { } visible)
+            {
+                column.IsVisible = visible;
+            }
+
+            if (state.IsPinned is { } pinned)
+            {
+                column.IsPinned = pinned;
+            }
+        }
+
+        // After the rest, since moving a column while reading the layout would change what
+        // the indexes in it mean.
+        foreach (var state in layout.Where(state => state.Order is not null).OrderBy(state => state.Order))
+        {
+            if (Find(state.Key) is { } column && IndexOf(column) is var from and >= 0)
+            {
+                Move(from, Math.Clamp(state.Order!.Value, 0, Count - 1));
+            }
+        }
+    }
+
+    /// <summary>Puts every column back the way the tool declared it.</summary>
+    public void Reset()
+    {
+        foreach (var (column, was) in declared.OrderBy(pair => pair.Value.Order).ToList())
+        {
+            column.Width = was.Width;
+            column.IsVisible = was.IsVisible;
+            column.IsPinned = was.IsPinned;
+
+            if (IndexOf(column) is var from and >= 0 && from != was.Order)
+            {
+                Move(from, Math.Clamp(was.Order, 0, Count - 1));
+            }
+        }
+    }
+
+    private GridColumn? Find(string key) =>
+        this.FirstOrDefault(column => string.Equals(column.Key, key, StringComparison.Ordinal));
+
     private static double Clamp(GridColumn column, double width)
     {
         var min = double.IsNaN(column.MinWidth) ? 0 : Math.Max(0, column.MinWidth);
@@ -214,6 +314,11 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
         foreach (var column in e.NewItems?.OfType<GridColumn>() ?? [])
         {
             column.LayoutChanged += OnColumnChanged;
+
+            // Taken as the column arrives, so what a person changed later can be told from
+            // what the tool asked for. A move does not raise Add, so this is only ever the
+            // declaration.
+            declared.TryAdd(column, new Declared(column.Width, column.IsVisible, column.IsPinned, IndexOf(column)));
         }
 
         LayoutChanged?.Invoke(this, EventArgs.Empty);
