@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hex icon &amp; palette generator</title>
+<style>
+:root{
+  --bg:#f6f6f7; --panel:#fff; --ink:#16181d; --dim:#63676f; --line:#dfe1e5;
+  --accent:#3b6ef5; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#15171b; --panel:#1d2026; --ink:#e9eaec; --dim:#9aa0aa; --line:#2c3038; --accent:#6f97ff;}
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+     background:var(--bg);color:var(--ink)}
+header{padding:18px 22px 14px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:17px;font-weight:650;letter-spacing:-.01em}
+header p{margin:3px 0 0;color:var(--dim);font-size:12.5px}
+.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;padding:18px 22px 40px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}}
+.sticky{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px 16px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.09em;
+         text-transform:uppercase;color:var(--dim)}
+.row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin:9px 0 2px}
+.row label{font-size:12.5px}
+.row output{font:11.5px var(--mono);color:var(--dim);min-width:52px;text-align:right}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0}
+input[type=color]{width:100%;height:30px;padding:0;border:1px solid var(--line);
+                  border-radius:7px;background:none;cursor:pointer}
+input[type=text]{width:100%;font:600 20px/1.2 var(--mono);text-align:center;letter-spacing:.06em;
+  padding:7px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+button{font:inherit;font-size:12px;padding:5px 10px;border:1px solid var(--line);
+       border-radius:7px;background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg{display:flex;gap:0}
+.seg button{flex:1;border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:7px 0 0 7px;margin-left:0}
+.seg button:last-child{border-radius:0 7px 7px 0}
+.chk{display:flex;align-items:center;gap:8px;margin:9px 0;font-size:12.5px;cursor:pointer}
+.stage{border:1px solid var(--line);border-radius:12px;padding:18px;
+       display:flex;justify-content:center;align-items:center;min-height:330px}
+.stage.light{background:#fff}
+.stage.dark{background:#14161a}
+.stage.checker{background-color:#fff;background-image:
+  linear-gradient(45deg,#0000001a 25%,#0000 25%,#0000 75%,#0000001a 75%),
+  linear-gradient(45deg,#0000001a 25%,#0000 25%,#0000 75%,#0000001a 75%);
+  background-size:22px 22px;background-position:0 0,11px 11px}
+.stage svg{width:100%;height:auto;max-width:440px;display:block}
+.sw{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sw .cell{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg);cursor:pointer}
+.sw .chip{height:42px}
+.sw .cap{padding:5px 7px;font:11px var(--mono);display:flex;justify-content:space-between;gap:4px}
+.sw .cap b{font-weight:500;color:var(--dim)}
+.grp{margin-bottom:10px}
+.grp>h3{margin:0 0 6px;font-size:12px;font-weight:600;display:flex;justify-content:space-between}
+.grp>h3 span{color:var(--dim);font:11px var(--mono)}
+.hint{color:var(--dim);font-size:11.5px;margin:10px 0 0}
+.wheel{position:absolute;inset:0;border-radius:50%;
+  -webkit-mask:radial-gradient(circle,transparent 52%,#000 53%);
+          mask:radial-gradient(circle,transparent 52%,#000 53%)}
+.wheelwrap{position:relative;width:112px;height:112px;margin:4px auto 14px}
+.wheelwrap i{position:absolute;width:13px;height:13px;border-radius:50%;
+  border:2px solid var(--panel);transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.wheelwrap .lt{position:absolute;width:0;height:0;border-left:6px solid transparent;
+  border-right:6px solid transparent;border-bottom:11px solid var(--ink);transform-origin:50% 50%}
+.warn{color:#c2410c;font-size:11.5px;margin-top:8px}
+@media (prefers-color-scheme:dark){.warn{color:#fb923c}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hex icon &amp; palette generator</h1>
+  <p>Palettes preserve the hue distances and perceived-lightness set of icon.svg&rsquo;s three lightest colours. Shading follows one consistent light direction.</p>
+</header>
+
+<div class="wrap">
+  <div>
+    <div class="card">
+      <h2>Palette</h2>
+      <div class="wheelwrap"><div class="wheel" id="wheel"></div><div class="lt" id="lightarrow"></div></div>
+      <div class="row"><label>Hue rotation</label><output id="o_rot"></output></div>
+      <input type="range" id="rot" min="0" max="359" step="1" value="45">
+      <div class="row"><label>Chroma</label><output id="o_chr"></output></div>
+      <input type="range" id="chr" min="20" max="130" step="1" value="100">
+      <div class="row"><label>Lightness A</label><output id="o_l0"></output></div>
+      <input type="range" id="l0" min="20" max="95" step="0.1" value="76.5">
+      <div class="row"><label>Lightness B</label><output id="o_l1"></output></div>
+      <input type="range" id="l1" min="20" max="95" step="0.1" value="48.2">
+      <div class="row"><label>Lightness C</label><output id="o_l2"></output></div>
+      <input type="range" id="l2" min="20" max="95" step="0.1" value="51.1">
+      <label class="chk"><input type="checkbox" id="auto" checked>
+        Auto-assign lightness to keep chroma</label>
+      <div class="btns">
+        <button data-perm="1">Rotate assignment</button>
+        <button id="reset">Reset to icon.svg</button>
+      </div>
+      <div class="hint">Presets</div>
+      <div class="btns" id="presets"></div>
+      <div class="warn" id="gamut"></div>
+    </div>
+
+    <div class="card">
+      <h2>Shading</h2>
+      <div class="row"><label>Light direction</label><output id="o_light"></output></div>
+      <input type="range" id="light" min="0" max="359" step="1" value="180">
+      <div class="row"><label>Ambient drop</label><output id="o_amb"></output></div>
+      <input type="range" id="amb" min="0" max="34" step="0.5" value="16">
+      <div class="row"><label>Directional swing</label><output id="o_amp"></output></div>
+      <input type="range" id="amp" min="0" max="20" step="0.5" value="8">
+      <div class="row"><label>Bevel width</label><output id="o_split"></output></div>
+      <input type="range" id="split" min="0" max="100" step="1" value="38">
+      <div class="hint">180&deg; = lit from the left, as in icon.svg. Walls sit below the
+        up-facing top band by the ambient drop; the swing is how much they vary with direction.</div>
+    </div>
+
+    <div class="card">
+      <h2>Centre hexagon</h2>
+      <div class="row"><label>Size</label><output id="o_hex"></output></div>
+      <input type="range" id="hexs" min="30" max="135" step="0.5" value="100">
+      <div class="row"><label>Corner radius</label><output id="o_hexr"></output></div>
+      <div class="row"><label>Colour</label><output id="o_hexc"></output></div>
+      <input type="color" id="hexc" value="#272727">
+      <label class="chk"><input type="checkbox" id="showhex" checked> Show centre hexagon</label>
+      <div class="hint">The radius follows the size as a parallel offset, the same rule the
+        bevel uses, so the corner stays consistent with the outer profile.</div>
+    </div>
+
+    <div class="card">
+      <h2>Lettering</h2>
+      <input type="text" id="txt" maxlength="2" placeholder="0-2 characters" value="">
+      <div class="row"><label>Size</label><output id="o_tsize"></output></div>
+      <input type="range" id="tsize" min="40" max="150" step="1" value="100">
+      <div class="row"><label>Tracking</label><output id="o_trk"></output></div>
+      <input type="range" id="trk" min="-120" max="200" step="5" value="0">
+      <div class="row"><label>Colour</label><output id="o_tcol"></output></div>
+      <input type="color" id="tcol" value="#ffffff">
+      <div class="hint">Montserrat Bold, converted to outlines &mdash; exports carry no font
+        dependency. Centred on the ink bounding box, not the baseline.</div>
+    </div>
+
+    <div class="card">
+      <h2>Export</h2>
+      <div class="btns">
+        <button id="dlsvg">Download SVG</button>
+        <button id="dlpng">Download PNG</button>
+        <button id="cpjson">Copy palette JSON</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="bgon"> Include background in export</label>
+      <div class="hint">Click any swatch to copy its hex.</div>
+    </div>
+  </div>
+
+  <div>
+   <div class="sticky">
+    <div class="card" style="padding:11px 13px;margin-bottom:12px">
+      <div class="seg" id="bgseg">
+        <button data-bg="light" class="on">Light</button>
+        <button data-bg="dark">Dark</button>
+        <button data-bg="checker">Transparent</button>
+      </div>
+    </div>
+    <div class="stage light" id="stage"></div>
+    <div class="card" style="margin-top:12px">
+      <h2>Tones</h2>
+      <div id="swatches"></div>
+      <div class="hint" id="meta"></div>
+    </div>
+   </div>
+  </div>
+</div>
+
+<script>
+/* ---------- colour: sRGB <-> CIELAB <-> LCh, with chroma-reducing gamut map ---------- */
+const WP=[0.95047,1,1.08883];
+const s2l=c=>c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+const l2s=c=>c<=0.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-0.055;
+const rgb2xyz=([r,g,b])=>{const R=s2l(r),G=s2l(g),B=s2l(b);return[
+  0.4124564*R+0.3575761*G+0.1804375*B,
+  0.2126729*R+0.7151522*G+0.0721750*B,
+  0.0193339*R+0.1191920*G+0.9503041*B];};
+const xyz2rgb=([X,Y,Z])=>[
+  l2s( 3.2404542*X-1.5371385*Y-0.4985314*Z),
+  l2s(-0.9692660*X+1.8760108*Y+0.0415560*Z),
+  l2s( 0.0556434*X-0.2040259*Y+1.0572252*Z)];
+const fwd=t=>t>216/24389?Math.cbrt(t):(841/108)*t+4/29;
+const inv=t=>t*t*t>216/24389?t*t*t:(t-4/29)*108/841;
+function rgb2lab(rgb){const[X,Y,Z]=rgb2xyz(rgb);
+  const fx=fwd(X/WP[0]),fy=fwd(Y/WP[1]),fz=fwd(Z/WP[2]);
+  return[116*fy-16,500*(fx-fy),200*(fy-fz)];}
+function lab2rgb([L,a,b]){const fy=(L+16)/116,fx=fy+a/500,fz=fy-b/200;
+  return xyz2rgb([inv(fx)*WP[0],inv(fy)*WP[1],inv(fz)*WP[2]]);}
+const lch2lab=([L,C,h])=>{const r=h*Math.PI/180;return[L,C*Math.cos(r),C*Math.sin(r)];};
+const lab2lch=([L,a,b])=>[L,Math.hypot(a,b),(Math.atan2(b,a)*180/Math.PI+360)%360];
+const okg=rgb=>rgb.every(v=>v>=-1e-4&&v<=1+1e-4);
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255);
+const rgb2hex=r=>'#'+r.map(v=>Math.max(0,Math.min(255,Math.round(v*255)))
+  .toString(16).padStart(2,'0')).join('');
+function lch2hex(L,C,h){
+  let lo=0,hi=C;
+  if(okg(lab2rgb(lch2lab([L,C,h])))) lo=C;
+  else for(let i=0;i<30;i++){const m=(lo+hi)/2;
+    okg(lab2rgb(lch2lab([L,m,h])))?lo=m:hi=m;}
+  return{hex:rgb2hex(lab2rgb(lch2lab([L,lo,h]))),C:lo};
+}
+function shade(hex,dL){
+  const[L,C,h]=lab2lch(rgb2lab(hex2rgb(hex)));
+  return lch2hex(Math.max(0,L+dL),C,h).hex;
+}
+
+/* ---------- reference: the three lightest colours of icon.svg ---------- */
+const REF=[{L:76.5,C:62.5,h:83.2},{L:48.2,C:64.5,h:291.4},{L:51.1,C:65.5,h:14.5}];
+const PERMS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+let permIdx=0;
+
+function palette(){
+  const rot=+rot_.value, cs=+chr.value/100;
+  const Ls=[+l0.value,+l1.value,+l2.value];
+  const make=p=>REF.map((r,i)=>{
+    const h=(r.h+rot)%360, L=Ls[p[i]], C=REF[p[i]].C*cs;
+    const g=lch2hex(L,C,h);
+    return{hex:g.hex,L,C,got:g.C,h};
+  });
+  let p=PERMS[permIdx];
+  if(auto.checked){
+    let bestScore=-1;
+    for(const q of PERMS){
+      const t=make(q), mn=Math.min(...t.map(c=>c.got/c.C)),
+            mean=t.reduce((a,c)=>a+c.got/c.C,0)/3;
+      const s=mn*10+mean;
+      if(s>bestScore){bestScore=s;p=q;}
+    }
+  }
+  return make(p);
+}
+
+/* ---------- shading: one light direction over six wall orientations ---------- */
+function wallDL(theta){
+  const d=Math.abs(((theta-(+light.value)+180)%360+360)%360-180);
+  return -(+amb.value)+(+amp.value)*(1-2*d/180);
+}
+
+/* ---------- geometry ----------
+   The three piece paths are verbatim from wip2.svg, in the g9 local frame.
+   B1..B3 are where adjacent pieces meet on the inner boundary (found as coincident
+   nodes between the paths). The centre wedges fan out through them, so the three
+   shapes tile the middle and there is always colour behind the centre hexagon.     */
+const GT='matrix(1.007634,-0.01172794,0.01172794,1.007634,364.42974,405.89902)';
+const CX=145.066, CY=107.101, AP_OUT=361.41, FILL_OUT=112.1;
+const B={b1:[139.286,352.516], b2:[-64.118,-19.624], b3:[359.343,-10.252]};
+const ang=p=>Math.atan2(p[1]-CY,p[0]-CX)*180/Math.PI;
+const PIECES=[
+  {id:'p15',elbow:270,place:'top',   a0:ang(B.b2),a1:ang(B.b3),     d:'m -212.27593,-66.63451 c 5.19351,-6.99444 12.65046,-12.05824 21.18062,-14.269 6.17473,-1.61895 13.88215,-1.51607 19.75991,0.87413 l 107.217163,60.40583 171.160207,-99.42367 c 13.17122,-7.22627 21.61237,-9.02647 32.99004,-8.78391 11.19677,0.23871 18.91957,2.43933 32.0694,10.02048 60.82606,35.0351 126.4528,72.45832 187.24143,107.55828 l 0.002,-0.0581 105.92245,-62.65027 c 5.00933,-3.89557 8.94984,-10.51687 10.63488,-16.67431 2.45174,-8.85853 1.63223,-18.25774 -2.22892,-26.50483 -0.0915,-0.19545 -0.18632,-0.39036 -0.28298,-0.5834 a 115.20232,115.20232 0 0 0 -23.98331,-18.43229 l -246.5987,-142.37411 a 115.20232,115.20232 0 0 0 -115.202527,0 l -246.598693,142.37411 a 115.20232,115.20232 0 0 0 -53.28297,68.52106 z'},
+  {id:'p16',elbow:150,place:'left',  a0:ang(B.b1),a1:ang(B.b2),     d:'m -212.27593,-66.63451 a 115.20232,115.20232 0 0 0 -4.3183,31.24761 v 284.74822 a 115.20232,115.20232 0 0 0 57.60127,99.76867 L 87.605733,491.5041 a 115.20232,115.20232 0 0 0 83.168017,12.56145 c -3.97268,-0.65979 -7.80765,-1.94029 -11.36559,-3.78336 -3.55785,-1.8427 -6.83733,-4.24699 -9.70261,-7.1597 -3e-4,-3e-4 -0.002,-0.002 -0.002,-0.002 -4.48998,-4.53801 -8.2541,-11.26244 -9.12309,-17.54843 L 139.28581,352.51602 -32.136057,252.03991 c -12.84374,-7.79348 -18.62269,-14.20439 -24.10147,-24.17901 -5.39165,-9.81605 -7.34988,-17.60594 -7.35933,-32.78459 -0.0717,-70.19447 -0.47409,-144.53251 -0.47099,-214.72699 l -0.0504,0.0271 -107.217163,-60.40583 c -5.87776,-2.3902 -13.58518,-2.49308 -19.75991,-0.87413 -2.13187,0.55263 -4.19777,1.28389 -6.17704,2.17853 -2.97013,1.34249 -5.7467,3.05222 -8.26834,5.08389 -0.8405,0.67708 -1.65299,1.39141 -2.43438,2.13783 -1.56221,1.49262 -3.00276,3.12052 -4.30086,4.86875 z'},
+  {id:'p17',elbow: 30,place:'right', a0:ang(B.b3),a1:ang(B.b1)+360, d:'m 359.34477,-10.31051 0.52332,198.54304 c -0.32748,15.01975 -2.98968,23.23084 -8.88857,32.96291 -5.80512,9.57733 -11.57163,15.16661 -24.71201,22.76412 -60.75432,35.15937 -126.23839,73.43093 -187.03016,108.52545 l 0.0485,0.031 1.29471,123.0561 c 0.4345,3.143 1.59301,6.39551 3.20384,9.42933 1.6105,3.03355 3.67498,5.85042 5.91925,8.1191 5.73023,5.82463 13.12527,9.62549 21.07014,10.945 A 115.20232,115.20232 0 0 0 202.8083,491.50409 L 449.407,349.12998 a 115.20232,115.20232 0 0 0 57.60126,-99.76867 V -35.3869 a 115.20232,115.20232 0 0 0 -33.61802,-81.33642 c 0.0967,0.19304 0.19147,0.38795 0.28298,0.5834 1.50325,3.21081 2.53145,6.59696 3.09917,10.0573 0.68684,4.18341 0.67834,8.47162 -0.0465,12.69712 -0.059,0.34416 -0.13107,0.68602 -0.19964,1.02919 -0.18185,0.91007 -0.37288,1.82053 -0.62216,2.72122 -0.38667,1.41298 -0.89402,2.85032 -1.50404,4.27373 -2.04785,4.7791 -5.27293,9.39892 -9.13278,12.40058 z'}];
+/* centre hexagon, in page coordinates; these defaults reproduce wip2.svg exactly */
+const CH_AP0=232.20, CH_F0=41.16, L2G=0.9923556;
+
+function roundedHex(cx,cy,R,r){
+  const t=r*Math.tan(Math.PI/6);
+  const V=[...Array(6)].map((_,k)=>{const a=(30+60*k)*Math.PI/180;
+    return[cx+R*Math.cos(a),cy+R*Math.sin(a)];});
+  const u=(a,b)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+    return[(b[0]-a[0])/d,(b[1]-a[1])/d];};
+  let o=[];
+  for(let k=0;k<6;k++){
+    const p=V[k], ui=u(V[(k+5)%6],p), uo=u(p,V[(k+1)%6]);
+    o.push((k?'L':'M')+` ${(p[0]-ui[0]*t).toFixed(3)},${(p[1]-ui[1]*t).toFixed(3)}`);
+    if(r>0.01) o.push(`A ${r.toFixed(3)} ${r.toFixed(3)} 0 0 1 ${(p[0]+uo[0]*t).toFixed(3)},${(p[1]+uo[1]*t).toFixed(3)}`);
+  }
+  return o.join(' ')+' Z';
+}
+function halfPlane(elbow,L=2000){
+  const e=elbow*Math.PI/180, d=[Math.cos(e),Math.sin(e)],
+        n=[Math.cos(e+Math.PI/2),Math.sin(e+Math.PI/2)];
+  const p=[[CX-d[0]*L,CY-d[1]*L],[CX+d[0]*L,CY+d[1]*L],
+           [CX+d[0]*L+n[0]*L,CY+d[1]*L+n[1]*L],[CX-d[0]*L+n[0]*L,CY-d[1]*L+n[1]*L]];
+  return 'M '+p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' L ')+' Z';
+}
+function sector(a0,a1,R=300){
+  const P=a=>[CX+R*Math.cos(a*Math.PI/180),CY+R*Math.sin(a*Math.PI/180)];
+  const p0=P(a0),p1=P(a1);
+  return `M ${CX.toFixed(2)},${CY.toFixed(2)} L ${p0[0].toFixed(2)},${p0[1].toFixed(2)}`
+       + ` A ${R} ${R} 0 0 1 ${p1[0].toFixed(2)},${p1[1].toFixed(2)} Z`;
+}
+
+/* ---------- lettering: Montserrat Bold outlines ---------- */
+const FONT={"upm":1000,"g":{"A":["M-9 0H157L219 150H544L606 0H776L463 700H303ZM270 273 382 540 493 273Z",766,-9,0,776,700],"B":["M83 0H445C629 0 725 70 725 191C725 279 676 338 598 364C655 394 690 448 690 518C690 627 600 700 425 700H83ZM244 122V295H433C517 295 562 267 562 208C562 148 517 122 433 122ZM244 413V578H405C484 578 527 551 527 496C527 441 484 413 405 413Z",765,83,0,725,700],"C":["M418 -12C540 -12 641 32 707 113L603 209C556 154 497 126 427 126C296 126 203 218 203 350C203 482 296 574 427 574C497 574 556 546 603 492L707 588C641 668 540 712 419 712C201 712 39 561 39 350C39 139 201 -12 418 -12Z",724,39,-12,707,712],"D":["M83 0H401C630 0 787 138 787 350C787 562 630 700 401 700H83ZM245 133V567H393C532 567 623 484 623 350C623 216 532 133 393 133Z",826,83,0,787,700],"E":["M83 0H625V130H244V292H569V418H244V570H612V700H83Z",671,83,0,625,700],"F":["M83 0H245V255H569V385H245V570H612V700H83Z",639,83,0,612,700],"G":["M421 -12C521 -12 627 19 704 77V361H556V155C516 134 474 126 430 126C296 126 203 219 203 350C203 483 296 574 432 574C503 574 562 549 613 495L717 591C649 670 547 712 424 712C201 712 39 561 39 350C39 139 201 -12 421 -12Z",771,39,-12,717,712],"H":["M563 0H725V700H563V424H245V700H83V0H245V287H563Z",808,83,0,725,700],"I":["M83 0H245V700H83Z",328,83,0,245,700],"J":["M212 -12C377 -12 464 73 464 246V700H57V570H303V237C303 160 269 121 204 121C154 121 112 147 74 198L-16 90C35 24 118 -12 212 -12Z",541,-16,-12,464,700],"K":["M83 0H244V177L337 275L562 0H751L444 388L734 700H554L244 373V700H83Z",740,83,0,751,700],"L":["M83 0H596V132H245V700H83Z",604,83,0,596,700],"M":["M83 0H235V412L440 74H513L719 419L720 0H872L870 700H737L479 265L217 700H83Z",955,83,0,872,700],"N":["M83 0H243V426L592 0H725V700H565V274L217 700H83Z",808,83,0,725,700],"O":["M422 -12C642 -12 805 141 805 350C805 559 642 712 422 712C201 712 39 558 39 350C39 142 201 -12 422 -12ZM422 126C297 126 203 217 203 350C203 483 297 574 422 574C547 574 641 483 641 350C641 217 547 126 422 126Z",844,39,-12,805,712],"P":["M83 0H245V193H386C573 193 690 290 690 446C690 603 573 700 386 700H83ZM245 325V568H377C476 568 526 523 526 446C526 370 476 325 377 325Z",732,83,0,690,700],"Q":["M651 -161C728 -161 794 -131 840 -75L768 11C735 -24 697 -41 654 -41C619 -41 589 -28 554 8C704 56 805 186 805 350C805 559 642 712 422 712C201 712 39 558 39 350C39 160 174 16 365 -8C474 -123 547 -161 651 -161ZM422 126C297 126 203 217 203 350C203 483 297 574 422 574C547 574 641 483 641 350C641 217 547 126 422 126Z",844,39,-161,840,712],"R":["M83 0H245V195H386C388 195 391 195 394 195L529 0H703L547 225C638 264 690 341 690 446C690 603 577 700 382 700H83ZM245 324V568H377C476 568 526 523 526 446C526 370 476 324 377 324Z",735,83,0,703,700],"S":["M313 -12C513 -12 610 88 610 205C610 462 203 373 203 502C203 546 240 582 336 582C398 582 465 564 530 527L580 650C515 691 425 712 337 712C138 712 42 613 42 494C42 234 449 324 449 193C449 150 410 118 314 118C230 118 142 148 83 191L28 69C90 21 202 -12 313 -12Z",638,28,-12,610,712],"T":["M228 0H390V568H614V700H4V568H228Z",618,4,0,614,700],"U":["M394 -12C593 -12 711 102 711 308V700H551V314C551 181 494 126 395 126C297 126 239 181 239 314V700H77V308C77 102 195 -12 394 -12Z",788,77,-12,711,700],"V":["M293 0H453L756 700H595L379 200L166 700H-9Z",746,-9,0,756,700],"W":["M252 0H425L584 474L738 0H912L1141 700H986L823 204L663 700H513L348 208L190 700H22Z",1163,22,0,1141,700],"X":["M3 0H189L355 243L524 0H711L450 362L694 700H519L360 474L200 700H16L261 356Z",714,3,0,711,700],"Y":["M257 0H419V248L691 700H532L344 389L158 700H-14L257 249Z",676,-14,0,691,700],"Z":["M38 0H650V132H252L635 595V700H46V568H422L38 105Z",671,38,0,650,700],"a":["M402 0H548V307C548 470 453 546 289 546C203 546 116 523 57 481L113 372C152 403 211 422 268 422C352 422 392 383 392 316H268C104 316 37 250 37 155C37 62 112 -8 238 -8C317 -8 372 18 402 66ZM392 170C374 121 329 97 277 97C222 97 189 123 189 162C189 198 212 225 285 225H392Z",617,37,-8,548,546],"b":["M390 -8C541 -8 658 100 658 269C658 438 541 546 390 546C323 546 268 525 228 481V742H72V0H221V62C260 15 318 -8 390 -8ZM363 120C285 120 226 176 226 269C226 362 285 418 363 418C441 418 500 362 500 269C500 176 441 120 363 120Z",690,72,-8,658,742],"c":["M332 -8C445 -8 534 42 573 128L452 194C423 142 380 120 331 120C252 120 190 175 190 269C190 363 252 418 331 418C380 418 423 395 452 344L573 409C534 497 445 546 332 546C157 546 32 431 32 269C32 107 157 -8 332 -8Z",591,32,-8,573,546],"d":["M303 -8C375 -8 432 15 471 62V0H620V742H464V481C424 525 369 546 303 546C151 546 34 438 34 269C34 100 151 -8 303 -8ZM330 120C252 120 192 176 192 269C192 362 252 418 330 418C407 418 467 362 467 269C467 176 407 120 330 120Z",692,34,-8,620,742],"e":["M339 -8C436 -8 511 22 561 79L478 169C441 134 400 117 343 117C261 117 204 158 189 225H596C597 238 599 255 599 267C599 440 477 546 319 546C155 546 32 430 32 269C32 109 153 -8 339 -8ZM188 316C199 384 249 428 320 428C390 428 441 384 452 316Z",631,32,-8,599,546],"f":["M91 0H247V406H381V526H243V549C243 602 268 627 314 627C338 627 360 620 377 608L418 721C389 741 343 750 299 750C165 750 91 671 91 550V526H8V406H91Z",387,8,0,418,750],"g":["M325 -202C519 -202 627 -110 627 90V538H479V470C438 521 376 546 301 546C152 546 32 443 32 286C32 129 152 26 301 26C371 26 431 48 471 93V70C471 -27 423 -77 313 -77C244 -77 169 -53 123 -16L61 -128C124 -177 223 -202 325 -202ZM332 154C250 154 190 207 190 286C190 365 250 418 332 418C414 418 473 365 473 286C473 207 414 154 332 154Z",700,32,-202,627,546],"h":["M72 0H228V266C228 365 282 411 357 411C426 411 466 371 466 284V0H622V308C622 472 526 546 399 546C330 546 270 524 228 482V742H72Z",691,72,0,622,742],"i":["M72 0H228V538H72ZM150 613C209 613 248 651 248 703C248 751 208 787 150 787C93 787 53 749 53 700C53 651 93 613 150 613Z",301,53,0,248,787],"j":["M32 -202C162 -202 235 -123 235 1V538H79V0C79 -53 54 -78 15 -78C-11 -78 -34 -71 -51 -59L-93 -172C-63 -193 -16 -202 32 -202ZM157 613C215 613 254 651 254 703C254 751 214 787 157 787C99 787 59 749 59 700C59 651 99 613 157 613Z",307,-93,-202,254,787],"k":["M72 0H228V137L304 210L473 0H662L418 310L642 538H456L228 323V742H72Z",655,72,0,662,742],"l":["M72 0H228V742H72Z",301,72,0,228,742],"m":["M72 0H228V270C228 366 277 411 346 411C411 411 448 371 448 284V0H604V270C604 366 653 411 723 411C786 411 825 371 825 284V0H981V308C981 472 889 546 761 546C680 546 610 513 567 458C530 517 465 546 390 546C321 546 261 522 221 476V538H72Z",1049,72,0,981,546],"n":["M72 0H228V266C228 365 282 411 357 411C426 411 466 371 466 284V0H622V308C622 472 526 546 399 546C326 546 263 521 221 474V538H72Z",691,72,0,622,546],"o":["M328 -8C499 -8 623 107 623 269C623 431 499 546 328 546C157 546 32 431 32 269C32 107 157 -8 328 -8ZM328 120C250 120 190 176 190 269C190 362 250 418 328 418C406 418 465 362 465 269C465 176 406 120 328 120Z",655,32,-8,623,546],"p":["M390 -8C541 -8 658 100 658 269C658 438 541 546 390 546C318 546 260 523 221 476V538H72V-194H228V57C268 13 323 -8 390 -8ZM363 120C285 120 226 176 226 269C226 362 285 418 363 418C441 418 500 362 500 269C500 176 441 120 363 120Z",690,72,-194,658,546],"q":["M301 -8C367 -8 422 13 462 57V-194H618V538H469V476C430 523 373 546 301 546C149 546 32 438 32 269C32 100 149 -8 301 -8ZM328 120C250 120 190 176 190 269C190 362 250 418 328 418C405 418 465 362 465 269C465 176 405 120 328 120Z",690,32,-194,618,546],"r":["M72 0H228V254C228 357 285 404 371 404C383 404 393 403 406 402V546C323 546 259 519 221 467V538H72Z",431,72,0,406,546],"s":["M253 -8C414 -8 507 63 507 163C507 375 182 286 182 378C182 406 212 428 282 428C331 428 384 418 437 388L489 499C438 529 356 546 282 546C125 546 33 474 33 372C33 241 154 223 249 210C309 201 358 193 358 159C358 129 331 110 259 110C193 110 120 131 72 162L20 50C70 17 162 -8 253 -8Z",531,20,-8,507,546],"t":["M292 -8C340 -8 387 3 419 26L377 136C360 123 337 116 314 116C272 116 247 141 247 187V418H381V538H247V657H91V538H8V418H91V185C91 57 165 -8 292 -8Z",435,8,-8,419,657],"u":["M299 -8C364 -8 425 16 466 63V0H614V538H458V272C458 173 406 127 334 127C265 127 225 167 225 257V538H69V234C69 68 164 -8 299 -8Z",687,69,-8,614,538],"v":["M218 0H379L606 538H456L302 172L153 538H-8Z",598,-8,0,606,538],"w":["M195 0H345L470 335L591 0H741L936 538H798L667 173L539 538H407L275 174L148 538H1Z",937,1,0,936,538],"x":["M4 0H174L296 164L414 0H591L383 275L583 538H417L300 381L186 538H11L211 271Z",595,4,0,591,538],"y":["M140 -202C237 -202 311 -163 363 -33L606 538H456L304 172L153 538H-8L225 -4L223 -9C202 -57 178 -76 135 -76C104 -76 71 -63 47 -42L-10 -153C25 -184 85 -202 140 -202Z",598,-10,-202,606,538],"z":["M35 0H515V120H232L506 444V538H42V418H309L35 94Z",543,35,0,515,538],"0":["M339 -12C512 -12 639 119 639 350C639 581 512 712 339 712C167 712 39 581 39 350C39 119 167 -12 339 -12ZM339 125C259 125 203 191 203 350C203 509 259 575 339 575C420 575 476 509 476 350C476 191 420 125 339 125Z",679,39,-12,639,712],"1":["M147 0H309V700H7V570H147Z",392,7,0,309,700],"2":["M33 0H562V132H261L422 284C520 375 539 437 539 505C539 632 435 712 279 712C153 712 55 661 1 582L119 506C153 553 204 576 264 576C338 576 376 544 376 489C376 455 365 419 303 360L33 105Z",590,1,0,562,712],"3":["M266 -12C465 -12 556 96 556 214C556 317 492 395 366 416L524 595V700H34V570H331L188 407V300H262C354 300 393 267 393 214C393 157 343 124 262 124C189 124 115 147 62 187L-1 63C67 15 168 -12 266 -12Z",592,-1,-12,556,700],"4":["M31 147H408V0H566V147H680V279H566V410H413V279H226L531 700H361L31 256Z",689,31,0,680,700],"5":["M277 -12C477 -12 568 96 568 220C568 344 486 437 279 437H222L233 570H525V700H98L62 306H241C368 306 404 270 404 215C404 158 354 124 273 124C200 124 127 147 74 187L10 63C78 15 180 -12 277 -12Z",595,10,-12,568,700],"6":["M352 -12C500 -12 617 78 617 221C617 353 511 439 376 439C303 439 244 417 203 376C208 511 283 580 400 580C447 580 492 571 531 545L591 664C542 695 470 712 396 712C185 712 39 577 39 335C39 109 159 -12 352 -12ZM343 109C265 109 220 153 220 213C220 274 270 318 341 318C413 318 460 277 460 213C460 149 412 109 343 109Z",637,39,-12,617,712],"7":["M151 0H327L587 595V700H26V454H170V568H402Z",620,26,0,587,700],"8":["M329 -12C507 -12 625 71 625 203C625 278 586 334 518 368C570 400 600 449 600 512C600 635 490 712 329 712C170 712 60 635 60 512C60 449 90 401 141 368C74 334 35 278 35 203C35 71 152 -12 329 -12ZM329 107C249 107 199 146 199 208C199 270 249 308 329 308C410 308 461 270 461 208C461 146 410 107 329 107ZM329 419C263 419 221 452 221 505C221 560 264 593 329 593C395 593 439 560 439 505C439 452 396 419 329 419Z",660,35,-12,625,712],"9":["M241 -12C453 -12 598 123 598 365C598 591 479 712 285 712C137 712 20 622 20 479C20 347 126 261 261 261C334 261 394 283 435 324C430 189 354 120 238 120C190 120 145 129 107 155L47 36C96 5 167 -12 241 -12ZM297 382C225 382 178 423 178 487C178 551 226 591 295 591C372 591 417 547 417 487C417 426 368 382 297 382Z",637,20,-12,598,712],"&":["M621 -12 706 87 625 162C654 208 676 261 688 322L563 361C555 319 543 283 528 252L399 370C495 423 537 476 537 548C537 647 457 709 336 709C204 709 118 639 118 537C118 487 139 441 191 388C83 329 36 268 36 180C36 68 149 -12 303 -12C393 -12 473 16 538 66ZM445 151C407 124 362 110 314 110C237 110 189 146 189 197C189 240 212 272 276 309ZM314 450C271 492 260 513 260 539C260 576 288 603 336 603C381 603 405 579 405 545C405 514 383 487 314 450Z",728,36,-12,706,709],"@":["M519 -206C598 -206 687 -189 748 -158L716 -66C653 -97 582 -110 519 -110C297 -110 151 41 151 254C151 463 300 615 523 615C745 615 895 475 895 272C895 156 867 103 821 103C794 103 773 119 773 167V491H637V433C601 475 548 498 483 498C353 498 252 396 252 246C252 95 354 -7 483 -7C562 -7 619 24 654 80C675 23 724 -7 791 -7C914 -7 996 95 996 274C996 525 804 710 523 710C232 710 39 515 39 254C39 -10 230 -206 519 -206ZM514 108C441 108 390 160 390 246C390 331 441 382 514 382C586 382 639 333 639 246C639 158 586 108 514 108Z",1035,39,-206,996,710],"#":["M131 0H243L263 160H410L390 0H503L523 160H666V269H536L556 431H700L699 540H569L589 700H477L457 540H310L330 700H218L198 540H54V431H184L164 269H20V160H151ZM277 269 297 431H444L424 269Z",720,20,0,700,700],"%":["M201 322C303 322 374 396 374 515C374 634 303 708 201 708C99 708 27 633 27 515C27 397 99 322 201 322ZM676 -8C778 -8 850 67 850 185C850 303 778 378 676 378C575 378 503 303 503 185C503 67 575 -8 676 -8ZM140 0H259L737 700H618ZM201 404C158 404 128 441 128 515C128 589 158 626 201 626C245 626 274 590 274 515C274 440 245 404 201 404ZM676 74C633 74 603 110 603 185C603 260 633 296 676 296C720 296 749 259 749 185C749 111 720 74 676 74Z",877,27,-8,850,708],"+":["M235 119H364V289H538V411H364V581H235V411H62V289H235Z",599,62,119,538,581],"-":["M52 219H335V344H52Z",386,52,219,335,344],"*":["M170 347H264L262 469L372 403L421 485L312 544L421 604L372 686L262 620L264 742H170L171 620L61 686L13 604L122 544L13 485L61 403L171 469Z",434,13,347,421,742],"/":["M-33 -100H106L436 842H297Z",392,-33,-100,436,842],"=":["M62 413H538V535H62ZM62 165H538V287H62Z",599,62,165,538,535],".":["M131 -8C185 -8 228 33 228 90C228 148 185 186 131 186C77 186 34 148 34 90C34 33 77 -8 131 -8Z",262,34,-8,228,186],",":["M45 -154H144L201 -10C224 45 228 64 228 90C228 147 188 186 132 186C77 186 35 148 35 90C35 48 56 18 88 4Z",262,35,-154,228,186],":":["M131 -8C185 -8 228 33 228 90C228 148 185 186 131 186C77 186 34 148 34 90C34 33 77 -8 131 -8ZM131 352C185 352 228 392 228 449C228 507 185 546 131 546C77 546 34 507 34 449C34 392 77 352 131 352Z",262,34,-8,228,546],";":["M45 -154H144L201 -10C224 45 228 64 228 90C228 147 188 186 132 186C77 186 35 148 35 90C35 48 56 18 88 4ZM131 352C185 352 228 392 228 449C228 507 185 546 131 546C77 546 34 507 34 449C34 392 77 352 131 352Z",262,34,-154,228,546],"!":["M83 243H207L238 700H52ZM145 -8C201 -8 241 33 241 83C241 134 201 172 145 172C89 172 49 134 49 83C49 33 89 -8 145 -8Z",289,49,-8,241,700],"?":["M217 243H368C368 349 536 367 536 527C536 645 432 712 282 712C147 712 53 660 -1 578L120 507C152 553 201 581 265 581C330 581 373 550 373 501C373 414 217 383 217 243ZM293 -8C349 -8 389 33 389 83C389 134 349 172 293 172C237 172 197 134 197 83C197 33 237 -8 293 -8Z",589,-1,-8,536,712],"(":["M198 -194H347C262 -44 226 106 226 274C226 442 262 592 347 742H198C118 623 73 458 73 274C73 90 118 -73 198 -194Z",357,73,-194,347,742],")":["M10 -194H159C241 -73 285 90 285 274C285 458 241 623 159 742H10C96 592 132 442 132 274C132 106 96 -44 10 -194Z",358,10,-194,285,742],"[":["M83 -194H354V-72H239V620H354V742H83Z",368,83,-194,354,742],"]":["M15 -194H285V742H15V620H129V-72H15Z",368,15,-194,285,742],"{":["M318 -194H376V-72H358C309 -72 285 -45 285 2V162C285 230 264 260 218 274C264 288 285 318 285 386V546C285 593 309 620 358 620H376V742H318C193 742 129 678 129 563V382C129 350 112 335 85 335H52V213H85C112 213 129 198 129 166V-15C129 -130 193 -194 318 -194Z",391,52,-194,376,742],"}":["M15 -194H73C198 -194 262 -130 262 -15V166C262 198 279 213 306 213H339V335H306C279 335 262 350 262 382V563C262 678 198 742 73 742H15V620H33C82 620 106 593 106 546V386C106 318 127 288 173 274C127 260 106 230 106 162V2C106 -45 82 -72 33 -72H15Z",391,15,-194,339,742],"<":["M538 104V229L205 350L538 472V596L62 415V285Z",599,62,104,538,596],">":["M62 104 538 285V415L62 596V472L395 350L62 229Z",599,62,104,538,596],"'":["M59 416H171L182 700H49Z",230,49,416,182,700],"\"":["M59 416H171L182 700H49ZM265 416H377L388 700H255Z",437,49,416,388,700],"$":["M275 -120H375V-8C533 10 610 101 610 205C610 347 486 383 375 409V580C425 574 478 557 530 527L580 650C524 685 450 705 375 710V820H275V708C118 690 42 600 42 494C42 352 164 314 275 288V120C204 128 133 155 83 191L28 69C83 26 177 -4 275 -11ZM375 124V263C419 248 449 229 449 193C449 160 427 134 375 124ZM275 434C232 449 203 468 203 502C203 535 224 564 275 576Z",638,28,-120,610,820],"\u20ac":["M506 -12C628 -12 728 32 794 113L691 209C643 154 584 126 514 126C424 126 352 169 316 239H569V323H292C291 331 290 341 290 350C290 359 291 369 292 377H569V461H316C352 531 424 574 514 574C584 574 643 546 691 492L794 588C728 668 628 712 506 712C328 712 188 612 143 461H30V377H128C127 368 127 359 127 350C127 341 127 332 128 323H30V239H143C188 88 328 -12 506 -12Z",811,30,-12,794,712],"\u00a3":["M30 0H636V130H293V302H533V399H293V428C293 525 351 574 457 574C511 574 564 564 607 538L656 666C603 696 537 712 455 712C249 712 130 603 130 425V399H30V302H130V130H30Z",668,30,0,656,712],"^":["M57 141H177L300 437L423 141H543L363 559H238Z",600,57,141,543,559],"~":["M400 251C486 251 547 316 550 442H452C450 394 427 364 390 364C338 364 294 451 200 451C113 451 52 386 50 260H147C149 308 173 338 209 338C262 338 306 251 400 251Z",599,50,251,550,451],"_":["M0 -90H500V0H0Z",500,0,-90,500,0],"|":["M83 -194H226V742H83Z",309,83,-194,226,742],"\\":["M287 -100H426L96 842H-43Z",392,-43,-100,426,842]," ":["",283,0,0,0,0]}};
+function buildText(hs){
+  const s=[...(txt.value||'')].slice(0,2);
+  if(!s.length) return '';
+  const track=(+trk.value)/1000*FONT.upm;
+  let ox=0, parts=[], X0=1e9,Y0=1e9,X1=-1e9,Y1=-1e9, ink=false;
+  for(const ch of s){
+    const g=FONT.g[ch];
+    if(!g) continue;
+    if(g[0]){
+      parts.push(`<path d="${g[0]}" transform="translate(${ox.toFixed(1)} 0)"/>`);
+      X0=Math.min(X0,g[2]+ox); Y0=Math.min(Y0,g[3]);
+      X1=Math.max(X1,g[4]+ox); Y1=Math.max(Y1,g[5]); ink=true;
+    }
+    ox+=g[1]+track;
+  }
+  if(!ink) return '';
+  const bw=Math.max(1,X1-X0), bh=Math.max(1,Y1-Y0);
+  const mx=(X0+X1)/2, my=(Y0+Y1)/2, ap=CH_AP0*hs;
+  const sc=Math.min(2*ap*0.78/bw, 2*ap*0.70/bh)*(+tsize.value/100);
+  return `<g transform="translate(512 512) scale(${sc.toFixed(5)} ${(-sc).toFixed(5)})`
+       + ` translate(${(-mx).toFixed(1)} ${(-my).toFixed(1)})" fill="${tcol.value}">`
+       + parts.join('')+'</g>';
+}
+
+/* ---------- assemble ---------- */
+let bgMode='light';
+const centreRadius=hs=>Math.max(0, CH_F0 + CH_AP0*(hs-1));
+/* icon.svg spans 942 of the 1024 canvas; the assembled cube is 806.02 tall at its
+   natural size and is already centred on 512,512, so scale it about the centre to
+   sit in the same safe area. Height is the binding dimension, so it drives the fit. */
+const FIT=471.04/403.012;
+
+function buildSVG(pal,forExport){
+  const hs=+hexs.value/100;
+  const apDark=CH_AP0*hs*L2G;                              // centre hexagon, in g9 local units
+  const apSplit=apDark+(+split.value/100)*(AP_OUT-apDark);
+  const rSplit=apSplit/Math.cos(Math.PI/6);
+  const fSplit=Math.max(0,FILL_OUT-(AP_OUT-apSplit));
+  const U='-'+Math.random().toString(36).slice(2,8);        // unique ids per document
+  let defs=`<clipPath id="cTop${U}" clipPathUnits="userSpaceOnUse"><path d="${roundedHex(CX,CY,rSplit,fSplit)}"/></clipPath>`;
+  PIECES.forEach(p=>{defs+=`<clipPath id="cW-${p.id}${U}" clipPathUnits="userSpaceOnUse"><path d="${halfPlane(p.elbow)}"/></clipPath>`;});
+  let body='';
+  PIECES.forEach((p,i)=>{body+=`<path d="${sector(p.a0,p.a1)}" fill="${pal[i].hex}"/>`;});
+  PIECES.forEach((p,i)=>{body+=`<path d="${p.d}" fill="${shade(pal[i].hex,wallDL(p.elbow-30))}"/>`;});
+  PIECES.forEach((p,i)=>{body+=`<path d="${p.d}" fill="${shade(pal[i].hex,wallDL(p.elbow+30))}" clip-path="url(#cW-${p.id}${U})"/>`;});
+  /* Re-lay the wedges over the walls before the top faces. Inside the bevel every wall
+     pixel is also a top-face pixel, so this changes nothing visible except the join:
+     the top face now meets its own wedge colour instead of antialiasing against the
+     darker wall underneath, which is what showed up as a seam. */
+  PIECES.forEach((p,i)=>{body+=`<path d="${sector(p.a0,p.a1,520)}" fill="${pal[i].hex}" clip-path="url(#cTop${U})"/>`;});
+  PIECES.forEach((p,i)=>{body+=`<path d="${p.d}" fill="${pal[i].hex}" clip-path="url(#cTop${U})"/>`;});
+  const centre=showhex.checked
+    ? `<path d="${roundedHex(512,512,CH_AP0*hs/Math.cos(Math.PI/6),centreRadius(hs))}" fill="${hexc.value}"/>` : '';
+  const back=(forExport && bgon.checked && bgMode!=='checker')
+    ? `<rect width="1024" height="1024" fill="${bgMode==='dark'?'#14161a':'#ffffff'}"/>` : '';
+  return (forExport?'<?xml version="1.0" encoding="UTF-8"?>\n':'')
+       + `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">`
+       + `<defs>${defs}</defs>${back}`
+       + `<g transform="translate(512 512) scale(${FIT.toFixed(5)}) translate(-512 -512)">`
+       + `<g transform="${GT}">${body}</g>${centre}${buildText(hs)}</g></svg>`;
+}
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+const rot_=$('rot'),chr=$('chr'),l0=$('l0'),l1=$('l1'),l2=$('l2'),auto=$('auto'),
+      light=$('light'),amb=$('amb'),amp=$('amp'),split=$('split'),
+      hexs=$('hexs'),hexc=$('hexc'),showhex=$('showhex'),bgon=$('bgon'),
+      txt=$('txt'),tsize=$('tsize'),trk=$('trk'),tcol=$('tcol');
+const PRESETS={0:'icon.svg',45:'Lime / Magenta / Rust',90:'Turquoise / Rose / Olive',
+  135:'Cyan / Amber / Forest',180:'Steel / Olive / Aqua',225:'Violet / Jade / Sky',
+  270:'Magenta / Aqua / Azure',315:'Rust / Sky / Orchid'};
+Object.entries(PRESETS).forEach(([k,v])=>{
+  const b=document.createElement('button');b.textContent=v;
+  b.onclick=()=>{rot_.value=k;render();};$('presets').appendChild(b);});
+$('reset').onclick=()=>{rot_.value=0;chr.value=100;l0.value=76.5;l1.value=48.2;l2.value=51.1;
+  light.value=180;amb.value=16;amp.value=8;split.value=38;hexs.value=100;
+  hexc.value='#272727';auto.checked=true;permIdx=0;render();};
+document.querySelector('[data-perm]').onclick=()=>{
+  auto.checked=false;permIdx=(permIdx+1)%6;render();};
+$('bgseg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  bgMode=b.dataset.bg;
+  $('bgseg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  $('stage').className='stage '+bgMode;});
+
+let cur=[];
+function render(){
+  const pal=cur=palette(), hs=+hexs.value/100;
+  $('o_rot').textContent='+'+rot_.value+'°';
+  $('o_chr').textContent=chr.value+'%';
+  $('o_l0').textContent='L* '+(+l0.value).toFixed(1);
+  $('o_l1').textContent='L* '+(+l1.value).toFixed(1);
+  $('o_l2').textContent='L* '+(+l2.value).toFixed(1);
+  $('o_light').textContent=light.value+'°';
+  $('o_amb').textContent='−'+(+amb.value).toFixed(1);
+  $('o_amp').textContent='±'+(+amp.value).toFixed(1);
+  $('o_split').textContent=split.value+'%';
+  $('o_hex').textContent=hexs.value+'%';
+  $('o_hexr').textContent=centreRadius(hs).toFixed(1)+' px';
+  $('o_hexc').textContent=hexc.value;
+  $('o_tsize').textContent=tsize.value+'%';
+  $('o_trk').textContent=(trk.value>0?'+':'')+trk.value;
+  $('o_tcol').textContent=tcol.value;
+
+  $('stage').innerHTML=buildSVG(pal,false);
+
+  const stops=[];
+  for(let a=0;a<=360;a+=10) stops.push(lch2hex(62,45,(a-90+360)%360).hex+' '+a+'deg');
+  $('wheel').style.background='conic-gradient('+stops.join(',')+')';
+  const w=$('wheel').parentElement;
+  [...w.querySelectorAll('i')].forEach(e=>e.remove());
+  pal.forEach(c=>{
+    const a=c.h*Math.PI/180, i=document.createElement('i');
+    i.style.left=(56+47*Math.cos(a))+'px';
+    i.style.top =(56+47*Math.sin(a))+'px';
+    i.style.background=c.hex;w.appendChild(i);});
+  const la=(+light.value)*Math.PI/180;
+  $('lightarrow').style.left=(56+64*Math.cos(la)-6)+'px';
+  $('lightarrow').style.top =(56+64*Math.sin(la)-5)+'px';
+  $('lightarrow').style.transform='rotate('+(+light.value+90)+'deg)';
+
+  let html='';
+  PIECES.forEach((p,i)=>{
+    const c=pal[i], a=shade(c.hex,wallDL(p.elbow-30)), b=shade(c.hex,wallDL(p.elbow+30));
+    html+=`<div class="grp"><h3>${p.place} piece<span>L* ${c.L.toFixed(1)} &middot; C* ${c.got.toFixed(1)} &middot; h ${c.h.toFixed(0)}°</span></h3><div class="sw">`;
+    [[c.hex,'top'],[a,((p.elbow+330)%360)+'°'],[b,((p.elbow+30)%360)+'°']].forEach(([hx,lb])=>{
+      html+=`<div class="cell" data-hex="${hx}"><div class="chip" style="background:${hx}"></div>`
+          + `<div class="cap"><span>${hx}</span><b>${lb}</b></div></div>`;});
+    html+='</div></div>';
+  });
+  $('swatches').innerHTML=html;
+  $('swatches').querySelectorAll('.cell').forEach(el=>{
+    el.onclick=()=>{navigator.clipboard.writeText(el.dataset.hex);
+      const s=el.querySelector('.cap span'),t=s.textContent;
+      s.textContent='copied';setTimeout(()=>s.textContent=t,800);};});
+
+  const worst=Math.min(...pal.map(c=>c.got/c.C));
+  $('gamut').textContent = worst<0.97
+    ? 'Chroma clipped to '+(worst*100).toFixed(0)+'% of target on at least one hue — lower Lightness A or reduce Chroma to recover it.' : '';
+  const gaps=[0,1,2].map(i=>(((pal[(i+1)%3].h-pal[i].h)%360)+360)%360);
+  $('meta').textContent='Hue distances '+gaps.map(g=>g.toFixed(1)).join('° / ')+'° — preserved from icon.svg.';
+}
+['input','change'].forEach(ev=>document.querySelectorAll('input')
+  .forEach(el=>el.addEventListener(ev,render)));
+
+function dl(name,blob){
+  const u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download=name; a.style.display='none';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(u);},4000);
+}
+$('dlsvg').onclick=()=>dl('icon-'+rot_.value+'.svg',
+  new Blob([buildSVG(cur,true)],{type:'image/svg+xml'}));
+$('dlpng').onclick=()=>{
+  const img=new Image();
+  img.onload=()=>{const c=document.createElement('canvas');c.width=c.height=1024;
+    c.getContext('2d').drawImage(img,0,0);
+    c.toBlob(b=>dl('icon-'+rot_.value+'.png',b));};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(buildSVG(cur,true));};
+$('cpjson').onclick=()=>{
+  const o={rotation:+rot_.value,light:+light.value,pieces:{}};
+  PIECES.forEach((p,i)=>{o.pieces[p.place]={face:cur[i].hex,
+    wall:[shade(cur[i].hex,wallDL(p.elbow-30)),shade(cur[i].hex,wallDL(p.elbow+30))],
+    Lstar:+cur[i].L.toFixed(1),Cstar:+cur[i].got.toFixed(1),hue:+cur[i].h.toFixed(1)};});
+  navigator.clipboard.writeText(JSON.stringify(o,null,2));
+  $('cpjson').textContent='Copied';setTimeout(()=>$('cpjson').textContent='Copy palette JSON',900);};
+
+render();
+</script>
+</body>
+</html>
