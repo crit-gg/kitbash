@@ -177,21 +177,46 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                    <StackPanel Orientation="Horizontal"
-                                Spacing="5"
-                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="Center">
-                        <ContentPresenter Content="{TemplateBinding Content}"
-                                          VerticalAlignment="Center"
-                                          TextElement.LetterSpacing="{DynamicResource LetterSpacingLabel}" />
+                    <DockPanel LastChildFill="True">
+                        <!-- The chevron alone opens the menu, so the common action, which is
+                             sorting, never costs one. -->
+                        <Border Name="PART_Menu"
+                                DockPanel.Dock="Right"
+                                Background="Transparent"
+                                Width="14"
+                                VerticalAlignment="Stretch"
+                                IsVisible="False">
+                            <ui:Icon Glyph="ChevronDown"
+                                     Size="{DynamicResource IconSizeCaret}"
+                                     Foreground="{DynamicResource InkMuted}"
+                                     VerticalAlignment="Center" />
+                        </Border>
 
-                        <Path Name="PART_Sort"
-                              Width="6"
-                              Height="4"
-                              Fill="{DynamicResource Accent}"
-                              VerticalAlignment="Center"
-                              IsVisible="False" />
-                    </StackPanel>
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="5"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="Center">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              VerticalAlignment="Center"
+                                              TextElement.LetterSpacing="{DynamicResource LetterSpacingLabel}" />
+
+                            <Path Name="PART_Sort"
+                                  Width="6"
+                                  Height="4"
+                                  Fill="{DynamicResource Accent}"
+                                  VerticalAlignment="Center"
+                                  IsVisible="False" />
+
+                            <!-- Which key this column is in a sort of more than one. Nothing
+                                 is drawn when it is the only one. -->
+                            <TextBlock Name="PART_Ordinal"
+                                       Text="{TemplateBinding Ordinal}"
+                                       FontSize="{DynamicResource FontSizeCaption}"
+                                       Foreground="{DynamicResource Accent}"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{TemplateBinding HasOrdinal}" />
+                        </StackPanel>
+                    </DockPanel>
                 </Border>
             </ControlTemplate>
         </Setter>
@@ -209,6 +234,27 @@
 
         <Style Selector="^:sortable:pointerover">
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <!-- The chevron arrives on hover and stays while the menu is open, so a resting
+             header is a label and nothing else. -->
+        <Style Selector="^:menued:pointerover /template/ Border#PART_Menu">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:menu /template/ Border#PART_Menu">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:menu">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+        </Style>
+
+        <!-- An unsorted header reveals a muted caret on hover, so a sortable column says so
+             before it is clicked. -->
+        <Style Selector="^:sortable:pointerover:not(:sorted) /template/ Path#PART_Sort">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Fill" Value="{DynamicResource InkDisabled}" />
         </Style>
 
         <Style Selector="^:sorted">

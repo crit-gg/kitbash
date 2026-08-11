@@ -709,9 +709,10 @@ anchor, the handle and the footer's aggregates. **Control and drag for a second 
 built**, since it turns the one block into a list of them and every reader of the block would
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
-**5. Column power. Started.** `ColumnGestures`, fit to contents and multi column sort from
-the header are built. **Reorder, pin, the chooser and persistence in two layers are not**,
-and the header menu they hang off is not either. Still brings the column state key. Draws the header menu, the multi key ordinals
+**5. Column power. Most of the way.** `ColumnGestures`, fit to contents, multi column sort
+from the header, the header menu and hiding a column are built, along with the caret on
+hover and the ordinal beside it. **Reorder, pin, the chooser and persistence in two layers
+are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -874,7 +875,27 @@ key over a hierarchy has no meaning the design has settled.
 
 **The footer spells the sort out and stops at three.** Past that it says how many more,
 since a footer that runs out of room says nothing at all. The ordinal beside the caret is
-not drawn yet, which is the header menu's design and comes with the rest of phase 5.
+drawn from `GridColumn.SortOrder`, which is zero when a column is the only key, so nothing
+is drawn for an ordinary sort.
+
+**The menu has five of the design's seven items, and leaves two out rather than disabling
+them.** Sort ascending, sort descending, clear sort on this column, group by this column and
+hide column. **Pin to the left is left out because pinning is not built**, and **filter on
+this column is left out because there is no filter surface**, only `GridRows.Filter` under
+it. Clear sort only appears when there is a sort to clear, and an item nothing can answer is
+left out rather than shown greyed, so the menu never promises something that does nothing.
+**A column whose menu would be empty grows no chevron at all**, which is why the launcher's
+three settings grids are untouched by this.
+
+**Grouping from the menu toggles.** Choosing the column already grouped by drops the
+grouping, so the one item does both and there is no separate ungroup.
+
+**The tree grid answers the menu by cycling.** Its sort only knows next, so asking for a
+named direction steps it round until it lands, at most twice. It offers no grouping at all,
+since a hierarchy is already one.
+
+**The last column showing can never be hidden**, whatever the gesture says, since a grid
+with no columns has nothing left to put one back through.
 
 ## Where phase 4 has departed so far
 

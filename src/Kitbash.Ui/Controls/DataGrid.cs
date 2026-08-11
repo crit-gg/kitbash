@@ -57,6 +57,7 @@ public class DataGrid : ListBox, IGridHost
     private readonly GridBody body;
 
     private GridRows? rows;
+    private GridColumn? grouped;
     private bool dropping;
 
     /// <summary>What was picked and where the body sat, held across one rebuild.</summary>
@@ -201,6 +202,38 @@ public class DataGrid : ListBox, IGridHost
     /// Sorts on a column, cycling up, then down, then back to the order the source came
     /// in, so a person can always get back to where they started.
     /// </summary>
+    bool IGridHost.CanGroup => true;
+
+    /// <summary>
+    /// Groups on a column's own value, or drops the grouping when it is already the one
+    /// grouped by, so the menu item toggles rather than only ever turning it on.
+    /// </summary>
+    void IGridHost.GroupBy(GridColumn column)
+    {
+        if (rows is null)
+        {
+            return;
+        }
+
+        CommitEdit();
+
+        var same = ReferenceEquals(grouped, column);
+
+        grouped = same ? null : column;
+        rows.Group(same ? null : item => column.ValueOf(item));
+    }
+
+    void IGridSorting.SetSort(GridColumn column, GridSortDirection direction)
+    {
+        if (rows is null || !column.CanSort)
+        {
+            return;
+        }
+
+        CommitEdit();
+        rows.Sort(direction == GridSortDirection.None ? null : column, direction);
+    }
+
     void IGridSorting.SortBy(GridColumn column, bool adds) => SortBy(column, adds);
 
     internal void SortBy(GridColumn column, bool adds = false)

@@ -39,6 +39,13 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// <summary>Whether this column can be fitted to what is on screen.</summary>
     public bool CanFit(GridColumn column) => Gestures.HasFlag(ColumnGestures.FitToContents) && column.CanResize;
 
+    /// <summary>
+    /// Whether this column can be taken off. The last one showing never can, since a grid
+    /// with no columns is a grid nothing can be put back through.
+    /// </summary>
+    public bool CanHide(GridColumn column) =>
+        Gestures.HasFlag(ColumnGestures.Hide) && column.IsVisible && Reachable.Count > 1;
+
     /// <summary>The columns a person can reach, in the order they are drawn.</summary>
     public IReadOnlyList<GridColumn> Reachable => [.. this.Where(column => column.IsVisible)];
 

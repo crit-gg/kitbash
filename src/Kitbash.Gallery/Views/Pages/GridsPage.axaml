@@ -10,7 +10,7 @@
             <Border Classes="panel">
                 <StackPanel Spacing="14">
                     <TextBlock Classes="note"
-                               Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, shift and click to add a second key, drag the edge between two titles to resize and double click that edge to fit the column to what is on screen. Double click a value to edit it in place, and Escape puts the old one back." />
+                               Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, shift and click to add a second key, drag the edge between two titles to resize and double click that edge to fit the column to what is on screen. Double click a value to edit it in place, and Escape puts the old one back. Hover a title for the chevron, which opens what that column allows." />
 
                     <TextBlock Classes="note"
                                Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do. Edit a value and the row wears the amber bar until it is saved." />
@@ -22,7 +22,7 @@
                                  Height="342"
                                  SelectionMode="Multiple"
                                  CellActions="Copy,Cut,Paste,Clear,Fill"
-                                 ColumnGestures="Resize,FitToContents,MultiSort">
+                                 ColumnGestures="Resize,FitToContents,MultiSort,Hide">
                         <ui:DataGrid.Toolbar>
                             <DockPanel LastChildFill="False">
                                 <ui:SearchBox Name="GridFilter"

@@ -158,12 +158,154 @@ public sealed class GridColumnGestureTests
         }
     }
 
+    /// <summary>The menu offers what the grid and the column between them allow.</summary>
+    [AvaloniaFact]
+    public void TheMenuOffersOnlyWhatIsAllowed()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.Hide;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(
+                ["Sort ascending", "Sort descending", "Group by this column", "Hide column"],
+                Menu(window, grid, grid.Columns[0]));
+
+            // Sorted, so clearing it is offered too.
+            Click(grid, grid.Columns[0]);
+
+            Assert.Contains("Clear sort on this column", Menu(window, grid, grid.Columns[0]));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>A grid that may not hide a column does not offer to.</summary>
+    [AvaloniaFact]
+    public void HidingNeedsTheGesture()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            Assert.DoesNotContain("Hide column", Menu(window, grid, grid.Columns[0]));
+
+            grid.ColumnGestures = ColumnGestures.Hide;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Contains("Hide column", Menu(window, grid, grid.Columns[0]));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>Hiding takes the column off and the rest take the room back.</summary>
+    [AvaloniaFact]
+    public void HidingTakesTheColumnOff()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.Hide;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(3, grid.Columns.Reachable.Count);
+
+            grid.Columns[0].IsVisible = false;
+            Dispatcher.UIThread.RunJobs();
+            grid.UpdateLayout();
+
+            Assert.Equal(2, grid.Columns.Reachable.Count);
+
+            // And the last one showing can never be taken off.
+            grid.Columns[1].IsVisible = false;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.False(grid.Columns.CanHide(grid.Columns[2]));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>The ordinal beside the caret only shows in a sort of more than one.</summary>
+    [AvaloniaFact]
+    public void TheOrdinalOnlyShowsWithASecondKey()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.MultiSort;
+            Dispatcher.UIThread.RunJobs();
+
+            Click(grid, grid.Columns[0]);
+
+            Assert.False(Title(grid, grid.Columns[0]).HasOrdinal);
+
+            Click(grid, grid.Columns[1], shift: true);
+
+            Assert.True(Title(grid, grid.Columns[0]).HasOrdinal);
+            Assert.Equal("1", Title(grid, grid.Columns[0]).Ordinal);
+            Assert.Equal("2", Title(grid, grid.Columns[1]).Ordinal);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// What the menu offers for a column, in the order it offers it. The chevron is pressed
+    /// and the items are read off the flyout that opens, so the menu itself is what is under
+    /// test rather than a list built beside it.
+    /// </summary>
+    private static List<string> Menu(Window window, DataGrid grid, GridColumn column)
+    {
+        var title = Title(grid, column);
+        var chevron = Chevron(title);
+
+        chevron.RaiseEvent(new PointerPressedEventArgs(
+            chevron,
+            new Pointer(0, PointerType.Mouse, true),
+            chevron,
+            default,
+            0,
+            new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonPressed),
+            KeyModifiers.None));
+
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return
+        [
+            .. window.GetVisualDescendants()
+                .OfType<MenuItem>()
+                .Select(item => item.Header?.ToString() ?? string.Empty),
+        ];
+    }
+
+    private static Border Chevron(DataGridHeaderCell title) =>
+        title.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "PART_Menu");
+
+    private static DataGridHeaderCell Title(DataGrid grid, GridColumn column) =>
+        grid.GetVisualDescendants()
+            .OfType<DataGridHeaderCell>()
+            .First(cell => ReferenceEquals(cell.Column, column));
+
     /// <summary>A left click on a column's title, which is the only way in from outside.</summary>
     private static void Click(DataGrid grid, GridColumn column, bool shift = false)
     {
-        var title = grid.GetVisualDescendants()
-            .OfType<DataGridHeaderCell>()
-            .First(cell => ReferenceEquals(cell.Column, column));
+        var title = Title(grid, column);
 
         title.RaiseEvent(new PointerReleasedEventArgs(
             title,

@@ -11,4 +11,10 @@ internal interface IGridHost : IGridSorting
 
     /// <summary>Where editing and the current cell are kept.</summary>
     GridBody Body { get; }
+
+    /// <summary>Whether this grid groups rows at all, which a tree does not.</summary>
+    bool CanGroup { get; }
+
+    /// <summary>Groups by a column, or drops the grouping when it is already on that one.</summary>
+    void GroupBy(GridColumn column);
 }

@@ -152,6 +152,25 @@ public class TreeDataGrid : Tree, IGridHost
     /// Sorts siblings under every parent, which is what sorting a hierarchy means. A tree
     /// closes when it is sorted, since the rows are built again from the roots.
     /// </summary>
+    // A hierarchy is already a grouping, so there is nothing here for a second one to mean.
+    bool IGridHost.CanGroup => false;
+
+    void IGridHost.GroupBy(GridColumn column)
+    {
+    }
+
+    void IGridSorting.SetSort(GridColumn column, GridSortDirection direction)
+    {
+        if (column.SortDirection != direction)
+        {
+            // The tree only cycles, so it is stepped round until it lands on what was asked.
+            for (var step = 0; step < 3 && column.SortDirection != direction; step++)
+            {
+                SortBy(column);
+            }
+        }
+    }
+
     // A tree sorts siblings under every parent, and a second key over a hierarchy has no
     // meaning the design has settled, so a shift click here is an ordinary one.
     void IGridSorting.SortBy(GridColumn column, bool adds) => SortBy(column);

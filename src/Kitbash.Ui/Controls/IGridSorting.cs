@@ -14,6 +14,9 @@ internal interface IGridSorting
     /// extend a selection.
     /// </param>
     void SortBy(GridColumn column, bool adds = false);
+
+    /// <summary>Sorts a column a named way, which is what the header menu asks for.</summary>
+    void SetSort(GridColumn column, GridSortDirection direction);
 }
 
 /// <summary>
