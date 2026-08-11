@@ -261,24 +261,21 @@
         <Setter Property="MinHeight" Value="0" />
     </Style>
 
-    <!-- No focus halo either. The cell already rings itself in the accent while it is being
-         edited, and a halo outside that ring lands on the cells beside it. The halo's own
-         thickness is a literal in each template, so what is taken away is its colour.
+    <!-- No focus ring of any kind inside a cell. The cell already rings itself in the accent
+         while it is being edited, and a halo reaching outside a 31px cell lands on the cells
+         above and below it.
 
-         Each state is named rather than left off. A style carrying a pseudo class is a
-         trigger and outranks a plain style whatever the file order, so a stateless rule here
-         is accepted and loses to the very rules it is meant to replace. -->
-    <Style Selector=":is(ui|DataGridCell) TextBox:focus-within /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) ComboBox:focus-within /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) ButtonSpinner:focus-within /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) NumericUpDown:focus-within /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) TextBox:focus-visible /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) ComboBox:focus-visible /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) ButtonSpinner:focus-visible /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) NumericUpDown:focus-visible /template/ Border#PART_Halo,
-                    :is(ui|DataGridCell) CheckBox:focus-visible /template/ Border#PART_Focus,
-                    :is(ui|DataGridCell) Button:focus-visible /template/ Border#PART_Focus">
-        <Setter Property="BorderBrush" Value="Transparent" />
+         Taken out rather than made transparent. Its thickness and its reach are literals in
+         each template and a literal is a local value no style can beat, so a colourless halo
+         still holds 2px of reach. Nothing sets IsVisible on either part, so a plain rule wins
+         and the element goes.
+
+         The two names cover every templated control in the library, so this is one pair of
+         rules rather than one per type. Scoped to the cell, so the toolbar and the footer
+         keep their focus rings like any other chrome. -->
+    <Style Selector=":is(ui|DataGridCell) :is(TemplatedControl) /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) :is(TemplatedControl) /template/ Border#PART_Focus">
+        <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <!-- The chevron is the cell's, so the field draws none of its own and there is never a

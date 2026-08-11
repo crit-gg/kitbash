@@ -1364,3 +1364,39 @@ selection and so belongs to phase 4.
 - Avalonia's own TreeDataGrid, for the names the platform already uses
 - Pencil and Paper's enterprise data table analysis, for the conventions that are
   conventions rather than contracts
+
+## Where the in cell forms were aligned to the design
+
+Read from `Theme Slate - Data Grid.dc.html` rather than from memory, after the first pass had
+drifted.
+
+**The cell owns every piece of chrome and a control in one draws none.** No frame, no radius,
+no padding, no fill, no focus ring. The cell draws the row hover underline, the cell hover
+ring, the editing well and its accent ring.
+
+**`GridColumn.Kind` is what made that expressible.** A cell shows its value through the cell
+template until a double click opens an editor, so the chevron and the jump mark cannot come
+from the editor. Enum and reference show theirs on row hover and reserve the room from the
+start, so nothing reflows under the pointer. **A number has no stepper**, by decision: a
+stepper in a cell is a widget in a column that is supposed to read as numbers.
+
+**Three kinds are content rather than chrome**, so they are controls: `ui:GridRefCell`,
+`ui:GridRatioCell` and `ui:GridTagsCell`. A keyed theme cannot supply a mark beside a name, a
+bar behind a value or chips with a count after them.
+
+**A read only cell holds `InkSecondary` and never lifts off it.** The first reading of this
+was wrong: the matrix's READ ONLY column is `#5c6169`, and that column is the archived row the
+editable cell hint section describes, not a read only column. The design's own rule is that a
+read only cell simply never reacts, so pinning the resting ink is the whole of it. A picked
+row hands every cell `SelectionInk` regardless, since a quiet ink on the tint reads as damage.
+
+**Two Avalonia rules cost a round trip each and are now in `.claude/avalonia.md`.** A
+`TemplateBinding` outranks a style, so flattening a field has to be set on the control and on
+every inner type. And a style carrying a pseudo class is a trigger that outranks a plain
+style whatever the file order, so a stateless rule loses to the very rules it replaces.
+
+**The halo is removed rather than made transparent.** Its thickness and reach are literals in
+each template, which no style can beat, so a colourless halo still held its reach. `IsVisible`
+is set by nothing, so a plain rule takes the element out. One pair of rules over
+`PART_Halo` and `PART_Focus` covers every templated control, scoped to the cell so the toolbar
+and the footer keep their focus rings.

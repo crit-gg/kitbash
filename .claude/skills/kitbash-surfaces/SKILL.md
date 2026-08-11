@@ -417,8 +417,11 @@ of it.** Read that before changing anything below the look. What it settled, in 
   through the cell template until a double click opens one, so the chevron and the jump mark
   are the cell's own. Enum and reference show theirs on row hover and reserve the room from
   the start, so nothing reflows under the pointer. **A number has no stepper at all.**
-- **A read only cell rests at `InkDisabled`**, in every grid including one that edits nothing,
-  and it is also the cell that never reacts to a pointer.
+- **A read only cell holds `InkSecondary` and never lifts off it.** It is the cell that does
+  not react, not the cell that is dimmer, so pinning the resting ink is the whole of it. A
+  picked row hands every cell `SelectionInk`, read only or not, since a quiet ink on the tint
+  reads as damage. `InkDisabled` in the design's matrix is the archived row, not a read only
+  column.
 - **A selection spans the pages, and it is two lists.** `SelectedItems` is what is picked and
   on the page, which copy and the block read. `PickedItems` is the whole set, which a set wide
   action reads. A filter unpicks what it hides, a page turn does not, and `GridRows.Keeps` is

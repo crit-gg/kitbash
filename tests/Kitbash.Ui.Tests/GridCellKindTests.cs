@@ -124,7 +124,10 @@ public sealed class GridCellKindTests
         }
     }
 
-    /// <summary>A read only cell rests a tier below the row, which is the whole signal.</summary>
+    /// <summary>
+    /// A read only cell holds the resting ink and never lifts off it, which is the whole
+    /// signal. It is the cell that does not react, not the cell that is dimmer.
+    /// </summary>
     [AvaloniaFact]
     public void AReadOnlyCellRestsQuieter()
     {
@@ -134,7 +137,7 @@ public sealed class GridCellKindTests
         {
             var cell = Cells(grid).First();
 
-            Assert.Equal(window.FindResource("InkDisabled"), cell.Foreground);
+            Assert.Equal(window.FindResource("InkSecondary"), cell.Foreground);
         }
         finally
         {

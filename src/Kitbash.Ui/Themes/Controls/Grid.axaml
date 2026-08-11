@@ -683,10 +683,12 @@
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
         </Style>
 
-        <!-- A read only cell rests a tier below the row, and that is the whole signal, since
-             it is also the cell that never reacts to a pointer. -->
+        <!-- A read only cell holds the resting ink and never lifts off it. That is the whole
+             signal: it is the cell that does not react, rather than the cell that is dimmer.
+             Pinning InkSecondary here is what stops a row hover carrying it up to
+             InkPrimary. -->
         <Style Selector="^:not(:editable)">
-            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
         </Style>
 
         <!-- Editing sinks the cell into a well and rings it in the accent. The ring is the
@@ -1405,6 +1407,13 @@
     <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump,
                      ui|TreeDataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump">
         <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- A picked row gives its ink to every cell, read only or not. The tint is a light
+         surface and a quiet ink on it reads as damage rather than as a tier. -->
+    <Style Selector="ui|DataGridRow:selected ui|DataGridCell:not(:editable),
+                     ui|TreeDataGridRow:selected ui|DataGridCell:not(:editable)">
+        <Setter Property="Foreground" Value="{DynamicResource SelectionInk}" />
     </Style>
 
     <!-- On a picked row both marks stay, since the tint says which record and the border

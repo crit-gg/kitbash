@@ -55,19 +55,12 @@ public sealed class GridCellStrippingTests
 
         try
         {
-            // The halo's thickness and its reach are literals in each field's template, and
-            // a literal is a local value no style can beat. Its colour is a style, so that
-            // is what is taken away, and a halo with no colour draws nothing.
-            var halos = Parts(grid, "PART_Halo").ToList();
+            // Taken out rather than made transparent. Its thickness and its reach are
+            // literals in each template, so a colourless halo would still hold its reach.
+            var halos = Parts(grid, "PART_Halo").Concat(Parts(grid, "PART_Focus")).ToList();
 
             Assert.NotEmpty(halos);
-
-            foreach (var halo in halos)
-            {
-                Assert.True(
-                    halo.BorderBrush is null || Equals(halo.BorderBrush, Brushes.Transparent),
-                    $"the halo draws nothing, but it is {halo.BorderBrush}");
-            }
+            Assert.DoesNotContain(halos, halo => halo.IsVisible);
         }
         finally
         {
@@ -124,8 +117,15 @@ public sealed class GridCellStrippingTests
     private static bool IsCellsOwn(Visual icon) =>
         icon.FindAncestorOfType<ComboBox>() is null;
 
+    /// <summary>
+    /// Named parts inside the cell alone. The row has a PART_Focus of its own, which is the
+    /// grid's deliberate answer to focus and has to stay.
+    /// </summary>
     private static IEnumerable<Border> Parts(DataGrid grid, string name) =>
-        grid.GetVisualDescendants().OfType<Border>().Where(border => border.Name == name);
+        grid.GetVisualDescendants()
+            .OfType<DataGridCell>()
+            .SelectMany(cell => cell.GetVisualDescendants().OfType<Border>())
+            .Where(border => border.Name == name);
 
     /// <summary>A grid with one cell open for editing, drawing the form under test.</summary>
     private static DataGrid Editing(string key, out Window window)
