@@ -27,6 +27,9 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// <summary>How wide the whole set came out. Wider than the viewport means it scrolls.</summary>
     public double TotalWidth { get; private set; }
 
+    /// <summary>The columns a person can reach, in the order they are drawn.</summary>
+    public IReadOnlyList<GridColumn> Reachable => [.. this.Where(column => column.IsVisible)];
+
     /// <summary>
     /// Works out every visible column's width and offset for a viewport this wide, and
     /// says whether anything moved. Star columns take what the pixel ones leave, so they

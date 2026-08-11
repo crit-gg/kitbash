@@ -42,9 +42,15 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
         UpdateLead();
     }
 
+    IReadOnlyList<DataGridCell> IGridRowLayout.Cells => strip.Cells;
+
     void IGridRowLayout.Relayout() => strip.Relayout();
 
     void IGridRowLayout.Rebuild() => strip.Rebuild();
+
+    void IGridRowLayout.SetEditing(bool editing) => PseudoClasses.Set(":editing", editing);
+
+    void IGridRowLayout.SetCurrent(bool current) => PseudoClasses.Set(":cell", current);
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

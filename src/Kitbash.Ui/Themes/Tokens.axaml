@@ -72,6 +72,11 @@
     <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
     <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
 
+    <!-- The cell the keyboard is in. Square cornered, since a cell is a coordinate rather
+         than a control, and lighter on a picked row so it clears the tint. -->
+    <SolidColorBrush x:Key="CellCurrent" Color="#569eff" />
+    <SolidColorBrush x:Key="CellCurrentPicked" Color="#9cc6ff" />
+
     <!-- The second lead. A grey flood for the action a view repeats across many cards or rows,
          where nine accent buttons would fight each other and the accent would stop meaning
          selection and focus. -->

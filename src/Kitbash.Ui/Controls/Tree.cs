@@ -149,11 +149,17 @@ public class Tree : ListBox
         // The strip in front of the name answers a single click and nothing else. A double
         // click there is two toggles and then this one, which lands the row back where it
         // started after flickering through the other state twice.
-        if (!TreeItem.InCaret(source, container))
+        if (!Claimed(source) && !TreeItem.InCaret(source, container))
         {
             Toggle(container);
         }
 
         e.Handled = true;
     }
+
+    /// <summary>
+    /// Whether a double click here means something other than opening the row. The tree
+    /// grid takes it when the cell under the pointer can be edited.
+    /// </summary>
+    protected virtual bool Claimed(Visual source) => false;
 }

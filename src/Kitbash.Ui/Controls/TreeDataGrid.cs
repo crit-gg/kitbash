@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input;
 
 namespace Kitbash.Ui.Controls;
 
@@ -8,7 +9,7 @@ namespace Kitbash.Ui.Controls;
 /// The tree grid. The tree from stage nine with the flat grid's columns over it, so the
 /// hierarchy, the flat row list and the column widths are each written once.
 /// </summary>
-public class TreeDataGrid : Tree, IGridSorting
+public class TreeDataGrid : Tree, IGridHost
 {
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
@@ -20,8 +21,16 @@ public class TreeDataGrid : Tree, IGridSorting
     public static readonly StyledProperty<GridColumn?> LeadColumnProperty =
         AvaloniaProperty.Register<TreeDataGrid, GridColumn?>(nameof(LeadColumn));
 
+    /// <summary>
+    /// The flat grid declares it and this one takes it on, so the switch is written once
+    /// and both grids answer the same markup.
+    /// </summary>
+    public static readonly StyledProperty<BeginEditGestures> BeginEditGesturesProperty =
+        DataGrid.BeginEditGesturesProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
+    private readonly GridBody body;
     private readonly GridValueComparer order = new();
 
     private GridColumn? sorted;
@@ -29,13 +38,41 @@ public class TreeDataGrid : Tree, IGridSorting
     public TreeDataGrid()
     {
         frame = new GridFrame(this, columns);
+        body = new GridBody(this, columns);
 
         columns.LayoutChanged += (_, _) => frame.Resolve();
-        columns.CollectionChanged += (_, _) => frame.Rebuild();
+        columns.CollectionChanged += (_, _) =>
+        {
+            frame.Rebuild();
+            body.Refresh();
+        };
+
+        SelectionChanged += (_, _) => body.Refresh();
+    }
+
+    /// <inheritdoc cref="DataGrid.BeginEditGesturesProperty"/>
+    public BeginEditGestures BeginEditGestures
+    {
+        get => GetValue(BeginEditGesturesProperty);
+        set => SetValue(BeginEditGesturesProperty, value);
     }
 
     /// <summary>The columns, shared with the header and every row.</summary>
     public GridColumns Columns => columns;
+
+    /// <summary>The cell being edited, or null when none is.</summary>
+    public DataGridCell? EditingCell => body.EditingCell;
+
+    /// <inheritdoc cref="GridBody.BeginEdit"/>
+    public void BeginEdit(DataGridCell cell) => body.BeginEdit(cell);
+
+    /// <summary>Keeps what was typed and closes the editor.</summary>
+    public void CommitEdit() => body.CommitEdit();
+
+    /// <summary>Puts the old value back and closes the editor.</summary>
+    public void CancelEdit() => body.CancelEdit();
+
+    GridBody IGridHost.Body => body;
 
     public GridColumn? LeadColumn
     {
@@ -56,6 +93,8 @@ public class TreeDataGrid : Tree, IGridSorting
             return;
         }
 
+        body.CommitEdit();
+
         var next = column.NextSort();
 
         if (sorted is { } old && !ReferenceEquals(old, column))
@@ -73,8 +112,13 @@ public class TreeDataGrid : Tree, IGridSorting
 
     protected override TreeItem CreateRow() => new TreeDataGridRow();
 
+    /// <summary>A double click in a cell that can be edited opens it rather than the row.</summary>
+    protected override bool Claimed(Visual source) => body.BeginEditAt(source);
+
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)
     {
+        Release(container);
+
         if (container is TreeDataGridRow row)
         {
             // Before the base call, so the cells are there for the row to fill.
@@ -82,6 +126,20 @@ public class TreeDataGrid : Tree, IGridSorting
         }
 
         base.PrepareContainerForItemOverride(container, item, index);
+        body.Refresh();
+    }
+
+    protected override void ContainerIndexChangedOverride(Control container, int oldIndex, int newIndex)
+    {
+        Release(container);
+        base.ContainerIndexChangedOverride(container, oldIndex, newIndex);
+        body.Refresh();
+    }
+
+    protected override void ClearContainerForItemOverride(Control container)
+    {
+        Release(container);
+        base.ClearContainerForItemOverride(container);
     }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
@@ -93,9 +151,39 @@ public class TreeDataGrid : Tree, IGridSorting
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
     }
 
+    /// <summary>
+    /// The cell keys are answered before the hierarchy and the list, since Home and End mean
+    /// the ends of a row here. Left and right are the exception: the body declines them in
+    /// the column that draws the caret, so they reach the tree and open the row.
+    /// </summary>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        body.Hierarchy = LeadColumn ?? columns.Reachable.FirstOrDefault();
+
+        if (!e.Handled && body.OnKeyDown(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        base.OnKeyDown(e);
+    }
+
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        body.OnTextInput(e);
+        base.OnTextInput(e);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+
+        if (change.Property == BeginEditGesturesProperty)
+        {
+            body.Gestures = change.GetNewValue<BeginEditGestures>();
+            return;
+        }
 
         if (change.Property != LeadColumnProperty)
         {
@@ -105,6 +193,19 @@ public class TreeDataGrid : Tree, IGridSorting
         foreach (var container in GetRealizedContainers())
         {
             (container as TreeDataGridRow)?.Attach(columns, LeadColumn);
+        }
+    }
+
+    /// <summary>
+    /// Closes an editor in a container that is about to stand for another row. Without it
+    /// the grid holds a cell that has moved on and the editor shows one row's field over
+    /// another row's data.
+    /// </summary>
+    private void Release(Control container)
+    {
+        if (body.Holds(container))
+        {
+            body.CommitEdit();
         }
     }
 }

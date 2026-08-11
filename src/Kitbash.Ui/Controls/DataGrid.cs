@@ -12,7 +12,7 @@ namespace Kitbash.Ui.Controls;
 /// The flat grid. A list underneath, so it virtualises and selects without any of that
 /// being written again, with a column layout over the top.
 /// </summary>
-public class DataGrid : ListBox, IGridSorting
+public class DataGrid : ListBox, IGridHost
 {
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
@@ -33,12 +33,16 @@ public class DataGrid : ListBox, IGridSorting
     public static readonly DirectProperty<DataGrid, string> SortTextProperty =
         AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(SortText), grid => grid.sortText);
 
+    public static readonly StyledProperty<BeginEditGestures> BeginEditGesturesProperty =
+        AvaloniaProperty.Register<DataGrid, BeginEditGestures>(
+            nameof(BeginEditGestures),
+            BeginEditGestures.DoubleTap | BeginEditGestures.F2 | BeginEditGestures.Enter);
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
+    private readonly GridBody body;
 
     private GridRows? rows;
-    private DataGridCell? editing;
-    private object? edited;
     private bool dropping;
 
     /// <summary>What was picked and where the body sat, held across one rebuild.</summary>
@@ -63,9 +67,14 @@ public class DataGrid : ListBox, IGridSorting
     public DataGrid()
     {
         frame = new GridFrame(this, columns);
+        body = new GridBody(this, columns);
 
         columns.LayoutChanged += (_, _) => frame.Resolve();
-        columns.CollectionChanged += (_, _) => frame.Rebuild();
+        columns.CollectionChanged += (_, _) =>
+        {
+            frame.Rebuild();
+            body.Refresh();
+        };
 
         AddHandler(DoubleTappedEvent, OnDoubleTapped);
 
@@ -73,7 +82,15 @@ public class DataGrid : ListBox, IGridSorting
         {
             DropHeadings();
             UpdateCounts();
+            body.Refresh();
         };
+    }
+
+    /// <inheritdoc cref="BeginEditGesturesProperty"/>
+    public BeginEditGestures BeginEditGestures
+    {
+        get => GetValue(BeginEditGesturesProperty);
+        set => SetValue(BeginEditGesturesProperty, value);
     }
 
     /// <summary>The columns, shared with the header and every row.</summary>
@@ -99,35 +116,18 @@ public class DataGrid : ListBox, IGridSorting
     public GridRows? Rows => rows;
 
     /// <summary>The cell being edited, or null when none is.</summary>
-    public DataGridCell? EditingCell => editing;
+    public DataGridCell? EditingCell => body.EditingCell;
 
-    /// <summary>
-    /// Puts a cell into its column's edit template. The item is told through
-    /// <see cref="IEditableObject"/> when it implements it, which is what makes cancel
-    /// able to put the old value back.
-    /// </summary>
-    public void BeginEdit(DataGridCell cell)
-    {
-        if (!cell.CanEdit || ReferenceEquals(cell, editing))
-        {
-            return;
-        }
-
-        CommitEdit();
-
-        editing = cell;
-        edited = cell.Content;
-        (edited as IEditableObject)?.BeginEdit();
-
-        cell.IsEditing = true;
-        cell.FindAncestorOfType<DataGridRow>()?.SetEditing(true);
-    }
+    /// <inheritdoc cref="GridBody.BeginEdit"/>
+    public void BeginEdit(DataGridCell cell) => body.BeginEdit(cell);
 
     /// <summary>Keeps what was typed and closes the editor.</summary>
-    public void CommitEdit() => EndEdit(commit: true);
+    public void CommitEdit() => body.CommitEdit();
 
     /// <summary>Puts the old value back and closes the editor.</summary>
-    public void CancelEdit() => EndEdit(commit: false);
+    public void CancelEdit() => body.CancelEdit();
+
+    GridBody IGridHost.Body => body;
 
     /// <summary>Opens a closed group, closes an open one.</summary>
     public void Toggle(GridRow row) => rows?.Toggle(row);
@@ -179,7 +179,21 @@ public class DataGrid : ListBox, IGridSorting
             }
         }
 
+        // Before the list, since Home and End mean the ends of a row here rather than the
+        // ends of the list, and the list would take them first.
+        if (!e.Handled && body.OnKeyDown(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         base.OnKeyDown(e);
+    }
+
+    protected override void OnTextInput(TextInputEventArgs e)
+    {
+        body.OnTextInput(e);
+        base.OnTextInput(e);
     }
 
     protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
@@ -229,7 +243,11 @@ public class DataGrid : ListBox, IGridSorting
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == ItemsSourceProperty)
+        if (change.Property == BeginEditGesturesProperty)
+        {
+            body.Gestures = change.GetNewValue<BeginEditGestures>();
+        }
+        else if (change.Property == ItemsSourceProperty)
         {
             // A grid draws GridRows. Anything else misses the cast in Follow and fills
             // every cell with nothing, so a plain list becomes a grid of blank rows with
@@ -265,16 +283,16 @@ public class DataGrid : ListBox, IGridSorting
         // Before the container is told anything, since it is about to stand for another
         // row. An editor left open would be showing one row's field over another row's
         // data, and the grid would still be holding a cell that has moved on.
-        if (editing is { } open && ReferenceEquals(open.FindAncestorOfType<DataGridRow>(), container))
+        if (body.Holds(container))
         {
-            CommitEdit();
+            body.CommitEdit();
         }
 
         switch (container)
         {
             case DataGridRow data:
                 data.Attach(columns);
-                data.SetEditing(false);
+                ((IGridRowLayout)data).SetEditing(false);
                 data.Follow(row);
                 break;
 
@@ -282,40 +300,16 @@ public class DataGrid : ListBox, IGridSorting
                 group.Follow(row);
                 break;
         }
-    }
 
-    private void EndEdit(bool commit)
-    {
-        if (editing is null)
-        {
-            return;
-        }
-
-        var cell = editing;
-        var item = edited;
-
-        editing = null;
-        edited = null;
-
-        if (commit)
-        {
-            (item as IEditableObject)?.EndEdit();
-        }
-        else
-        {
-            (item as IEditableObject)?.CancelEdit();
-        }
-
-        cell.IsEditing = false;
-        cell.FindAncestorOfType<DataGridRow>()?.SetEditing(false);
+        // A recycled container carries the last row's mark, so the current cell is worked
+        // out again rather than left where it was drawn.
+        body.Refresh();
     }
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (e.Source is Visual source
-            && source.FindAncestorOfType<DataGridCell>(includeSelf: true) is { CanEdit: true } cell)
+        if (e.Source is Visual source && body.BeginEditAt(source))
         {
-            BeginEdit(cell);
             e.Handled = true;
         }
     }
@@ -330,7 +324,7 @@ public class DataGrid : ListBox, IGridSorting
     {
         // An edit whose row has left the list has nowhere to land. One still on the page
         // carries on, so an item arriving from the source does not end it.
-        if (editing?.FindAncestorOfType<DataGridRow>()?.Row is not { } open || rows?.Contains(open) != true)
+        if (EditingCell?.FindAncestorOfType<DataGridRow>()?.Row is not { } open || rows?.Contains(open) != true)
         {
             CancelEdit();
         }

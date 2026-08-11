@@ -19,10 +19,21 @@ public class DataGridCell : ContentControl
     public static readonly StyledProperty<bool> IsEditingProperty =
         AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsEditing));
 
+    /// <summary>Whether this is where the keyboard is. One cell in a grid carries it.</summary>
+    public static readonly StyledProperty<bool> IsCurrentProperty =
+        AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsCurrent));
+
     public GridColumn? Column
     {
         get => GetValue(ColumnProperty);
         set => SetValue(ColumnProperty, value);
+    }
+
+    /// <inheritdoc cref="IsCurrentProperty"/>
+    public bool IsCurrent
+    {
+        get => GetValue(IsCurrentProperty);
+        set => SetValue(IsCurrentProperty, value);
     }
 
     /// <summary>
@@ -46,6 +57,10 @@ public class DataGridCell : ContentControl
         {
             Apply();
         }
+        else if (change.Property == IsCurrentProperty)
+        {
+            PseudoClasses.Set(":current", change.GetNewValue<bool>());
+        }
         else if (change.Property == IsEditingProperty)
         {
             var editing = change.GetNewValue<bool>();
@@ -64,17 +79,17 @@ public class DataGridCell : ContentControl
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (IsEditing && this.FindAncestorOfType<DataGrid>() is { } grid)
+        if (IsEditing && this.FindAncestorOfType<IGridHost>() is { } host)
         {
             switch (e.Key)
             {
                 case Key.Enter:
-                    grid.CommitEdit();
+                    host.Body.CommitEdit();
                     e.Handled = true;
                     return;
 
                 case Key.Escape:
-                    grid.CancelEdit();
+                    host.Body.CancelEdit();
                     e.Handled = true;
                     return;
             }
@@ -92,9 +107,9 @@ public class DataGridCell : ContentControl
         base.OnLostFocus(e);
 
         if (IsEditing && !this.IsKeyboardFocusWithin && Left(e.NewFocusedElement)
-            && this.FindAncestorOfType<DataGrid>() is { } grid)
+            && this.FindAncestorOfType<IGridHost>() is { } host)
         {
-            grid.CommitEdit();
+            host.Body.CommitEdit();
         }
     }
 
@@ -127,12 +142,27 @@ public class DataGridCell : ContentControl
         return ReferenceEquals(TopLevel.GetTopLevel(visual), TopLevel.GetTopLevel(this));
     }
 
+    /// <summary>
+    /// A press puts the keyboard here, so clicking a cell and then arrowing carries on from
+    /// the cell that was clicked rather than from wherever the keyboard was left.
+    /// </summary>
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+
+        if (Column is { } column && this.FindAncestorOfType<IGridHost>() is { } host)
+        {
+            host.Body.SetCurrent(column);
+        }
+    }
+
     private void Apply()
     {
         var column = Column;
 
         PseudoClasses.Set(":mono", column?.IsMono == true);
         PseudoClasses.Set(":strong", column?.IsStrong == true);
+        PseudoClasses.Set(":editable", column?.EditTemplate is not null);
 
         if (column is null)
         {

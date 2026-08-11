@@ -308,6 +308,12 @@
             <Setter Property="BorderBrush" Value="{DynamicResource FocusLine}" />
         </Style>
 
+        <!-- A cell in this row holds the mark, so the row gives its focus line up. A row
+             wearing a fill, an outline and a cell border at once cannot be read. -->
+        <Style Selector="^:cell /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
         <Style Selector="^:disabled">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
@@ -323,13 +329,22 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                    <ContentPresenter Name="PART_ContentPresenter"
-                                      Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                </Border>
+                <Panel>
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+
+                    <!-- Over the content rather than around it, so a mark arriving moves
+                         nothing. Square, which is the one square cornered thing here. -->
+                    <Border Name="PART_Mark"
+                            IsHitTestVisible="False"
+                            CornerRadius="0"
+                            BorderThickness="0" />
+                </Panel>
             </ControlTemplate>
         </Setter>
 
@@ -339,6 +354,20 @@
 
         <Style Selector="^:editing">
             <Setter Property="Padding" Value="{DynamicResource PaddingGridEdit}" />
+        </Style>
+
+        <!-- Cell hover closes the row hover underline into a full border, the same one a
+             text field wears at rest. The row scope half of it is outside this theme, since
+             a control theme cannot hold a descendant selector. -->
+        <Style Selector="^:editable:pointerover /template/ Border#PART_Mark">
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Where the keyboard is. No fill at all, since fill means a range. -->
+        <Style Selector="^:current /template/ Border#PART_Mark">
+            <Setter Property="BorderBrush" Value="{DynamicResource CellCurrent}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
     </ControlTheme>
 
@@ -350,29 +379,36 @@
 
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                    <DockPanel LastChildFill="True" Margin="{TemplateBinding Indent}">
-                        <Border Name="PART_Caret"
-                                DockPanel.Dock="Left"
-                                Background="Transparent"
-                                Margin="{DynamicResource MarginRowLead}">
-                            <Panel Width="{DynamicResource IconSizeCaret}">
-                                <ui:Icon Name="PART_CaretGlyph"
-                                         Glyph="ChevronRight"
-                                         Size="{DynamicResource IconSizeCaret}"
-                                         Foreground="{DynamicResource InkSecondary}"
-                                         VerticalAlignment="Center"
-                                         IsVisible="False" />
-                            </Panel>
-                        </Border>
+                <Panel>
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <DockPanel LastChildFill="True" Margin="{TemplateBinding Indent}">
+                            <Border Name="PART_Caret"
+                                    DockPanel.Dock="Left"
+                                    Background="Transparent"
+                                    Margin="{DynamicResource MarginRowLead}">
+                                <Panel Width="{DynamicResource IconSizeCaret}">
+                                    <ui:Icon Name="PART_CaretGlyph"
+                                             Glyph="ChevronRight"
+                                             Size="{DynamicResource IconSizeCaret}"
+                                             Foreground="{DynamicResource InkSecondary}"
+                                             VerticalAlignment="Center"
+                                             IsVisible="False" />
+                                </Panel>
+                            </Border>
 
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                    </DockPanel>
-                </Border>
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </DockPanel>
+                    </Border>
+
+                    <Border Name="PART_Mark"
+                            IsHitTestVisible="False"
+                            CornerRadius="0"
+                            BorderThickness="0" />
+                </Panel>
             </ControlTemplate>
         </Setter>
 
@@ -442,6 +478,12 @@
 
         <Style Selector="^:focus-visible /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="{DynamicResource FocusLine}" />
+        </Style>
+
+        <!-- A cell in this row holds the mark, so the row gives its focus line up. A row
+             wearing a fill, an outline and a cell border at once cannot be read. -->
+        <Style Selector="^:cell /template/ Border#PART_Focus">
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
 
         <Style Selector="^:disabled">
@@ -715,6 +757,28 @@
     <!-- A cell's ink comes from its row, so these are the only two places a cell is told a
          colour, and both are about which column it is rather than what is in it. A control
          theme cannot hold a descendant selector, which is why they live out here. -->
+    <!-- The editable cell hint, step one. Row hover underlines the cells that take a value
+         with a seam colour rather than an accent, so a column of them still reads as data. -->
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Mark">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="ui|TreeDataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Mark">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <!-- On a picked row both marks stay, since the tint says which record and the border
+         says where the keyboard is, so the border lightens to clear the tint. -->
+    <Style Selector="ui|DataGridRow:selected ui|DataGridCell:current /template/ Border#PART_Mark">
+        <Setter Property="BorderBrush" Value="{DynamicResource CellCurrentPicked}" />
+    </Style>
+
+    <Style Selector="ui|TreeDataGridRow:selected ui|DataGridCell:current /template/ Border#PART_Mark">
+        <Setter Property="BorderBrush" Value="{DynamicResource CellCurrentPicked}" />
+    </Style>
+
     <Style Selector="ui|DataGridRow:not(:selected) ui|DataGridCell:strong">
         <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
     </Style>

@@ -211,12 +211,13 @@ page change scrolls the body back to the top.
 
 Stage 11 did not set out to build any of these. They are what a data tool asks for.
 
-### No cell focus model
+### No cell focus model. Built in phase 3, apart from Ctrl+Space
 
-There is no current cell, so there is no Tab across cells, no arrow movement, no F2, no
+There was no current cell, so there was no Tab across cells, no arrow movement, no F2, no
 type to edit, no Enter to commit and move down, no Home, End, Ctrl+Home, Ctrl+End, no
 Page Up or Page Down, no Shift+Space or Ctrl+Space. Measured against the W3C grid
-pattern, none of the keyboard contract is implemented.
+pattern, none of the keyboard contract was implemented. **Ctrl+Space is the one still
+missing**, since selecting a column has nowhere to land until phase 4.
 
 **This is the feature.** Everything else in this section is secondary to it, and most of
 it depends on it. Avalonia's own TreeDataGrid already has a name for the last part of it,
@@ -698,10 +699,10 @@ replaces, the selection and the scroll position held across a sort, source obser
 a filter predicate, a per column comparer, natural ordering and multi column sort. Defects
 2, 3 and 9 are answered here rather than patched.
 
-**3. The structural move**, then **the cell focus model** and the full keyboard contract,
-then the edit lifecycle rebuilt on top of it as a two level transaction. Brings
-`BeginEditGestures` and `EditUnit`. Draws the current cell mark and the editable cell
-hint, and brings the modified mark back at row scope.
+**3. The structural move. Done.** Then **the cell focus model** and the keyboard contract,
+**done**, which brought `BeginEditGestures` and drew the current cell mark and the editable
+cell hint. **What is left of this phase** is the edit lifecycle as a two level transaction,
+which brings `EditUnit`, and the modified mark at row scope.
 
 **4. Copy, then range selection, then the three that write, then fill.** Brings
 `SelectionUnit` and `CellActions`. Draws the range wash, the anchor, the handle and the
@@ -850,6 +851,56 @@ that does, and that is a behaviour to design rather than a translation of this o
 And multi column sort has no way in from the header yet, which is phase 5 and the
 `MultiSort` gesture. The model, the chained comparer and `GridColumn.SortOrder` are all
 there waiting for it.
+
+## Where phase 3 departed from this plan
+
+**The structural move went further than the plan asked and paid for itself at once.**
+`GridBody` is the shared piece, holding the edit state and the current cell, and both grids
+own one. `IGridHost` is what a cell asks for it, so `DataGridCell` names no grid type at
+all. **The tree grid could not edit before this.** It had no begin, no commit, no double
+click handler, and `DataGridCell` looked for a `DataGrid` ancestor it would never find, so
+every one of those was dead in a tree grid. It works now because the code is the flat
+grid's, not because it was written twice.
+
+**A double click in a tree grid had to be arbitrated.** `Tree` already answered it by
+opening the row and marking it handled, so the cell never saw it. `Tree.Claimed` is the
+hook: the tree grid takes the gesture when the cell under the pointer can be edited, and
+the row opens in every other case.
+
+**The current cell's row is the selected row, and the body owns only the column.** The
+plan implied a row and a column kept together. Keeping one number is enough while
+`SelectionUnit` is `Row`, it cannot drift from what the list thinks, and up, down, page up
+and page down stay the list's own with the column carried along. Phase 4 is where the row
+becomes independent, and that is the same phase that brings `SelectionUnit`.
+
+**Home and End changed meaning, and that breaks the no default changes rule on purpose.**
+They were the first and last row and they are now the first and last cell of the row, with
+Control and Home reaching the corners of the grid. There is no way to have the keyboard
+contract the plan wrote down and leave those two keys alone. Every other default is
+untouched.
+
+**Tab walks the cells and only leaves the grid at the last one.** The plan called the wrap
+a decision rather than a lookup and came down on wrapping. So Tab moves a cell, wraps to
+the next row, and falls through to the focus manager only when there is no next cell, which
+is how a person still gets out.
+
+**Left and right are the tree grid's one split.** They open and close the row in the column
+that draws the caret and move the current cell in every other column, which is what
+Avalonia's own TreeDataGrid does. The cost is that right on a leaf in the caret column does
+nothing rather than moving on.
+
+**The mark could not live in the control theme.** Avalonia refuses a descendant selector
+inside a `ControlTheme`, so the two rules that read a row's state from a cell, the row
+hover underline and the lighter border on a picked row, are plain styles beside the themes.
+The cell scope rules stayed in the theme.
+
+**Two things drawn that the plan listed under gaps.** The editable cell hint, in its two
+steps, and the row giving up its focus line while one of its cells holds the mark, which is
+the `:cell` state on the row.
+
+**Not built yet in this phase.** The two level edit transaction and `EditUnit`, the modified
+mark at row scope, and Control and Space for a column, which needs cell range selection and
+so belongs to phase 4.
 
 ## Sources
 
