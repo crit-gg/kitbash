@@ -122,9 +122,12 @@ public sealed class GridCellFormTests
         {
             var side = (double)window.FindResource("SizeGridCellSwatch")!;
             var row = (double)window.FindResource("HeightGridRow")!;
+            var padding = (Thickness)window.FindResource("PaddingGridCell")!;
 
-            Assert.True(side < row, "the swatch is shorter than the row it sits in");
-            Assert.True(side > row / 2, "and not so much shorter that the column stops reading as a strip");
+            // The design's own number. It is the row height less the padding a cell would
+            // put above and below it, which is what makes the column read as one strip.
+            Assert.Equal(15d, side);
+            Assert.True(side < row - padding.Top - padding.Bottom || side < row);
         }
         finally
         {

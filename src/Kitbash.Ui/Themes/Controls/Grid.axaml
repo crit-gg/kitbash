@@ -606,14 +606,48 @@
                             IsHitTestVisible="False"
                             IsVisible="False" />
 
-                    <Border Background="Transparent"
+                    <Border Name="PART_Field"
+                            Background="Transparent"
                             Padding="{TemplateBinding Padding}"
                             ClipToBounds="True">
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        <DockPanel LastChildFill="True">
+                            <!-- The trailing affordance. It holds its room whether or not it
+                                 is drawn, so a value never reflows the moment a pointer
+                                 arrives, and only the three kinds that have one reserve it. -->
+                            <Panel Name="PART_Affordance"
+                                   DockPanel.Dock="Right"
+                                   Margin="4,0,0,0"
+                                   IsVisible="False"
+                                   IsHitTestVisible="False"
+                                   VerticalAlignment="Center">
+                                <ui:Icon Name="PART_Chevron"
+                                         Glyph="ChevronDown"
+                                         Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkMuted}"
+                                         IsVisible="False" />
+
+                                <ui:Icon Name="PART_Jump"
+                                         Glyph="Link"
+                                         Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkMuted}"
+                                         IsVisible="False" />
+
+                                <StackPanel Name="PART_Stepper" Spacing="1" IsVisible="False">
+                                    <ui:Icon Glyph="ChevronUp"
+                                             Size="{DynamicResource IconSizeCheck}"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <ui:Icon Glyph="ChevronDown"
+                                             Size="{DynamicResource IconSizeCheck}"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                </StackPanel>
+                            </Panel>
+
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </DockPanel>
                     </Border>
 
                     <Border Name="PART_Hint"
@@ -655,8 +689,25 @@
             <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
         </Style>
 
+        <!-- A read only cell rests a tier below the row, and that is the whole signal, since
+             it is also the cell that never reacts to a pointer. -->
+        <Style Selector="^:not(:editable)">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <!-- Editing sinks the cell into a well and rings it in the accent. The ring is the
+             hint's, so the three steps of chrome are one element rather than three. -->
         <Style Selector="^:editing">
             <Setter Property="Padding" Value="{DynamicResource PaddingGridEdit}" />
+        </Style>
+
+        <Style Selector="^:editing /template/ Border#PART_Field">
+            <Setter Property="Background" Value="{DynamicResource SurfaceWellFocus}" />
+        </Style>
+
+        <Style Selector="^:editing /template/ Border#PART_Hint">
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
 
         <!-- Cell hover closes the row hover underline into a full border, the same one a
@@ -665,6 +716,41 @@
         <Style Selector="^:editable:pointerover /template/ Border#PART_Hint">
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
             <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Three kinds carry a trailing affordance and reserve its room from the start. -->
+        <Style Selector="^:enum:editable /template/ Panel#PART_Affordance,
+                         ^:reference:editable /template/ Panel#PART_Affordance,
+                         ^:number:editable /template/ Panel#PART_Affordance">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- The stepper is the one affordance that waits for the cell rather than the row,
+             since a column of numbers with a stepper on every hovered row is a column of
+             widgets. -->
+        <Style Selector="^:number:editable:pointerover /template/ StackPanel#PART_Stepper">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:enum:pointerover /template/ ui|Icon#PART_Chevron">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^:reference:pointerover /template/ ui|Icon#PART_Jump">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <!-- A reference reads as the link it is once the pointer is on it. -->
+        <Style Selector="^:reference:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
+        </Style>
+
+        <!-- While it is open the chevron turns and takes the accent, so the cell says the
+             list is what is down there. -->
+        <Style Selector="^:enum:editing /template/ ui|Icon#PART_Chevron">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Glyph" Value="ChevronUp" />
+            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
         </Style>
 
         <!-- A cell whose value is wrong. Fill, hairline and a corner mark, so the state
@@ -1310,14 +1396,29 @@
 
     <!-- The editable cell hint, step one. Row hover underlines the cells that take a value
          with a seam colour rather than an accent, so a column of them still reads as data. -->
-    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Hint">
+    <!-- Row hover underlines the cell that takes free text, in a seam colour and not an
+         accent, so a hovered row does not light up like a picked one. A kind that shows its
+         own affordance says it that way instead, which is what the design draws. -->
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:text:editable /template/ Border#PART_Hint">
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
 
-    <Style Selector="ui|TreeDataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Hint">
+    <Style Selector="ui|TreeDataGridRow:pointerover ui|DataGridCell:text:editable /template/ Border#PART_Hint">
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <!-- The chevron and the jump arrive with the row rather than the cell, so a person
+         scanning a row can see which of its values open something. -->
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:enum:editable /template/ ui|Icon#PART_Chevron,
+                     ui|TreeDataGridRow:pointerover ui|DataGridCell:enum:editable /template/ ui|Icon#PART_Chevron">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump,
+                     ui|TreeDataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump">
+        <Setter Property="IsVisible" Value="True" />
     </Style>
 
     <!-- On a picked row both marks stay, since the tint says which record and the border

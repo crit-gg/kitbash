@@ -304,6 +304,15 @@ public class DataGridCell : ContentControl
         PseudoClasses.Set(":strong", column?.IsStrong == true);
         PseudoClasses.Set(":editable", column?.EditTemplate is not null);
 
+        // One class per kind rather than one carrying a name, so the theme selects on it the
+        // way it selects on every other cell state.
+        var kind = column?.Kind ?? GridCellKind.Plain;
+
+        foreach (var one in Enum.GetValues<GridCellKind>())
+        {
+            PseudoClasses.Set($":{one.ToString().ToLowerInvariant()}", one != GridCellKind.Plain && one == kind);
+        }
+
         if (column is null)
         {
             ContentTemplate = null;

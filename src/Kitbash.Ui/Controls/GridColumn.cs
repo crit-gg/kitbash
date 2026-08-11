@@ -79,6 +79,13 @@ public class GridColumn : AvaloniaObject
     public static readonly StyledProperty<bool> IsStrongProperty =
         AvaloniaProperty.Register<GridColumn, bool>(nameof(IsStrong));
 
+    /// <summary>
+    /// What this column holds. It decides the affordance a cell offers before an editor
+    /// exists, since a cell draws its value through the cell template until it is opened.
+    /// </summary>
+    public static readonly StyledProperty<GridCellKind> KindProperty =
+        AvaloniaProperty.Register<GridColumn, GridCellKind>(nameof(Kind));
+
     public static readonly StyledProperty<GridSortDirection> SortDirectionProperty =
         AvaloniaProperty.Register<GridColumn, GridSortDirection>(nameof(SortDirection));
 
@@ -187,6 +194,13 @@ public class GridColumn : AvaloniaObject
     {
         get => GetValue(IsStrongProperty);
         set => SetValue(IsStrongProperty, value);
+    }
+
+    /// <inheritdoc cref="KindProperty"/>
+    public GridCellKind Kind
+    {
+        get => GetValue(KindProperty);
+        set => SetValue(KindProperty, value);
     }
 
     public GridSortDirection SortDirection
