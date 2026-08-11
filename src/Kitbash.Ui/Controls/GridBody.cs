@@ -449,6 +449,9 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
             Key.Enter when Gestures.HasFlag(BeginEditGestures.Enter) && !control && !shift => Open(),
             Key.Space when shift && !control => Pick(),
             Key.C when control && !shift && Actions.HasFlag(CellActions.Copy) => Copy(),
+            Key.X when control && !shift && Actions.HasFlag(CellActions.Cut) => Cut(),
+            Key.V when control && !shift && Actions.HasFlag(CellActions.Paste) => Paste(),
+            Key.Delete when !control && !shift && Actions.HasFlag(CellActions.Clear) => Clear(),
             _ => false,
         };
     }
@@ -465,31 +468,15 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
         }
 
         var reachable = columns.Reachable;
-        var paper = new GridClipboard();
 
         if (Blocks)
         {
-            var block = Block(reachable);
-            var rows = new List<object>();
-
-            for (var index = block.Top; index <= block.Bottom; index++)
-            {
-                if (Held(index) is { } item)
-                {
-                    rows.Add(item);
-                }
-            }
-
-            if (rows.Count == 0)
+            if (BlockText(reachable, Block(reachable)) is not { } block)
             {
                 return false;
             }
 
-            // Every column the block covers, whether or not it says anything, since a
-            // person who picked it meant it and a blank field keeps the shape.
-            var span = reachable.Skip(block.Left).Take(block.Right - block.Left + 1).ToList();
-
-            _ = clipboard.SetTextAsync(paper.Write(rows, span));
+            _ = clipboard.SetTextAsync(block);
             return true;
         }
 
@@ -504,8 +491,165 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
         // out rather than written as an empty field somebody has to delete.
         var written = reachable.Where(column => column.HasValue).ToList();
 
-        _ = clipboard.SetTextAsync(paper.Write(picked, written));
+        _ = clipboard.SetTextAsync(new GridClipboard().Write(picked, written));
         return true;
+    }
+
+    /// <summary>
+    /// Writes the block out and then empties it. It copies the same cells it clears, which
+    /// is why it does not go through <see cref="Copy"/>, since that writes whole rows when
+    /// the unit is the row.
+    /// </summary>
+    public bool Cut()
+    {
+        if (TopLevel.GetTopLevel(owner)?.Clipboard is not { } clipboard)
+        {
+            return false;
+        }
+
+        var reachable = columns.Reachable;
+        var text = BlockText(reachable, Block(reachable));
+
+        if (text is null || !Clear())
+        {
+            return false;
+        }
+
+        _ = clipboard.SetTextAsync(text);
+        return true;
+    }
+
+    /// <summary>Empties every cell that is picked.</summary>
+    public bool Clear() => Put((_, _) => null);
+
+    /// <summary>
+    /// Reads the clipboard and writes it in from the anchor. The read is asynchronous, so
+    /// this says the key was taken rather than whether anything landed.
+    /// </summary>
+    public bool Paste()
+    {
+        if (TopLevel.GetTopLevel(owner)?.Clipboard is not { } clipboard)
+        {
+            return false;
+        }
+
+        _ = Land(clipboard);
+        return true;
+    }
+
+    private async Task Land(Avalonia.Input.Platform.IClipboard clipboard)
+    {
+        if (await clipboard.TryGetTextAsync() is not { Length: > 0 } text)
+        {
+            return;
+        }
+
+        var arrived = new GridClipboard().Read(text);
+
+        if (arrived.Count == 0)
+        {
+            return;
+        }
+
+        var deep = arrived.Count;
+        var wide = arrived.Max(line => line.Count);
+        var reachable = columns.Reachable;
+        var block = Block(reachable);
+        var down = block.Bottom - block.Top + 1;
+        var across = block.Right - block.Left + 1;
+
+        // A block bigger than one cell takes the paste repeated to fill it, but only when
+        // it divides evenly. Anything else lands at the anchor in the shape it arrived in.
+        var fills = (down > 1 || across > 1) && down % deep == 0 && across % wide == 0;
+
+        // Both ways round, since filling a block repeats across as well as down. A line
+        // shorter than the widest one leaves those cells empty rather than repeating itself.
+        Put(
+            (row, column) => arrived[row % deep] is { } line && column % wide < line.Count
+                ? line[column % wide]
+                : null,
+            fills ? down : deep,
+            fills ? across : wide);
+    }
+
+    /// <summary>
+    /// Writes into the cells that are picked, or into a shape of that size from the anchor.
+    /// **Nothing is written at all unless every cell it would touch can take a value**, so a
+    /// paste over a column that is read only is refused rather than half applied.
+    /// </summary>
+    private bool Put(Func<int, int, string?> value, int deep = 0, int across = 0)
+    {
+        var reachable = columns.Reachable;
+        var block = Block(reachable);
+
+        var rows = deep > 0 ? deep : block.Bottom - block.Top + 1;
+        var span = across > 0 ? across : block.Right - block.Left + 1;
+        var items = new List<object>();
+
+        for (var step = 0; step < rows; step++)
+        {
+            if (Held(block.Top + step) is not { } item)
+            {
+                return false;
+            }
+
+            items.Add(item);
+        }
+
+        var written = new List<GridColumn>();
+
+        for (var step = 0; step < span; step++)
+        {
+            var at = block.Left + step;
+
+            if (at >= reachable.Count || !reachable[at].CanWrite)
+            {
+                return false;
+            }
+
+            written.Add(reachable[at]);
+        }
+
+        if (items.Count == 0 || written.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var (item, row) in items.Select((item, row) => (item, row)))
+        {
+            (item as IEditableObject)?.BeginEdit();
+
+            for (var column = 0; column < written.Count; column++)
+            {
+                written[column].Write!(item, value(row, column));
+            }
+
+            (item as IEditableObject)?.EndEdit();
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// The block as text, or null when it holds no rows. Every column it covers goes out,
+    /// whether or not it says anything, since a person who picked it meant it and a blank
+    /// field keeps the shape of what was picked.
+    /// </summary>
+    private string? BlockText(IReadOnlyList<GridColumn> reachable, (int Top, int Bottom, int Left, int Right) block)
+    {
+        var rows = new List<object>();
+
+        for (var index = block.Top; index <= block.Bottom; index++)
+        {
+            if (Held(index) is { } item)
+            {
+                rows.Add(item);
+            }
+        }
+
+        return rows.Count == 0
+            ? null
+            : new GridClipboard().Write(rows, [.. reachable.Skip(block.Left).Take(block.Right - block.Left + 1)]);
     }
 
     /// <summary>The items copy works over, in the order the rows are drawn in.</summary>

@@ -55,6 +55,12 @@ public partial class GridsPage : GalleryPage
         Key(SampleGrid.Columns[5], entry => entry.Tier);
         Key(SampleGrid.Columns[6], entry => entry.State);
 
+        // The three columns a person can type into. A column with no Write refuses the
+        // whole paste rather than taking part of it, which is the rule being shown.
+        Takes(SampleGrid.Columns[2], "NAME");
+        Takes(SampleGrid.Columns[3], "KIND");
+        Takes(SampleGrid.Columns[4], "VALUE");
+
         SampleGrid.ItemsSource = new GridRows(entries);
         SampleGrid.RowModified = item => ((Entry)item).IsModified;
         SampleGrid.SelectionChanged += (_, _) => ShowPickAll();
@@ -95,6 +101,9 @@ public partial class GridsPage : GalleryPage
 
     private static void Key(GridColumn column, Func<Entry, object?> key) =>
         column.SortKey = item => key((Entry)item);
+
+    private static void Takes(GridColumn column, string name) =>
+        column.Write = (item, text) => ((Entry)item).Put(name, text);
 
     /// <summary>Picks every row on the page, or none of them.</summary>
     private void OnPickAll(object? sender, RoutedEventArgs e)

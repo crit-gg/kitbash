@@ -246,9 +246,7 @@ data entry convention and a grid that refuses to wrap makes a person reach for t
 at the end of every row. And whether Enter moves down or restores navigation depends on
 the editor, since a multi line editor wants the key.
 
-### No clipboard. Copy built in phase 4
-
-No cut and no paste yet. The settled convention across every grid read: tab separated
+### No clipboard. Built in phase 4 The settled convention across every grid read: tab separated
 and Excel compatible, headers optional, paste anchored at the current cell and repeated
 to fill a selected range when it divides evenly, cells that cannot be edited refused
 rather than skipped silently.
@@ -898,6 +896,31 @@ plain drag, so the first pass built the keyboard and the shift click and left th
 one out. A press on a cell starts it, each cell answers its own pointer moves so nothing
 has to be captured, and the move is marked handled so the list does not drag out a row
 selection underneath the block.
+
+**A column says what it takes, as text.** `GridColumn.Write` is an `Action<object, string?>`
+beside `Value`, and it takes the text that arrived rather than a typed value, because the
+clipboard is text and only a tool knows how to read its own. Null is what clear passes.
+A column with no `Write` takes nothing, which is the column half of the two gates.
+
+**Nothing is written at all unless every cell it would touch can take a value.** The plan
+said cells that cannot be edited are refused rather than skipped silently. A half applied
+paste is worse than none, so the whole write is refused: a block reaching a read only
+column writes nothing, and a paste running off the end of the rows writes nothing.
+**It is refused quietly, which is the part still missing**, since there is nowhere to say
+so until the validation surface in phase 7.
+
+**Cut copies the block, not the rows.** Copy writes whole rows when the unit is the row, so
+cut cannot go through it or it would put more on the clipboard than it emptied. It writes
+the same cells it clears, and it only reaches the clipboard once the clear has gone through.
+
+**Paste repeats both ways or neither.** A block bigger than one cell takes the paste
+repeated to fill it, but only when it divides evenly in both directions. Anything else lands
+at the anchor in the shape it arrived in. A line shorter than the widest one leaves those
+cells empty rather than repeating itself.
+
+**Every row written is one transaction.** `BeginEdit` and `EndEdit` wrap each row's writes,
+so a tool that implements `IEditableObject` sees a coherent change rather than a field at a
+time.
 
 **The footer stops at fifty thousand cells.** Past that it says the count and no sum, since
 the sum is worked out again on every step of a growing block and somebody selecting that

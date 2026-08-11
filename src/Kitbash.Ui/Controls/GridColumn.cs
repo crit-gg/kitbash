@@ -181,8 +181,18 @@ public class GridColumn : AvaloniaObject
     /// </summary>
     public Func<object, object?>? Value { get; set; }
 
+    /// <summary>
+    /// Puts a value into this column for an item, as the text that arrived. Only the tool
+    /// knows how to read that text, so the tool does the reading. Null means the column
+    /// takes nothing, which is what makes paste, cut and clear pass it by.
+    /// </summary>
+    public Action<object, string?>? Write { get; set; }
+
     /// <summary>Whether a header click does anything.</summary>
     public bool CanSort => SortKey is not null;
+
+    /// <summary>Whether anything can put a value into this column.</summary>
+    public bool CanWrite => Write is not null;
 
     /// <summary>Whether this column says anything about an item, which copy needs it to.</summary>
     internal bool HasValue => Value is not null || SortKey is not null;
