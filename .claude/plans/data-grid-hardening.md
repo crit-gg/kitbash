@@ -857,8 +857,8 @@ everything under it, where an unfiltered tree only ever builds what is open. Not
 caches that, so a filter over a very deep tree is a full walk on every keystroke.
 
 **A filter change closes everything**, the way `Sort` already did, and everything a filter
-keeps is open by construction. The tree grid has no no matches state, so a filter that keeps
-nothing draws an empty body.
+keeps is open by construction. A filter that keeps nothing draws the no matches state, which
+the tree grid gained at the same time.
 
 **Two things phase 2 does not answer.** A selection does not survive a page turn, because
 `SelectedItems` can only hold rows that are in the list and the other pages' rows are not.
@@ -1013,10 +1013,20 @@ ItemsControl over a made up list is a collection existing only to be counted. Th
 the real row height so nothing moves when the data lands, flat with no shimmer, and there is
 no spinner anywhere, since a grid can reload on every keystroke of a filter.
 
-**The tree grid has no empty states.** Its template took the seam when the two were changed
-together, but it has no filter and so no no matches state, and nothing has asked for the
-other two. Its template does not name the properties at all rather than carrying two that
-could never come on.
+**The tree grid had no empty states until it could filter.** Its template took the seam when
+the two were changed together, but with no filter there was no no matches state to reach. All
+three are there now. `EmptyContent`, `NoMatchesContent` and `IsLoading` are the flat grid's
+own properties through `AddOwner`, so the switch is declared once and both grids answer the
+same markup.
+
+**It tells an empty tree from an emptied one by whether a filter is on**, where the flat grid
+compares `Total` against `Matched`. A tree has no such pair, and a filter is the only thing
+that takes rows away without the source changing, so `TreeRows.IsFiltered` is the whole test.
+
+**It counts the rows rather than `ItemCount`.** Expanding, collapsing, sorting and filtering
+all change how many rows there are without the source being handed over again, so the grid
+watches the row list itself, and reading `TreeRows.Count` means the answer never depends on
+whether the items view heard the same change first.
 
 **The selection action bar is a control of its own, and the actions in it are the caller's.**
 `ui:GridSelectionBar` is a `ContentControl` the grid template holds as `PART_ActionBar`, and

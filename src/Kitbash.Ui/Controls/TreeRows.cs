@@ -34,6 +34,9 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
 
     public int Count => rows.Count;
 
+    /// <summary>Whether a filter is on, which is what tells an empty tree from an emptied one.</summary>
+    public bool IsFiltered => match is not null;
+
     public TreeRow this[int index] => rows[index];
 
     /// <summary>Builds the whole thing again from a new set of roots.</summary>

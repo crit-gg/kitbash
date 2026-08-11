@@ -198,6 +198,19 @@
                                   TextChanged="OnFilterTree" />
 
                     <ui:TreeDataGrid Name="SampleTreeGrid" Height="250">
+                        <ui:TreeDataGrid.NoMatchesContent>
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Classes="note"
+                                           Text="Nothing in the tree matches that."
+                                           HorizontalAlignment="Center" />
+
+                                <Button Classes="ghost"
+                                        Content="Clear the filter"
+                                        HorizontalAlignment="Center"
+                                        Click="OnClearTreeFilter" />
+                            </StackPanel>
+                        </ui:TreeDataGrid.NoMatchesContent>
+
                         <ui:TreeDataGrid.Columns>
                             <ui:GridColumn Width="34" MinWidth="34" CanResize="False" Alignment="Center">
                                 <ui:GridColumn.CellTemplate>

@@ -44,12 +44,25 @@ public class TreeDataGrid : Tree, IGridHost
     public static readonly StyledProperty<ColumnGestures> ColumnGesturesProperty =
         DataGrid.ColumnGesturesProperty.AddOwner<TreeDataGrid>();
 
+    /// <inheritdoc cref="DataGrid.EmptyContentProperty"/>
+    public static readonly StyledProperty<object?> EmptyContentProperty =
+        DataGrid.EmptyContentProperty.AddOwner<TreeDataGrid>();
+
+    /// <inheritdoc cref="DataGrid.NoMatchesContentProperty"/>
+    public static readonly StyledProperty<object?> NoMatchesContentProperty =
+        DataGrid.NoMatchesContentProperty.AddOwner<TreeDataGrid>();
+
+    /// <inheritdoc cref="DataGrid.IsLoadingProperty"/>
+    public static readonly StyledProperty<bool> IsLoadingProperty =
+        DataGrid.IsLoadingProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
     private readonly GridValueComparer order = new();
 
     private GridColumn? sorted;
+    private TreeRows? tree;
 
     public TreeDataGrid()
     {
@@ -118,6 +131,27 @@ public class TreeDataGrid : Tree, IGridHost
     {
         get => GetValue(CellActionsProperty);
         set => SetValue(CellActionsProperty, value);
+    }
+
+    /// <inheritdoc cref="DataGrid.EmptyContentProperty"/>
+    public object? EmptyContent
+    {
+        get => GetValue(EmptyContentProperty);
+        set => SetValue(EmptyContentProperty, value);
+    }
+
+    /// <inheritdoc cref="DataGrid.NoMatchesContentProperty"/>
+    public object? NoMatchesContent
+    {
+        get => GetValue(NoMatchesContentProperty);
+        set => SetValue(NoMatchesContentProperty, value);
+    }
+
+    /// <inheritdoc cref="DataGrid.IsLoadingProperty"/>
+    public bool IsLoading
+    {
+        get => GetValue(IsLoadingProperty);
+        set => SetValue(IsLoadingProperty, value);
     }
 
     /// <summary>
@@ -238,6 +272,8 @@ public class TreeDataGrid : Tree, IGridHost
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
+
+        ShowEmpty();
     }
 
     /// <summary>
@@ -309,6 +345,18 @@ public class TreeDataGrid : Tree, IGridHost
             return;
         }
 
+        if (change.Property == IsLoadingProperty)
+        {
+            ShowEmpty();
+            return;
+        }
+
+        if (change.Property == ItemsSourceProperty)
+        {
+            Follow(change.GetNewValue<System.Collections.IEnumerable?>() as TreeRows);
+            return;
+        }
+
         if (change.Property != LeadColumnProperty)
         {
             return;
@@ -318,6 +366,47 @@ public class TreeDataGrid : Tree, IGridHost
         {
             (container as TreeDataGridRow)?.Attach(columns, LeadColumn);
         }
+    }
+
+    /// <summary>
+    /// Watches the rows themselves, since expanding, collapsing, sorting and filtering all
+    /// change how many there are without the source being handed over again.
+    /// </summary>
+    private void Follow(TreeRows? rows)
+    {
+        if (tree is not null)
+        {
+            tree.CollectionChanged -= OnRowsChanged;
+        }
+
+        tree = rows;
+
+        if (tree is not null)
+        {
+            tree.CollectionChanged += OnRowsChanged;
+        }
+
+        ShowEmpty();
+    }
+
+    private void OnRowsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
+        ShowEmpty();
+
+    /// <summary>
+    /// Which of the three empty states is on, if any. A tree tells an empty one from an
+    /// emptied one by whether a filter is on, since a filter is the only thing that takes
+    /// rows away without the source changing.
+    /// </summary>
+    private void ShowEmpty()
+    {
+        // The rows themselves rather than ItemCount, so this never depends on whether the
+        // items view heard the same change first.
+        var loading = IsLoading;
+        var bare = !loading && (tree?.Count ?? ItemCount) == 0;
+
+        PseudoClasses.Set(":loading", loading);
+        PseudoClasses.Set(":nomatches", bare && tree is { IsFiltered: true });
+        PseudoClasses.Set(":nothing", bare && tree is not { IsFiltered: true });
     }
 
     /// <summary>

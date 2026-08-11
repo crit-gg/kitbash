@@ -221,6 +221,9 @@ public partial class GridsPage : GalleryPage
             : item => ((Aggregate)item).Name.Contains(text, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>The way out of the no matches state, which is the whole point of that state.</summary>
+    private void OnClearTreeFilter(object? sender, RoutedEventArgs e) => TreeFilter.Text = null;
+
     /// <summary>Takes every edit as saved, which is what clears the amber bars.</summary>
     private void OnSaveEdits(object? sender, RoutedEventArgs e)
     {

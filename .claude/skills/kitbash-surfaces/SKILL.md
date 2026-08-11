@@ -421,6 +421,9 @@ of it.** Read that before changing anything below the look. What it settled, in 
   matches or when anything under it does, a branch kept for a descendant opens, and a branch
   that matches on its own name keeps nothing under it. It walks the whole tree, where an
   unfiltered one only builds what is open.
+- **Both grids have the same three empty states**, over the body and never over the header.
+  The flat one tells nothing yet from no matches by `Total` against `Matched`, the tree by
+  `TreeRows.IsFiltered`, since a tree has no such pair. The words are always the caller's.
 - **Everything a grid says out loud is a name or a help text.** Avalonia ships no
   `IGridProvider` or `IGridItemProvider`, so indices and counts have nowhere to be published.
   `GridAutomationPeers.cs` holds the five peers, and a cell reads `Content` rather than
