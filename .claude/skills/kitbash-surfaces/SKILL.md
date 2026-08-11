@@ -404,10 +404,21 @@ of it.** Read that before changing anything below the look. What it settled, in 
   the lane would land on the last column.
 - **Pinning is one panel and one pass.** A pinned column takes its offset first and is
   arranged a further `PinOffset` along. With nothing pinned the layout is what it always was.
-- **An in cell form is a keyed theme, not a new control.** `GridCellText`, `GridCellNumber`,
-  `GridCellChoice`, `GridCellCheckBox`, `GridCellRatio`, `GridCellColor`, `GridCellJump` and
-  `GridCellTags`. Nothing inside a cell takes the control radius, because the cell is the
-  shape now.
+- **The cell owns every piece of chrome, and a control in one draws none.** No frame, no
+  radius, no padding, no fill and no focus halo. The cell draws the row hover underline, the
+  cell hover ring, the editing well and its accent ring. Set the flattening on the controls
+  and not on their template parts: a `TemplateBinding` outranks a style, and a halo can only
+  have its colour taken, in each state by name. `.claude/avalonia.md` has both rules.
+- **An in cell form is a keyed theme where a control exists to theme.** `GridCellText`,
+  `GridCellNumber`, `GridCellChoice`, `GridCellCheckBox`, `GridCellRatio`, `GridCellColor`,
+  `GridCellJump` and `GridCellTags`. **Three kinds are content rather than chrome and are
+  controls of their own**: `ui:GridRefCell`, `ui:GridRatioCell` and `ui:GridTagsCell`.
+- **`GridColumn.Kind` is what a cell offers before an editor exists.** A cell draws its value
+  through the cell template until a double click opens one, so the chevron and the jump mark
+  are the cell's own. Enum and reference show theirs on row hover and reserve the room from
+  the start, so nothing reflows under the pointer. **A number has no stepper at all.**
+- **A read only cell rests at `InkDisabled`**, in every grid including one that edits nothing,
+  and it is also the cell that never reacts to a pointer.
 - **A selection spans the pages, and it is two lists.** `SelectedItems` is what is picked and
   on the page, which copy and the block read. `PickedItems` is the whole set, which a set wide
   action reads. A filter unpicks what it hides, a page turn does not, and `GridRows.Keeps` is

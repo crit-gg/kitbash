@@ -83,6 +83,20 @@ public sealed class Entry(string id, string name, string kind, double value, int
 
     public string State { get; } = state;
 
+    /// <summary>What this row points at, for the reference cell. Derived, so nothing new is stored.</summary>
+    public string Machine => $"MCH_{Kind.Replace(" ", string.Empty)}";
+
+    /// <summary>What it is filed under, for the tags cell.</summary>
+    public string[] Tags => Tier > 2
+        ? [Kind.ToLowerInvariant(), $"tier {Tier}", "review", "bulk"]
+        : [Kind.ToLowerInvariant(), $"tier {Tier}"];
+
+    /// <summary>How far along it is, for the ratio cell.</summary>
+    public double Yield => Math.Clamp((Value % 20) / 20, 0, 1);
+
+    /// <summary>The same as a percentage, which is the caller's reading of it.</summary>
+    public string YieldText => $"{Yield * 100:N0}%";
+
     public override string ToString() => Id;
 
     /// <summary>Takes the value as saved, which is what clears the modified mark.</summary>

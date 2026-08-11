@@ -94,7 +94,7 @@
                                 </ui:GridColumn.CellTemplate>
                             </ui:GridColumn>
 
-                            <ui:GridColumn Header="NAME" MinWidth="120" IsStrong="True">
+                            <ui:GridColumn Header="NAME" MinWidth="120" IsStrong="True" Kind="Text">
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Entry">
                                         <TextBlock Text="{Binding Name}"
@@ -111,7 +111,7 @@
                                 </ui:GridColumn.EditTemplate>
                             </ui:GridColumn>
 
-                            <ui:GridColumn Header="KIND" Width="150">
+                            <ui:GridColumn Header="KIND" Width="150" Kind="Enum">
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Entry">
                                         <TextBlock Text="{Binding Kind}"
@@ -121,7 +121,7 @@
                                 </ui:GridColumn.CellTemplate>
                             </ui:GridColumn>
 
-                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right">
+                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right" Kind="Number">
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Entry">
                                         <TextBlock Text="{Binding Value}" VerticalAlignment="Center" />
@@ -145,6 +145,34 @@
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Entry">
                                         <TextBlock Text="{Binding Tier}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <!-- The three cell contents. Each is one element in the cell
+                                 template rather than a stack a view assembles. -->
+                            <ui:GridColumn Header="MACHINE" Width="170" Kind="Reference">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <ui:GridRefCell Text="{Binding Machine}"
+                                                        Mark="{DynamicResource Data}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="YIELD" Width="90" Kind="Ratio" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <ui:GridRatioCell Value="{Binding Yield}"
+                                                          Text="{Binding YieldText}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="TAGS" Width="180" Kind="Tags">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <ui:GridTagsCell Tags="{Binding Tags}" />
                                     </DataTemplate>
                                 </ui:GridColumn.CellTemplate>
                             </ui:GridColumn>
@@ -234,7 +262,7 @@
                                 </ui:GridColumn.CellTemplate>
                             </ui:GridColumn>
 
-                            <ui:GridColumn Header="KIND" Width="150">
+                            <ui:GridColumn Header="KIND" Width="150" Kind="Enum">
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Aggregate">
                                         <TextBlock Text="{Binding Kind}"
@@ -244,7 +272,7 @@
                                 </ui:GridColumn.CellTemplate>
                             </ui:GridColumn>
 
-                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right">
+                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right" Kind="Number">
                                 <ui:GridColumn.CellTemplate>
                                     <DataTemplate x:DataType="views:Aggregate">
                                         <TextBlock Text="{Binding Value}" VerticalAlignment="Center" />

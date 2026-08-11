@@ -1032,3 +1032,36 @@ test framework, and it never captures anything else on the desktop.
 - Fluent decorations theme: `src/Avalonia.Themes.Fluent/Controls/WindowDrawnDecorations.xaml`
 - SourceGit, a well built Avalonia app, though its chrome targets version 11:
   https://github.com/sourcegit-scm/sourcegit
+
+## A style with a pseudo class outranks one without
+
+Avalonia's binding priorities put an activated style, one whose selector carries a pseudo
+class, above a plain style. File order decides between two of the same kind and does not
+decide between these.
+
+So a rule meant to replace a control theme's `:focus-within` rule has to carry
+`:focus-within` too. A stateless rule aimed at the same property is accepted, applies while
+the state is off, and loses the moment the state that matters comes on, which is exactly when
+it was needed.
+
+Measured on the grid's in cell forms: the same setter matched and did nothing at 
+`:is(ui|DataGridCell) TextBox /template/ Border#PART_Halo`, and worked at
+`:is(ui|DataGridCell) TextBox:focus-within /template/ Border#PART_Halo`.
+
+**The states are not interchangeable either.** `TextBox` and `NumericUpDown` light their halo
+on `:focus-within` and `ComboBox` on `:focus-visible`, so a rule covering the set names both.
+
+## A template child's literal attribute cannot be restyled
+
+A value written as an attribute in a `ControlTemplate`, including one reading a
+`DynamicResource`, is a local value on that child. Local value beats every style, so a rule
+aimed at the part is accepted and does nothing.
+
+`PART_Halo` is the worked example: its `Margin` and `BorderThickness` are literals and its
+`BorderBrush` is a style. Only the brush can be taken away from outside, which is enough,
+since a halo with no colour draws nothing.
+
+The same applies to anything drawn through a `TemplateBinding`. To flatten a field's frame,
+set `BorderThickness`, `CornerRadius` and `Padding` on the control, not on its `PART_Frame`,
+and name the inner types as well: a `NumericUpDown` holds a `ButtonSpinner` holding a
+`TextBox`, and each carries its own.

@@ -3,6 +3,7 @@ using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Reactive;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -14,6 +15,8 @@ namespace Kitbash.Ui.Controls;
 /// </summary>
 public class DataGridCell : ContentControl
 {
+    private IDisposable? following;
+
     public static readonly StyledProperty<GridColumn?> ColumnProperty =
         AvaloniaProperty.Register<DataGridCell, GridColumn?>(nameof(Column));
 
@@ -120,6 +123,13 @@ public class DataGridCell : ContentControl
 
         if (change.Property == ColumnProperty)
         {
+            following?.Dispose();
+
+            // The column is a live object a view can change, so the cell follows the parts
+            // of it that decide what the cell draws rather than reading them once.
+            following = change.GetNewValue<GridColumn?>()?.GetObservable(GridColumn.KindProperty)
+                .Subscribe(new AnonymousObserver<GridCellKind>(_ => Apply()));
+
             Apply();
         }
         else if (change.Property == IsCurrentProperty)

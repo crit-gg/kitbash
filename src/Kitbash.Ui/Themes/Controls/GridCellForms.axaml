@@ -137,7 +137,168 @@
         </Setter>
     </ControlTheme>
 
+    <!-- The three cell contents. A keyed theme cannot supply content, and these three types
+         are content: a mark beside a name, a bar behind a value, chips with a count after
+         them. Everything else in a cell is still a theme over a control. -->
+
+    <!-- reference. A type mark and the name. The mark is 7px square at a 2px radius, which
+         is the row mark's shape rather than a dot, so it reads as a kind and not a state. -->
+    <ControlTheme x:Key="{x:Type ui:GridRefCell}" TargetType="ui:GridRefCell">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel LastChildFill="True">
+                    <Border Name="PART_Mark"
+                            DockPanel.Dock="Left"
+                            Width="{DynamicResource SizeGridRefMark}"
+                            Height="{DynamicResource SizeGridRefMark}"
+                            Margin="0,0,7,0"
+                            CornerRadius="{DynamicResource RadiusMark}"
+                            VerticalAlignment="Center"
+                            Background="{TemplateBinding Mark}"
+                            IsVisible="{TemplateBinding Mark, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                    <TextBlock Text="{TemplateBinding Text}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- ratio. The bar is the cell's background, edge to edge and square, and the value sits
+         on it right aligned so a column of them still scans as numbers. -->
+    <ControlTheme x:Key="{x:Type ui:GridRatioCell}" TargetType="ui:GridRatioCell">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Fill" Value="{DynamicResource Data}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <!-- A progress bar rather than a border with a computed width, so the
+                         fraction is laid out by the control that already does that. -->
+                    <ProgressBar Name="PART_Bar"
+                                 Theme="{StaticResource GridCellRatio}"
+                                 Minimum="0"
+                                 Maximum="1"
+                                 Value="{TemplateBinding Reach}"
+                                 Background="Transparent"
+                                 Foreground="{TemplateBinding Fill}"
+                                 Opacity="{DynamicResource OpacityGridRatioBar}"
+                                 IsHitTestVisible="False" />
+
+                    <TextBlock Text="{TemplateBinding Text}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- tags. Chips keep their pill radius because they are content, and what does not fit
+         is counted rather than wrapped, since the row height is fixed. -->
+    <ControlTheme x:Key="{x:Type ui:GridTagsCell}" TargetType="ui:GridTagsCell">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <ItemsControl ItemsSource="{TemplateBinding Drawn}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="5" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="ui:GridTag">
+                                <ui:Chip Content="{Binding Text}" Classes.accent="{Binding IsLead}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Name="PART_Overflow"
+                               Text="{TemplateBinding Overflow}"
+                               FontFamily="{DynamicResource FontFamilyMono}"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               FontWeight="{DynamicResource FontWeightMedium}"
+                               Foreground="{DynamicResource InkMuted}"
+                               VerticalAlignment="Center"
+                               IsVisible="{TemplateBinding Overflow, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
     </Styles.Resources>
+
+    <!-- The cell is the shape now, so nothing inside one keeps a frame, a radius, padding or
+         a focus halo of its own.
+
+         These are set on the controls and not on their template parts. Every field draws its
+         frame through a TemplateBinding and a TemplateBinding outranks a Style, so a rule
+         aimed at PART_Frame is accepted and does nothing. The inner types are named as well
+         as the outer ones, since a NumericUpDown holds a ButtonSpinner holding a TextBox and
+         each one carries its own. -->
+    <Style Selector=":is(ui|DataGridCell) TextBox,
+                    :is(ui|DataGridCell) ComboBox,
+                    :is(ui|DataGridCell) ButtonSpinner,
+                    :is(ui|DataGridCell) NumericUpDown">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- No focus halo either. The cell already rings itself in the accent while it is being
+         edited, and a halo outside that ring lands on the cells beside it. The halo's own
+         thickness is a literal in each template, so what is taken away is its colour.
+
+         Each state is named rather than left off. A style carrying a pseudo class is a
+         trigger and outranks a plain style whatever the file order, so a stateless rule here
+         is accepted and loses to the very rules it is meant to replace. -->
+    <Style Selector=":is(ui|DataGridCell) TextBox:focus-within /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) ComboBox:focus-within /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) ButtonSpinner:focus-within /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) NumericUpDown:focus-within /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) TextBox:focus-visible /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) ComboBox:focus-visible /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) ButtonSpinner:focus-visible /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) NumericUpDown:focus-visible /template/ Border#PART_Halo,
+                    :is(ui|DataGridCell) CheckBox:focus-visible /template/ Border#PART_Focus,
+                    :is(ui|DataGridCell) Button:focus-visible /template/ Border#PART_Focus">
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- The chevron is the cell's, so the field draws none of its own and there is never a
+         pair of them on one edge. -->
+    <Style Selector=":is(ui|DataGridCell) ComboBox /template/ ui|Icon#PART_Chevron">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The bar steps up with the row, so a hovered row reads as one thing rather than as a
+         value that brightened over a bar that did not. -->
+    <Style Selector="ui|DataGridRow:pointerover ui|GridRatioCell /template/ ProgressBar#PART_Bar,
+                     ui|TreeDataGridRow:pointerover ui|GridRatioCell /template/ ProgressBar#PART_Bar">
+        <Setter Property="Opacity" Value="{DynamicResource OpacityGridRatioBarHover}" />
+    </Style>
+
+    <!-- A read only reference keeps its name and loses the colour of its kind, since the
+         kind is still true and the row is not something that can be opened. -->
+    <Style Selector=":is(ui|DataGridCell):not(:editable) ui|GridRefCell /template/ Border#PART_Mark">
+        <Setter Property="Background" Value="{DynamicResource LineWellOff}" />
+    </Style>
 
     <!-- A chip inside a cell is shorter than one on a page, since a row is 31px and two of
          them plus the cell padding have to sit inside it. -->
