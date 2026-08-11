@@ -277,7 +277,7 @@ Nothing read `INotifyDataErrorInfo` and there was no cell error state. Consumers
 rolled it, which `CustomToolsEditorView.axaml:45` does with a class and a tooltip. A
 library that leaves this to every caller gets a different answer in every tool.
 
-### No in cell form for any editor
+### No in cell form for any editor. Built in phase 6
 
 A control dropped into a cell unchanged looks like a control that fell into a cell. The
 design's own words. Every editor needs a second form for when it is the whole content of
@@ -300,7 +300,7 @@ control types. It is the section named Controls inside a cell.
 how many there are stopped being true. `GridRows.Filter` now sits beside the sort, and
 `Total`, `Matched` and `Shown` are three separate counts.
 
-### Column work missing
+### Column work missing. Built in phase 5
 
 - No double click on a divider to fit the contents. It is the most used gesture in any
   grid and we do not have it. It measures the realised rows only, which is what a
@@ -910,7 +910,7 @@ is drawn for an ordinary sort.
 
 **The menu has five of the design's seven items, and leaves two out rather than disabling
 them.** Sort ascending, sort descending, clear sort on this column, group by this column and
-hide column. **Pin to the left is left out because pinning is not built**, and **filter on
+hide column. **Pin to the left arrived with pinning later in the same phase**, and **filter on
 this column is left out because there is no filter surface**, only `GridRows.Filter` under
 it. Clear sort only appears when there is a sort to clear, and an item nothing can answer is
 left out rather than shown greyed, so the menu never promises something that does nothing.
