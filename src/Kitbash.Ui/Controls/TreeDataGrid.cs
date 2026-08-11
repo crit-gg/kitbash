@@ -36,6 +36,10 @@ public class TreeDataGrid : Tree, IGridHost
     public static readonly StyledProperty<CellActions> CellActionsProperty =
         DataGrid.CellActionsProperty.AddOwner<TreeDataGrid>();
 
+    /// <inheritdoc cref="BeginEditGesturesProperty"/>
+    public static readonly StyledProperty<GridSelectionUnit> SelectionUnitProperty =
+        DataGrid.SelectionUnitProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -90,6 +94,13 @@ public class TreeDataGrid : Tree, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <inheritdoc cref="GridSelectionUnit"/>
+    public GridSelectionUnit SelectionUnit
+    {
+        get => GetValue(SelectionUnitProperty);
+        set => SetValue(SelectionUnitProperty, value);
+    }
 
     /// <inheritdoc cref="CellActions"/>
     public CellActions CellActions
@@ -241,6 +252,13 @@ public class TreeDataGrid : Tree, IGridHost
         if (change.Property == CellActionsProperty)
         {
             body.Actions = change.GetNewValue<CellActions>();
+            return;
+        }
+
+        if (change.Property == SelectionUnitProperty)
+        {
+            body.Selection = change.GetNewValue<GridSelectionUnit>();
+            body.Refresh();
             return;
         }
 

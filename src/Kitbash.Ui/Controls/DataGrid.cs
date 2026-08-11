@@ -44,6 +44,9 @@ public class DataGrid : ListBox, IGridHost
     public static readonly StyledProperty<CellActions> CellActionsProperty =
         AvaloniaProperty.Register<DataGrid, CellActions>(nameof(CellActions), CellActions.Copy);
 
+    public static readonly StyledProperty<GridSelectionUnit> SelectionUnitProperty =
+        AvaloniaProperty.Register<DataGrid, GridSelectionUnit>(nameof(SelectionUnit));
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -81,6 +84,8 @@ public class DataGrid : ListBox, IGridHost
             frame.Rebuild();
             body.Refresh();
         };
+
+        body.RangeChanged += (_, _) => UpdateCounts();
 
         AddHandler(DoubleTappedEvent, OnDoubleTapped);
 
@@ -140,6 +145,13 @@ public class DataGrid : ListBox, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <inheritdoc cref="GridSelectionUnit"/>
+    public GridSelectionUnit SelectionUnit
+    {
+        get => GetValue(SelectionUnitProperty);
+        set => SetValue(SelectionUnitProperty, value);
+    }
 
     /// <inheritdoc cref="CellActions"/>
     public CellActions CellActions
@@ -296,6 +308,11 @@ public class DataGrid : ListBox, IGridHost
         else if (change.Property == CellActionsProperty)
         {
             body.Actions = change.GetNewValue<CellActions>();
+        }
+        else if (change.Property == SelectionUnitProperty)
+        {
+            body.Selection = change.GetNewValue<GridSelectionUnit>();
+            body.Refresh();
         }
         else if (change.Property == ItemsSourceProperty)
         {
@@ -465,7 +482,14 @@ public class DataGrid : ListBox, IGridHost
     {
         var picked = SelectedItems?.Count ?? 0;
 
-        SetAndRaise(SelectionTextProperty, ref selectionText, picked == 0 ? string.Empty : $"{picked:N0} selected");
+        // A live block says what it holds instead of how many rows are picked, since the
+        // same number twice over says nothing and the block is what a person is looking at.
+        SetAndRaise(
+            SelectionTextProperty,
+            ref selectionText,
+            body.RangeText is { Length: > 0 } range ? range
+                : picked == 0 ? string.Empty
+                : $"{picked:N0} selected");
 
         SetAndRaise(
             ShownTextProperty,

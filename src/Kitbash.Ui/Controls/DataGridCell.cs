@@ -23,6 +23,18 @@ public class DataGridCell : ContentControl
     public static readonly StyledProperty<bool> IsCurrentProperty =
         AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsCurrent));
 
+    /// <summary>Whether this cell is inside a range, which is what wears the wash.</summary>
+    public static readonly StyledProperty<bool> IsInRangeProperty =
+        AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsInRange));
+
+    /// <summary>
+    /// Which of this cell's edges are on the edge of the block it belongs to. It is the
+    /// border's thickness and its inset at once, so the block's outline runs unbroken
+    /// across the cells along it and still sits inside the block.
+    /// </summary>
+    public static readonly StyledProperty<Thickness> RangeEdgesProperty =
+        AvaloniaProperty.Register<DataGridCell, Thickness>(nameof(RangeEdges));
+
     public GridColumn? Column
     {
         get => GetValue(ColumnProperty);
@@ -34,6 +46,20 @@ public class DataGridCell : ContentControl
     {
         get => GetValue(IsCurrentProperty);
         set => SetValue(IsCurrentProperty, value);
+    }
+
+    /// <inheritdoc cref="IsInRangeProperty"/>
+    public bool IsInRange
+    {
+        get => GetValue(IsInRangeProperty);
+        set => SetValue(IsInRangeProperty, value);
+    }
+
+    /// <inheritdoc cref="RangeEdgesProperty"/>
+    public Thickness RangeEdges
+    {
+        get => GetValue(RangeEdgesProperty);
+        set => SetValue(RangeEdgesProperty, value);
     }
 
     /// <summary>
@@ -60,6 +86,10 @@ public class DataGridCell : ContentControl
         else if (change.Property == IsCurrentProperty)
         {
             PseudoClasses.Set(":current", change.GetNewValue<bool>());
+        }
+        else if (change.Property == IsInRangeProperty)
+        {
+            PseudoClasses.Set(":range", change.GetNewValue<bool>());
         }
         else if (change.Property == IsEditingProperty)
         {
@@ -152,7 +182,18 @@ public class DataGridCell : ContentControl
     {
         base.OnPointerPressed(e);
 
-        if (Column is { } column && this.FindAncestorOfType<IGridHost>() is { } host)
+        if (Column is not { } column || this.FindAncestorOfType<IGridHost>() is not { } host)
+        {
+            return;
+        }
+
+        // Shift extends the block from the anchor, which is what it does in every grid and
+        // in every spreadsheet.
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            host.Body.ExtendTo(this, column);
+        }
+        else
         {
             host.Body.SetCurrent(column);
         }

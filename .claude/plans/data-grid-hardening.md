@@ -257,11 +257,13 @@ A tool where a designer pastes forty rows out of a spreadsheet is the reason thi
 exists, so this is not a nicety. Copy is on by default and the three that write are not.
 See `CellActions` under What is optional.
 
-### No cell range selection and no fill handle
+### No cell range selection and no fill handle. The range is built in phase 4
 
-Row selection is all there is. A range is what makes copy worth having, what a fill
-handle drags over, and what a status readout aggregates. Both are behind
-`SelectionUnit` and `CellActions`.
+Row selection was all there was. A range is what makes copy worth having, what a fill
+handle drags over, and what a status readout aggregates. **`SelectionUnit` and the block
+are built**, with the wash, the block outline, the anchor, shift extension by key and by
+click, copy over the block and the footer's aggregates. **The fill handle is not**, and it
+is the rest of `CellActions`.
 
 ### No row level edit transaction. Built in phase 3
 
@@ -870,6 +872,29 @@ hit the keys without selecting first.
 **Headers are not copied and there is no switch for one.** The plan called headers optional.
 A sixth property is exactly what the rule under What is optional warns against, so the
 simple case is what ships until something asks for the other.
+
+**One property draws the block, not four.** `DataGridCell.RangeEdges` is a `Thickness`
+carrying a one on each edge of the cell that is also an edge of the block. It is the
+border's thickness and its inset at the same time, which is what makes the outline run
+unbroken across the cells along one side and still sit inside the block. **A block of one
+cell is the current cell mark**, all four edges, so nothing changes shape as a selection
+grows, which is what the design asked for.
+
+**The editable cell hint moved off the mark.** Both used to be the same border. Once the
+mark's thickness comes from a template binding, a style can no longer override it, since a
+template binding outranks a style in Avalonia. So the hint has a border of its own.
+
+**In row units there is no block at all**, so shift and the arrows stay the list's own and
+every default is unchanged. In cell units shift and the arrows move the far corner rather
+than the anchor, and the body answers them so the list does not also extend its rows.
+
+**Copy writes every column the block covers**, whether or not a column says anything about
+an item, which is the opposite of what it does over rows. A person who picked a column
+meant it, and a blank field keeps the shape of what was picked.
+
+**The footer stops at fifty thousand cells.** Past that it says the count and no sum, since
+the sum is worked out again on every step of a growing block and somebody selecting that
+many cells is selecting rather than adding up.
 
 ## Where phase 3 departed from this plan
 

@@ -346,6 +346,11 @@
                      cell's own edge, and a clip there shaves it wherever a column lands on
                      a fraction of a pixel. -->
                 <Panel>
+                    <Border Name="PART_Wash"
+                            Background="{DynamicResource CellRange}"
+                            IsHitTestVisible="False"
+                            IsVisible="False" />
+
                     <Border Background="Transparent"
                             Padding="{TemplateBinding Padding}"
                             ClipToBounds="True">
@@ -356,16 +361,23 @@
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                     </Border>
 
-                    <!-- Over the content rather than around it, so a mark arriving moves
-                         nothing. One pixel in from every edge, so the whole stroke is inside
-                         the cell and never lands on the row rule, the next cell or any clip.
-                         Square, which is the one square cornered thing here, and aliased, so
-                         the edge stays one pixel at any display scale. -->
-                    <Border Name="PART_Mark"
-                            Margin="1"
+                    <Border Name="PART_Hint"
                             IsHitTestVisible="False"
                             CornerRadius="0"
-                            BorderThickness="0"
+                            BorderThickness="0" />
+
+                    <!-- Over the content rather than around it, so a mark arriving moves
+                         nothing. The same value is the inset and the thickness, so the block
+                         outline runs unbroken across the cells along it and still sits
+                         inside the block, clear of the row rule and the next cell. Square,
+                         which is the one square cornered thing here, and aliased, so the
+                         edge stays one pixel at any display scale. -->
+                    <Border Name="PART_Mark"
+                            Margin="{TemplateBinding RangeEdges}"
+                            BorderThickness="{TemplateBinding RangeEdges}"
+                            BorderBrush="{DynamicResource CellCurrent}"
+                            IsHitTestVisible="False"
+                            CornerRadius="0"
                             RenderOptions.EdgeMode="Aliased" />
                 </Panel>
             </ControlTemplate>
@@ -382,15 +394,15 @@
         <!-- Cell hover closes the row hover underline into a full border, the same one a
              text field wears at rest. The row scope half of it is outside this theme, since
              a control theme cannot hold a descendant selector. -->
-        <Style Selector="^:editable:pointerover /template/ Border#PART_Mark">
+        <Style Selector="^:editable:pointerover /template/ Border#PART_Hint">
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
-        <!-- Where the keyboard is. No fill at all, since fill means a range. -->
-        <Style Selector="^:current /template/ Border#PART_Mark">
-            <Setter Property="BorderBrush" Value="{DynamicResource CellCurrent}" />
-            <Setter Property="BorderThickness" Value="1" />
+        <!-- The cells inside a block. The anchor is not one of them, so the cell that still
+             takes typing is the one without a wash. -->
+        <Style Selector="^:range /template/ Border#PART_Wash">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
     </ControlTheme>
 
@@ -403,6 +415,11 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
+                    <Border Name="PART_Wash"
+                            Background="{DynamicResource CellRange}"
+                            IsHitTestVisible="False"
+                            IsVisible="False" />
+
                     <Border Background="Transparent"
                             Padding="{TemplateBinding Padding}"
                             ClipToBounds="True">
@@ -429,11 +446,17 @@
                         </DockPanel>
                     </Border>
 
-                    <Border Name="PART_Mark"
-                            Margin="1"
+                    <Border Name="PART_Hint"
                             IsHitTestVisible="False"
                             CornerRadius="0"
-                            BorderThickness="0"
+                            BorderThickness="0" />
+
+                    <Border Name="PART_Mark"
+                            Margin="{TemplateBinding RangeEdges}"
+                            BorderThickness="{TemplateBinding RangeEdges}"
+                            BorderBrush="{DynamicResource CellCurrent}"
+                            IsHitTestVisible="False"
+                            CornerRadius="0"
                             RenderOptions.EdgeMode="Aliased" />
                 </Panel>
             </ControlTemplate>
@@ -800,23 +823,23 @@
          theme cannot hold a descendant selector, which is why they live out here. -->
     <!-- The editable cell hint, step one. Row hover underlines the cells that take a value
          with a seam colour rather than an accent, so a column of them still reads as data. -->
-    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Mark">
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Hint">
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
 
-    <Style Selector="ui|TreeDataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Mark">
+    <Style Selector="ui|TreeDataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Hint">
         <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
     </Style>
 
     <!-- On a picked row both marks stay, since the tint says which record and the border
          says where the keyboard is, so the border lightens to clear the tint. -->
-    <Style Selector="ui|DataGridRow:selected ui|DataGridCell:current /template/ Border#PART_Mark">
+    <Style Selector="ui|DataGridRow:selected ui|DataGridCell /template/ Border#PART_Mark">
         <Setter Property="BorderBrush" Value="{DynamicResource CellCurrentPicked}" />
     </Style>
 
-    <Style Selector="ui|TreeDataGridRow:selected ui|DataGridCell:current /template/ Border#PART_Mark">
+    <Style Selector="ui|TreeDataGridRow:selected ui|DataGridCell /template/ Border#PART_Mark">
         <Setter Property="BorderBrush" Value="{DynamicResource CellCurrentPicked}" />
     </Style>
 

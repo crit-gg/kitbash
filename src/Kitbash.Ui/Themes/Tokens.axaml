@@ -77,6 +77,10 @@
     <SolidColorBrush x:Key="CellCurrent" Color="#569eff" />
     <SolidColorBrush x:Key="CellCurrentPicked" Color="#9cc6ff" />
 
+    <!-- The cells inside a range. Fill means range and the border means where the block
+         ends, so the anchor keeps the plain surface and is marked by having no wash. -->
+    <SolidColorBrush x:Key="CellRange" Color="#569eff" Opacity="0.1" />
+
     <!-- The second lead. A grey flood for the action a view repeats across many cards or rows,
          where nine accent buttons would fight each other and the accent would stop meaning
          selection and focus. -->

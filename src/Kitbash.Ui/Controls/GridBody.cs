@@ -25,6 +25,13 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>The item whose row transaction is open, or null when none is.</summary>
     private object? open;
 
+    /// <summary>The far corner of the block, or nothing when the block is the anchor alone.</summary>
+    private int edgeRow = -1;
+    private GridColumn? edgeColumn;
+
+    /// <summary>The block the footer was last told about, so it is only worked out on a move.</summary>
+    private (int Top, int Bottom, int Left, int Right) told = (-1, -1, -1, -1);
+
     /// <summary>The cell being edited, or null when none is.</summary>
     public DataGridCell? EditingCell => editing;
 
@@ -41,6 +48,18 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
     /// <summary>What a person may do to the values. The grid holds the property.</summary>
     public CellActions Actions { get; set; } = CellActions.Copy;
+
+    /// <summary>What a person picks. The grid holds the property.</summary>
+    public GridSelectionUnit Selection { get; set; } = GridSelectionUnit.Row;
+
+    /// <summary>What the footer says about a live block, or empty when there is not one.</summary>
+    public string RangeText { get; private set; } = string.Empty;
+
+    /// <summary>Raised when the block moves, so a footer can say something else about it.</summary>
+    public event EventHandler? RangeChanged;
+
+    /// <summary>Whether a block of cells is a thing here at all.</summary>
+    private bool Blocks => Selection == GridSelectionUnit.Cell;
 
     /// <summary>Which rows hold changes that are not saved. Null marks none of them.</summary>
     public Func<object, bool>? Modified { get; set; }
@@ -187,13 +206,61 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>Moves the keyboard to a column, which a press on a cell does.</summary>
     public void SetCurrent(GridColumn? column)
     {
-        if (ReferenceEquals(current, column))
+        var collapsed = edgeRow >= 0;
+
+        edgeRow = -1;
+        edgeColumn = null;
+
+        if (ReferenceEquals(current, column) && !collapsed)
         {
             return;
         }
 
         current = column;
         Refresh();
+    }
+
+    /// <summary>
+    /// Takes the block out to a cell, keeping the anchor where it is. In row units there is
+    /// no block, so the press moves the keyboard instead and the list extends its own
+    /// selection.
+    /// </summary>
+    public void ExtendTo(DataGridCell cell, GridColumn column)
+    {
+        if (Selection != GridSelectionUnit.Cell)
+        {
+            SetCurrent(column);
+            return;
+        }
+
+        if (cell.FindAncestorOfType<ListBoxItem>() is not { } container)
+        {
+            return;
+        }
+
+        edgeRow = owner.IndexFromContainer(container);
+        edgeColumn = column;
+
+        Refresh();
+    }
+
+    /// <summary>
+    /// The block as row and column bounds, which is the anchor alone unless a range has been
+    /// taken out from it.
+    /// </summary>
+    private (int Top, int Bottom, int Left, int Right) Block(IReadOnlyList<GridColumn> reachable)
+    {
+        var row = owner.SelectedIndex;
+        var at = Math.Max(0, At(reachable, current));
+
+        if (Selection != GridSelectionUnit.Cell || edgeRow < 0 || edgeColumn is null)
+        {
+            return (row, row, at, at);
+        }
+
+        var far = Math.Max(0, At(reachable, edgeColumn));
+
+        return (Math.Min(row, edgeRow), Math.Max(row, edgeRow), Math.Min(at, far), Math.Max(at, far));
     }
 
     /// <summary>
@@ -210,7 +277,16 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
             current = columns.Reachable.FirstOrDefault();
         }
 
+        var reachable = columns.Reachable;
+        var block = Block(reachable);
         var wanted = CellAt(owner.SelectedIndex, current);
+
+        if (block != told)
+        {
+            told = block;
+            RangeText = Describe(block, reachable);
+            RangeChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         foreach (var container in owner.GetRealizedContainers())
         {
@@ -219,13 +295,30 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
                 continue;
             }
 
+            var index = owner.IndexFromContainer(container);
+            var down = index >= block.Top && index <= block.Bottom;
             var here = false;
 
             foreach (var cell in row.Cells)
             {
+                var at = At(reachable, cell.Column);
+                var inside = down && at >= block.Left && at <= block.Right;
                 var mine = ReferenceEquals(cell, wanted);
 
                 cell.IsCurrent = mine;
+
+                // The anchor keeps the plain surface, so the one cell that still takes
+                // typing is marked by having no wash rather than by a second ring.
+                cell.IsInRange = inside && !mine;
+
+                cell.RangeEdges = inside
+                    ? new Thickness(
+                        at == block.Left ? 1 : 0,
+                        index == block.Top ? 1 : 0,
+                        at == block.Right ? 1 : 0,
+                        index == block.Bottom ? 1 : 0)
+                    : default;
+
                 here |= mine;
             }
 
@@ -233,6 +326,71 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
             Mark(row);
         }
     }
+
+    /// <summary>How many cells the block holds, and what they add up to when they are numbers.</summary>
+    private string Describe((int Top, int Bottom, int Left, int Right) block, IReadOnlyList<GridColumn> reachable)
+    {
+        if (!Blocks || (block.Top == block.Bottom && block.Left == block.Right))
+        {
+            return string.Empty;
+        }
+
+        var right = Math.Min(block.Right, reachable.Count - 1);
+        var wide = right - block.Left + 1;
+        var rows = 0;
+
+        for (var index = block.Top; index <= block.Bottom; index++)
+        {
+            rows += Held(index) is null ? 0 : 1;
+        }
+
+        var cells = rows * wide;
+
+        if (cells == 0)
+        {
+            return string.Empty;
+        }
+
+        // Past this the sum costs more than it is worth on every step of a growing block,
+        // and a person picking that many cells is picking rather than adding up.
+        if (cells > 50_000)
+        {
+            return $"{cells:N0} cells";
+        }
+
+        var numbers = 0;
+        var sum = 0d;
+
+        for (var index = block.Top; index <= block.Bottom; index++)
+        {
+            if (Held(index) is not { } item)
+            {
+                continue;
+            }
+
+            for (var at = block.Left; at <= right; at++)
+            {
+                if (Number(reachable[at].ValueOf(item)) is { } value)
+                {
+                    numbers++;
+                    sum += value;
+                }
+            }
+        }
+
+        return numbers == 0
+            ? $"{cells:N0} cells"
+            : $"{cells:N0} cells, sum {sum:N2}, avg {sum / numbers:N2}";
+    }
+
+    /// <summary>A value as a number, or null when it is not one.</summary>
+    private static double? Number(object? value) => value switch
+    {
+        null or bool or char => null,
+        string text => double.TryParse(text, out var parsed) ? parsed : null,
+        IConvertible number => Convert.ToDouble(number, System.Globalization.CultureInfo.CurrentCulture),
+        _ => null,
+    };
 
     /// <summary>Says whether one row holds unsaved changes, which its item decides.</summary>
     public void Mark(IGridRowLayout row) =>
@@ -267,6 +425,10 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
         return e.Key switch
         {
+            Key.Left when shift && !control && Blocks => Stretch(0, -1, reachable),
+            Key.Right when shift && !control && Blocks => Stretch(0, 1, reachable),
+            Key.Up when shift && !control && Blocks => Stretch(-1, 0, reachable),
+            Key.Down when shift && !control && Blocks => Stretch(1, 0, reachable),
             Key.Left when !control && !shift && !InHierarchy() => Step(-1, reachable),
             Key.Right when !control && !shift && !InHierarchy() => Step(1, reachable),
             Key.Home when control => To(FirstRow(), reachable[0]),
@@ -293,6 +455,35 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
             return false;
         }
 
+        var reachable = columns.Reachable;
+        var paper = new GridClipboard();
+
+        if (Blocks)
+        {
+            var block = Block(reachable);
+            var rows = new List<object>();
+
+            for (var index = block.Top; index <= block.Bottom; index++)
+            {
+                if (Held(index) is { } item)
+                {
+                    rows.Add(item);
+                }
+            }
+
+            if (rows.Count == 0)
+            {
+                return false;
+            }
+
+            // Every column the block covers, whether or not it says anything, since a
+            // person who picked it meant it and a blank field keeps the shape.
+            var span = reachable.Skip(block.Left).Take(block.Right - block.Left + 1).ToList();
+
+            _ = clipboard.SetTextAsync(paper.Write(rows, span));
+            return true;
+        }
+
         var picked = Picked();
 
         if (picked.Count == 0)
@@ -302,9 +493,9 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
         // A column that says nothing about an item, such as one holding a picker, is left
         // out rather than written as an empty field somebody has to delete.
-        var written = columns.Reachable.Where(column => column.HasValue).ToList();
+        var written = reachable.Where(column => column.HasValue).ToList();
 
-        _ = clipboard.SetTextAsync(new GridClipboard().Write(picked, written));
+        _ = clipboard.SetTextAsync(paper.Write(picked, written));
         return true;
     }
 
@@ -334,7 +525,7 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     }
 
     /// <summary>What a row at an index stands for, or null when it is a group heading.</summary>
-    private object? Held(int index) => owner.ItemsView[index] switch
+    private object? Held(int index) => index < 0 || index >= owner.ItemsView.Count ? null : owner.ItemsView[index] switch
     {
         GridRow { IsGroup: false, Item: { } item } => item,
         TreeRow { Item: { } item } => item,
@@ -396,6 +587,29 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
         }
 
         return -1;
+    }
+
+    /// <summary>
+    /// Takes the block one step further out, leaving the anchor where it is. It answers the
+    /// arrow itself so the list does not also extend the rows it has picked.
+    /// </summary>
+    private bool Stretch(int down, int across, IReadOnlyList<GridColumn> reachable)
+    {
+        var row = edgeRow >= 0 ? edgeRow : owner.SelectedIndex;
+        var at = Math.Max(0, At(reachable, edgeColumn ?? current));
+
+        if (row < 0)
+        {
+            return false;
+        }
+
+        var below = down == 0 ? row : Next(row, down);
+
+        edgeRow = below >= 0 ? below : row;
+        edgeColumn = reachable[Math.Clamp(at + across, 0, reachable.Count - 1)];
+
+        Refresh();
+        return true;
     }
 
     /// <summary>Moves the keyboard one column, stopping at either edge.</summary>
