@@ -948,8 +948,9 @@ leaving one behind that says nothing, so a grid put back to its declaration leav
 are a group at the top **rather than a flag hidden in each row**, so dragging a row into the
 group is what pins a column and dragging it out is what lets it go. The group is drawn even
 when it is empty, wherever pinning is allowed, since otherwise there would be nowhere to drag
-to. The icon set has no pin glyph either, so the design and the library agreed here without
-being asked to.
+to. **The library's 54 glyphs have no pin, but the source set does**, in
+`bx-pin.svg`, `bx-pin-alt.svg` and `bx-pin-slash-alt.svg`. So the absence is not a reason for
+anything here, and one can be generated the day a design asks for a pinned mark.
 
 **A column that cannot be turned off stays in the list and sits flat**, which the design
 asks for, so the list is always the whole set of columns. `GridColumn.CanHide` is the
