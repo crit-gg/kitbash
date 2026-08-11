@@ -29,6 +29,15 @@ public class DataGridHeader : TemplatedControl
     /// <summary>Raised when an edge is double clicked. Only the grid can measure the cells.</summary>
     internal event EventHandler<GridColumn>? Fitting;
 
+    /// <summary>How far the body has scrolled sideways, so a pinned title can stay put.</summary>
+    internal void SetPinOffset(double offset)
+    {
+        if (panel is not null)
+        {
+            panel.PinOffset = offset;
+        }
+    }
+
     /// <summary>A title has started being dragged, so the drop line follows the pointer.</summary>
     internal void BeginMove(GridColumn column)
     {

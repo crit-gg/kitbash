@@ -37,6 +37,17 @@ public class GridColumn : AvaloniaObject
     public static readonly StyledProperty<bool> IsVisibleProperty =
         AvaloniaProperty.Register<GridColumn, bool>(nameof(IsVisible), true);
 
+    /// <summary>
+    /// Whether this column is held against the left edge while the rest scroll under it.
+    /// Pinning is to the left only, which is what the design draws.
+    /// </summary>
+    public static readonly StyledProperty<bool> IsPinnedProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(IsPinned));
+
+    /// <summary>Whether this column may be pinned at all. The grid has to allow it too.</summary>
+    public static readonly StyledProperty<bool> CanPinProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(CanPin), true);
+
     public static readonly StyledProperty<IDataTemplate?> CellTemplateProperty =
         AvaloniaProperty.Register<GridColumn, IDataTemplate?>(nameof(CellTemplate));
 
@@ -78,6 +89,7 @@ public class GridColumn : AvaloniaObject
         MinWidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
         MaxWidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
         IsVisibleProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
+        IsPinnedProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
     }
 
     /// <summary>Raised when something that decides the column's width has moved.</summary>
@@ -117,6 +129,20 @@ public class GridColumn : AvaloniaObject
     {
         get => GetValue(IsVisibleProperty);
         set => SetValue(IsVisibleProperty, value);
+    }
+
+    /// <inheritdoc cref="IsPinnedProperty"/>
+    public bool IsPinned
+    {
+        get => GetValue(IsPinnedProperty);
+        set => SetValue(IsPinnedProperty, value);
+    }
+
+    /// <inheritdoc cref="CanPinProperty"/>
+    public bool CanPin
+    {
+        get => GetValue(CanPinProperty);
+        set => SetValue(CanPinProperty, value);
     }
 
     public IDataTemplate? CellTemplate

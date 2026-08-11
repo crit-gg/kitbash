@@ -39,6 +39,15 @@ internal sealed class GridCellStrip(Func<GridColumn, int, DataGridCell> make)
     /// <summary>Makes the cells again, for when the set of columns itself has changed.</summary>
     public void Rebuild() => Build();
 
+    /// <summary>How far the body has scrolled sideways, so a pinned column can stay put.</summary>
+    public void SetPinOffset(double offset)
+    {
+        if (panel is not null)
+        {
+            panel.PinOffset = offset;
+        }
+    }
+
     /// <summary>Hands every cell the row's item, and closes any editor left open.</summary>
     public void Fill(object? item)
     {

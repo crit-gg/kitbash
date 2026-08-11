@@ -84,6 +84,10 @@
     <!-- The handle at the corner of a block, half in and half out of the cell it sits on. -->
     <x:Double x:Key="SizeFillHandle">8</x:Double>
 
+    <!-- The one shadow inside a panel anywhere in the theme. It falls from the pinned seam
+         and only once content has gone under it, so a grid at rest carries no shadow. -->
+    <BoxShadows x:Key="ShadowPinnedSeam">4 0 12 0 #66000000</BoxShadows>
+
     <!-- The second lead. A grey flood for the action a view repeats across many cards or rows,
          where nine accent buttons would fight each other and the accent would stop meaning
          selection and focus. -->

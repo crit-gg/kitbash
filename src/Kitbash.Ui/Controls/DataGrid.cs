@@ -16,6 +16,7 @@ public class DataGrid : ListBox, IGridHost
 {
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
+    private const string SeamPart = "PART_Seam";
 
     /// <summary>Tells a recycled data row from a recycled group header.</summary>
     private static readonly object DataToken = new();
@@ -32,6 +33,14 @@ public class DataGrid : ListBox, IGridHost
 
     public static readonly DirectProperty<DataGrid, string> SortTextProperty =
         AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(SortText), grid => grid.sortText);
+
+    /// <summary>Where the pinned columns end, which is where the seam falls.</summary>
+    public static readonly DirectProperty<DataGrid, double> PinnedWidthProperty =
+        AvaloniaProperty.RegisterDirect<DataGrid, double>(nameof(PinnedWidth), grid => grid.pinnedWidth);
+
+    /// <summary>Whether anything has gone under the pinned columns yet.</summary>
+    public static readonly DirectProperty<DataGrid, bool> IsPinnedScrolledProperty =
+        AvaloniaProperty.RegisterDirect<DataGrid, bool>(nameof(IsPinnedScrolled), grid => grid.pinnedScrolled);
 
     public static readonly StyledProperty<BeginEditGestures> BeginEditGesturesProperty =
         AvaloniaProperty.Register<DataGrid, BeginEditGestures>(
@@ -67,6 +76,9 @@ public class DataGrid : ListBox, IGridHost
     /// <summary>Which page was last drawn, so a turn can be told from any other rebuild.</summary>
     private int page = 1;
 
+    private Border? seam;
+    private double pinnedWidth;
+    private bool pinnedScrolled;
     private string selectionText = string.Empty;
     private string shownText = string.Empty;
     private string sortText = string.Empty;
@@ -92,6 +104,8 @@ public class DataGrid : ListBox, IGridHost
         };
 
         body.RangeChanged += (_, _) => UpdateCounts();
+
+        frame.Seam += (_, scrolled) => ShowSeam(scrolled);
 
         AddHandler(DoubleTappedEvent, OnDoubleTapped);
 
@@ -136,6 +150,12 @@ public class DataGrid : ListBox, IGridHost
 
     /// <summary>Which column the sort is on, or empty when the source order stands.</summary>
     public string SortText => sortText;
+
+    /// <inheritdoc cref="PinnedWidthProperty"/>
+    public double PinnedWidth => pinnedWidth;
+
+    /// <inheritdoc cref="IsPinnedScrolledProperty"/>
+    public bool IsPinnedScrolled => pinnedScrolled;
 
     /// <summary>The rows this grid was given, or null when it was handed a plain list.</summary>
     public GridRows? Rows => rows;
@@ -344,10 +364,13 @@ public class DataGrid : ListBox, IGridHost
     {
         base.OnApplyTemplate(e);
 
+        seam = e.NameScope.Find<Border>(SeamPart);
+
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
 
+        ShowSeam(pinnedScrolled);
         UpdateCounts();
     }
 
@@ -436,6 +459,24 @@ public class DataGrid : ListBox, IGridHost
         // A recycled container carries the last row's mark, so the current cell is worked
         // out again rather than left where it was drawn.
         body.Refresh();
+    }
+
+    /// <summary>
+    /// Puts the seam where the pinned columns end. The look is the theme's, and the only
+    /// thing settled here is where the line falls, since a margin cannot be bound to a width.
+    /// </summary>
+    private void ShowSeam(bool scrolled)
+    {
+        SetAndRaise(PinnedWidthProperty, ref pinnedWidth, columns.PinnedWidth);
+        SetAndRaise(IsPinnedScrolledProperty, ref pinnedScrolled, scrolled);
+
+        PseudoClasses.Set(":pinned", pinnedWidth > 0);
+        PseudoClasses.Set(":pinscrolled", pinnedWidth > 0 && scrolled);
+
+        if (seam is not null)
+        {
+            seam.Margin = new Thickness(Math.Max(0, pinnedWidth - 1), 0, 0, 0);
+        }
     }
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)

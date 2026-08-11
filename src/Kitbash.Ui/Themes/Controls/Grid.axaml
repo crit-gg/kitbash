@@ -95,12 +95,29 @@
                                 </DockPanel>
                             </Border>
 
-                            <ScrollViewer Name="PART_ScrollViewer"
-                                          Padding="{TemplateBinding Padding}"
-                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
-                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
-                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
-                            </ScrollViewer>
+                            <Panel>
+                                <ScrollViewer Name="PART_ScrollViewer"
+                                              Padding="{TemplateBinding Padding}"
+                                              HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                              VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                                    <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+
+                                <!-- The pinned seam. One element over the whole body rather
+                                     than a line per row, so the shadow is one shadow. -->
+                                <Border Name="PART_Seam"
+                                        Width="1"
+                                        HorizontalAlignment="Left"
+                                        Background="{DynamicResource LineSeam}"
+                                        IsHitTestVisible="False"
+                                        IsVisible="False">
+                                    <Border.Transitions>
+                                        <Transitions>
+                                            <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.12" />
+                                        </Transitions>
+                                    </Border.Transitions>
+                                </Border>
+                            </Panel>
                         </DockPanel>
                     </Border>
                 </Border>
@@ -128,12 +145,29 @@
                         <DockPanel LastChildFill="True">
                             <ui:DataGridHeader Name="PART_Header" DockPanel.Dock="Top" />
 
-                            <ScrollViewer Name="PART_ScrollViewer"
-                                          Padding="{TemplateBinding Padding}"
-                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
-                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
-                                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
-                            </ScrollViewer>
+                            <Panel>
+                                <ScrollViewer Name="PART_ScrollViewer"
+                                              Padding="{TemplateBinding Padding}"
+                                              HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                              VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}">
+                                    <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                                </ScrollViewer>
+
+                                <!-- The pinned seam. One element over the whole body rather
+                                     than a line per row, so the shadow is one shadow. -->
+                                <Border Name="PART_Seam"
+                                        Width="1"
+                                        HorizontalAlignment="Left"
+                                        Background="{DynamicResource LineSeam}"
+                                        IsHitTestVisible="False"
+                                        IsVisible="False">
+                                    <Border.Transitions>
+                                        <Transitions>
+                                            <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.12" />
+                                        </Transitions>
+                                    </Border.Transitions>
+                                </Border>
+                            </Panel>
                         </DockPanel>
                     </Border>
                 </Border>
@@ -920,6 +954,17 @@
     <!-- A cell's ink comes from its row, so these are the only two places a cell is told a
          colour, and both are about which column it is rather than what is in it. A control
          theme cannot hold a descendant selector, which is why they live out here. -->
+    <!-- The pinned seam. At rest it is the ordinary hairline, since nothing is hidden yet,
+         and it grows a shadow once content goes under it. That shadow is the only one inside
+         a panel anywhere in the theme, which is worth knowing before reaching for another. -->
+    <Style Selector="ui|DataGrid:pinned /template/ Border#PART_Seam">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ui|DataGrid:pinscrolled /template/ Border#PART_Seam">
+        <Setter Property="BoxShadow" Value="{DynamicResource ShadowPinnedSeam}" />
+    </Style>
+
     <!-- The editable cell hint, step one. Row hover underlines the cells that take a value
          with a seam colour rather than an accent, so a column of them still reads as data. -->
     <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:editable /template/ Border#PART_Hint">

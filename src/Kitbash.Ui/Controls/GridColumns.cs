@@ -28,6 +28,12 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     public double TotalWidth { get; private set; }
 
     /// <summary>
+    /// How wide the pinned columns came out, which is where the seam falls. Zero when none
+    /// are pinned, and that is the case where nothing about the layout changes at all.
+    /// </summary>
+    public double PinnedWidth { get; private set; }
+
+    /// <summary>
     /// What a person may do to these columns. The grid holds the property and hands it over,
     /// and a column still has to allow the gesture for itself.
     /// </summary>
@@ -45,6 +51,15 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// </summary>
     public bool CanHide(GridColumn column) =>
         Gestures.HasFlag(ColumnGestures.Hide) && column.IsVisible && Reachable.Count > 1;
+
+    /// <summary>
+    /// Whether this column can be held against the left edge. The last one not pinned never
+    /// can, since pinning every column leaves nothing to scroll under them.
+    /// </summary>
+    public bool CanPin(GridColumn column) =>
+        Gestures.HasFlag(ColumnGestures.Pin)
+        && column.CanPin
+        && (column.IsPinned || Reachable.Count(other => !other.IsPinned) > 1);
 
     /// <summary>The columns a person can reach, in the order they are drawn.</summary>
     public IReadOnlyList<GridColumn> Reachable => [.. this.Where(column => column.IsVisible)];
@@ -86,8 +101,16 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
 
         var moved = false;
         var offset = 0d;
+        var pinned = 0d;
 
-        foreach (var column in this)
+        // Pinned columns take their offsets first, so they sit against the left edge whatever
+        // order they were declared in. With none pinned this is the declared order, which is
+        // what keeps the ordinary grid on exactly the pass it always had.
+        var ordered = this.Any(column => column.IsPinned)
+            ? this.Where(column => column.IsPinned).Concat(this.Where(column => !column.IsPinned))
+            : (IEnumerable<GridColumn>)this;
+
+        foreach (var column in ordered)
         {
             var width = widths[column];
 
@@ -99,11 +122,22 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
             column.ActualWidth = width;
             column.Offset = offset;
             offset += width;
+
+            if (column.IsPinned)
+            {
+                pinned = offset;
+            }
         }
 
         if (TotalWidth != offset)
         {
             TotalWidth = offset;
+            moved = true;
+        }
+
+        if (PinnedWidth != pinned)
+        {
+            PinnedWidth = pinned;
             moved = true;
         }
 

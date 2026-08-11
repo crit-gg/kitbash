@@ -338,6 +338,69 @@ public sealed class GridColumnGestureTests
         }
     }
 
+    /// <summary>A pinned column takes the left edge and the seam falls where it ends.</summary>
+    [AvaloniaFact]
+    public void PinningHoldsAColumnAgainstTheLeftEdge()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.ColumnGestures = ColumnGestures.Pin;
+            Dispatcher.UIThread.RunJobs();
+
+            // Nothing pinned is the ordinary layout, and the seam is not there at all.
+            Assert.Equal(0, grid.PinnedWidth);
+            Assert.Equal(0, grid.Columns[0].Offset);
+
+            // The last column pinned goes to the front, whatever order it was declared in.
+            grid.Columns[2].IsPinned = true;
+            Dispatcher.UIThread.RunJobs();
+            grid.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(0, grid.Columns[2].Offset);
+            Assert.Equal(grid.Columns[2].ActualWidth, grid.PinnedWidth);
+            Assert.Equal(grid.PinnedWidth, grid.Columns[0].Offset);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>Pinning needs the gesture, and the last unpinned column can never be pinned.</summary>
+    [AvaloniaFact]
+    public void PinningNeedsTheGestureAndSomethingLeftToScroll()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            Assert.False(grid.Columns.CanPin(grid.Columns[0]));
+
+            grid.ColumnGestures = ColumnGestures.Pin;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(grid.Columns.CanPin(grid.Columns[0]));
+            Assert.Contains("Pin to the left", Menu(window, grid, grid.Columns[0]));
+
+            grid.Columns[0].IsPinned = true;
+            grid.Columns[1].IsPinned = true;
+            Dispatcher.UIThread.RunJobs();
+
+            // One column left over, so pinning that one too would leave nothing to scroll.
+            Assert.False(grid.Columns.CanPin(grid.Columns[2]));
+
+            // And the one already pinned still offers to be let go.
+            Assert.True(grid.Columns.CanPin(grid.Columns[0]));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     private static List<string> Order(DataGrid grid) =>
         [.. grid.Columns.Select(column => column.Header?.ToString() ?? string.Empty)];
 

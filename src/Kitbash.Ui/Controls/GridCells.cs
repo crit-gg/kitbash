@@ -24,16 +24,31 @@ public class GridCells : Panel
     public static readonly StyledProperty<double> DividerReachProperty =
         AvaloniaProperty.Register<GridCells, double>(nameof(DividerReach), 7d);
 
+    /// <summary>
+    /// How far the body has scrolled sideways. A pinned column is arranged this much further
+    /// along, which is exactly what holds it still while the rest travel under it.
+    /// </summary>
+    public static readonly StyledProperty<double> PinOffsetProperty =
+        AvaloniaProperty.Register<GridCells, double>(nameof(PinOffset));
+
     static GridCells()
     {
         AffectsParentMeasure<GridCells>(ColumnProperty, IsDividerProperty);
         AffectsMeasure<GridCells>(DividerReachProperty);
+        AffectsArrange<GridCells>(PinOffsetProperty);
     }
 
     public double DividerReach
     {
         get => GetValue(DividerReachProperty);
         set => SetValue(DividerReachProperty, value);
+    }
+
+    /// <inheritdoc cref="PinOffsetProperty"/>
+    public double PinOffset
+    {
+        get => GetValue(PinOffsetProperty);
+        set => SetValue(PinOffsetProperty, value);
     }
 
     public static GridColumn? GetColumn(Control control) => control.GetValue(ColumnProperty);
@@ -89,16 +104,22 @@ public class GridCells : Panel
                 continue;
             }
 
+            // A pinned column travels with the scroll, so it stays where it was drawn, and
+            // it draws over the columns going under it.
+            var held = column.IsPinned ? PinOffset : 0;
+
+            child.ZIndex = column.IsPinned ? 1 : 0;
+
             if (GetIsDivider(child))
             {
                 var reach = DividerReach;
-                var edge = column.Offset + column.ActualWidth;
+                var edge = column.Offset + column.ActualWidth + held;
 
                 child.Arrange(new Rect(edge - reach / 2, 0, reach, finalSize.Height));
             }
             else
             {
-                child.Arrange(new Rect(column.Offset, 0, column.ActualWidth, finalSize.Height));
+                child.Arrange(new Rect(column.Offset + held, 0, column.ActualWidth, finalSize.Height));
             }
         }
 

@@ -27,6 +27,9 @@ internal interface IGridRowLayout
     /// <summary>This row holds changes that have not been saved.</summary>
     void SetModified(bool modified);
 
+    /// <summary>How far the body has scrolled sideways, which is what holds a pinned column still.</summary>
+    void SetPinOffset(double offset);
+
     /// <summary>What this row is standing for, or null while it is spare.</summary>
     object? Held { get; }
 }

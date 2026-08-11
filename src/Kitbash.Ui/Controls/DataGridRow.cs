@@ -75,6 +75,8 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
 
     void IGridRowLayout.SetCurrent(bool current) => PseudoClasses.Set(":cell", current);
 
+    void IGridRowLayout.SetPinOffset(double offset) => strip.SetPinOffset(offset);
+
     void IGridRowLayout.SetModified(bool modified) => PseudoClasses.Set(":modified", modified);
 
     object? IGridRowLayout.Held => row?.Item;

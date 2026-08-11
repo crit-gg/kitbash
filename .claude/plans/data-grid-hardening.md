@@ -709,10 +709,10 @@ anchor, the handle and the footer's aggregates. **Control and drag for a second 
 built**, since it turns the one block into a list of them and every reader of the block would
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
-**5. Column power. Most of the way.** `ColumnGestures`, fit to contents, multi column sort
-from the header, the header menu, hiding a column and reorder are built, along with the
-caret on hover, the ordinal beside it and the drop line. **Pin, the chooser and persistence
-in two layers are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
+**5. Column power. Nearly done.** `ColumnGestures`, fit to contents, multi column sort from
+the header, the header menu, hiding a column, reorder and pinning are built, along with the
+caret on hover, the ordinal beside it, the drop line and the pinned seam. **The chooser and
+persistence in two layers are not**, and the column state key is still to come. Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -909,6 +909,26 @@ puts a column second, not last, and only the far edge puts it last.
 **The line is the same dashed accent the docking targets use**, so a drop line means one
 thing across the app, and the title being dragged fades so the line is what says where it
 lands.
+
+**Pinning is one panel and one pass, exactly as the plan asked.** There is no second panel
+and no second layout. A pinned column takes its offset first, so it sits against the left
+edge whatever order it was declared in, and `GridCells` arranges it a further `PinOffset`
+along, which is how far the body has scrolled. That is what holds it still while the rest
+travel under it, and a `ZIndex` of one is what puts it over them. **With nothing pinned the
+offsets come out in declared order and `PinOffset` reaches no child**, so the ordinary grid
+is on the pass it always had, which is the rule the plan wrote down.
+
+**The scroll pushes the offset out rather than each row pulling it.** `GridFrame.Sync`
+already ran on every offset change to keep the header over the body, so it tells the header
+and every realised row at the same time, and it does nothing at all when nothing is pinned.
+
+**The seam is one element over the whole body, not a line per row.** A line per row would
+mean a shadow per row, stacked. It is the ordinary hairline at rest and grows the shadow
+once anything has gone under it, over an eighth of a second, and that shadow is the only one
+inside a panel anywhere in the theme.
+
+**The last column not pinned can never be pinned**, since pinning every column leaves
+nothing to go under them, and a column already pinned always offers to be let go.
 
 ## Where phase 4 has departed so far
 

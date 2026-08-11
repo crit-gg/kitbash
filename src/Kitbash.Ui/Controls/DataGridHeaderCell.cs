@@ -200,6 +200,13 @@ public class DataGridHeaderCell : ContentControl
             items.Add(Item("Group by this column", () => host.GroupBy(column)));
         }
 
+        if (host.Columns.CanPin(column))
+        {
+            items.Add(column.IsPinned
+                ? Item("Unpin column", () => column.IsPinned = false)
+                : Item("Pin to the left", () => column.IsPinned = true));
+        }
+
         if (host.Columns.CanHide(column))
         {
             items.Add(Item("Hide column", () => column.IsVisible = false));
@@ -230,7 +237,10 @@ public class DataGridHeaderCell : ContentControl
     private bool Offers(GridColumn? column) =>
         column is not null
         && this.FindAncestorOfType<IGridHost>() is { } host
-        && (column.CanSort || (host.CanGroup && column.HasValue) || host.Columns.CanHide(column));
+        && (column.CanSort
+            || (host.CanGroup && column.HasValue)
+            || host.Columns.CanPin(column)
+            || host.Columns.CanHide(column));
 
     private void Number(int order)
     {

@@ -161,6 +161,8 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
         {
             (container as IGridRowLayout)?.Relayout();
         }
+
+        Sync(body?.Offset.X ?? 0);
     }
 
     /// <summary>
@@ -177,11 +179,32 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
         return lane is { IsVisible: true } bar ? bar.Bounds.Width : 0;
     }
 
+    /// <summary>
+    /// The body has scrolled sideways. The header follows it, and every realised row is told
+    /// how far, so a pinned column can be arranged that much further along and stay put.
+    /// </summary>
     private void Sync(double x)
     {
         if (header?.Scroller is { } strip)
         {
             strip.Offset = new Vector(x, 0);
         }
+
+        if (columns.PinnedWidth <= 0)
+        {
+            return;
+        }
+
+        header?.SetPinOffset(x);
+
+        foreach (var container in owner.GetRealizedContainers())
+        {
+            (container as IGridRowLayout)?.SetPinOffset(x);
+        }
+
+        Seam?.Invoke(this, x > 0);
     }
+
+    /// <summary>Raised with whether anything has scrolled under the pinned columns yet.</summary>
+    public event EventHandler<bool>? Seam;
 }
