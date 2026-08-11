@@ -1,0 +1,168 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <Styles.Resources>
+
+    <!-- What a control looks like when it is the whole content of a cell. Not new controls:
+         each of these is a keyed theme over one the library already has, so a view writes
+         Theme="{StaticResource GridCellText}" in its cell template and nothing else.
+
+         Three rules hold the whole set together, and they are what to check a ninth type
+         against:
+
+         1. Chrome is earned in three steps. Nothing at rest, a hint on row hover, a
+            LineControlDeep edge on cell hover, the accent field while editing. The first
+            two are descendant rules and live below this block, since a control theme
+            cannot hold a descendant selector.
+         2. Nothing inside a cell takes the control radius, because the cell is the shape
+            now. The only radius left is on a chip and a checkbox, which are content
+            rather than chrome.
+         3. Alignment follows the column and the affordance takes the opposite edge, so a
+            chevron never lands between two numbers.
+
+         Every cell is 31px and flush to its column edges. Nothing is inset, so the hit
+         target is the cell and never a smaller shape drawn inside it. -->
+
+    <!-- boolean. A tick and never a labelled box, since the column title is the label. The
+         box keeps its own radius because it is content. -->
+    <ControlTheme x:Key="GridCellCheckBox" TargetType="CheckBox"
+                  BasedOn="{StaticResource {x:Type CheckBox}}">
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+    </ControlTheme>
+
+    <!-- text. Nothing at all at rest, so a column of them reads as data. The cell hover
+         edge is the only promise that a click puts a caret here. -->
+    <ControlTheme x:Key="GridCellText" TargetType="TextBox"
+                  BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </ControlTheme>
+
+    <!-- number. Right aligned mono so the decimal points stack down the column, and the
+         stepper only exists on hover, inside the cell edge. -->
+    <ControlTheme x:Key="GridCellNumber" TargetType="NumericUpDown"
+                  BasedOn="{StaticResource {x:Type NumericUpDown}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="HorizontalContentAlignment" Value="Right" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="ShowButtonSpinner" Value="False" />
+    </ControlTheme>
+
+    <!-- enum. Plain text until the pointer arrives, and the chevron takes the far edge so
+         the values still line up down the column. -->
+    <ControlTheme x:Key="GridCellChoice" TargetType="ComboBox"
+                  BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </ControlTheme>
+
+    <!-- ratio. The bar is a cell background, edge to edge and square, so it never reads as
+         a widget sitting on the value. -->
+    <ControlTheme x:Key="GridCellRatio" TargetType="ProgressBar"
+                  BasedOn="{StaticResource {x:Type ProgressBar}}">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Margin" Value="0" />
+    </ControlTheme>
+
+    <!-- colour. Square and cell height less the padding, so the column reads as a strip of
+         colour down the grid. -->
+    <ControlTheme x:Key="GridCellColor" TargetType="ui:ColorField"
+                  BasedOn="{StaticResource {x:Type ui:ColorField}}">
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Width" Value="{DynamicResource SizeGridCellSwatch}" />
+        <Setter Property="Height" Value="{DynamicResource SizeGridCellSwatch}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </ControlTheme>
+
+    <!-- reference. The only in cell button in the set, and it takes the far edge on hover so
+         the names still line up. The glyph and the name beside it are the view's own. -->
+    <ControlTheme x:Key="GridCellJump" TargetType="Button"
+                  BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Width" Value="{DynamicResource SizeGridCellJump}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Opacity" Value="0" />
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- tags. A chip keeps its own pill radius, because a chip is content and not chrome.
+         Overflow counts rather than wraps, since the row height is fixed. -->
+    <ControlTheme x:Key="GridCellTags" TargetType="ItemsControl">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="ClipToBounds" Value="True" />
+
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+            </ItemsPanelTemplate>
+        </Setter>
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ItemsPresenter ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    </Styles.Resources>
+
+    <!-- The two chrome steps a control theme cannot hold, since neither can be written
+         without reading the state of something above the control. -->
+
+    <!-- Step one. Row hover underlines what takes a value, in a seam colour and not an
+         accent, so a column of them still reads as data. -->
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell TextBox">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <!-- Step two. Cell hover closes it into the full edge a text field wears at rest, and
+         the affordances that were not there arrive with it. -->
+    <Style Selector="ui|DataGridCell:pointerover TextBox">
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="ui|DataGridCell:pointerover NumericUpDown">
+        <Setter Property="ShowButtonSpinner" Value="True" />
+    </Style>
+
+    <Style Selector="ui|DataGridCell:pointerover Button.jump">
+        <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Step three is the cell's own, since editing is a cell state and the accent field is
+         what the edit template already draws. -->
+
+</Styles>

@@ -81,6 +81,13 @@
                                                    VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Name, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
                             </ui:GridColumn>
 
                             <ui:GridColumn Header="KIND" Width="150">
@@ -100,11 +107,15 @@
                                     </DataTemplate>
                                 </ui:GridColumn.CellTemplate>
 
+                                <!-- The in cell form rather than a text field dropped into a
+                                     cell. Right aligned mono, no chrome at rest, and the
+                                     stepper only on hover. -->
                                 <ui:GridColumn.EditTemplate>
                                     <DataTemplate x:DataType="views:Entry">
-                                        <TextBox Classes="mono"
-                                                 Text="{Binding Value, Mode=TwoWay}"
-                                                 TextAlignment="Right" />
+                                        <NumericUpDown Theme="{StaticResource GridCellNumber}"
+                                                       Value="{Binding Value, Mode=TwoWay}"
+                                                       Increment="0.5"
+                                                       FormatString="0.0" />
                                     </DataTemplate>
                                 </ui:GridColumn.EditTemplate>
                             </ui:GridColumn>

@@ -14,12 +14,26 @@ public sealed class Entry(string id, string name, string kind, double value, int
     private double amount = value;
     private double saved;
     private double committed = value;
+    private string title = name;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string Id { get; } = id;
 
-    public string Name { get; private set; } = name;
+    public string Name
+    {
+        get => title;
+        set
+        {
+            if (title == value)
+            {
+                return;
+            }
+
+            title = value;
+            Raise(nameof(Name));
+        }
+    }
 
     public string Kind { get; private set; } = kind;
 
@@ -30,7 +44,6 @@ public sealed class Entry(string id, string name, string kind, double value, int
         {
             case "NAME":
                 Name = text ?? string.Empty;
-                Raise(nameof(Name));
                 break;
 
             case "KIND":

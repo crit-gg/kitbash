@@ -715,10 +715,9 @@ and column state are all built, along with the caret on hover, the ordinal besid
 drop lines and the pinned seam. **Column state has one layer rather than two.** Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
-**6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
-library already has, beside the twelve alternative styles. It sits here because the three
-steps of chrome it uses are row hover, cell hover and editing, and the first two of those
-only exist after phase 3.
+**6. Controls inside a cell. Built.** The in cell forms, as keyed themes over controls the
+library already has. It sat here because the three steps of chrome it uses are row hover,
+cell hover and editing, and the first two only existed after phase 3.
 
 **7. The rest.** Validation surface, empty states, the selection action bar, trimming and
 tooltips by default, and the automation peers. Brings no switch at all, which is the point
@@ -956,11 +955,35 @@ anything here, and one can be generated the day a design asks for a pinned mark.
 asks for, so the list is always the whole set of columns. `GridColumn.CanHide` is the
 column's half of that and the gesture is the grid's.
 
-**Column state has one layer, not two.** The plan wants a saved workspace default under the
-person's own, so the chooser's Reset returns what the team agreed rather than what the code
-says. `Reset` today puts the declaration back. The second layer needs a workspace scoped
-store beside the per person one, and it belongs with the chooser, since the chooser is the
-only thing that offers Reset.
+**Column state has one layer, not two, and that is where it stays.** The plan wanted a saved
+workspace default under the person's own so the chooser's Reset returns what the team agreed.
+`Reset` puts the declaration back instead. **Dropped on purpose**, so the second layer is not
+outstanding work.
+
+## Where phase 6 departed from this plan
+
+**Seven keyed themes, not eight, and one of the eight was never a control.** `GridCellText`,
+`GridCellNumber`, `GridCellChoice`, `GridCellCheckBox`, `GridCellRatio`, `GridCellColor` and
+`GridCellJump` are themes over `TextBox`, `NumericUpDown`, `ComboBox`, `CheckBox`,
+`ProgressBar`, `ui:ColorField` and `Button`. **The reference form is not one control**, it is
+a glyph, a name and a jump button, so the library themes the button, which the design calls
+the only in cell button in the set, and the view arranges the other two. `GridCellTags` is an
+`ItemsControl` theme that lays chips out in a row and clips, since a chip is already themed
+and needed nothing.
+
+**The first two chrome steps could not go in the themes.** A control theme cannot hold a
+descendant selector, and neither row hover nor cell hover can be written without reading the
+state of something above the control. So they are plain styles below the themes in the same
+file, which keeps all three steps in one place to read.
+
+**Overflow counts rather than wraps is the view's, not the theme's.** The theme clips and
+lays the chips in a row, which is what stops a fixed row height being broken. Counting what
+was clipped needs to know how many fit, and that is a measure a view does against its own
+data.
+
+**Nothing in a cell takes the control radius**, which is the rule a test holds down over
+every form that has one. A chip and a checkbox keep theirs, because they are content rather
+than chrome.
 
 ## Where phase 4 has departed so far
 
