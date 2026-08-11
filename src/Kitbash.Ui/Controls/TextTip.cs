@@ -32,6 +32,10 @@ public class TextTip : AvaloniaObject
         if (change.GetNewValue<bool>())
         {
             label.LayoutUpdated += OnLayoutUpdated;
+
+            // Read once here as well, since a label that is already laid out may not be in
+            // another pass for a while and would carry no tooltip until it was.
+            OnLayoutUpdated(label, EventArgs.Empty);
             return;
         }
 

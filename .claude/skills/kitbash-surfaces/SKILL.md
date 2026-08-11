@@ -413,6 +413,10 @@ of it.** Read that before changing anything below the look. What it settled, in 
   live block is a different number, so the footer keeps saying what the block holds.
 - **Escape drops the selection only while the action bar is up.** A grid inside a dialog has
   to leave Escape to the dialog.
+- **Text in a cell trims and puts what was trimmed in a tooltip**, and an error on the cell
+  takes that tooltip away, since the cell's own is the one that has to be read. A column
+  title does not trim: it is measured with infinite width, and fixing that moves the sort
+  caret to the cell's right edge.
 
 **Do not base a grid theme on another grid's.** `TreeDataGridRow` is a `TreeItem` and
 `DataGridRow` is a `ListBoxItem`, so `BasedOn` between them is accepted and silently ignored,

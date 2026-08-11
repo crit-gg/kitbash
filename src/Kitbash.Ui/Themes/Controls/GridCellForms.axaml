@@ -166,12 +166,23 @@
          what the edit template already draws. -->
 
     <!-- Text in a cell trims rather than clipping mid glyph, whatever a view wrote, since a
-         column is a fixed width and a value is not. A view that wants wrapping says so on
-         its own TextBlock, which outranks this. -->
-    <Style Selector="ui|DataGridCell TextBlock">
+         column is a fixed width and a value is not, and what was trimmed is in the tooltip.
+         A view that wants wrapping says so on its own TextBlock, which outranks this.
+         :is, because a tree grid's cell is a DataGridCell of its own kind. -->
+    <Style Selector=":is(ui|DataGridCell) TextBlock">
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="(ui:TextTip.Shows)" Value="True" />
     </Style>
 
+    <!-- Error beats trimmed, the way it beats focus for the ring. The cell carries the
+         error's tooltip and an inner one on the text would win over it, so the text gives
+         its up while the cell has something wrong to say. -->
+    <Style Selector=":is(ui|DataGridCell):error TextBlock">
+        <Setter Property="(ui:TextTip.Shows)" Value="False" />
+    </Style>
+
+    <!-- Trimming only. A title sits in a row of furniture that hands it infinite width, so it
+         is the cell's ClipToBounds that cuts it and nothing here can tell that it happened. -->
     <Style Selector="ui|DataGridHeaderCell TextBlock">
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>

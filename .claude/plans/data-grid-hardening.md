@@ -317,7 +317,7 @@ how many there are stopped being true. `GridRows.Filter` now sits beside the sor
 Zero rows draws nothing at all. "Nothing here yet" and "nothing matches that filter" are
 different messages, and the second one needs a way back.
 
-### No default text handling. Half built in phase 7
+### No default text handling. Built in phase 7 for a cell, not for a title
 
 Every cell template writes its own trimming. A header cell has none and simply clips mid
 glyph, since the theme only sets `ClipToBounds`. Truncated text has no tooltip unless a
@@ -719,9 +719,9 @@ and the footer's spelled out sort, the pinned seam, and the chooser.
 library already has. It sat here because the three steps of chrome it uses are row hover,
 cell hover and editing, and the first two only existed after phase 3.
 
-**7. The rest. Nearly done.** The validation surface, the three empty states, trimming and the
-selection action bar are built. **The tooltip when a value is trimmed and the automation
-peers are not.** Brings no switch at all, which is the point of that group.
+**7. The rest. Nearly done.** The validation surface, the three empty states, trimming and its
+tooltip, and the selection action bar are built. **The automation peers are not, and a column
+title does not trim.** Brings no switch at all, which is the point of that group.
 
 **No phase adds a switch that is not in the table under What is optional.** If a feature
 turns out to need one that is not there, that is a sign the rule was applied wrongly and
@@ -1039,12 +1039,31 @@ button. The gallery draws one.
 **The tree grid has no action bar**, for the same reason it has no empty states: its template
 does not name the properties at all rather than carrying two that could never come on.
 
-**Text in a cell trims and does not yet grow a tooltip.** Trimming is a style over every
-`TextBlock` in a cell or a title, so a column that is too narrow ends in an ellipsis rather
-than clipping mid glyph, and a view that wants wrapping outranks it by saying so on its own
-`TextBlock`. **The tooltip when a value is trimmed is not built**, and it has a trap waiting:
-the cell already carries a tooltip for an error, and an inner tooltip on the text would win
-over it. Error has to beat trimmed there, the way it beats focus for the ring.
+**Text in a cell trims and says what was trimmed.** Trimming is a style over every `TextBlock`
+in a cell, so a column that is too narrow ends in an ellipsis rather than clipping mid glyph,
+and a view that wants wrapping outranks it by saying so on its own `TextBlock`. The tooltip is
+`ui:TextTip.Shows`, which the library already had and which nothing turned on.
+
+**Error beats trimmed, and the styling system is what says so.** The cell carries the error's
+tooltip and an inner one on the text would win by being nearer the pointer, so a second style
+on `:error` takes the text's away. That is the same shape as error beating focus for the ring,
+written where the precedence is readable rather than in a branch.
+
+**The selectors are `:is(ui|DataGridCell)`.** A tree grid's cell is a `TreeDataGridCell`, and
+an Avalonia type selector matches the exact type, so the plain form covered only the flat
+grid.
+
+**`TextTip` reads once when it is switched on** as well as on every layout pass. A label that
+is already laid out may not be in another pass for a while, and until this it carried no
+tooltip until something else moved.
+
+**A column title still does not trim, and the reason is a layout one.** The title sits in a
+horizontal `StackPanel` beside the sort caret and the ordinal, which hands it infinite width,
+so it never collapses and the cell's `ClipToBounds` cuts it mid glyph instead. The trimming is
+set and does nothing. `GridTrimTests.ATitleIsNotMeasuredAgainstItsColumn` pins that, so it is
+found on purpose. **Fixing it moves the sort caret**: constraining the title means docking the
+caret and the ordinal to the right edge of the cell, beside the menu chevron, rather than
+hugging the end of the label. That is a look decision and it is not mine to make.
 
 ## Where phase 6 departed from this plan
 
