@@ -17,6 +17,7 @@ public class DataGrid : ListBox, IGridHost
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
     private const string SeamPart = "PART_Seam";
+    private const string ActionBarPart = "PART_ActionBar";
 
     /// <summary>Tells a recycled data row from a recycled group header.</summary>
     private static readonly object DataToken = new();
@@ -42,6 +43,17 @@ public class DataGrid : ListBox, IGridHost
     /// <summary>Whether the rows are still being fetched. Skeleton rows, never a spinner.</summary>
     public static readonly StyledProperty<bool> IsLoadingProperty =
         AvaloniaProperty.Register<DataGrid, bool>(nameof(IsLoading));
+
+    /// <summary>
+    /// What a person can do to every picked row at once. Null leaves the bar out, so a grid
+    /// that has nothing to do with a set never grows one.
+    /// </summary>
+    public static readonly StyledProperty<object?> SelectionActionsProperty =
+        AvaloniaProperty.Register<DataGrid, object?>(nameof(SelectionActions));
+
+    /// <summary>What the action bar says it holds, or empty while the bar is down.</summary>
+    public static readonly DirectProperty<DataGrid, string> PickedTextProperty =
+        AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(PickedText), grid => grid.pickedText);
 
     public static readonly DirectProperty<DataGrid, string> SelectionTextProperty =
         AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(SelectionText), grid => grid.selectionText);
@@ -99,9 +111,11 @@ public class DataGrid : ListBox, IGridHost
     private int page = 1;
 
     private Border? seam;
+    private GridSelectionBar? bar;
     private double pinnedWidth;
     private bool pinnedScrolled;
     private string selectionText = string.Empty;
+    private string pickedText = string.Empty;
     private string shownText = string.Empty;
     private string sortText = string.Empty;
     private string errorText = string.Empty;
@@ -187,7 +201,17 @@ public class DataGrid : ListBox, IGridHost
         set => SetValue(IsLoadingProperty, value);
     }
 
-    /// <summary>How many rows are picked, or empty when none are.</summary>
+    /// <inheritdoc cref="SelectionActionsProperty"/>
+    public object? SelectionActions
+    {
+        get => GetValue(SelectionActionsProperty);
+        set => SetValue(SelectionActionsProperty, value);
+    }
+
+    /// <inheritdoc cref="PickedTextProperty"/>
+    public string PickedText => pickedText;
+
+    /// <summary>How many rows are picked, or empty when none are or the bar has the count.</summary>
     public string SelectionText => selectionText;
 
     /// <summary>How many rows are drawn out of how many there are.</summary>
@@ -363,6 +387,15 @@ public class DataGrid : ListBox, IGridHost
             }
         }
 
+        // Only while the bar owns the selection. A grid inside a dialog has to leave Escape
+        // to the dialog, and taking it whenever a row is picked would close nothing.
+        if (!e.Handled && e.Key == Key.Escape && EditingCell is null && pickedText.Length > 0)
+        {
+            DropSelection();
+            e.Handled = true;
+            return;
+        }
+
         // Before the list, since Home and End mean the ends of a row here rather than the
         // ends of the list, and the list would take them first.
         if (!e.Handled && body.OnKeyDown(e))
@@ -425,6 +458,18 @@ public class DataGrid : ListBox, IGridHost
 
         seam = e.NameScope.Find<Border>(SeamPart);
 
+        if (bar is not null)
+        {
+            bar.Dropped -= OnSelectionDropped;
+        }
+
+        bar = e.NameScope.Find<GridSelectionBar>(ActionBarPart);
+
+        if (bar is not null)
+        {
+            bar.Dropped += OnSelectionDropped;
+        }
+
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
@@ -464,6 +509,10 @@ public class DataGrid : ListBox, IGridHost
         else if (change.Property == IsLoadingProperty)
         {
             ShowEmpty();
+        }
+        else if (change.Property == SelectionActionsProperty)
+        {
+            UpdateCounts();
         }
         else if (change.Property == ItemsSourceProperty)
         {
@@ -559,6 +608,19 @@ public class DataGrid : ListBox, IGridHost
         PseudoClasses.Set(":loading", loading);
         PseudoClasses.Set(":nomatches", filtered);
         PseudoClasses.Set(":nothing", nothing);
+    }
+
+    private void OnSelectionDropped(object? sender, EventArgs e) => DropSelection();
+
+    /// <summary>
+    /// Unpicks every row and takes the block with it, since a bar that has gone leaves
+    /// nothing behind that says what a following action would apply to.
+    /// </summary>
+    private void DropSelection()
+    {
+        UnselectAll();
+        body.ClearBlock();
+        Focus();
     }
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
@@ -689,14 +751,20 @@ public class DataGrid : ListBox, IGridHost
     private void UpdateCounts()
     {
         var picked = SelectedItems?.Count ?? 0;
+        var owned = picked > 0 && SelectionActions is not null;
+
+        PseudoClasses.Set(":picking", owned);
+
+        SetAndRaise(PickedTextProperty, ref pickedText, owned ? $"{picked:N0} selected" : string.Empty);
 
         // A live block says what it holds instead of how many rows are picked, since the
         // same number twice over says nothing and the block is what a person is looking at.
+        // The bar takes the count the same way, giving the footer back to the query.
         SetAndRaise(
             SelectionTextProperty,
             ref selectionText,
             body.RangeText is { Length: > 0 } range ? range
-                : picked == 0 ? string.Empty
+                : picked == 0 || owned ? string.Empty
                 : $"{picked:N0} selected");
 
         SetAndRaise(

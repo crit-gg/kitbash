@@ -188,6 +188,15 @@
                                         </Transitions>
                                     </Border.Transitions>
                                 </Border>
+
+                                <!-- The selection action bar. It floats over the last rows
+                                     rather than pushing them, so nothing reflows when a
+                                     selection starts, and it is last in the panel so the
+                                     seam does not draw a line across it. -->
+                                <ui:GridSelectionBar Name="PART_ActionBar"
+                                                     Count="{TemplateBinding PickedText}"
+                                                     Content="{TemplateBinding SelectionActions}"
+                                                     IsVisible="False" />
                             </Panel>
                         </DockPanel>
                     </Border>
@@ -1030,6 +1039,65 @@
         </Setter>
     </ControlTheme>
 
+    <!-- The selection action bar. A card rather than a strip across the body, since it sits
+         on the rows and has to read as a thing over them. -->
+    <ControlTheme x:Key="{x:Type ui:GridSelectionBar}" TargetType="ui:GridSelectionBar">
+        <Setter Property="Height" Value="{DynamicResource HeightGridActions}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingGridActions}" />
+        <Setter Property="Margin" Value="{DynamicResource MarginGridActions}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest3}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        BoxShadow="{DynamicResource ShadowOverlay}"
+                        Padding="{TemplateBinding Padding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="{TemplateBinding Count}"
+                                   FontFamily="{DynamicResource FontFamilyMono}"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   FontWeight="{DynamicResource FontWeightMedium}"
+                                   VerticalAlignment="Center" />
+
+                        <Border Width="1"
+                                Margin="2,0"
+                                Background="{DynamicResource LineSeam}" />
+
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Center" />
+
+                        <Border Width="1"
+                                Margin="2,0"
+                                Background="{DynamicResource LineSeam}" />
+
+                        <!-- Named rather than left to the style below, which hands every
+                             other button in the bar the compact theme. -->
+                        <Button Name="PART_Drop"
+                                Theme="{StaticResource {x:Type Button}}"
+                                Classes="icon"
+                                VerticalAlignment="Center"
+                                ToolTip.Tip="Clear selection"
+                                AutomationProperties.Name="Clear selection">
+                            <ui:Icon Glyph="X" Size="{DynamicResource IconSizeDismiss}" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
         <ControlTheme x:Key="{x:Type ui:GridColumnChooserRow}" TargetType="ui:GridColumnChooserRow">
         <Setter Property="Height" Value="{DynamicResource HeightRow}" />
         <Setter Property="Padding" Value="{DynamicResource PaddingRow}" />
@@ -1125,6 +1193,18 @@
 
     <Style Selector="ui|DataGrid:loading /template/ StackPanel#PART_Skeleton">
         <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- The bar is up only when rows are picked and the caller gave it something to do, so a
+         grid that has no actions for a set never grows one. -->
+    <Style Selector="ui|DataGrid:picking /template/ ui|GridSelectionBar#PART_ActionBar">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- The bar is one strip of chrome, so an action in it is a compact button. A view that
+         names a theme of its own outranks this. -->
+    <Style Selector="ui|GridSelectionBar Button">
+        <Setter Property="Theme" Value="{StaticResource CompactButton}" />
     </Style>
 
     <!-- The pinned seam. At rest it is the ordinary hairline, since nothing is hidden yet,

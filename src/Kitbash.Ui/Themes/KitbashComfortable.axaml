@@ -38,6 +38,7 @@
         <x:Double x:Key="HeightGridToolbar">40</x:Double>
         <x:Double x:Key="HeightGridFooter">34</x:Double>
         <x:Double x:Key="HeightGridGroup">31</x:Double>
+        <x:Double x:Key="HeightGridActions">42</x:Double>
 
         <x:Double x:Key="HeightChip">27</x:Double>
         <x:Double x:Key="HeightPill">20</x:Double>

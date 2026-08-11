@@ -398,6 +398,18 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     }
 
     /// <summary>
+    /// Puts the block back to the anchor alone. The current cell stays, since the keyboard
+    /// has to be somewhere.
+    /// </summary>
+    public void ClearBlock()
+    {
+        edgeRow = -1;
+        edgeColumn = null;
+
+        Refresh();
+    }
+
+    /// <summary>
     /// The block as row and column bounds, which is the anchor alone unless a range has been
     /// taken out from it.
     /// </summary>

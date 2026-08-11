@@ -449,6 +449,26 @@
             <Setter Property="Background" Value="{DynamicResource WarnControlHover}" />
         </Style>
 
+        <!-- Delete in a selection bar. A text action rather than a fill, since the solid
+             Destructive fill belongs to the confirm dialog this opens. -->
+        <Style Selector="^.danger">
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource Error}" />
+        </Style>
+
+        <Style Selector="^.danger:pointerover">
+            <Setter Property="Background" Value="{DynamicResource ErrorSurface}" />
+            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+        </Style>
+
+        <Style Selector="^.danger:pressed">
+            <Setter Property="Background" Value="{DynamicResource ErrorLine}" />
+            <Setter Property="Foreground" Value="{DynamicResource ErrorInk}" />
+        </Style>
+
         <Style Selector="^:focus-visible /template/ Border#PART_Focus">
             <Setter Property="BorderBrush" Value="{DynamicResource FocusHalo}" />
         </Style>
@@ -464,7 +484,7 @@
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
 
-        <Style Selector="^.link:disabled">
+        <Style Selector="^.link:disabled, ^.danger:disabled">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>

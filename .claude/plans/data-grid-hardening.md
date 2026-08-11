@@ -719,9 +719,9 @@ and the footer's spelled out sort, the pinned seam, and the chooser.
 library already has. It sat here because the three steps of chrome it uses are row hover,
 cell hover and editing, and the first two only existed after phase 3.
 
-**7. The rest. Started.** The validation surface and the three empty states are built.
-**The selection action bar, trimming and tooltips by default and the automation peers are
-not.** Brings no switch at all, which is the point of that group.
+**7. The rest. Nearly done.** The validation surface, the three empty states, trimming and the
+selection action bar are built. **The tooltip when a value is trimmed and the automation
+peers are not.** Brings no switch at all, which is the point of that group.
 
 **No phase adds a switch that is not in the table under What is optional.** If a feature
 turns out to need one that is not there, that is a sign the rule was applied wrongly and
@@ -1004,6 +1004,40 @@ no spinner anywhere, since a grid can reload on every keystroke of a filter.
 together, but it has no filter and so no no matches state, and nothing has asked for the
 other two. Its template does not name the properties at all rather than carrying two that
 could never come on.
+
+**The selection action bar is a control of its own, and the actions in it are the caller's.**
+`ui:GridSelectionBar` is a `ContentControl` the grid template holds as `PART_ActionBar`, and
+`DataGrid.SelectionActions` is what goes in it. Null leaves the bar out entirely, so a grid
+with nothing to do with a set never grows one, which is the opt in and needs no switch.
+
+**The count is a second property rather than the footer's.** `PickedText` is the bar's and
+`SelectionText` is the footer's, and the footer's drops its count half while the bar is up.
+A live block is a different number, so the footer keeps saying what the block holds. That is
+the design's rule about the same number never being printed twice, worked out per number
+rather than per row of chrome.
+
+**Escape drops the selection only while the bar owns it.** A grid inside a dialog has to
+leave Escape to the dialog, and taking it whenever a row is picked would close nothing. It
+clears the block with the selection, since a bar that has gone leaves nothing saying what a
+following action would apply to.
+
+**An action in the bar is a compact button by a style, not by the caller remembering.** The
+bar is one strip of chrome and a full height button does not fit in it. A view that names a
+theme of its own outranks the style, and the bar's own dismiss button names the default one
+for exactly that reason.
+
+**Delete needed a button kind that did not exist.** `CompactButton` gained `danger`, a text
+action in the error tier, mirroring `link` in the accent tier and `warnGhost` in the warn
+one. The solid `Destructive` fill stays on the full button, since it belongs to the confirm
+dialog the bar's Delete opens.
+
+**Disabling an action that cannot apply is the caller's, and the library does not help.** The
+design says such an action is shown and disabled with the reason in the tooltip. Only the
+caller knows which rows can take it, so this is `IsEnabled` and `ToolTip.Tip` on their own
+button. The gallery draws one.
+
+**The tree grid has no action bar**, for the same reason it has no empty states: its template
+does not name the properties at all rather than carrying two that could never come on.
 
 **Text in a cell trims and does not yet grow a tooltip.** Trimming is a style over every
 `TextBlock` in a cell or a title, so a column that is too narrow ends in an ellipsis rather
