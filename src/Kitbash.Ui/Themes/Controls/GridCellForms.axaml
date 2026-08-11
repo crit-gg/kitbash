@@ -165,4 +165,15 @@
     <!-- Step three is the cell's own, since editing is a cell state and the accent field is
          what the edit template already draws. -->
 
+    <!-- Text in a cell trims rather than clipping mid glyph, whatever a view wrote, since a
+         column is a fixed width and a value is not. A view that wants wrapping says so on
+         its own TextBlock, which outranks this. -->
+    <Style Selector="ui|DataGridCell TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="ui|DataGridHeaderCell TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
 </Styles>

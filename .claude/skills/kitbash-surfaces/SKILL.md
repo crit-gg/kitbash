@@ -378,6 +378,37 @@ reading needs, `RangeWidest`, drawn as nothing behind the real one, so five figu
 shove the row along. Both rely on the readout being mono. Measured across pages 1, 2, 50, 99
 and 100: the steps sat at the same four offsets every time.
 
+**A grid is a data entry surface now, and `.claude/plans/data-grid-hardening.md` is the whole
+of it.** Read that before changing anything below the look. What it settled, in short:
+
+- **One cell holds the keyboard**, and left, right, Home, End, Control and Home, Tab and the
+  rest move it. Home and End are the ends of a row here, not the ends of the list.
+- **Five switches and no more.** `SelectionUnit`, `BeginEditGestures`, `EditUnit`,
+  `CellActions` and `ColumnGestures`. **A feature is opt in when it writes, or when it
+  changes what an existing gesture already means.** Everything else is on. A sixth property
+  is a sign the rule was applied wrongly.
+- **A gesture needs two gates, never one.** The grid says a person may do this at all and the
+  column says this column allows it. `CanResize`, `CanPin`, `CanHide`, `SortKey`, `Write` and
+  `EditTemplate` are the column half.
+- **Rows keep their identity.** `GridRows` holds one wrapper per item, so a sort keeps the
+  selection and a splice keeps the containers. Only a sort resets, and the grid puts the
+  selection and the scroll position back across it.
+- **Nothing writes unless every cell it would touch can take a value.** A paste or a fill
+  reaching a read only column writes nothing at all rather than half of it.
+- **The current cell mark is one pixel in from the cell edge, not on it.** On the edge it
+  shares a pixel with the grid frame, the header seam and the row rule, and reads as an open
+  box. `RangeEdges` is its thickness and its inset at once, which is what makes a block
+  outline run unbroken.
+- **A grid takes the vertical scroll bar's width off its own.** Everywhere else an overlaid
+  bar sits over the end of the content. A grid's star columns fill the viewport exactly, so
+  the lane would land on the last column.
+- **Pinning is one panel and one pass.** A pinned column takes its offset first and is
+  arranged a further `PinOffset` along. With nothing pinned the layout is what it always was.
+- **An in cell form is a keyed theme, not a new control.** `GridCellText`, `GridCellNumber`,
+  `GridCellChoice`, `GridCellCheckBox`, `GridCellRatio`, `GridCellColor`, `GridCellJump` and
+  `GridCellTags`. Nothing inside a cell takes the control radius, because the cell is the
+  shape now.
+
 **Do not base a grid theme on another grid's.** `TreeDataGridRow` is a `TreeItem` and
 `DataGridRow` is a `ListBoxItem`, so `BasedOn` between them is accepted and silently ignored,
 and the rows come out at their content height with no rule under them. `.claude/avalonia.md`

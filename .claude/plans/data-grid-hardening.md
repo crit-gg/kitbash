@@ -317,7 +317,7 @@ how many there are stopped being true. `GridRows.Filter` now sits beside the sor
 Zero rows draws nothing at all. "Nothing here yet" and "nothing matches that filter" are
 different messages, and the second one needs a way back.
 
-### No default text handling
+### No default text handling. Half built in phase 7
 
 Every cell template writes its own trimming. A header cell has none and simply clips mid
 glyph, since the theme only sets `ClipToBounds`. Truncated text has no tooltip unless a
@@ -1004,6 +1004,13 @@ no spinner anywhere, since a grid can reload on every keystroke of a filter.
 together, but it has no filter and so no no matches state, and nothing has asked for the
 other two. Its template does not name the properties at all rather than carrying two that
 could never come on.
+
+**Text in a cell trims and does not yet grow a tooltip.** Trimming is a style over every
+`TextBlock` in a cell or a title, so a column that is too narrow ends in an ellipsis rather
+than clipping mid glyph, and a view that wants wrapping outranks it by saying so on its own
+`TextBlock`. **The tooltip when a value is trimmed is not built**, and it has a trap waiting:
+the cell already carries a tooltip for an error, and an inner tooltip on the text would win
+over it. Error has to beat trimmed there, the way it beats focus for the ring.
 
 ## Where phase 6 departed from this plan
 
