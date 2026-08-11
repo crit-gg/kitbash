@@ -846,20 +846,34 @@ thing it does that the design forbids.
 dotnet run --project src/Kitbash.Gallery
 ```
 
-Every control in the library, live, in one window. It is where a control theme is built
-and where it is checked by hand, and it is a consumer of `Kitbash.Ui` and nothing else,
-so it never references the launcher. Anything it needs from there belongs in the library.
+Every control in the library, live. It is where a control theme is built and where it is
+checked by hand, and it is a consumer of `Kitbash.Ui` and nothing else, so it never
+references the launcher. Anything it needs from there belongs in the library.
 
 It holds no palette and no control look of its own. Only page furniture, headings and
 panels. So anything that looks wrong in the gallery is wrong in the library.
 
-**Add every new control to it in the stage that builds the control.** A kind that is not
-in the gallery is a kind nobody has looked at.
+**It is ten pages behind an activity rail, one page per file under `Views/Pages`.** The
+rail is the library's own, so the gallery's shell is a worked example of it. `GalleryWindow`
+holds the rail, the title bar, the window's toast regions and the styles every page uses,
+and it names the pages in one table with the glyph and the name each rail item takes.
+**A page is built the first time it is opened and kept after**, so opening the gallery costs
+one page rather than ten and a page comes back where it was left.
 
-Each control shows a live sample and a row of held states, so all five can be read side
-by side. A held sample carries `forceHover`, `forcePressed` or `forceFocus`, and
-`GalleryWindow` turns those into pseudo classes on load. Those samples opt out of hit
-testing, since a real pointer would otherwise clear the state that was pinned on them.
+**Add every new control to it in the stage that builds the control.** A kind that is not
+in the gallery is a kind nobody has looked at. Add it to the page it belongs on, and add a
+page only when nothing there fits.
+
+A page derives from `GalleryPage`, which is where the held states are pinned. Each control
+shows a live sample and a row of held states, so all five can be read side by side. A held
+sample carries `forceHover`, `forcePressed` or `forceFocus`, and the page turns those into
+pseudo classes on load. Those samples opt out of hit testing, since a real pointer would
+otherwise clear the state that was pinned on them.
+
+**A page takes what it needs through its constructor**, the way the window does. The toast
+page is handed the window's toast service and a factory for its own, and the two pages that
+hold a picker are handed the desktop's colour picking and one shared `Palette`, so a colour
+saved on either is on both.
 
 The gallery is also the window shell, so dragging, double clicking, resizing and the
 inactive tier are all testable in it, and its title bar carries content, which is the

@@ -1,0 +1,246 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.PanelsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="PANELS" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="A panel takes one step down from whatever it is put inside, and nothing counts. The root tone belongs to the window and never appears again, so no panel can ever take it. This section is itself a surface, which is why the ladder below starts one step in." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="THE LADDER" Content="five deep" />
+
+                    <ui:SurfacePanel Header="Dock" Footer="the same three tones, cycling">
+                        <ui:SurfacePanel Header="Pane">
+                            <ui:SurfacePanel Header="Effect graph">
+                                <ui:SurfacePanel Header="Node: yield curve">
+                                    <ui:SurfacePanel Header="Inputs" Padding="10">
+                                        <StackPanel Spacing="9">
+                                            <TextBlock Classes="note"
+                                                       Text="The deepest one here matches its great grandparent and neither of the two panels either side of it, which is the whole point of a cycle of three." />
+
+                                            <!-- Controls are off the ramp. These sit four
+                                                 steps down and are the same fill and the
+                                                 same border they are at the top. -->
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <Button Content="Still SurfaceNest2" />
+                                                <ui:Chip Content="so is this" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:SurfacePanel>
+                                </ui:SurfacePanel>
+                            </ui:SurfacePanel>
+                        </ui:SurfacePanel>
+                    </ui:SurfacePanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="HEADER, BODY AND FOOTER" />
+
+                    <TextBlock Classes="note"
+                               Text="One tone throughout. The header and the footer are told apart from the body by a hairline alone, and that hairline is the seam belonging to the panel's own tone. A header takes whatever it is given, so a title keeps its actions on the right without a second slot for them." />
+
+                    <ui:SurfacePanel Padding="10" Footer="RCP_IronPlate_T2">
+                        <ui:SurfacePanel.Header>
+                            <DockPanel LastChildFill="True">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                                    <Button Classes="icon" ToolTip.Tip="Collapse all"
+                                            AutomationProperties.Name="Collapse all">
+                                        <ui:Icon Glyph="Minimize" />
+                                    </Button>
+                                    <Button Classes="icon" ToolTip.Tip="Add output"
+                                            AutomationProperties.Name="Add output">
+                                        <ui:Icon Glyph="Plus" />
+                                    </Button>
+                                </StackPanel>
+                                <TextBlock Text="Primary output" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </ui:SurfacePanel.Header>
+
+                        <StackPanel Spacing="9">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="OUTPUTS" Content="3 of 3 resolved" />
+                            <TextBlock Classes="note"
+                                       Text="A section label is a header over content, so the label is the header, the note is the content, and the rule fills what is left." />
+                        </StackPanel>
+                    </ui:SurfacePanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="COLLAPSIBLE" />
+
+                    <Expander Header="Byproducts" IsExpanded="True">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="note" Text="The same shape with the header as the switch." />
+                            <Expander Header="Nested, and one step further down">
+                                <TextBlock Classes="note" Text="Closed, the seam under the header rules off nothing, so it goes." />
+                            </Expander>
+                        </StackPanel>
+                    </Expander>
+
+                    <TextBlock Classes="note"
+                               Text="The caret moves to the end of the row for a header that reads as a setting, label on the left and today's answer on the right. A caret in front of the label would push the labels of a stack of these out of line with every other row in the panel. The value is content the view docks right inside the header." />
+
+                    <Expander Classes="trailingCaret">
+                        <Expander.Header>
+                            <DockPanel LastChildFill="True">
+                                <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="Web 2048" />
+                                <TextBlock Text="Export preset" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Expander.Header>
+                        <TextBlock Classes="note" Text="What the preset holds goes here." />
+                    </Expander>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="SPLITTER" Content="grab the seam" />
+
+                    <TextBlock Classes="note"
+                               Text="At rest the splitter is the hairline itself, so the panes stay flush. Hover turns that one pixel accent and dragging widens it to three, centred, so nothing shifts. The reach is seven at every state, which is why it can be grabbed at all." />
+
+                    <Grid ColumnDefinitions="*,Auto,*" Height="120">
+                        <ui:SurfacePanel Grid.Column="0" Header="Left" />
+                        <GridSplitter Grid.Column="1" />
+                        <Grid Grid.Column="2" RowDefinitions="*,Auto,*">
+                            <ui:SurfacePanel Grid.Row="0" Header="Top right" />
+                            <GridSplitter Grid.Row="1" />
+                            <ui:SurfacePanel Grid.Row="2" Header="Bottom right" />
+                        </Grid>
+                    </Grid>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="NOTHING IN IT YET" />
+
+                    <ui:SurfacePanel Header="Graph" Height="128">
+                        <StackPanel Classes="emptyState">
+                            <ui:Icon Glyph="Workflow" />
+                            <TextBlock Text="No graph assigned" />
+                            <Button Content="Assign" />
+                        </StackPanel>
+                    </ui:SurfacePanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="A SIDEBAR THAT SLIDES AWAY" />
+
+                    <TextBlock Classes="note"
+                               Text="A pane is chrome rather than a panel, so it keeps the root tone at any depth and never joins the ramp." />
+
+                    <SplitView Name="Sidebar" Height="130" IsPaneOpen="True"
+                               DisplayMode="CompactInline" OpenPaneLength="180">
+                        <SplitView.Pane>
+                            <StackPanel Margin="8" Spacing="6">
+                                <Button Classes="icon" ToolTip.Tip="Toggle the pane"
+                                        AutomationProperties.Name="Toggle the pane"
+                                        Click="OnTogglePane">
+                                    <ui:Icon Glyph="Layout" />
+                                </Button>
+
+                                <!-- Closed, the pane is a strip with room for the mark
+                                     alone, so the label goes rather than being cut. -->
+                                <TextBlock Classes="caption" Text="Sidebar"
+                                           IsVisible="{Binding #Sidebar.IsPaneOpen}" />
+                            </StackPanel>
+                        </SplitView.Pane>
+                        <ui:SurfacePanel Header="Content" Margin="8">
+                            <TextBlock Classes="note" Text="The pane reserves its room inline and floats over this in an overlay mode." />
+                        </ui:SurfacePanel>
+                    </SplitView>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="MOVING ONE" Content="the depth follows" />
+
+                    <TextBlock Classes="note"
+                               Text="Docking reparents panels, so the tone cannot be worked out once and kept. Move this one between two grounds of different depth and it repaints itself and everything inside it." />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <ui:SurfacePanel Name="ShallowGround" Grid.Column="0" Header="A shallow ground">
+                            <ui:SurfacePanel Name="Nomad" Header="Move me">
+                                <ui:SurfacePanel Header="And what is inside me" />
+                            </ui:SurfacePanel>
+                        </ui:SurfacePanel>
+
+                        <ui:SurfacePanel Name="DeepGround" Grid.Column="1" Header="A deeper ground">
+                            <ui:SurfacePanel Header="One deeper again" Name="DeeperGround" />
+                        </ui:SurfacePanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Move it" Click="OnMovePanel" />
+                        <TextBlock Name="NomadLevel" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="OVERLAYS" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="Everything that floats shares one surface. Open a menu, a dropdown and a tooltip next to each other and the ground, the edge and the radius are the same. Right click the panel for a context menu." />
+
+                    <StackPanel.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Open in new tab" InputGesture="Ctrl+Enter" />
+                            <MenuItem Header="Duplicate" InputGesture="Ctrl+D" />
+                            <MenuItem Header="Assign graph">
+                                <MenuItem Header="Pure graph" />
+                                <MenuItem Header="Exec graph" />
+                            </MenuItem>
+                            <MenuItem Header="Check in" InputGesture="Ctrl+K" />
+                            <Separator />
+                            <MenuItem Header="Delete recipe" InputGesture="Delete" Classes="danger" />
+                        </ContextMenu>
+                    </StackPanel.ContextMenu>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Menu" ToolTip.Tip="A tooltip on the same surface">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Open in new tab" InputGesture="Ctrl+Enter" />
+                                    <MenuItem Header="Duplicate" InputGesture="Ctrl+D" />
+                                    <Separator />
+                                    <MenuItem Header="Delete recipe" InputGesture="Delete" Classes="danger" />
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+
+                        <Button Content="Popover">
+                            <Button.Flyout>
+                                <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover">
+                                    <ui:Popover Width="320" Header="WORKSPACES">
+                                        <StackPanel>
+                                            <TextBlock Text="The launcher supplies the rows. This is the surface only."
+                                                       Classes="note" Margin="13,10" />
+                                        </StackPanel>
+                                        <ui:Popover.Footer>
+                                            <StackPanel>
+                                                <MenuItem Header="Add workspace from folder" />
+                                                <MenuItem Header="Clone workspace from git" />
+                                            </StackPanel>
+                                        </ui:Popover.Footer>
+                                    </ui:Popover>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+
+                        <Button Classes="ghost" Content="Hover me for a tooltip"
+                                ToolTip.Tip="Run all validators" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="The same popover dropped into a panel loses its shadow and its surface and keeps its body. That is what lets a picker open in a popover and also sit inside a property panel." />
+
+                    <ui:Popover Classes="inPanel" Header="IN A PANEL" HorizontalAlignment="Left" Width="320">
+                        <TextBlock Text="Same body, no shadow, no surface of its own."
+                                   Classes="note" Margin="13,10" />
+                    </ui:Popover>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

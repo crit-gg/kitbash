@@ -1,0 +1,70 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.ColourPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="One body and two hosts. Floating it is a card with a shadow and a Cancel and Apply footer, dropped into a panel it gives up all three and the value applies live, and the footer reads back the line that will be written. Both are the same control and the same template." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="22">
+                        <StackPanel Spacing="9">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="IN A PANEL" Content="applies live" />
+                            <ui:ColorPicker Name="Bench" IsInPanel="True" Header="FILL COLOUR" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="9" Width="320">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="FLOATING" Content="the same body" />
+
+                            <TextBlock Classes="note"
+                                       Text="The other host. The same control in a flyout, where it draws its own card and its own shadow and commits on Apply. This is what the colour field opens, written out by hand." />
+
+                            <Button Name="Floater" Content="Open the picker" HorizontalAlignment="Left">
+                                <Button.Flyout>
+                                    <Flyout Placement="BottomEdgeAlignedLeft" FlyoutPresenterClasses="popover">
+                                        <ui:ColorPicker Name="Floating" Header="TINT" />
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="THE SHAPES" Content="seven of them" />
+
+                            <TextBlock Classes="note"
+                                       Text="Godot's own set, chosen from the menu in the header. A saturation and value square with hue beside it, the same square inside a hue ring, a hue circle with value beside it, the perceptual circle with lightness beside it, two perceptual rectangles, and the rows on their own. The bar always carries whatever the shape does not, and the ring carries all three itself." />
+
+                            <TextBlock Classes="note"
+                                       Text="The three perceptual surfaces are painted a pixel at a time, since OKHSL is not a straight line in sRGB and no gradient can hold it. Godot uses a shader. Measured here: 9042 pixels in 3.2 ms, painted at half the size and scaled up, which cannot be told apart." />
+
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="THE MODES" Content="four of them" />
+
+                            <TextBlock Classes="note"
+                                       Text="RGB and HSV read whole numbers, LINEAR reads the colour as light, and OKHSL is Ottosson's space, so a hue drag there keeps its lightness where the same drag in HSV does not. Every mode carries the I row, which is Godot's intensity: it multiplies in light, so one stop is twice as bright. Type 400 into red and the excess moves into that row, which is what Godot does." />
+
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="THE EYEDROPPER" Content="the desktop's own" />
+
+                            <TextBlock Classes="note"
+                                       Text="The crosshair in the header hands the gesture to the desktop portal, which draws the magnifier and gives one colour back. It works the same on Wayland and X11 and on any desktop that implements the portal. It is drawn only where there is one, so on Windows there is no button at all." />
+
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="SWATCHES" Content="empty until they are not" />
+
+                            <TextBlock Classes="note"
+                                       Text="Nothing is seeded. The add tile keeps today's colour, a right click takes one off, and the recent row fills itself as colours are picked. The gallery holds both lists, which is where an application would put its own." />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

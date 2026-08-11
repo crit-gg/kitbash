@@ -1,0 +1,238 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.ButtonsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="BUTTONS" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="Every kind in every state. The first column is live, so hover it, hold it and tab to it. The rest are held in one state so the five can be compared at once, and they ignore the pointer for that reason." />
+
+                    <Grid ColumnDefinitions="90,Auto,Auto,Auto,Auto,Auto"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnSpacing="10" RowSpacing="9">
+
+                        <TextBlock Grid.Row="0" Grid.Column="1" Classes="caption" Text="live" />
+                        <TextBlock Grid.Row="0" Grid.Column="2" Classes="caption" Text="hover" />
+                        <TextBlock Grid.Row="0" Grid.Column="3" Classes="caption" Text="pressed" />
+                        <TextBlock Grid.Row="0" Grid.Column="4" Classes="caption" Text="focus" />
+                        <TextBlock Grid.Row="0" Grid.Column="5" Classes="caption" Text="disabled" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Classes="caption" Text="secondary" VerticalAlignment="Center" />
+                        <Button Grid.Row="1" Grid.Column="1" Content="Reload" />
+                        <Button Grid.Row="1" Grid.Column="2" Classes="forceHover" Content="Reload" />
+                        <Button Grid.Row="1" Grid.Column="3" Classes="forcePressed" Content="Reload" />
+                        <Button Grid.Row="1" Grid.Column="4" Classes="forceFocus" Content="Reload" />
+                        <Button Grid.Row="1" Grid.Column="5" Content="Reload" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Classes="caption" Text="primary" VerticalAlignment="Center" />
+                        <Button Grid.Row="2" Grid.Column="1" Classes="primary" Content="Add workspace" />
+                        <Button Grid.Row="2" Grid.Column="2" Classes="primary forceHover" Content="Add workspace" />
+                        <Button Grid.Row="2" Grid.Column="3" Classes="primary forcePressed" Content="Add workspace" />
+                        <Button Grid.Row="2" Grid.Column="4" Classes="primary forceFocus" Content="Add workspace" />
+                        <Button Grid.Row="2" Grid.Column="5" Classes="primary" Content="Add workspace" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Classes="caption" Text="neutral" VerticalAlignment="Center" />
+                        <Button Grid.Row="3" Grid.Column="1" Classes="neutral" Content="Launch" />
+                        <Button Grid.Row="3" Grid.Column="2" Classes="neutral forceHover" Content="Launch" />
+                        <Button Grid.Row="3" Grid.Column="3" Classes="neutral forcePressed" Content="Launch" />
+                        <Button Grid.Row="3" Grid.Column="4" Classes="neutral forceFocus" Content="Launch" />
+                        <Button Grid.Row="3" Grid.Column="5" Classes="neutral" Content="Launch" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Classes="caption" Text="ghost" VerticalAlignment="Center" />
+                        <Button Grid.Row="4" Grid.Column="1" Classes="ghost" Content="Cancel" />
+                        <Button Grid.Row="4" Grid.Column="2" Classes="ghost forceHover" Content="Cancel" />
+                        <Button Grid.Row="4" Grid.Column="3" Classes="ghost forcePressed" Content="Cancel" />
+                        <Button Grid.Row="4" Grid.Column="4" Classes="ghost forceFocus" Content="Cancel" />
+                        <Button Grid.Row="4" Grid.Column="5" Classes="ghost" Content="Cancel" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Classes="caption" Text="danger" VerticalAlignment="Center" />
+                        <Button Grid.Row="5" Grid.Column="1" Classes="danger" Content="Remove" />
+                        <Button Grid.Row="5" Grid.Column="2" Classes="danger forceHover" Content="Remove" />
+                        <Button Grid.Row="5" Grid.Column="3" Classes="danger forcePressed" Content="Remove" />
+                        <Button Grid.Row="5" Grid.Column="4" Classes="danger forceFocus" Content="Remove" />
+                        <Button Grid.Row="5" Grid.Column="5" Classes="danger" Content="Remove" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Classes="caption" Text="icon" VerticalAlignment="Center" />
+                        <Button Grid.Row="6" Grid.Column="1" Classes="icon"
+                                ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                            <ui:Icon Glyph="Cog" />
+                        </Button>
+                        <Button Grid.Row="6" Grid.Column="2" Classes="icon forceHover"
+                                ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                            <ui:Icon Glyph="Cog" />
+                        </Button>
+                        <Button Grid.Row="6" Grid.Column="3" Classes="icon forcePressed"
+                                ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                            <ui:Icon Glyph="Cog" />
+                        </Button>
+                        <Button Grid.Row="6" Grid.Column="4" Classes="icon forceFocus"
+                                ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                            <ui:Icon Glyph="Cog" />
+                        </Button>
+                        <Button Grid.Row="6" Grid.Column="5" Classes="icon" IsEnabled="False"
+                                ToolTip.Tip="Settings" AutomationProperties.Name="Settings">
+                            <ui:Icon Glyph="Cog" />
+                        </Button>
+
+                        <!-- A button that stays down. Its live sample is really checked,
+                             so the row reads on then off rather than four of one. -->
+                        <TextBlock Grid.Row="7" Grid.Column="0" Classes="caption" Text="toggle" VerticalAlignment="Center" />
+                        <ToggleButton Grid.Row="7" Grid.Column="1" Content="Create folder" IsChecked="True" />
+                        <ToggleButton Grid.Row="7" Grid.Column="2" Classes="forceHover" Content="Create folder" />
+                        <ToggleButton Grid.Row="7" Grid.Column="3" Classes="forcePressed" Content="Create folder" />
+                        <ToggleButton Grid.Row="7" Grid.Column="4" Classes="forceFocus" Content="Create folder" />
+                        <ToggleButton Grid.Row="7" Grid.Column="5" Content="Create folder" IsEnabled="False" />
+
+                        <!-- Quiet until it is touched. The held columns are what this
+                             kind is for, since the whole point is that it is red in
+                             exactly two of the five states and grey in the rest. -->
+                        <TextBlock Grid.Row="8" Grid.Column="0" Classes="caption" Text="icon danger" VerticalAlignment="Center" />
+                        <Button Grid.Row="8" Grid.Column="1" Classes="icon danger"
+                                ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                            <ui:Icon Glyph="Trash" />
+                        </Button>
+                        <Button Grid.Row="8" Grid.Column="2" Classes="icon danger forceHover"
+                                ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                            <ui:Icon Glyph="Trash" />
+                        </Button>
+                        <Button Grid.Row="8" Grid.Column="3" Classes="icon danger forcePressed"
+                                ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                            <ui:Icon Glyph="Trash" />
+                        </Button>
+                        <Button Grid.Row="8" Grid.Column="4" Classes="icon danger forceFocus"
+                                ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                            <ui:Icon Glyph="Trash" />
+                        </Button>
+                        <Button Grid.Row="8" Grid.Column="5" Classes="icon danger" IsEnabled="False"
+                                ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                            <ui:Icon Glyph="Trash" />
+                        </Button>
+
+                        <!-- The two toggle kinds. Both live samples are checked, so the
+                             row shows that a kind with no fill still takes one when it
+                             is on, which is the only thing saying it is on. -->
+                        <TextBlock Grid.Row="9" Grid.Column="0" Classes="caption" Text="toggle ghost" VerticalAlignment="Center" />
+                        <ToggleButton Grid.Row="9" Grid.Column="1" Classes="ghost" Content="Wireframe" IsChecked="True" />
+                        <ToggleButton Grid.Row="9" Grid.Column="2" Classes="ghost forceHover" Content="Wireframe" />
+                        <ToggleButton Grid.Row="9" Grid.Column="3" Classes="ghost forcePressed" Content="Wireframe" />
+                        <ToggleButton Grid.Row="9" Grid.Column="4" Classes="ghost forceFocus" Content="Wireframe" />
+                        <ToggleButton Grid.Row="9" Grid.Column="5" Classes="ghost" Content="Wireframe" IsEnabled="False" />
+
+                        <TextBlock Grid.Row="10" Grid.Column="0" Classes="caption" Text="toggle icon" VerticalAlignment="Center" />
+                        <ToggleButton Grid.Row="10" Grid.Column="1" Classes="icon" IsChecked="True"
+                                      ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                            <ui:Icon Glyph="Columns" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Row="10" Grid.Column="2" Classes="icon forceHover"
+                                      ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                            <ui:Icon Glyph="Columns" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Row="10" Grid.Column="3" Classes="icon forcePressed"
+                                      ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                            <ui:Icon Glyph="Columns" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Row="10" Grid.Column="4" Classes="icon forceFocus"
+                                      ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                            <ui:Icon Glyph="Columns" />
+                        </ToggleButton>
+                        <ToggleButton Grid.Row="10" Grid.Column="5" Classes="icon" IsEnabled="False"
+                                      ToolTip.Tip="Sidebar" AutomationProperties.Name="Sidebar">
+                            <ui:Icon Glyph="Columns" />
+                        </ToggleButton>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="SPLIT BUTTON AND DROPDOWN" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="Both open a real menu. Hover the caret and then the label to see each half take its own state without moving the other. The menu itself is not themed until stage 5." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <SplitButton Content="Run">
+                            <SplitButton.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Run and attach" />
+                                    <MenuItem Header="Run without building" />
+                                    <Separator />
+                                    <MenuItem Header="Edit configuration" />
+                                </MenuFlyout>
+                            </SplitButton.Flyout>
+                        </SplitButton>
+
+                        <SplitButton Classes="primary" Content="Open in Godot">
+                            <SplitButton.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Open project folder" />
+                                    <MenuItem Header="Edit project.godot" />
+                                </MenuFlyout>
+                            </SplitButton.Flyout>
+                        </SplitButton>
+
+                        <SplitButton Classes="neutral" Content="Launch">
+                            <SplitButton.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Launch and attach" />
+                                    <MenuItem Header="Launch clean" />
+                                </MenuFlyout>
+                            </SplitButton.Flyout>
+                        </SplitButton>
+
+                        <SplitButton Classes="warn" Content="Switch to 4.7.1" />
+
+                        <SplitButton Classes="danger" Content="Install 4.7.1" />
+
+                        <SplitButton Content="Run" IsEnabled="False" />
+
+                        <DropDownButton Content="Godot 4.7.1" Width="170">
+                            <DropDownButton.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Godot 4.7.1" />
+                                    <MenuItem Header="Godot 4.6.2" />
+                                    <MenuItem Header="Godot 4.5.0" />
+                                </MenuFlyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+
+                        <DropDownButton Content="Godot 4.7.1" Width="170" IsEnabled="False" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="A dropdown that names a status carries the colour in front of the word, since the word alone is what the row is read for. The compact one is for an inspector row, where the label owns the left of the row and the value has what is left, and it takes the mono family when it holds a value rather than a name." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <DropDownButton Width="170">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Classes="dot" Fill="{DynamicResource Ok}" />
+                                <TextBlock Text="Approved" />
+                            </StackPanel>
+                        </DropDownButton>
+
+                        <DropDownButton Width="170">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Ellipse Classes="dot" Fill="{DynamicResource Warn}" />
+                                <TextBlock Text="In review" />
+                            </StackPanel>
+                        </DropDownButton>
+
+                        <DropDownButton Classes="compact" Content="Ilse" Width="110" />
+
+                        <DropDownButton Classes="compact mono" Content="2048" Width="90" />
+
+                        <DropDownButton Classes="compact mono" Content="PNG" Width="90" IsEnabled="False" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

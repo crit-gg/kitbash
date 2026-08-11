@@ -1,0 +1,162 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.ListsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="A row never carries both a fill and an outline. Hover and selection are fills, focus is the same halo every control draws, and a drop target is the only dashed edge in the theme." />
+
+                    <Grid ColumnDefinitions="230,*" ColumnSpacing="16">
+                        <StackPanel Grid.Column="0" Spacing="9">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="ROW STATES" />
+
+                            <Border Classes="panel" Padding="5">
+                                <StackPanel>
+                                    <ListBoxItem Content="Normal" />
+                                    <ListBoxItem Content="Hover" Classes="forceHover" />
+                                    <ListBoxItem Content="Pressed" Classes="forcePressed" />
+                                    <ListBoxItem Content="Selected" IsSelected="True" />
+                                    <ListBoxItem Content="Selected and focused" IsSelected="True" Classes="forceFocus" />
+                                    <ListBoxItem Content="Modified" Classes="modified" />
+                                    <ListBoxItem Content="Drop target" Classes="drop" />
+                                    <ListBoxItem Content="Disabled" IsEnabled="False" />
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Classes="note"
+                                       Text="Focus on a selected row is the halo over the tint, so neither one replaces the other." />
+
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="ROW FURNITURE" />
+
+                            <Border Classes="panel" Padding="5">
+                                <StackPanel>
+                                    <ListBoxItem>
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="184" />
+                                            <ui:Icon DockPanel.Dock="Left" Glyph="Package" Margin="0,0,9,0" />
+                                            <TextBlock Text="Everything" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </ListBoxItem>
+                                    <ListBoxItem IsSelected="True">
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="12" />
+                                            <ui:Icon DockPanel.Dock="Left" Glyph="ArrowToBottom" Margin="0,0,9,0" />
+                                            <TextBlock Text="Just arrived" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </ListBoxItem>
+                                    <ListBoxItem>
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="31" />
+                                            <Border DockPanel.Dock="Left" Classes="mark"
+                                                    Background="{DynamicResource PinInt}" Margin="0,0,11,0" />
+                                            <TextBlock Text="Ships in the demo" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </ListBoxItem>
+                                    <ListBoxItem>
+                                        <DockPanel LastChildFill="True">
+                                            <TextBlock DockPanel.Dock="Right" Classes="rowCount" Text="8" />
+                                            <Ellipse DockPanel.Dock="Left" Classes="dot"
+                                                     Fill="{DynamicResource Warn}" Margin="0,0,11,0" />
+                                            <TextBlock Text="character" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </ListBoxItem>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Classes="note"
+                                       Text="A count is a value, so it can only arrive as content, which is why it is a style a view applies rather than a part of the row. The square mark names a thing and the round one names a label somebody applied." />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="9">
+                            <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                                    Header="TREE" Content="click a caret" />
+
+                            <Border Classes="panel" Padding="0" Height="266">
+                                <ui:Tree Name="SampleTree">
+                                    <ui:Tree.ItemTemplate>
+                                        <DataTemplate x:DataType="views:Node">
+                                            <DockPanel LastChildFill="True">
+                                                <TextBlock DockPanel.Dock="Right"
+                                                           Classes="rowCount"
+                                                           Text="{Binding Count}" />
+                                                <TextBlock Text="{Binding Name}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ui:Tree.ItemTemplate>
+                                </ui:Tree>
+                            </Border>
+
+                            <TextBlock Classes="note"
+                                       Text="A single click picks a row, a double click opens it, and a click on the caret opens it without changing what is picked. Left and right arrow do the same from the keyboard." />
+                        </StackPanel>
+                    </Grid>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="TEN THOUSAND ROWS" Content="the reason a tree is flat" />
+
+                    <TextBlock Classes="note"
+                               Text="Avalonia has no virtualising tree, so this one is a flat list of the rows that can be seen and expanding edits the list. Open everything and the row count runs into five figures while the number of controls stays in two." />
+
+                    <Border Classes="panel" Padding="0" Height="180">
+                        <ui:Tree Name="BigTree">
+                            <ui:Tree.ItemTemplate>
+                                <DataTemplate x:DataType="views:Node">
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </ui:Tree.ItemTemplate>
+                        </ui:Tree>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Open everything" Click="OnExpandAll" />
+                        <Button Classes="ghost" Content="Close everything" Click="OnCollapseAll" />
+                        <Button Classes="ghost" Content="Count what is real" Click="OnCountRows" />
+                        <TextBlock Name="RowCount" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="TEXT DIFF" Content="every kind, and the words that differ" />
+
+                    <TextBlock Classes="note"
+                               Text="A diff is a document rather than a list of things, so its rows are flush and what tells one line from the next is the mark down its left. The three kinds every diff has are here with the four a merge adds. Changed words inside a line are worked out and lit, so a one character change in a long line is visible without reading it twice." />
+
+                    <Border Classes="panel" Padding="0" Height="330">
+                        <ui:TextDiff Name="SampleDiff" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Mark the words" Click="OnMarkWords" />
+                        <Button Classes="ghost" Content="Leave them" Click="OnLeaveWords" />
+                        <TextBlock Name="DiffCount" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="LIST" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <Border Grid.Column="0" Classes="panel" Padding="0" Height="172">
+                            <ListBox Name="SampleList">
+                                <ListBoxItem Content="One" />
+                                <ListBoxItem Content="Two" />
+                                <ListBoxItem Content="Three" Classes="modified" />
+                                <ListBoxItem Content="Four" />
+                                <ListBoxItem Content="Five" IsEnabled="False" />
+                            </ListBox>
+                        </Border>
+
+                        <TextBlock Grid.Column="1" Classes="note" VerticalAlignment="Center"
+                                   Text="A list is the same row without the indent, the caret or the guides. It virtualises on its own, since ListBox is the one items control in Avalonia that replaces its panel with a virtualising one." />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

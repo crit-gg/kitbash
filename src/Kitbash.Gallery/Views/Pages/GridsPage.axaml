@@ -1,0 +1,209 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.GridsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, drag the edge between two titles to resize, and double click a value to edit it in place. Escape puts the old one back." />
+
+                    <TextBlock Classes="note"
+                               Text="Ten thousand rows, a hundred to a page. The Columns button hides one column, which is the whole of what a chooser would do." />
+
+                    <ui:DataGrid Name="SampleGrid" Height="342" SelectionMode="Multiple">
+                        <ui:DataGrid.Toolbar>
+                            <DockPanel LastChildFill="False">
+                                <ui:SearchBox DockPanel.Dock="Left"
+                                              Width="220"
+                                              PlaceholderText="Filter rows" />
+
+                                <Button DockPanel.Dock="Right" Classes="primary" Content="New row" />
+
+                                <Button DockPanel.Dock="Right"
+                                        Classes="ghost"
+                                        Content="Columns"
+                                        Margin="0,0,7,0"
+                                        Click="OnHideColumn" />
+                            </DockPanel>
+                        </ui:DataGrid.Toolbar>
+
+                        <ui:DataGrid.Columns>
+                            <!-- The picker column. Bound to the row's own selection, so the
+                                 box and the tint are the same thing being said. Its title
+                                 is a control, which is all a header has to be. -->
+                            <ui:GridColumn Width="34" MinWidth="34" CanResize="False" Alignment="Center">
+                                <ui:GridColumn.Header>
+                                    <CheckBox Name="PickAll" Click="OnPickAll" />
+                                </ui:GridColumn.Header>
+
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <CheckBox IsChecked="{Binding $parent[ui:DataGridRow].IsSelected, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="ID" Width="190" IsMono="True" IsStrong="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBlock Text="{Binding Id}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="NAME" MinWidth="120" IsStrong="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBlock Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="KIND" Width="150">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBlock Text="{Binding Kind}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBlock Text="{Binding Value}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBox Classes="mono"
+                                                 Text="{Binding Value, Mode=TwoWay}"
+                                                 TextAlignment="Right" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="TIER" Width="104" IsMono="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <TextBlock Text="{Binding Tier}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <!-- A status cell is the stage four pill rather than a cell
+                                 style of its own. Wide enough for the longest label at
+                                 the roomier density, since a pinned width does not
+                                 scale and a pill that does will clip inside one. -->
+                            <ui:GridColumn Header="STATE" Width="140">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Entry">
+                                        <ui:StatusPill Status="{Binding Status}"
+                                                       Text="{Binding State}"
+                                                       VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+                        </ui:DataGrid.Columns>
+                    </ui:DataGrid>
+
+                    <ui:GridPager Name="SamplePager" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="ghost" Content="Group by kind" Click="OnGroupGrid" />
+                        <Button Classes="ghost" Content="Turn paging off" Click="OnPageGrid" />
+                        <Button Classes="ghost" Content="Count what is real" Click="OnCountCells" />
+
+                        <!-- Toggled on the grid above rather than drawn as a second one,
+                             so the two looks can be read against the same rows. -->
+                        <ToggleButton Classes="ghost" Content="Plain" Click="OnPlainGrid" />
+
+                        <TextBlock Name="GridCount" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="Plain is the other thing a table can be: a way of looking at a list that is already on a page, beside a second way of looking at the same list. It drops the rule under every row, the stripe and the header's fill, and its rows take the list's radius and spacing instead." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="TREE DATA GRID"
+                                            Content="the same column model" />
+
+                    <TextBlock Classes="note"
+                               Text="One column model, laid out by both grids. Only the leading column indents, and a branch row carries what its children add up to, so a closed branch still answers the question they would." />
+
+                    <ui:TreeDataGrid Name="SampleTreeGrid" Height="250">
+                        <ui:TreeDataGrid.Columns>
+                            <ui:GridColumn Width="34" MinWidth="34" CanResize="False" Alignment="Center">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <CheckBox IsChecked="{Binding $parent[ui:TreeDataGridRow].IsSelected, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="NAME" MinWidth="140">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBlock Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="KIND" Width="150">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBlock Text="{Binding Kind}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="VALUE" Width="96" IsMono="True" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBlock Text="{Binding Value}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="TIER" Width="104" IsMono="True" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBlock Text="{Binding Tier}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="STATE" Width="118">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBlock Text="{Binding State}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+                        </ui:TreeDataGrid.Columns>
+                    </ui:TreeDataGrid>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

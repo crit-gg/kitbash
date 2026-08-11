@@ -179,9 +179,9 @@ public partial class App : Application
 
         await Task.Delay(TimeSpan.FromMilliseconds(800), abandoned);
 
-        // This one really does take a moment, and it holds the UI thread while it runs, so
-        // the splash stops animating until it is done. A real app builds its window off the
-        // thread wherever it can.
+        // The window and the first page the rail opens are both built here, and that holds
+        // the UI thread while it runs, so the splash stops animating until it is done. A
+        // real app builds its window off the thread wherever it can.
         var gallery = services.GetRequiredService<GalleryWindow>();
 
         splash.Report("Opening the gallery", 1, "3 of 3");

@@ -1,33 +1,40 @@
-using System.Collections.ObjectModel;
 using System.Reflection;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
-using Avalonia.Threading;
-using Avalonia.VisualTree;
-using Dock.Model.Controls;
+using Avalonia.Styling;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
+using Kitbash.Gallery.Views.Pages;
 using Kitbash.Ui.Controls;
-using Kitbash.Ui.Projects;
 using Kitbash.Ui.Toasts;
 
 namespace Kitbash.Gallery.Views;
 
 public partial class GalleryWindow : ChromelessWindow
 {
-    /// <summary>The desktop's own colour picking, handed to the pickers on the page.</summary>
+    /// <summary>The window's own toasts, handed in rather than reached for.</summary>
+    private readonly IToastService _toasts;
+
+    /// <summary>A region of its own for one panel, which the toasts page asks for.</summary>
+    private readonly IToastServiceFactory _scopes;
+
+    /// <summary>The desktop's own colour picking, handed to the pages that hold a picker.</summary>
     private readonly IScreenColour _screen;
 
-    private readonly List<Control> _chips = [];
-    private readonly List<Control> _chipKinds = [];
-    private readonly List<Node> _big = [];
+    /// <summary>What the welcome window needs, handed in the way a tool would hand it.</summary>
+    private readonly IPlatformServices _platform;
+    private readonly IFileSystem _files;
+
+    /// <summary>The saved colours the inputs page and the colour page share.</summary>
+    private readonly Palette _palette = new();
 
     /// <summary>Held rather than rebuilt, so turning it off removes the one that went on.</summary>
     private readonly StyleInclude _comfortable = new(new Uri("avares://Kitbash.Ui/Themes/"))
@@ -35,29 +42,10 @@ public partial class GalleryWindow : ChromelessWindow
         Source = new Uri("avares://Kitbash.Ui/Themes/KitbashComfortable.axaml"),
     };
 
-    /// <summary>The window's own toasts, handed in rather than reached for.</summary>
-    private readonly IToastService _toasts;
-
-    /// <summary>
-    /// A second service, owned by one panel on the page. Its regions are that panel's,
-    /// which is what a tool panel reporting its own progress would have.
-    /// </summary>
-    private readonly IToastService _panelToasts;
-
-    /// <summary>What the welcome window needs, handed in the way a tool would hand it.</summary>
-    private readonly IPlatformServices _platform;
-    private readonly IFileSystem _files;
-
-    /// <summary>One at a time, so switching host closes the one that was open.</summary>
-    private ProjectsWindow? _projects;
-
-    private SplashWindow? _splash;
-    private int _splashStep;
+    /// <summary>The pages, in rail order.</summary>
+    private readonly List<RailPage> _pages;
 
     private bool _disabled;
-
-    /// <summary>The docking harness. It owns the layout, so rebuilding is one call.</summary>
-    private DockHarness? _dock;
 
     public GalleryWindow(
         IToastService toasts,
@@ -72,7 +60,7 @@ public partial class GalleryWindow : ChromelessWindow
         ArgumentNullException.ThrowIfNull(files);
 
         _toasts = toasts;
-        _panelToasts = scopes.Create();
+        _scopes = scopes;
         _screen = screen;
         _platform = platform;
         _files = files;
@@ -82,46 +70,67 @@ public partial class GalleryWindow : ChromelessWindow
         TitleBar.Version = BuildVersion();
 
         WindowToasts.Service = _toasts;
-        PanelToasts.Service = _panelToasts;
 
-        ToastRegions.ItemsSource = Enum.GetValues<ToastAnchor>();
-        ToastRegions.SelectedItem = ToastAnchor.BottomRight;
+        _pages =
+        [
+            new(IconGlyph.PlayCircle, "BUTTONS AND DROPDOWNS", () => new ButtonsPage()),
+            new(IconGlyph.Tag, "CHIPS, BADGES AND PROGRESS", () => new ChipsPage()),
+            new(IconGlyph.Pencil, "INPUTS", () => new InputsPage(_screen, _palette)),
+            new(IconGlyph.Crosshair, "COLOUR PICKER", () => new ColourPage(_screen, _palette)),
+            new(IconGlyph.Layout, "PANELS AND OVERLAYS", () => new PanelsPage()),
+            new(IconGlyph.Sitemap, "LISTS AND TREES", () => new ListsPage()),
+            new(IconGlyph.Table, "DATA GRIDS", () => new GridsPage()),
+            new(IconGlyph.Columns, "TABS AND DOCKING", () => new DockingPage()),
+            new(IconGlyph.Message, "TOASTS AND ALERTS", () => new ToastsPage(_toasts, _scopes)),
+            new(IconGlyph.Window, "THE WINDOW SHELL", () => new WindowsPage(_platform, _files)),
+        ];
 
-        BuildTrees();
-        BuildGrids();
-        BuildDock();
-        BuildColours();
-
-        Removable(Chips, _chips);
-        Removable(ChipKinds, _chipKinds);
-
-        ShowValue();
+        BuildRail();
     }
 
-    /// <summary>
-    /// Both pickers share one set of saved colours, which is where an application would put
-    /// its own. They start empty, since the palette is not the picker's to invent.
-    /// </summary>
-    private void BuildColours()
+    private void BuildRail()
     {
-        var swatches = new ObservableCollection<ColorValue>();
-        var recent = new ObservableCollection<ColorValue>();
-
-        foreach (var picker in new[] { Bench, Floating })
+        foreach (var page in _pages)
         {
-            picker.ScreenColour = _screen;
-            picker.Swatches = swatches;
-            picker.Recent = recent;
+            Rail.Items.Add(RailItem(page));
         }
 
-        Tint.ScreenColour = _screen;
-        Tint.Swatches = swatches;
-        Tint.Recent = recent;
+        Rail.SelectedIndex = 0;
+    }
 
-        // A picker written into a flyout by hand closes its own host, which is the one thing
-        // ui:ColorField does for you.
-        Floating.Applied += (_, _) => (Floater.Flyout as Flyout)?.Hide();
-        Floating.Cancelled += (_, _) => (Floater.Flyout as Flyout)?.Hide();
+    private ListBoxItem RailItem(RailPage page)
+    {
+        // Named in full, since Icon on a Window is the one the desktop shows.
+        var icon = new Icon { Glyph = page.Glyph };
+        icon[!Kitbash.Ui.Controls.Icon.SizeProperty] =
+            new DynamicResourceExtension("IconSizeLarge");
+
+        // Found from the window, so its own resources are searched before the app's, the
+        // way a StaticResource in the markup would be.
+        var item = new ListBoxItem
+        {
+            Theme = this.FindResource("ActivityRailItem") as ControlTheme,
+            Content = icon,
+        };
+
+        ToolTip.SetTip(item, page.Name);
+        ToolTip.SetPlacement(item, PlacementMode.Right);
+        AutomationProperties.SetName(item, page.Name);
+
+        return item;
+    }
+
+    private void OnPageSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        var index = Rail.SelectedIndex;
+
+        if (index < 0 || index >= _pages.Count)
+        {
+            return;
+        }
+
+        PageName.Text = _pages[index].Name;
+        Body.Content = _pages[index].Page;
     }
 
     /// <summary>
@@ -141,166 +150,6 @@ public partial class GalleryWindow : ChromelessWindow
         var metadata = informational.IndexOf('+', StringComparison.Ordinal);
 
         return metadata < 0 ? informational : informational[..metadata];
-    }
-
-    protected override void OnLoaded(RoutedEventArgs e)
-    {
-        base.OnLoaded(e);
-
-        HoldStates();
-        ShowNomadLevel();
-    }
-
-    /// <summary>
-    /// Pins the sample controls to one state so the five can be read side by side.
-    /// </summary>
-    private void HoldStates()
-    {
-        foreach (var control in this.GetVisualDescendants().OfType<Control>())
-        {
-            var hover = control.Classes.Contains("forceHover");
-            var pressed = control.Classes.Contains("forcePressed");
-            var focus = control.Classes.Contains("forceFocus");
-
-            if (!hover && !pressed && !focus)
-            {
-                continue;
-            }
-
-            var pseudo = (IPseudoClasses)control.Classes;
-
-            // A press is always also a hover, so both are set and the theme must order
-            // pressed after hover.
-            pseudo.Set(":pointerover", hover || pressed);
-            pseudo.Set(":pressed", pressed);
-            pseudo.Set(":focus-visible", focus);
-
-            control.IsHitTestVisible = false;
-        }
-    }
-
-    /// <summary>
-    /// The two trees. Both are flattened by <see cref="TreeRows"/>, which is what a tree
-    /// is given here, and the big one is the case a nested tree of controls cannot do.
-    /// </summary>
-    private void BuildTrees()
-    {
-        var sample = new List<Node>
-        {
-            new("First group", "3",
-            [
-                new("A row"),
-                new("A row that is picked"),
-                new("A branch", "2",
-                [
-                    new("Deeper"),
-                    new("Deeper again"),
-                ]),
-            ]),
-            new("Second group", "2",
-            [
-                new("A leaf keeps the caret's room, so a branch and a leaf line up"),
-                new("Another"),
-            ]),
-            new("A group with nothing in it"),
-        };
-
-        var opened = new TreeRows(sample, Under);
-
-        // Opened, so the indent, the guides and a branch inside a branch are all on the
-        // page rather than a click away.
-        opened.Expand(opened[0]);
-        opened.Expand(opened[3]);
-
-        SampleTree.ItemsSource = opened;
-
-        ShowDiff(marked: true);
-
-        for (var group = 1; group <= 200; group++)
-        {
-            var rows = new List<Node>();
-
-            for (var row = 1; row <= 50; row++)
-            {
-                rows.Add(new Node($"Row {group}.{row}"));
-            }
-
-            _big.Add(new Node($"Group {group}", rows.Count.ToString(), rows));
-        }
-
-        BigTree.ItemsSource = new TreeRows(_big, Under);
-    }
-
-    private static IEnumerable<Node> Under(object item) => ((Node)item).Children;
-
-    private void OnExpandAll(object? sender, RoutedEventArgs e)
-    {
-        if (BigTree.ItemsSource is not TreeRows rows)
-        {
-            return;
-        }
-
-        // Backwards, so expanding one does not move the rows still to be opened.
-        for (var index = rows.Count - 1; index >= 0; index--)
-        {
-            rows.Expand(rows[index]);
-        }
-
-        ShowRowCount();
-    }
-
-    private void OnCollapseAll(object? sender, RoutedEventArgs e)
-    {
-        if (BigTree.ItemsSource is TreeRows rows)
-        {
-            rows.Reset(_big);
-            ShowRowCount();
-        }
-    }
-
-    private void OnCountRows(object? sender, RoutedEventArgs e) => ShowRowCount();
-
-    /// <summary>One diff with every kind in it, so the whole vocabulary is on one screen.</summary>
-    private static IReadOnlyList<TextDiffLine> DiffSample() =>
-    [
-        new TextDiffLine(TextDiffLineKind.Heading, "@@ -14,9 +14,12 @@ func _ready()"),
-        new TextDiffLine(TextDiffLineKind.Context, "extends CharacterBody2D", 14, 14),
-        new TextDiffLine(TextDiffLineKind.Context, "", 15, 15),
-        new TextDiffLine(TextDiffLineKind.Removed, "@onready var state := $StateMachine", 16, null),
-        new TextDiffLine(TextDiffLineKind.Added, "@onready var state := $Logic/StateMachine", null, 16),
-        new TextDiffLine(TextDiffLineKind.Added, "@onready var hurt_box: Area2D = $HurtBox", null, 17),
-        new TextDiffLine(TextDiffLineKind.Context, "", 17, 18),
-        new TextDiffLine(TextDiffLineKind.Context, "func _ready() -> void:", 18, 19),
-        new TextDiffLine(TextDiffLineKind.Removed, "\tstate.start(\"Idle\")", 19, null),
-        new TextDiffLine(TextDiffLineKind.Added, "\tstate.start(\"Walk\")", null, 20),
-        new TextDiffLine(TextDiffLineKind.Heading, "@@ merged for you"),
-        new TextDiffLine(TextDiffLineKind.Settled, "\thurt_box.body_entered.connect(_on_hurt)", null, 21),
-        new TextDiffLine(TextDiffLineKind.Ours, "\tvelocity.y = jump_force", null, 22),
-        new TextDiffLine(TextDiffLineKind.Theirs, "\tvelocity.y = JUMP", null, 23),
-        new TextDiffLine(TextDiffLineKind.Chosen, "\tvelocity.y = jump_force", null, 24),
-    ];
-
-    private void OnMarkWords(object? sender, RoutedEventArgs e) => ShowDiff(marked: true);
-
-    private void OnLeaveWords(object? sender, RoutedEventArgs e) => ShowDiff(marked: false);
-
-    private void ShowDiff(bool marked)
-    {
-        var lines = DiffSample();
-
-        SampleDiff.Lines = marked ? new TextDiffWords().Mark(lines) : lines;
-
-        DiffCount.Text = marked
-            ? "words marked"
-            : "line kinds only";
-    }
-
-    private void ShowRowCount()
-    {
-        var rows = BigTree.ItemsSource is TreeRows source ? source.Count : 0;
-        var real = BigTree.GetVisualDescendants().OfType<TreeItem>().Count();
-
-        RowCount.Text = $"{rows} rows, {real} of them are controls";
     }
 
     private void OnToggleEnabled(object? sender, RoutedEventArgs e)
@@ -331,155 +180,6 @@ public partial class GalleryWindow : ChromelessWindow
         }
     }
 
-    /// <summary>Remembers a row of chips and wires each one to take itself out.</summary>
-    private static void Removable(Panel row, List<Control> kept)
-    {
-        kept.AddRange(row.Children);
-
-        foreach (var chip in kept.OfType<Chip>())
-        {
-            chip.RemoveCommand = new Run(() => row.Children.Remove(chip));
-        }
-    }
-
-    private void OnRestoreChips(object? sender, RoutedEventArgs e)
-    {
-        Restore(Chips, _chips);
-        Restore(ChipKinds, _chipKinds);
-    }
-
-    private static void Restore(Panel row, List<Control> kept)
-    {
-        row.Children.Clear();
-
-        foreach (var chip in kept)
-        {
-            row.Children.Add(chip);
-        }
-    }
-
-    private void OnLess(object? sender, RoutedEventArgs e) => Move(-10);
-
-    private void OnMore(object? sender, RoutedEventArgs e) => Move(10);
-
-    private void Move(double by)
-    {
-        Determinate.Value = Math.Clamp(Determinate.Value + by, Determinate.Minimum, Determinate.Maximum);
-        ShowValue();
-    }
-
-    private void ShowValue() => DeterminateValue.Text = $"{Determinate.Value:0}%";
-
-    private void OnMaximize(object? sender, RoutedEventArgs e) => ToggleMaximized();
-
-    /// <summary>
-    /// The welcome window as one of the design's three hosts. Built here rather than
-    /// through IProjectsWindows, since that holds one host and this page shows three.
-    /// </summary>
-    private void OnOpenProjects(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: string name })
-        {
-            return;
-        }
-
-        _projects?.Close();
-
-        var kind = HarnessProjectKind.For(Enum.Parse<ProjectHost>(name));
-        kind.Reported = report => ProjectsAnswer.Text = report;
-
-        _projects = new ProjectsWindow
-        {
-            Kind = kind,
-            Platform = _platform,
-            FileSystem = _files,
-            DataContext = new ProjectsViewModel(kind.Recent, kind),
-        };
-
-        _projects.Closed += (_, _) => _projects = null;
-        _projects.Show(this);
-    }
-
-    private void OnTogglePane(object? sender, RoutedEventArgs e) =>
-        Sidebar.IsPaneOpen = !Sidebar.IsPaneOpen;
-
-    /// <summary>
-    /// Moves a panel between two grounds of different depth, which is what docking will
-    /// do to it. Nothing tells it its new tone and nothing recounts anything.
-    /// </summary>
-    private void OnMovePanel(object? sender, RoutedEventArgs e)
-    {
-        var home = ReferenceEquals(Nomad.Parent, ShallowGround);
-
-        ShallowGround.Content = home ? null : Nomad;
-        DeeperGround.Content = home ? Nomad : null;
-
-        ShowNomadLevel();
-    }
-
-    private void ShowNomadLevel() =>
-        NomadLevel.Text = $"it is on level {Surface.GetLevel(Nomad)}";
-
-    // Built here rather than in a view, so the shape a real dialog takes is visible:
-    // a title bar, content, and a footer holding the actions.
-    private async void OnOpenDialog(object? sender, RoutedEventArgs e)
-    {
-        var body = new TextBlock
-        {
-            Text = "A dialog is a real window with the same frame and the same title bar as any other. It cannot be resized or minimised, so its title bar keeps the close button alone. There is no scrim behind it.",
-            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
-            Margin = new Avalonia.Thickness(16),
-        };
-
-        var actions = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-        };
-
-        var dialog = new DialogWindow
-        {
-            Title = "Remove workspace",
-            Width = 420,
-            Height = 220,
-        };
-
-        var cancel = new Button { Content = "Cancel", Classes = { "ghost" } };
-        var remove = new Button { Content = "Remove", Classes = { "danger" } };
-
-        // A role rather than a handler. The dialog closes itself and answers for the
-        // button that was pressed, so nothing here is wired to either one.
-        Dialog.SetRole(cancel, DialogRole.Cancel);
-        Dialog.SetRole(remove, DialogRole.Accept);
-
-        // Accepting is the destructive answer here, so cancelling is the one that is
-        // ready and Enter no longer reaches Remove.
-        Dialog.SetTakesFocus(cancel, true);
-
-        actions.Children.Add(cancel);
-        actions.Children.Add(remove);
-
-        var layout = new Grid
-        {
-            RowDefinitions = new RowDefinitions("Auto,*,Auto"),
-        };
-
-        var bar = new WindowTitleBar { Title = "Remove workspace" };
-        var footer = new DialogFooter { Content = actions };
-
-        layout.Children.Add(bar);
-        layout.Children.Add(body);
-        layout.Children.Add(footer);
-        Grid.SetRow(bar, 0);
-        Grid.SetRow(body, 1);
-        Grid.SetRow(footer, 2);
-
-        dialog.Content = layout;
-
-        var removed = await dialog.ShowDialog<bool>(this);
-        DialogAnswer.Text = removed ? "The dialog said remove." : "The dialog said no.";
-    }
-
     /// <summary>
     /// A mark drawn here rather than loaded, since the gallery ships no icon and the point
     /// is that the mark belongs to the host.
@@ -493,440 +193,17 @@ public partial class GalleryWindow : ChromelessWindow
     internal static IImage SplashMark() => new Bitmap(AssetLoader.Open(MarkUri));
 
     /// <summary>
-    /// A glyph mark, for the sample splash. The real one is a badge and wears no frame,
-    /// so without this nothing here would still show the framed form.
+    /// A page the rail opens. It is built the first time it is asked for and kept after,
+    /// so opening the gallery costs one page rather than ten.
     /// </summary>
-    private static IImage DemoMark()
+    private sealed class RailPage(IconGlyph glyph, string name, Func<Control> build)
     {
-        var group = new DrawingGroup();
+        private Control? _built;
 
-        group.Children.Add(new GeometryDrawing
-        {
-            Geometry = StreamGeometry.Parse("M16 3 L28 10 L16 17 L4 10 Z"),
-            Brush = new SolidColorBrush(Color.FromRgb(0x56, 0x9e, 0xff)),
-        });
+        public IconGlyph Glyph { get; } = glyph;
 
-        group.Children.Add(new GeometryDrawing
-        {
-            Geometry = StreamGeometry.Parse("M4 15 L16 22 L28 15 L28 18 L16 25 L4 18 Z"),
-            Brush = new SolidColorBrush(Color.FromArgb(158, 0x8f, 0xbe, 0xf5)),
-        });
+        public string Name { get; } = name;
 
-        group.Children.Add(new GeometryDrawing
-        {
-            Geometry = StreamGeometry.Parse("M4 22 L16 29 L28 22 L28 24.5 L16 31.5 L4 24.5 Z"),
-            Brush = new SolidColorBrush(Color.FromArgb(77, 0x8f, 0xbe, 0xf5)),
-        });
-
-        return new DrawingImage { Drawing = group };
-    }
-
-    private void OnOpenSplash(object? sender, RoutedEventArgs e)
-    {
-        _splash?.Close();
-        _splashStep = 0;
-
-        _splash = new SplashWindow
-        {
-            Mark = DemoMark(),
-            AppName = "Workbench",
-            AppVersion = "1.4.2",
-            Description = "Game data tooling for Godot projects",
-        };
-
-        _splash.Closed += (_, _) =>
-        {
-            _splash = null;
-            SplashAnswer.Text = "The splash closed.";
-        };
-
-        _splash.Show();
-
-        SplashAnswer.Text = "No progress until it is asked for.";
-    }
-
-    private static readonly string[] SplashSteps =
-    [
-        "Checking for an update",
-        "Reading the workspace registry",
-        "Loading workspace index",
-        "Finding installed engines",
-        "Opening the launcher",
-    ];
-
-    private void OnSplashStep(object? sender, RoutedEventArgs e) => ReportSplash(false);
-
-    private void OnSplashFraction(object? sender, RoutedEventArgs e) => ReportSplash(true);
-
-    private void ReportSplash(bool measured)
-    {
-        if (_splash is null)
-        {
-            SplashAnswer.Text = "Open one first.";
-
-            return;
-        }
-
-        _splashStep = Math.Min(_splashStep + 1, SplashSteps.Length);
-
-        var count = $"{_splashStep} of {SplashSteps.Length}";
-        var fraction = measured ? _splashStep / (double)SplashSteps.Length : (double?)null;
-
-        _splash.Report(SplashSteps[_splashStep - 1], fraction, count);
-
-        SplashAnswer.Text = measured
-            ? "The bar is filling to a fraction."
-            : "The bar is sweeping, since nothing said how far along it is.";
-    }
-
-    private void OnCloseSplash(object? sender, RoutedEventArgs e) => _splash?.Close();
-
-    /// <summary>Where the tier buttons send their toasts.</summary>
-    private ToastAnchor Chosen =>
-        ToastRegions.SelectedItem is ToastAnchor anchor ? anchor : ToastAnchor.BottomRight;
-
-    private void OnToastInfo(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Title = "Workspace switched to Sandbox",
-    });
-
-    private void OnToastOk(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Tier = ToastTier.Ok,
-        Title = "Saved 12 recipes",
-        Body = "RCP_IronPlate_T2 and 11 others written to data/recipes.",
-        Actions =
-        [
-            new ToastAction("Undo", () => { }),
-            new ToastAction("Show in Explorer", () => { }),
-        ],
-    });
-
-    private void OnToastWarn(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Tier = ToastTier.Warn,
-        Title = "3 references could not be resolved",
-        Body = "They were left pointing at their last known ids.",
-        Actions = [new ToastAction("Show in Problems", () => { })],
-    });
-
-    private void OnToastError(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Tier = ToastTier.Error,
-        Title = "Export failed",
-        Body = "Godot 4.7.1 (.NET) is not installed for this workspace.",
-        Actions =
-        [
-            new ToastAction("Install engine", () => { }) { IsPrimary = true },
-            new ToastAction("View log", () => { }),
-        ],
-    });
-
-    private void OnToastCompact(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Tier = ToastTier.Ok,
-        Form = ToastForm.Compact,
-        Title = "Copied path",
-    });
-
-    private void OnToastUndo(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Form = ToastForm.Undo,
-        Title = "Deleted 4 rows",
-        Actions = [new ToastAction("Undo", () => { })],
-    });
-
-    /// <summary>
-    /// Long work on one card. The toast is raised first and then updated, which is the
-    /// shape a download or an export takes: the handle is the whole point of Show
-    /// handing one back.
-    /// </summary>
-    private void OnToastProgress(object? sender, RoutedEventArgs e)
-    {
-        var toast = _toasts.Show(new ToastRequest
-        {
-            Anchor = Chosen,
-            Tier = ToastTier.Busy,
-            Title = "Downloading Godot 4.7.1 stable",
-            Body = "118 MB",
-            Progress = 0,
-            Actions = [new ToastAction("Cancel", () => { })],
-        });
-
-        var at = 0d;
-
-        DispatcherTimer.Run(
-            () =>
-            {
-                at += 0.04;
-                toast.Progress = at;
-                toast.Body = $"118 MB, {at:P0} of it";
-
-                if (at < 1)
-                {
-                    return true;
-                }
-
-                toast.Dismiss();
-
-                _toasts.Show(new ToastRequest
-                {
-                    Anchor = Chosen,
-                    Tier = ToastTier.Ok,
-                    Title = "Godot 4.7.1 installed",
-                });
-
-                return false;
-            },
-            TimeSpan.FromMilliseconds(120));
-    }
-
-    private void OnToastRepeat(object? sender, RoutedEventArgs e) => _toasts.Show(new ToastRequest
-    {
-        Anchor = Chosen,
-        Tier = ToastTier.Warn,
-        Title = "Validation warnings",
-        Body = "Latest: heat exceeds the declared maximum on Arc Furnace Mk2.",
-        Actions = [new ToastAction("Show all", () => { })],
-    });
-
-    /// <summary>All eight at once, which is legal and rare, and the case regions exist for.</summary>
-    private void OnToastEveryRegion(object? sender, RoutedEventArgs e)
-    {
-        foreach (var anchor in Enum.GetValues<ToastAnchor>())
-        {
-            _toasts.Show(new ToastRequest
-            {
-                Anchor = anchor,
-                Tier = ToastTier.Error,
-                Form = ToastForm.Compact,
-                Title = anchor.ToString(),
-            });
-        }
-    }
-
-    private void OnToastPanel(object? sender, RoutedEventArgs e) => _panelToasts.Show(new ToastRequest
-    {
-        Tier = ToastTier.Busy,
-        Form = ToastForm.Compact,
-        Title = "Reading the pack",
-    });
-
-    private void OnToastClear(object? sender, RoutedEventArgs e)
-    {
-        _toasts.DismissAll();
-        _panelToasts.DismissAll();
-    }
-
-
-    /// <summary>
-    /// Ten thousand rows for the flat grid and a small hierarchy for the tree grid. The
-    /// sort keys are set here because a column takes a function and XAML cannot write one.
-    /// </summary>
-    private void BuildGrids()
-    {
-        string[] kinds = ["Table", "Graph", "Sheet", "List"];
-        (PillStatus Status, string Text)[] states =
-        [
-            (PillStatus.Ok, "synced"),
-            (PillStatus.Modified, "modified"),
-            (PillStatus.Accent, "checked out"),
-            (PillStatus.Error, "conflict"),
-            (PillStatus.Neutral, "archived"),
-        ];
-
-        var entries = new List<Entry>();
-
-        for (var index = 1; index <= 10_000; index++)
-        {
-            var state = states[index % states.Length];
-
-            entries.Add(new Entry(
-                $"ROW_{index:0000}_{kinds[index % kinds.Length]}",
-                $"Row number {index}",
-                kinds[index % kinds.Length],
-                Math.Round(1 + (index % 97) * 0.5, 1),
-                index % 5,
-                state.Status,
-                state.Text));
-        }
-
-        Key(SampleGrid.Columns[1], entry => entry.Id);
-        Key(SampleGrid.Columns[2], entry => entry.Name);
-        Key(SampleGrid.Columns[3], entry => entry.Kind);
-        Key(SampleGrid.Columns[4], entry => entry.Value);
-        Key(SampleGrid.Columns[5], entry => entry.Tier);
-        Key(SampleGrid.Columns[6], entry => entry.State);
-
-        SampleGrid.ItemsSource = new GridRows(entries);
-        SampleGrid.SelectionChanged += (_, _) => ShowPickAll();
-        SamplePager.Rows = SampleGrid.Rows;
-
-        // The name column, since a picker stands in front of it and only a caller knows that.
-        SampleTreeGrid.LeadColumn = SampleTreeGrid.Columns[1];
-
-        List<Aggregate> roots =
-        [
-            new("First branch", "4 kinds", "avg 9.4", "1.8x", "3 modified",
-            [
-                new("A leaf", "Table", "6.0", "1.0x", "synced"),
-                new("Another leaf", "Table", "8.0", "2.4x", "modified"),
-                new("A branch inside it", "Graph", "14.0", "3.1x", "checked out",
-                [
-                    new("Deeper", "Graph", "16.5", "2.8x", "synced"),
-                    new("Deeper again", "Graph", "11.0", "2.2x", "synced"),
-                ]),
-            ]),
-            new("Second branch", "9 kinds", "avg 4.2", "1.2x", "all synced",
-            [
-                new("A leaf keeps the caret's room", "Sheet", "4.0", "1.1x", "synced"),
-                new("Another", "Sheet", "4.4", "1.3x", "synced"),
-            ]),
-            new("A branch with nothing in it", "0 kinds", "-", "-", "empty"),
-        ];
-
-        var opened = new TreeRows(roots, item => ((Aggregate)item).Children);
-
-        // Opened, so the indent and a branch inside a branch are on the page rather than a
-        // click away.
-        opened.Expand(opened[0]);
-        opened.Expand(opened[3]);
-
-        SampleTreeGrid.ItemsSource = opened;
-    }
-
-    private static void Key(GridColumn column, Func<Entry, object?> key) =>
-        column.SortKey = item => key((Entry)item);
-
-    /// <summary>Picks every row on the page, or none of them.</summary>
-    private void OnPickAll(object? sender, RoutedEventArgs e)
-    {
-        if (PickAll.IsChecked == true)
-        {
-            SampleGrid.SelectAll();
-        }
-        else
-        {
-            SampleGrid.UnselectAll();
-        }
-    }
-
-    private void ShowPickAll()
-    {
-        var picked = SampleGrid.SelectedItems?.Count ?? 0;
-
-        PickAll.IsChecked = picked == 0 ? false : picked >= SampleGrid.ItemCount ? true : null;
-    }
-
-    private void OnPlainGrid(object? sender, RoutedEventArgs e)
-    {
-        if (sender is ToggleButton { IsChecked: var on })
-        {
-            SampleGrid.Classes.Set("plain", on is true);
-        }
-    }
-
-    private void OnGroupGrid(object? sender, RoutedEventArgs e)
-    {
-        if (SampleGrid.Rows is not { } rows || sender is not Button button)
-        {
-            return;
-        }
-
-        var grouped = rows.GroupKey is not null;
-
-        rows.Group(grouped ? null : item => ((Entry)item).Kind);
-        button.Content = grouped ? "Group by kind" : "Drop the grouping";
-    }
-
-    private void OnPageGrid(object? sender, RoutedEventArgs e)
-    {
-        if (SampleGrid.Rows is not { } rows || sender is not Button button)
-        {
-            return;
-        }
-
-        var paging = rows.PageSize > 0;
-
-        rows.PageSize = paging ? 0 : SamplePager.PageSize;
-        SamplePager.IsVisible = !paging;
-        button.Content = paging ? "Turn paging on" : "Turn paging off";
-    }
-
-    /// <summary>Hides a column, which is the whole of what a column chooser would do.</summary>
-    private void OnHideColumn(object? sender, RoutedEventArgs e)
-    {
-        var column = SampleGrid.Columns[3];
-
-        column.IsVisible = !column.IsVisible;
-    }
-
-    private void OnCountCells(object? sender, RoutedEventArgs e)
-    {
-        var rows = SampleGrid.Rows?.Count ?? 0;
-        var real = SampleGrid.GetVisualDescendants().OfType<DataGridRow>().Count();
-        var cells = SampleGrid.GetVisualDescendants().OfType<DataGridCell>().Count();
-
-        GridCount.Text = $"{rows} rows, {real} of them are controls, holding {cells} cells";
-    }
-
-    private void BuildDock()
-    {
-        _dock = new DockHarness();
-        Docking.Layout = _dock.Build();
-    }
-
-    private HarnessTool? Tool(string id) => _dock?.Built(id) as HarnessTool;
-
-    private void OnFloatTool(object? sender, RoutedEventArgs e)
-    {
-        if (Tool("Inspector") is { } tool)
-        {
-            _dock?.FloatDockable(tool);
-        }
-    }
-
-    private void OnPinTool(object? sender, RoutedEventArgs e)
-    {
-        if (Tool("Explorer") is { } tool)
-        {
-            _dock?.PinDockable(tool);
-        }
-    }
-
-    /// <summary>Empties the document dock, which is the one state a dock draws by itself.</summary>
-    private void OnCloseDocuments(object? sender, RoutedEventArgs e)
-    {
-        if (_dock?.Built("Documents") is not IDocumentDock { VisibleDockables: { } open })
-        {
-            return;
-        }
-
-        foreach (var document in open.ToList())
-        {
-            _dock.CloseDockable(document);
-        }
-    }
-
-    private void OnResetDock(object? sender, RoutedEventArgs e) => BuildDock();
-
-    /// <summary>A command that runs one action. The gallery has no view models.</summary>
-    private sealed class Run(Action action) : System.Windows.Input.ICommand
-    {
-        public event EventHandler? CanExecuteChanged
-        {
-            add { }
-            remove { }
-        }
-
-        public bool CanExecute(object? parameter) => true;
-
-        public void Execute(object? parameter) => action();
+        public Control Page => _built ??= build();
     }
 }

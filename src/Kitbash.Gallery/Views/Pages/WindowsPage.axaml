@@ -1,0 +1,249 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.WindowsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="ACTIVITY RAIL" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="The rail down the left of a window. A ListBox, so selection and keyboard navigation are Avalonia's. The first rail is live, so click it, hover it and tab into it. The rest are held so every state can be read at once, including the ones a pointer cannot reach: an open page under the cursor, and an item that is open but disabled." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="20">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="caption" Text="live" HorizontalAlignment="Center" />
+                            <ListBox Theme="{StaticResource ActivityRail}" SelectedIndex="0" Height="140">
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                             ToolTip.Tip="Workspace" ToolTip.Placement="Right"
+                                             AutomationProperties.Name="Workspace">
+                                    <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                             ToolTip.Tip="Godot engines" ToolTip.Placement="Right"
+                                             AutomationProperties.Name="Godot engines">
+                                    <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                             ToolTip.Tip="Settings" ToolTip.Placement="Right"
+                                             AutomationProperties.Name="Settings">
+                                    <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                            </ListBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="caption" Text="unselected" HorizontalAlignment="Center" />
+                            <ListBox Theme="{StaticResource ActivityRail}" SelectedIndex="-1" Height="140">
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forceHover">
+                                    <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forcePressed">
+                                    <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" Classes="forceFocus">
+                                    <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                            </ListBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="caption" Text="selected" HorizontalAlignment="Center" />
+                            <ListBox Theme="{StaticResource ActivityRail}" SelectionMode="Multiple" Height="140">
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True">
+                                    <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True" Classes="forceHover">
+                                    <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsSelected="True" Classes="forceFocus">
+                                    <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                            </ListBox>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="caption" Text="disabled" HorizontalAlignment="Center" />
+                            <ListBox Theme="{StaticResource ActivityRail}" SelectionMode="Multiple" Height="140">
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False">
+                                    <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False" Classes="forceHover">
+                                    <ui:Icon Glyph="Godot" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                                <ListBoxItem Theme="{StaticResource ActivityRailItem}" IsEnabled="False" IsSelected="True">
+                                    <ui:Icon Glyph="Cog" Size="{DynamicResource IconSizeLarge}" />
+                                </ListBoxItem>
+                            </ListBox>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="STATUS BAR" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="A readout that does something, sized for the 32px row rather than for a form. Quiet at rest so the row reads as one strip. Its own theme rather than a class on the button, because the row has no space for a button's height." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Theme="{StaticResource StatusBarButton}" ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkSecondary}" />
+                                <TextBlock Text="Update" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource InkPrimary}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Theme="{StaticResource StatusBarButton}" ToolTip.Tip="An update that is running">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <ui:Icon Glyph="RefreshCw" Classes="spin" Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkSecondary}" />
+                                <TextBlock Text="Update" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource InkPrimary}" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Theme="{StaticResource StatusBarButton}" Content="Held hover" Classes="forceHover" />
+                        <Button Theme="{StaticResource StatusBarButton}" Content="Held pressed" Classes="forcePressed" />
+                        <Button Theme="{StaticResource StatusBarButton}" Content="Held focus" Classes="forceFocus" />
+                        <Button Theme="{StaticResource StatusBarButton}" Content="Disabled" IsEnabled="False" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="The readouts beside it. Each one carries a glyph as well as a colour, so none of them says its meaning in hue alone, and a count that is zero is not drawn at all. A conflict leaves the row and takes a chip, because it blocks work where the others only report it." />
+
+                    <Border Classes="statusBarRow">
+                        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                                        VerticalAlignment="Center">
+                                <ui:Icon Glyph="GitBranch" Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkSecondary}" />
+                                <TextBlock Classes="branch" Text="feature/heat-rebalance" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14"
+                                        VerticalAlignment="Center">
+                                <StackPanel Classes="countReadout">
+                                    <ui:Icon Classes="countMark" Glyph="Save"
+                                             Foreground="{DynamicResource Warn}" />
+                                    <TextBlock Classes="count" Text="12" />
+                                    <TextBlock Classes="countLabel" Text="modified" />
+                                </StackPanel>
+
+                                <StackPanel Classes="countReadout">
+                                    <ui:Icon Classes="countMark" Glyph="Check"
+                                             Foreground="{DynamicResource Ok}" />
+                                    <TextBlock Classes="count" Text="3" />
+                                    <TextBlock Classes="countLabel" Text="staged" />
+                                </StackPanel>
+
+                                <Border Classes="conflictChip">
+                                    <StackPanel Classes="countReadout">
+                                        <ui:Icon Classes="countMark" Glyph="AlertTriangle"
+                                                 Foreground="{DynamicResource Error}" />
+                                        <TextBlock Classes="count" Text="1" />
+                                        <TextBlock Classes="countLabel" Text="conflict" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="14"
+                                        VerticalAlignment="Center">
+                                <StackPanel Classes="countReadout">
+                                    <ui:Icon Classes="countMark" Glyph="ChevronUp"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <TextBlock Classes="count" Text="2" />
+                                    <TextBlock Classes="countLabel" Text="ahead" />
+                                </StackPanel>
+
+                                <StackPanel Classes="countReadout">
+                                    <ui:Icon Classes="countMark" Glyph="ChevronDown"
+                                             Foreground="{DynamicResource InkSecondary}" />
+                                    <TextBlock Classes="count" Text="3" />
+                                    <TextBlock Classes="countLabel" Text="behind" />
+                                </StackPanel>
+
+                                <TextBlock Classes="updateAge" Text="Updated 4m ago" />
+
+                                <Button Theme="{StaticResource StatusBarButton}">
+                                    <StackPanel Orientation="Horizontal" Spacing="7">
+                                        <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                                 Foreground="{DynamicResource InkSecondary}" />
+                                        <TextBlock Text="Update" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource InkPrimary}" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="WELCOME WINDOW" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="One window over three apps. The library keeps the list, its order and when each was last opened, and the app says what a project is: what it will accept, what a row is called, what mark and chip it wears, and what opening one does. Foundry lists Godot projects, Hoard lists asset libraries and Splice lists repositories, and none of that reaches the window." />
+
+                    <TextBlock Classes="note"
+                               Text="Search filters and never sorts, so typing three letters keeps the order you chose. The row menu opens on the row it acts on and every item is named after it. A row that cannot be reached keeps its full name and offers to be located rather than opened." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Foundry" Tag="Foundry" Click="OnOpenProjects" />
+                        <Button Content="Hoard" Tag="Hoard" Click="OnOpenProjects" />
+                        <Button Content="Splice" Tag="Splice" Click="OnOpenProjects" />
+                        <TextBlock Name="ProjectsAnswer" Classes="caption"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="SPLASH" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="The window an app shows while it starts. It carries no theme, no icons and no control themes, so it can open before any of them are loaded, and it draws its own frame for the same reason. The mark, the name, the version and the line under them all come from the host." />
+
+                    <TextBlock Classes="note"
+                               Text="Progress is off until the host asks for it. Reporting turns the row on. A report with no fraction sweeps, so nothing has to invent a percentage it does not have, and a report with one fills the track to it. The count on the right is dropped by leaving it blank, and turning the lattice off leaves a plain slate card." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Open a splash" Click="OnOpenSplash" />
+                        <Button Classes="ghost" Content="Report a step" Click="OnSplashStep" />
+                        <Button Classes="ghost" Content="Report a fraction" Click="OnSplashFraction" />
+                        <Button Classes="ghost" Content="Close it" Click="OnCloseSplash" />
+                        <TextBlock Name="SplashAnswer" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="WINDOW AND DIALOG" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="This window is the shell itself. Drag the bar to move it, double click it to maximise, drag any edge to resize, and click another window to watch the whole chrome drop to the muted tier." />
+
+                    <TextBlock Classes="note"
+                               Text="A dialog's buttons carry a role rather than a handler, so the dialog closes itself and says which was pressed. Enter presses the accepting one and Escape the cancelling one, both of them Avalonia's own. This dialog marks Cancel as the one that is ready, because accepting it is the destructive answer, and that takes Enter off Remove." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Open a dialog" Click="OnOpenDialog" />
+                        <Button Classes="ghost" Content="Maximise this window" Click="OnMaximize" />
+                        <TextBlock Name="DialogAnswer" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>

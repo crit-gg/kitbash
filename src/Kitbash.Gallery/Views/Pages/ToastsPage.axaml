@@ -1,0 +1,209 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.ToastsPage">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="16" Margin="20">
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="TOASTS" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="A toast is a popover that nobody opened, so it takes the popover surface exactly. Raise one and it lands in the region chosen below. Hover a card to hold its timer, and watch the other regions keep counting." />
+
+                    <TextBlock Classes="note"
+                               Text="Nothing here reaches for a global. This page is handed a toast service through its constructor, the way a tool would be, and it asks the factory for the second one the panel below owns." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Classes="caption" Text="region" VerticalAlignment="Center" />
+                        <ComboBox Name="ToastRegions" Width="160" />
+                        <Button Classes="ghost" Content="Clear them all" Click="OnToastClear" />
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="KINDS"
+                                            Content="four semantic, one busy" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Info" Click="OnToastInfo" />
+                        <Button Content="Ok" Click="OnToastOk" />
+                        <Button Content="Warning" Click="OnToastWarn" />
+                        <Button Content="Error" Click="OnToastError" />
+                        <Button Content="Busy" Click="OnToastProgress" />
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="FORMS"
+                                            Content="and what repeats do" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Compact" Click="OnToastCompact" />
+                        <Button Content="Undo bar" Click="OnToastUndo" />
+                        <Button Content="Press twice to group" Click="OnToastRepeat" />
+                        <Button Content="Every region at once" Click="OnToastEveryRegion" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="An error and anything still running have no timer bar, which is what says they will not go away by themselves. Four in one region shows three and counts the rest." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="A REGION OF ITS OWN"
+                                            Content="clipped to the panel" />
+
+                    <TextBlock Classes="note"
+                               Text="This panel owns a second toast service, so its cards are its own and stay inside it. That is what lets a tool panel report its own progress while the window reports a save." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Report in the panel" Click="OnToastPanel" />
+                    </StackPanel>
+
+                    <ui:SurfacePanel Header="Pack" Height="150">
+                        <Panel>
+                            <TextBlock Classes="caption"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Text="the panel's own content" />
+                            <ui:ToastHost Name="PanelToasts" />
+                        </Panel>
+                    </ui:SurfacePanel>
+                </StackPanel>
+            </Border>
+
+            <!-- section -->
+            <TextBlock Classes="section" Text="ALERTS" />
+            <Border Classes="panel">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="note"
+                               Text="Where a toast describes something that just happened, an alert describes the state of what is on screen. It has no shadow and no dwell, it sits in the layout until the condition goes away, and the same condition is never both." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="BLOCK"
+                                            Content="the default" />
+
+                    <StackPanel Spacing="10">
+                        <ui:Alert Title="Changes here affect 34 recipes"
+                                  Description="They will be revalidated when you save." />
+
+                        <ui:Alert Tier="Ok" IsDismissable="True"
+                                  Title="Schema is up to date"
+                                  Description="Last migrated on 2026-07-22 by the 4.7 pack." />
+
+                        <ui:Alert Tier="Warn"
+                                  Title="2 machines have no recipe"
+                                  Description="They will build but produce nothing at runtime.">
+                            <ui:Alert.Actions>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Theme="{StaticResource CompactButton}" Classes="neutral" Content="Fix all" />
+                                    <Button Theme="{StaticResource CompactButton}" Content="Show in Problems" />
+                                    <HyperlinkButton Content="Ignore for this workspace" />
+                                </StackPanel>
+                            </ui:Alert.Actions>
+                        </ui:Alert>
+
+                        <ui:Alert Tier="Error"
+                                  Title="Cannot save while the graph has cycles"
+                                  Description="Heat to Throughput to Heat. Break the cycle to continue.">
+                            <ui:Alert.Actions>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Theme="{StaticResource CompactButton}" Classes="primary" Content="Reveal cycle" />
+                                    <HyperlinkButton Content="Copy path" />
+                                </StackPanel>
+                            </ui:Alert.Actions>
+                        </ui:Alert>
+
+                        <!-- The buttons an alert can carry instead of the neutral pair.
+                             The surface under them is already the warn tint, so the grey
+                             fill every other button takes reads as grey stuck on amber. -->
+                        <ui:Alert Tier="Warn"
+                                  Title="3 files are the same file"
+                                  Description="They have different names and one hash.">
+                            <ui:Alert.Actions>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Theme="{StaticResource CompactButton}" Classes="warn" Content="Keep one, link rest" />
+                                    <Button Theme="{StaticResource CompactButton}" Classes="warnGhost" Content="Compare" />
+                                </StackPanel>
+                            </ui:Alert.Actions>
+                        </ui:Alert>
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="STRIP"
+                                            Content="full bleed under a header" />
+
+                    <TextBlock Classes="note"
+                               Text="A strip replaces neither the title bar nor the status bar. It sits under the header of the thing it applies to and scrolls away with it, which is why it is square and draws only its own seam." />
+
+                    <ui:SurfacePanel Header="Details" Padding="0">
+                        <StackPanel>
+                            <ui:Alert Form="Strip" Tier="Warn"
+                                      Title="Read only, this record comes from an imported pack.">
+                                <ui:Alert.Actions>
+                                    <HyperlinkButton Content="Override" />
+                                </ui:Alert.Actions>
+                            </ui:Alert>
+
+                            <StackPanel Margin="12,11" Spacing="10">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Classes="caption" Text="Display name" />
+                                    <TextBox Text="Iron Plate, Reinforced" IsEnabled="False" />
+                                </StackPanel>
+
+                                <ui:Alert Title="Changes here affect 34 recipes"
+                                          Description="They will be revalidated when you save." />
+                            </StackPanel>
+                        </StackPanel>
+                    </ui:SurfacePanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="INLINE"
+                                            Content="attached to one field" />
+
+                    <TextBlock Classes="note"
+                               Text="Only an error recolours the control it is attached to, and it recolours the border and the text and never the label. A warning and a hint leave the field alone." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="24">
+                        <StackPanel Spacing="5" Width="200">
+                            <TextBlock Classes="caption" Text="Base heat" />
+                            <TextBox Classes="error mono" Text="12oo" Width="132" HorizontalAlignment="Left" />
+                            <ui:Alert Form="Inline" Tier="Error"
+                                      Title="Must be a number between 0 and 1200." />
+                        </StackPanel>
+
+                        <StackPanel Spacing="5" Width="200">
+                            <TextBlock Classes="caption" Text="Base heat" />
+                            <TextBox Classes="mono" Text="980" Width="132" HorizontalAlignment="Left" />
+                            <ui:Alert Form="Inline" Tier="Warn"
+                                      Title="Above the machine rating of 900." />
+                        </StackPanel>
+
+                        <StackPanel Spacing="5" Width="200">
+                            <TextBlock Classes="caption" Text="Base heat" />
+                            <TextBox Classes="mono" Text="420" Width="132" HorizontalAlignment="Left" />
+                            <ui:Alert Form="Inline"
+                                      Title="Inherited from Arc Furnace Mk1." />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="IN PLACE"
+                                            Content="the empty state" />
+
+                    <TextBlock Classes="note"
+                               Text="The fourth form is an alert that replaces the content entirely, and it is already built. It is the empty state, on the surface it stands on rather than on a tint, so nothing was added for it." />
+
+                    <ui:SurfacePanel Height="150">
+                        <StackPanel Classes="emptyState">
+                            <ui:Icon Glyph="AlertCircle" />
+                            <TextBlock Text="This graph has no output pin" />
+                            <TextBlock Text="Nothing downstream can read it until one is added." />
+                            <Button Classes="primary" Content="Add output pin" />
+                        </StackPanel>
+                    </ui:SurfacePanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</views:GalleryPage>
