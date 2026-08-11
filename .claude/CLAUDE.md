@@ -376,6 +376,18 @@ states again. Sorting, grouping, inline edit, column resizing and the sideways h
 real, and paging is `ui:GridPager`, a separate control, so a grid that never pages carries
 none of it. The `kitbash-surfaces` skill has the rules.
 
+**They were then hardened into a data entry surface, in the seven phases of
+`.claude/plans/data-grid-hardening.md`, and all seven are done.** Ten defects fixed, a row
+model that keeps one wrapper per item across a sort, a cell focus model and the whole keyboard
+contract, a two level edit transaction, the clipboard, cell ranges and the fill handle, the
+column power set with pinning and a chooser and saved column state, the in cell forms, the
+validation surface, the three empty states, trimming with a tooltip, the selection action bar
+and the automation peers. **Five switches and no more**: `SelectionUnit`, `BeginEditGestures`,
+`EditUnit`, `CellActions` and `ColumnGestures`, and a feature is opt in only when it writes or
+when it changes what an existing gesture already means. Two things are knowingly not built: a
+column title does not trim, since it is measured with infinite width and fixing that moves the
+sort caret, and the grid automation pattern itself, since Avalonia ships no `IGridProvider`.
+
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
 It is a shell now, a title bar over a rail and a page, carrying the workspace page, the
 Godot engines page and a settings window.
