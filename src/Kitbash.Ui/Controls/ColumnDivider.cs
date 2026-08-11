@@ -18,6 +18,9 @@ public class ColumnDivider : TemplatedControl
     private double startX;
     private bool dragging;
 
+    /// <summary>Raised when the edge is double clicked, which fits the column to its cells.</summary>
+    internal event EventHandler? Fit;
+
     public ColumnDivider()
     {
         Cursor = new Cursor(StandardCursorType.SizeWestEast);
@@ -40,6 +43,24 @@ public class ColumnDivider : TemplatedControl
         }
 
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        // The grid works the width out from the cells, since only it knows which rows are
+        // realised and a column cannot measure what is not there.
+        if (e.ClickCount == 2)
+        {
+            if (columns.CanFit(column))
+            {
+                Fit?.Invoke(this, EventArgs.Empty);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
+        if (!columns.CanResize(column))
         {
             return;
         }

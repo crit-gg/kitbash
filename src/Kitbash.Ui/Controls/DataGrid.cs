@@ -47,6 +47,11 @@ public class DataGrid : ListBox, IGridHost
     public static readonly StyledProperty<GridSelectionUnit> SelectionUnitProperty =
         AvaloniaProperty.Register<DataGrid, GridSelectionUnit>(nameof(SelectionUnit));
 
+    public static readonly StyledProperty<ColumnGestures> ColumnGesturesProperty =
+        AvaloniaProperty.Register<DataGrid, ColumnGestures>(
+            nameof(ColumnGestures),
+            ColumnGestures.Resize | ColumnGestures.FitToContents);
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -146,6 +151,13 @@ public class DataGrid : ListBox, IGridHost
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
 
+    /// <inheritdoc cref="ColumnGestures"/>
+    public ColumnGestures ColumnGestures
+    {
+        get => GetValue(ColumnGesturesProperty);
+        set => SetValue(ColumnGesturesProperty, value);
+    }
+
     /// <inheritdoc cref="GridSelectionUnit"/>
     public GridSelectionUnit SelectionUnit
     {
@@ -189,9 +201,9 @@ public class DataGrid : ListBox, IGridHost
     /// Sorts on a column, cycling up, then down, then back to the order the source came
     /// in, so a person can always get back to where they started.
     /// </summary>
-    void IGridSorting.SortBy(GridColumn column) => SortBy(column);
+    void IGridSorting.SortBy(GridColumn column, bool adds) => SortBy(column, adds);
 
-    internal void SortBy(GridColumn column)
+    internal void SortBy(GridColumn column, bool adds = false)
     {
         if (rows is null || !column.CanSort)
         {
@@ -199,6 +211,13 @@ public class DataGrid : ListBox, IGridHost
         }
 
         CommitEdit();
+
+        if (adds && columns.Gestures.HasFlag(ColumnGestures.MultiSort))
+        {
+            rows.AddSort(column, column.NextSort());
+            return;
+        }
+
         rows.Sort(column, column.NextSort());
     }
 
@@ -316,6 +335,11 @@ public class DataGrid : ListBox, IGridHost
         {
             body.Actions = change.GetNewValue<CellActions>();
             body.Refresh();
+        }
+        else if (change.Property == ColumnGesturesProperty)
+        {
+            columns.Gestures = change.GetNewValue<ColumnGestures>();
+            frame.Rebuild();
         }
         else if (change.Property == SelectionUnitProperty)
         {
@@ -486,6 +510,25 @@ public class DataGrid : ListBox, IGridHost
         }
     }
 
+    /// <summary>
+    /// The sort spelled out. Past three keys it stops naming them and says how many more,
+    /// since a footer that runs out of room says nothing at all.
+    /// </summary>
+    private string SortWords()
+    {
+        if (rows?.Sorts is not { Count: > 0 } sorts)
+        {
+            return string.Empty;
+        }
+
+        var named = sorts.Take(3).Select(term => term.Column.Header?.ToString() ?? string.Empty);
+        var more = sorts.Count - 3;
+
+        return more > 0
+            ? $"sorted by {string.Join(", ", named)} and {more:N0} more"
+            : $"sorted by {string.Join(", ", named)}";
+    }
+
     private void UpdateCounts()
     {
         var picked = SelectedItems?.Count ?? 0;
@@ -504,9 +547,6 @@ public class DataGrid : ListBox, IGridHost
             ref shownText,
             rows is null ? string.Empty : $"{rows.Shown:N0} of {rows.Total:N0} shown");
 
-        SetAndRaise(
-            SortTextProperty,
-            ref sortText,
-            rows?.SortColumn is { } column ? $"sorted by {column.Header}" : string.Empty);
+        SetAndRaise(SortTextProperty, ref sortText, SortWords());
     }
 }

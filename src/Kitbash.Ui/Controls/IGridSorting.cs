@@ -7,7 +7,13 @@ namespace Kitbash.Ui.Controls;
 internal interface IGridSorting
 {
     /// <summary>Cycles the column up, then down, then back to the order it came in.</summary>
-    void SortBy(GridColumn column);
+    /// <param name="column">The column whose title was clicked.</param>
+    /// <param name="adds">
+    /// Whether this is a second key under the ones already sorted on rather than a
+    /// replacement. Shift and a click is the only place in the app where shift does not
+    /// extend a selection.
+    /// </param>
+    void SortBy(GridColumn column, bool adds = false);
 }
 
 /// <summary>

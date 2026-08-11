@@ -709,9 +709,9 @@ anchor, the handle and the footer's aggregates. **Control and drag for a second 
 built**, since it turns the one block into a list of them and every reader of the block would
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
-**5. Column power.** Fit to contents, reorder, pin, the chooser, and persistence in two
-layers, since the chooser's Reset returns a saved workspace default. Brings
-`ColumnGestures` and the column state key. Draws the header menu, the multi key ordinals
+**5. Column power. Started.** `ColumnGestures`, fit to contents and multi column sort from
+the header are built. **Reorder, pin, the chooser and persistence in two layers are not**,
+and the header menu they hang off is not either. Still brings the column state key. Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -852,6 +852,29 @@ that does, and that is a behaviour to design rather than a translation of this o
 And multi column sort has no way in from the header yet, which is phase 5 and the
 `MultiSort` gesture. The model, the chained comparer and `GridColumn.SortOrder` are all
 there waiting for it.
+
+## Where phase 5 has departed so far
+
+**The gestures live on `GridColumns`, not on the shared body.** The plan put all five
+switches on the shared piece. `GridColumns` is already the shared piece for anything about
+columns, `ColumnDivider` already holds one, and `GridBody` already has a property called
+`Gestures` for the edit ones. So the column gestures sit where the columns do, and the grid
+hands the property over the same way it hands the others to the body.
+
+**Fit to contents fits what is on screen, not what is in the source.** A virtualised grid
+has nothing else to measure. It measures every realised cell in the column plus the title,
+takes the widest, and clamps to the column's own minimum and maximum. Measuring at an
+infinite width leaves the control wanting that size, so each part is measured again at the
+size it really has, or the next layout pass works from a question rather than an answer.
+
+**Shift and a click is the only place in the app where shift does not extend a selection**,
+which the design says outright. It needs `MultiSort`, so a grid that has not asked for it
+sees an ordinary click. **The tree grid takes an ordinary click either way**, since a second
+key over a hierarchy has no meaning the design has settled.
+
+**The footer spells the sort out and stops at three.** Past that it says how many more,
+since a footer that runs out of room says nothing at all. The ordinal beside the caret is
+not drawn yet, which is the header menu's design and comes with the rest of phase 5.
 
 ## Where phase 4 has departed so far
 

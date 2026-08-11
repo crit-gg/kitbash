@@ -21,6 +21,13 @@ public class DataGridHeader : TemplatedControl
 
     private GridCells? panel;
 
+    /// <summary>Raised when an edge is double clicked. Only the grid can measure the cells.</summary>
+    internal event EventHandler<GridColumn>? Fitting;
+
+    /// <summary>The title drawing a column, or null when it has none.</summary>
+    internal DataGridHeaderCell? CellFor(GridColumn column) =>
+        cells.FirstOrDefault(cell => ReferenceEquals(cell.Column, column));
+
     public GridColumns? Columns
     {
         get => GetValue(ColumnsProperty);
@@ -62,6 +69,9 @@ public class DataGridHeader : TemplatedControl
         {
             var divider = new ColumnDivider();
 
+            divider.Fit += (sender, _) => Fitting?.Invoke(
+                this,
+                GridCells.GetColumn((Control)sender!)!);
             divider.Follow(columns, column);
             GridCells.SetColumn(divider, column);
             GridCells.SetIsDivider(divider, true);
@@ -85,7 +95,9 @@ public class DataGridHeader : TemplatedControl
         {
             var column = GridCells.GetColumn(divider);
 
-            divider.IsVisible = column is { IsVisible: true, CanResize: true };
+            divider.IsVisible = column is { IsVisible: true }
+                && Columns is { } owner
+                && (owner.CanResize(column) || owner.CanFit(column));
         }
 
         panel?.InvalidateMeasure();

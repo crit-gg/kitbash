@@ -60,7 +60,7 @@ public class DataGridHeaderCell : ContentControl
             && e.InitialPressMouseButton == MouseButton.Left
             && this.FindAncestorOfType<IGridSorting>() is { } grid)
         {
-            grid.SortBy(column);
+            grid.SortBy(column, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
             e.Handled = true;
         }
     }

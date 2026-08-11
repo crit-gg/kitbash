@@ -38,6 +38,7 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
         if (header is not null)
         {
             header.Columns = columns;
+            header.Fitting += (_, column) => Fit(column);
         }
 
         if (scroller is null)
@@ -74,6 +75,59 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
 
     /// <summary>Works the widths out again at the width already known.</summary>
     public void Resolve() => Resolve(viewport);
+
+    /// <summary>
+    /// Sets a column to the widest thing in it. Only the rows that are realised are measured,
+    /// since a virtualised grid has nothing else to measure, so it fits what is on screen
+    /// rather than what is in the source.
+    /// </summary>
+    public void Fit(GridColumn column)
+    {
+        var widest = 0d;
+
+        foreach (var container in owner.GetRealizedContainers())
+        {
+            if (container is not IGridRowLayout row)
+            {
+                continue;
+            }
+
+            foreach (var cell in row.Cells)
+            {
+                if (ReferenceEquals(cell.Column, column))
+                {
+                    widest = Math.Max(widest, Widest(cell));
+                }
+            }
+        }
+
+        if (header?.CellFor(column) is { } title)
+        {
+            widest = Math.Max(widest, Widest(title));
+        }
+
+        if (widest <= 0)
+        {
+            return;
+        }
+
+        columns.SetWidth(column, widest);
+        Resolve();
+    }
+
+    /// <summary>How wide something wants to be with no limit on it.</summary>
+    private static double Widest(Layoutable part)
+    {
+        part.Measure(new Size(double.PositiveInfinity, part.Bounds.Height));
+
+        var wanted = part.DesiredSize.Width;
+
+        // Measured again at the size it is really given, so the next layout pass is not
+        // working from a constraint that was only ever asked as a question.
+        part.Measure(part.Bounds.Size);
+
+        return wanted;
+    }
 
     /// <summary>
     /// Puts the body back to the first row, keeping the sideways offset. For a page turn,

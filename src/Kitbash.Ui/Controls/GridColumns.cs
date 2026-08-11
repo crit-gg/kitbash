@@ -27,6 +27,18 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// <summary>How wide the whole set came out. Wider than the viewport means it scrolls.</summary>
     public double TotalWidth { get; private set; }
 
+    /// <summary>
+    /// What a person may do to these columns. The grid holds the property and hands it over,
+    /// and a column still has to allow the gesture for itself.
+    /// </summary>
+    public ColumnGestures Gestures { get; set; } = ColumnGestures.Resize | ColumnGestures.FitToContents;
+
+    /// <summary>Whether this column can be dragged wider or narrower.</summary>
+    public bool CanResize(GridColumn column) => Gestures.HasFlag(ColumnGestures.Resize) && column.CanResize;
+
+    /// <summary>Whether this column can be fitted to what is on screen.</summary>
+    public bool CanFit(GridColumn column) => Gestures.HasFlag(ColumnGestures.FitToContents) && column.CanResize;
+
     /// <summary>The columns a person can reach, in the order they are drawn.</summary>
     public IReadOnlyList<GridColumn> Reachable => [.. this.Where(column => column.IsVisible)];
 

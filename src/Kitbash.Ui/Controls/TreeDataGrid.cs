@@ -40,6 +40,10 @@ public class TreeDataGrid : Tree, IGridHost
     public static readonly StyledProperty<GridSelectionUnit> SelectionUnitProperty =
         DataGrid.SelectionUnitProperty.AddOwner<TreeDataGrid>();
 
+    /// <inheritdoc cref="BeginEditGesturesProperty"/>
+    public static readonly StyledProperty<ColumnGestures> ColumnGesturesProperty =
+        DataGrid.ColumnGesturesProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -95,6 +99,13 @@ public class TreeDataGrid : Tree, IGridHost
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
 
+    /// <inheritdoc cref="ColumnGestures"/>
+    public ColumnGestures ColumnGestures
+    {
+        get => GetValue(ColumnGesturesProperty);
+        set => SetValue(ColumnGesturesProperty, value);
+    }
+
     /// <inheritdoc cref="GridSelectionUnit"/>
     public GridSelectionUnit SelectionUnit
     {
@@ -141,7 +152,9 @@ public class TreeDataGrid : Tree, IGridHost
     /// Sorts siblings under every parent, which is what sorting a hierarchy means. A tree
     /// closes when it is sorted, since the rows are built again from the roots.
     /// </summary>
-    void IGridSorting.SortBy(GridColumn column) => SortBy(column);
+    // A tree sorts siblings under every parent, and a second key over a hierarchy has no
+    // meaning the design has settled, so a shift click here is an ordinary one.
+    void IGridSorting.SortBy(GridColumn column, bool adds) => SortBy(column);
 
     internal void SortBy(GridColumn column)
     {
@@ -260,6 +273,13 @@ public class TreeDataGrid : Tree, IGridHost
         {
             body.Actions = change.GetNewValue<CellActions>();
             body.Refresh();
+            return;
+        }
+
+        if (change.Property == ColumnGesturesProperty)
+        {
+            columns.Gestures = change.GetNewValue<ColumnGestures>();
+            frame.Rebuild();
             return;
         }
 

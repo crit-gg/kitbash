@@ -56,6 +56,7 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>What a person picks. The grid holds the property.</summary>
     public GridSelectionUnit Selection { get; set; } = GridSelectionUnit.Row;
 
+
     /// <summary>What the footer says about a live block, or empty when there is not one.</summary>
     public string RangeText { get; private set; } = string.Empty;
 
