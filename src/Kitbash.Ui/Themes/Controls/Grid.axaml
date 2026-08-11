@@ -379,6 +379,19 @@
                             IsHitTestVisible="False"
                             CornerRadius="0"
                             RenderOptions.EdgeMode="Aliased" />
+
+                    <!-- Half in and half out of the corner, so it reads as a grip on the
+                         block rather than as something inside the last cell. -->
+                    <Border Name="PART_Handle"
+                            Width="{DynamicResource SizeFillHandle}"
+                            Height="{DynamicResource SizeFillHandle}"
+                            Margin="0,0,-4,-4"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Background="{DynamicResource CellCurrent}"
+                            CornerRadius="0"
+                            Cursor="Cross"
+                            IsVisible="False" />
                 </Panel>
             </ControlTemplate>
         </Setter>
@@ -403,6 +416,16 @@
              takes typing is the one without a wash. -->
         <Style Selector="^:range /template/ Border#PART_Wash">
             <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <Style Selector="^:handle /template/ Border#PART_Handle">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+
+        <!-- What a fill would reach. The wash only lands on release, so the reach is the
+             outline alone and the cells under it keep their own surface. -->
+        <Style Selector="^:filling /template/ Border#PART_Mark">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentMuted}" />
         </Style>
     </ControlTheme>
 
@@ -458,6 +481,19 @@
                             IsHitTestVisible="False"
                             CornerRadius="0"
                             RenderOptions.EdgeMode="Aliased" />
+
+                    <!-- Half in and half out of the corner, so it reads as a grip on the
+                         block rather than as something inside the last cell. -->
+                    <Border Name="PART_Handle"
+                            Width="{DynamicResource SizeFillHandle}"
+                            Height="{DynamicResource SizeFillHandle}"
+                            Margin="0,0,-4,-4"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Background="{DynamicResource CellCurrent}"
+                            CornerRadius="0"
+                            Cursor="Cross"
+                            IsVisible="False" />
                 </Panel>
             </ControlTemplate>
         </Setter>

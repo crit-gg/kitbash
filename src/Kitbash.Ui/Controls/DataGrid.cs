@@ -245,6 +245,7 @@ public class DataGrid : ListBox, IGridHost
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        body.EndFill();
         body.EndDrag();
         base.OnPointerReleased(e);
     }
@@ -314,6 +315,7 @@ public class DataGrid : ListBox, IGridHost
         else if (change.Property == CellActionsProperty)
         {
             body.Actions = change.GetNewValue<CellActions>();
+            body.Refresh();
         }
         else if (change.Property == SelectionUnitProperty)
         {

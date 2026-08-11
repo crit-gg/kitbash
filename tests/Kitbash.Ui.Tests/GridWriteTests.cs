@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Kitbash.Ui.Controls;
 
 namespace Kitbash.Ui.Tests;
@@ -224,6 +225,119 @@ public sealed class GridWriteTests
             window.Close();
         }
     }
+
+    /// <summary>The handle sits on the corner of the block, and only when fill is allowed.</summary>
+    [AvaloniaFact]
+    public void TheHandleIsOnTheCornerOfTheBlock()
+    {
+        var grid = Grid(out var window, out _, CellActions.Fill, GridSelectionUnit.Cell);
+
+        try
+        {
+            grid.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            Press(grid, Key.Right, KeyModifiers.Shift);
+
+            var handled = grid.GetVisualDescendants().OfType<DataGridCell>().Where(cell => cell.HasHandle).ToList();
+
+            Assert.Single(handled);
+            Assert.Equal("NAME", handled[0].Column?.Header);
+
+            // And a grid that was not told it may fill carries none.
+            grid.CellActions = CellActions.Copy;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.DoesNotContain(grid.GetVisualDescendants().OfType<DataGridCell>(), cell => cell.HasHandle);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>Dragging the handle repeats the block over what it reached.</summary>
+    [AvaloniaFact]
+    public void FillingRepeatsTheBlockOverTheReach()
+    {
+        var grid = Grid(out var window, out var items, CellActions.Fill, GridSelectionUnit.Cell);
+
+        try
+        {
+            grid.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            var grip = Grip(Cell(grid, 0, "ID"));
+
+            // Raised on the grip itself, since RaiseEvent takes the source from the element
+            // it is raised on rather than from the arguments.
+            grip.RaiseEvent(Pressed(grip));
+            Dispatcher.UIThread.RunJobs();
+
+            // Nothing lands while the pointer is down, so the reach is a preview.
+            Drag(Cell(grid, 2, "ID"));
+
+            Assert.Equal("a1", items[1].Id);
+            Assert.Contains(grid.GetVisualDescendants().OfType<DataGridCell>(), cell => cell.IsFilling);
+
+            grid.RaiseEvent(Released(grid));
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal("a0", items[1].Id);
+            Assert.Equal("a0", items[2].Id);
+
+            // The column beside it is untouched, and so is the row the block started on.
+            Assert.Equal("b1", items[1].Name);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static DataGridCell Cell(DataGrid grid, int row, string header) =>
+        (grid.ContainerFromIndex(row) as Visual)!
+            .GetVisualDescendants()
+            .OfType<DataGridCell>()
+            .Single(cell => (string?)cell.Column?.Header == header);
+
+    /// <summary>The grip at the corner of the block.</summary>
+    private static Border Grip(DataGridCell cell) =>
+        cell.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "PART_Handle");
+
+    private static PointerPressedEventArgs Pressed(Control target) => new(
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        default,
+        0,
+        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonPressed),
+        KeyModifiers.None);
+
+    private static void Drag(Control target)
+    {
+        target.RaiseEvent(new PointerEventArgs(
+            InputElement.PointerMovedEvent,
+            target,
+            new Pointer(0, PointerType.Mouse, true),
+            target,
+            default,
+            0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
+            KeyModifiers.None));
+
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static PointerReleasedEventArgs Released(Control target) => new(
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        default,
+        0,
+        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
+        KeyModifiers.None,
+        MouseButton.Left);
 
     private static async Task Put(Window window, string text)
     {

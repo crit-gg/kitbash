@@ -29,6 +29,10 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     private int edgeRow = -1;
     private GridColumn? edgeColumn;
 
+    /// <summary>How far a fill has been dragged, or nothing when one is not being dragged.</summary>
+    private int fillRow = -1;
+    private GridColumn? fillColumn;
+
     /// <summary>The block the footer was last told about, so it is only worked out on a move.</summary>
     private (int Top, int Bottom, int Left, int Right) told = (-1, -1, -1, -1);
 
@@ -60,6 +64,9 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
     /// <summary>Whether a drag that started on a cell is still going.</summary>
     public bool Dragging { get; private set; }
+
+    /// <summary>Whether the handle at the corner of the block is being dragged.</summary>
+    public bool Filling { get; private set; }
 
     /// <summary>Whether a block of cells is a thing here at all.</summary>
     private bool Blocks => Selection == GridSelectionUnit.Cell;
@@ -229,6 +236,130 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>The button came up, so a drag over cells is over.</summary>
     public void EndDrag() => Dragging = false;
 
+    /// <summary>A press on the handle starts a fill out of the block.</summary>
+    public void BeginFill() => Filling = Blocks && Actions.HasFlag(CellActions.Fill);
+
+    /// <summary>
+    /// Takes the reach of the fill out to a cell. Nothing is written while the pointer is
+    /// down, so the preview says what would land rather than landing it.
+    /// </summary>
+    public void PreviewFill(DataGridCell cell, GridColumn column)
+    {
+        if (!Filling || cell.FindAncestorOfType<ListBoxItem>() is not { } container)
+        {
+            return;
+        }
+
+        fillRow = owner.IndexFromContainer(container);
+        fillColumn = column;
+
+        Refresh();
+    }
+
+    /// <summary>
+    /// The button came up, so the block's values are repeated over what the fill reached and
+    /// the block grows to take it in.
+    /// </summary>
+    public void EndFill()
+    {
+        if (!Filling)
+        {
+            return;
+        }
+
+        Filling = false;
+
+        if (fillRow < 0 || fillColumn is null)
+        {
+            return;
+        }
+
+        var reachable = columns.Reachable;
+        var from = Block(reachable, reach: false);
+        var over = Block(reachable);
+
+        fillRow = -1;
+        fillColumn = null;
+
+        if (Repeat(reachable, from, over))
+        {
+            // The block takes in what it filled, which is where a person carries on from.
+            edgeRow = over.Bottom;
+            edgeColumn = reachable[Math.Min(over.Right, reachable.Count - 1)];
+        }
+
+        Refresh();
+    }
+
+    /// <summary>
+    /// Writes the block's own values over everything the fill reached, repeating them the
+    /// way a paste repeats into a block that divides evenly.
+    /// </summary>
+    private bool Repeat(
+        IReadOnlyList<GridColumn> reachable,
+        (int Top, int Bottom, int Left, int Right) from,
+        (int Top, int Bottom, int Left, int Right) over)
+    {
+        var deep = from.Bottom - from.Top + 1;
+        var wide = from.Right - from.Left + 1;
+        var held = new List<List<string?>>();
+
+        for (var down = 0; down < deep; down++)
+        {
+            if (Held(from.Top + down) is not { } item)
+            {
+                return false;
+            }
+
+            held.Add([.. Enumerable.Range(0, wide).Select(across => Text(reachable, from.Left + across, item))]);
+        }
+
+        for (var index = over.Top; index <= over.Bottom; index++)
+        {
+            if (Held(index) is not { } item)
+            {
+                return false;
+            }
+
+            for (var at = over.Left; at <= over.Right; at++)
+            {
+                if (at >= reachable.Count || !reachable[at].CanWrite)
+                {
+                    return false;
+                }
+            }
+        }
+
+        for (var index = over.Top; index <= over.Bottom; index++)
+        {
+            if (Held(index) is not { } item)
+            {
+                continue;
+            }
+
+            var inside = index >= from.Top && index <= from.Bottom;
+
+            (item as IEditableObject)?.BeginEdit();
+
+            for (var at = over.Left; at <= over.Right; at++)
+            {
+                if (inside && at >= from.Left && at <= from.Right)
+                {
+                    continue;
+                }
+
+                reachable[at].Write!(item, held[(index - over.Top) % deep][(at - over.Left) % wide]);
+            }
+
+            (item as IEditableObject)?.EndEdit();
+        }
+
+        return true;
+    }
+
+    private static string? Text(IReadOnlyList<GridColumn> reachable, int at, object item) =>
+        at < reachable.Count ? reachable[at].ValueOf(item)?.ToString() : null;
+
     /// <summary>
     /// Takes the block out to a cell, keeping the anchor where it is. In row units there is
     /// no block, so the press moves the keyboard instead and the list extends its own
@@ -257,19 +388,31 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// The block as row and column bounds, which is the anchor alone unless a range has been
     /// taken out from it.
     /// </summary>
-    private (int Top, int Bottom, int Left, int Right) Block(IReadOnlyList<GridColumn> reachable)
+    private (int Top, int Bottom, int Left, int Right) Block(IReadOnlyList<GridColumn> reachable, bool reach = true)
     {
         var row = owner.SelectedIndex;
         var at = Math.Max(0, At(reachable, current));
+        var block = (Top: row, Bottom: row, Left: at, Right: at);
 
-        if (Selection != GridSelectionUnit.Cell || edgeRow < 0 || edgeColumn is null)
+        if (Selection == GridSelectionUnit.Cell && edgeRow >= 0 && edgeColumn is not null)
         {
-            return (row, row, at, at);
+            var far = Math.Max(0, At(reachable, edgeColumn));
+
+            block = (Math.Min(row, edgeRow), Math.Max(row, edgeRow), Math.Min(at, far), Math.Max(at, far));
         }
 
-        var far = Math.Max(0, At(reachable, edgeColumn));
+        if (!reach || fillRow < 0 || fillColumn is null)
+        {
+            return block;
+        }
 
-        return (Math.Min(row, edgeRow), Math.Max(row, edgeRow), Math.Min(at, far), Math.Max(at, far));
+        var over = Math.Max(0, At(reachable, fillColumn));
+
+        return (
+            Math.Min(block.Top, fillRow),
+            Math.Max(block.Bottom, fillRow),
+            Math.Min(block.Left, over),
+            Math.Max(block.Right, over));
     }
 
     /// <summary>
@@ -288,6 +431,8 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
         var reachable = columns.Reachable;
         var block = Block(reachable);
+        var held = Filling ? Block(reachable, reach: false) : block;
+        var handles = Blocks && Actions.HasFlag(CellActions.Fill);
         var wanted = CellAt(owner.SelectedIndex, current);
 
         if (block != told)
@@ -314,11 +459,17 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
                 var inside = down && at >= block.Left && at <= block.Right;
                 var mine = ReferenceEquals(cell, wanted);
 
+                var reached = Filling
+                    && inside
+                    && (index < held.Top || index > held.Bottom || at < held.Left || at > held.Right);
+
                 cell.IsCurrent = mine;
 
                 // The anchor keeps the plain surface, so the one cell that still takes
                 // typing is marked by having no wash rather than by a second ring.
-                cell.IsInRange = inside && !mine;
+                cell.IsInRange = inside && !mine && !reached;
+                cell.IsFilling = reached;
+                cell.HasHandle = handles && index == held.Bottom && at == held.Right;
 
                 cell.RangeEdges = inside
                     ? new Thickness(

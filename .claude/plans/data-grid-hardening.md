@@ -258,10 +258,9 @@ See `CellActions` under What is optional.
 ### No cell range selection and no fill handle. The range is built in phase 4
 
 Row selection was all there was. A range is what makes copy worth having, what a fill
-handle drags over, and what a status readout aggregates. **`SelectionUnit` and the block
-are built**, with the wash, the block outline, the anchor, shift extension by key and by
-click, copy over the block and the footer's aggregates. **The fill handle is not**, and it
-is the rest of `CellActions`.
+handle drags over, and what a status readout aggregates. **`SelectionUnit`, the block and the
+fill handle are all built**, with the wash, the block outline, the anchor, dragging,
+shift extension by key and by click, copy over the block and the footer's aggregates.
 
 ### No row level edit transaction. Built in phase 3
 
@@ -704,10 +703,11 @@ a filter predicate, a per column comparer, natural ordering and multi column sor
 the edit lifecycle as a two level transaction. Brought `BeginEditGestures` and `EditUnit`,
 and drew the current cell mark, the editable cell hint and the modified mark at row scope.
 
-**4. Copy, then range selection, then the three that write, then fill.** Brings
-`SelectionUnit` and `CellActions`. Draws the range wash, the anchor, the handle and the
-footer's range aggregates. **Copy is built and `CellActions` is in.** The rest of the phase
-is still open.
+**4. Done, apart from two of the gestures.** Copy, the block, the three that write and the
+fill handle are all built, along with `SelectionUnit` and `CellActions`, the range wash, the
+anchor, the handle and the footer's aggregates. **Control and drag for a second block is not
+built**, since it turns the one block into a list of them and every reader of the block would
+have to answer for that. **A drag over the header taking a whole column is not built.**
 
 **5. Column power.** Fit to contents, reorder, pin, the chooser, and persistence in two
 layers, since the chooser's Reset returns a saved workspace default. Brings
@@ -921,6 +921,16 @@ cells empty rather than repeating itself.
 **Every row written is one transaction.** `BeginEdit` and `EndEdit` wrap each row's writes,
 so a tool that implements `IEditableObject` sees a coherent change rather than a field at a
 time.
+
+**The fill handle previews with a solid line rather than a dashed one.** The design asks
+for a dashed `#569eff` edge while the handle is being dragged. Avalonia's `Border` cannot
+dash, and the outline is drawn per cell as the edges of a block, so dashing it would mean
+four `Rectangle`s per cell to replace one `Border`. The reach draws in `AccentMuted`
+instead, which still tells it from the block it came out of. **The rest of that rule holds**:
+nothing is written while the pointer is down, and the wash only lands on release.
+
+**A fill is refused the same way a paste is.** Everything it would reach has to be a real
+row in a column that takes a value, or nothing is written at all.
 
 **The footer stops at fifty thousand cells.** Past that it says the count and no sum, since
 the sum is worked out again on every step of a growing block and somebody selecting that

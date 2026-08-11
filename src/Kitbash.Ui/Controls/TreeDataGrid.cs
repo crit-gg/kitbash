@@ -228,6 +228,7 @@ public class TreeDataGrid : Tree, IGridHost
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        body.EndFill();
         body.EndDrag();
         base.OnPointerReleased(e);
     }
@@ -258,6 +259,7 @@ public class TreeDataGrid : Tree, IGridHost
         if (change.Property == CellActionsProperty)
         {
             body.Actions = change.GetNewValue<CellActions>();
+            body.Refresh();
             return;
         }
 

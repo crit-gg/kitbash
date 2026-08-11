@@ -27,6 +27,14 @@ public class DataGridCell : ContentControl
     public static readonly StyledProperty<bool> IsInRangeProperty =
         AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsInRange));
 
+    /// <summary>Whether a fill would reach this cell. The wash only lands on release.</summary>
+    public static readonly StyledProperty<bool> IsFillingProperty =
+        AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsFilling));
+
+    /// <summary>Whether this cell carries the handle, which is the corner of the block.</summary>
+    public static readonly StyledProperty<bool> HasHandleProperty =
+        AvaloniaProperty.Register<DataGridCell, bool>(nameof(HasHandle));
+
     /// <summary>
     /// Which of this cell's edges are on the edge of the block it belongs to. It is the
     /// border's thickness and its inset at once, so the block's outline runs unbroken
@@ -53,6 +61,20 @@ public class DataGridCell : ContentControl
     {
         get => GetValue(IsInRangeProperty);
         set => SetValue(IsInRangeProperty, value);
+    }
+
+    /// <inheritdoc cref="IsFillingProperty"/>
+    public bool IsFilling
+    {
+        get => GetValue(IsFillingProperty);
+        set => SetValue(IsFillingProperty, value);
+    }
+
+    /// <inheritdoc cref="HasHandleProperty"/>
+    public bool HasHandle
+    {
+        get => GetValue(HasHandleProperty);
+        set => SetValue(HasHandleProperty, value);
     }
 
     /// <inheritdoc cref="RangeEdgesProperty"/>
@@ -90,6 +112,14 @@ public class DataGridCell : ContentControl
         else if (change.Property == IsInRangeProperty)
         {
             PseudoClasses.Set(":range", change.GetNewValue<bool>());
+        }
+        else if (change.Property == IsFillingProperty)
+        {
+            PseudoClasses.Set(":filling", change.GetNewValue<bool>());
+        }
+        else if (change.Property == HasHandleProperty)
+        {
+            PseudoClasses.Set(":handle", change.GetNewValue<bool>());
         }
         else if (change.Property == IsEditingProperty)
         {
@@ -187,6 +217,15 @@ public class DataGridCell : ContentControl
             return;
         }
 
+        // The handle is the corner of the block, so a press there drags a fill rather than
+        // moving the keyboard.
+        if (e.Source is Visual source && source.FindAncestorOfType<Border>(includeSelf: true) is { Name: "PART_Handle" })
+        {
+            host.Body.BeginFill();
+            e.Handled = true;
+            return;
+        }
+
         // Shift extends the block from the anchor, which is what it does in every grid and
         // in every spreadsheet.
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
@@ -210,12 +249,23 @@ public class DataGridCell : ContentControl
 
         if (Column is not { } column
             || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
-            || this.FindAncestorOfType<IGridHost>() is not { Body.Dragging: true } host)
+            || this.FindAncestorOfType<IGridHost>() is not { } host)
         {
             return;
         }
 
-        host.Body.ExtendTo(this, column);
+        if (host.Body.Filling)
+        {
+            host.Body.PreviewFill(this, column);
+        }
+        else if (host.Body.Dragging)
+        {
+            host.Body.ExtendTo(this, column);
+        }
+        else
+        {
+            return;
+        }
 
         // The list drags out a row selection of its own otherwise, so a drag would pick
         // rows and cells at once.
