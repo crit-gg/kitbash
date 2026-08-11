@@ -13,9 +13,9 @@ using Kitbash.Ui.Controls;
 namespace Kitbash.Ui.Tests;
 
 /// <summary>
-/// The current cell mark is drawn inside the cell on all four edges. It is a one pixel
-/// border and the cell clips to its own bounds, so an edge landing on the boundary is the
-/// thing that goes missing.
+/// The current cell mark is drawn one pixel in from every edge of the cell, so the whole
+/// stroke is inside it. On the boundary it would share a pixel with the row rule, the next
+/// cell and every clip in the way, which is where an edge goes missing.
 /// </summary>
 public sealed class GridCurrentCellDrawingTests
 {
@@ -60,13 +60,23 @@ public sealed class GridCurrentCellDrawingTests
                     var box = Box(cell, window);
                     var frame = Pixels(window);
 
+                    var inside = new PixelRect(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2);
+
                     var missing = new[] { Edge.Top, Edge.Bottom, Edge.Left, Edge.Right }
-                        .Where(edge => !Runs(frame, box, edge))
+                        .Where(edge => !Runs(frame, inside, edge))
                         .ToList();
 
-                    if (missing.Count > 0)
+                    // The cell's own boundary carries no mark, which is what makes the
+                    // stroke inside the cell rather than on its edge.
+                    var spilled = new[] { Edge.Top, Edge.Bottom, Edge.Left, Edge.Right }
+                        .Where(edge => Touches(frame, box, edge))
+                        .ToList();
+
+                    if (missing.Count > 0 || spilled.Count > 0)
                     {
-                        wrong.Add($"row {row} column {column} in {box} missing {string.Join(" and ", missing)}. {Scan(frame, box)}");
+                        wrong.Add(
+                            $"row {row} column {column} in {box} missing {string.Join(" and ", missing)}"
+                            + $" spilled {string.Join(" and ", spilled)}. {Scan(frame, inside)}");
                     }
                 }
             }
@@ -116,7 +126,24 @@ public sealed class GridCurrentCellDrawingTests
             string.Join(" ", Enumerable.Range(-2, 5).Select(step => $"{step:+0;-0;0}:{read(step)}"));
     }
 
-    /// <summary>Whether most of one edge of the box carries the mark colour.</summary>
+    /// <summary>Whether any of one edge of the box carries the mark colour.</summary>
+    private static bool Touches(Frame frame, PixelRect box, Edge edge)
+    {
+        if (edge is Edge.Top or Edge.Bottom)
+        {
+            var y = edge == Edge.Top ? box.Y : box.Y + box.Height - 1;
+
+            return Enumerable.Range(box.X + 2, Math.Max(0, box.Width - 4))
+                .Any(x => Near(frame.At(x, y)));
+        }
+
+        var at = edge == Edge.Left ? box.X : box.X + box.Width - 1;
+
+        return Enumerable.Range(box.Y + 2, Math.Max(0, box.Height - 4))
+            .Any(y => Near(frame.At(at, y)));
+    }
+
+    /// <summary>Whether every pixel of one edge of the box carries the mark colour.</summary>
     private static bool Runs(Frame frame, PixelRect box, Edge edge)
     {
         var hit = 0;

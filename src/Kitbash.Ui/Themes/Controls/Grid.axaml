@@ -357,10 +357,12 @@
                     </Border>
 
                     <!-- Over the content rather than around it, so a mark arriving moves
-                         nothing. Square, which is the one square cornered thing here, and
-                         aliased, so a one pixel edge stays one pixel at any display scale
-                         instead of blurring across two and reading as a gap. -->
+                         nothing. One pixel in from every edge, so the whole stroke is inside
+                         the cell and never lands on the row rule, the next cell or any clip.
+                         Square, which is the one square cornered thing here, and aliased, so
+                         the edge stays one pixel at any display scale. -->
                     <Border Name="PART_Mark"
+                            Margin="1"
                             IsHitTestVisible="False"
                             CornerRadius="0"
                             BorderThickness="0"
@@ -428,6 +430,7 @@
                     </Border>
 
                     <Border Name="PART_Mark"
+                            Margin="1"
                             IsHitTestVisible="False"
                             CornerRadius="0"
                             BorderThickness="0"

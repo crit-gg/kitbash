@@ -913,6 +913,16 @@ inside a `ControlTheme`, so the two rules that read a row's state from a cell, t
 hover underline and the lighter border on a picked row, are plain styles beside the themes.
 The cell scope rules stayed in the theme.
 
+**The mark is one pixel in from the cell edge, not on it.** The design says on the edge.
+Drawn there it shares a pixel row with whatever is on the other side, which measured out as
+the grid's own frame beside the first and last columns, the header seam above the first row
+and the row rule under every row. So it read as an open box rather than a closed one, and
+every clip in the way had a chance at it. One pixel in, it touches none of them. Two other
+things went with it: the cell's `ClipToBounds` moved to the content border, where trimming
+long values is all it does, and the mark draws aliased so its edge stays one pixel at any
+display scale. A render test walks every cell, reads the pixels along all four edges and
+also asserts the cell's own boundary carries no mark.
+
 **Two things drawn that the plan listed under gaps.** The editable cell hint, in its two
 steps, and the row giving up its focus line while one of its cells holds the mark, which is
 the `:cell` state on the row.
