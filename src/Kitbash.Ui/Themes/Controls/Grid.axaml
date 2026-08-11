@@ -116,6 +116,64 @@
                                     <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
                                 </ScrollViewer>
 
+                                <!-- The three empty states. Over the body and never over the
+                                     toolbar or the header, since a grid is a place rather
+                                     than a page and what gets a person out of the state has
+                                     to stay where it was. -->
+                                <ContentPresenter Name="PART_Nothing"
+                                                  Content="{TemplateBinding EmptyContent}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{DynamicResource PaddingNotes}"
+                                                  IsVisible="False" />
+
+                                <ContentPresenter Name="PART_NoMatches"
+                                                  Content="{TemplateBinding NoMatchesContent}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{DynamicResource PaddingNotes}"
+                                                  IsVisible="False" />
+
+                                <!-- Skeleton rows at the real row height, so nothing moves
+                                     when the data lands. Flat, with no shimmer, and no
+                                     spinner, since a grid can reload on every keystroke of
+                                     a filter. -->
+                                <StackPanel Name="PART_Skeleton"
+                                            VerticalAlignment="Top"
+                                            IsHitTestVisible="False"
+                                            IsVisible="False">
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                        <Border Height="{DynamicResource HeightGridRow}"
+                                                Background="{DynamicResource SurfaceNest2}"
+                                                Margin="0,0,0,1" />
+                                </StackPanel>
+
                                 <!-- The pinned seam. One element over the whole body rather
                                      than a line per row, so the shadow is one shadow. -->
                                 <Border Name="PART_Seam"
@@ -1057,6 +1115,18 @@
     <!-- A cell's ink comes from its row, so these are the only two places a cell is told a
          colour, and both are about which column it is rather than what is in it. A control
          theme cannot hold a descendant selector, which is why they live out here. -->
+    <Style Selector="ui|DataGrid:nothing /template/ ContentPresenter#PART_Nothing">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ui|DataGrid:nomatches /template/ ContentPresenter#PART_NoMatches">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ui|DataGrid:loading /template/ StackPanel#PART_Skeleton">
+        <Setter Property="IsVisible" Value="True" />
+    </Style>
+
     <!-- The pinned seam. At rest it is the ordinary hairline, since nothing is hidden yet,
          and it grows a shadow once content goes under it. That shadow is the only one inside
          a panel anywhere in the theme, which is worth knowing before reaching for another. -->

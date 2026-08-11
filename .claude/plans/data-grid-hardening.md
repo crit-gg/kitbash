@@ -312,7 +312,7 @@ how many there are stopped being true. `GridRows.Filter` now sits beside the sor
 - No persistence. Widths, order, visibility and pins are per person and per machine, and
   `IDockLayoutStore` is the shape to copy.
 
-### No empty state
+### No empty state. Built in phase 7
 
 Zero rows draws nothing at all. "Nothing here yet" and "nothing matches that filter" are
 different messages, and the second one needs a way back.
@@ -719,9 +719,9 @@ and the footer's spelled out sort, the pinned seam, and the chooser.
 library already has. It sat here because the three steps of chrome it uses are row hover,
 cell hover and editing, and the first two only existed after phase 3.
 
-**7. The rest. Started.** The validation surface is built. **Empty states, the selection
-action bar, trimming and tooltips by default and the automation peers are not.** Brings no
-switch at all, which is the point of that group.
+**7. The rest. Started.** The validation surface and the three empty states are built.
+**The selection action bar, trimming and tooltips by default and the automation peers are
+not.** Brings no switch at all, which is the point of that group.
 
 **No phase adds a switch that is not in the table under What is optional.** If a feature
 turns out to need one that is not there, that is a sign the rule was applied wrongly and
@@ -984,6 +984,26 @@ grid and a rebuild on every filter keystroke.
 
 **A row that is invalid as a whole is not built.** The design marks the state column and puts
 the message in the row detail. There is no row detail, and the state column is the tool's own.
+
+**The three empty states are three pseudo classes and two content slots.** Nothing yet, no
+matches and loading, all over the body and never over the toolbar or the header, which is
+the design's rule about a grid being a place rather than a page. The grid tells the first two
+apart by whether the source ever held anything, so only the one that teaches teaches.
+
+**The words are the caller's, not the library's.** The design says each state says one
+sentence and offers exactly one action, and only the caller knows either. `EmptyContent` and
+`NoMatchesContent` are what it puts there, so the no matches state can repeat the filter that
+emptied the grid beside the way to clear it.
+
+**Loading is ten skeleton rows written out, not generated.** Markup cannot loop, and an
+ItemsControl over a made up list is a collection existing only to be counted. They are at
+the real row height so nothing moves when the data lands, flat with no shimmer, and there is
+no spinner anywhere, since a grid can reload on every keystroke of a filter.
+
+**The tree grid has no empty states.** Its template took the seam when the two were changed
+together, but it has no filter and so no no matches state, and nothing has asked for the
+other two. Its template does not name the properties at all rather than carrying two that
+could never come on.
 
 ## Where phase 6 departed from this plan
 

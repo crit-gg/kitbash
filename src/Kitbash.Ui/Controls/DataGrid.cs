@@ -25,6 +25,24 @@ public class DataGrid : ListBox, IGridHost
     public static readonly StyledProperty<object?> ToolbarProperty =
         AvaloniaProperty.Register<DataGrid, object?>(nameof(Toolbar));
 
+    /// <summary>
+    /// What a grid that has never had anything says. One sentence and one action, since it
+    /// is the only empty state that teaches.
+    /// </summary>
+    public static readonly StyledProperty<object?> EmptyContentProperty =
+        AvaloniaProperty.Register<DataGrid, object?>(nameof(EmptyContent));
+
+    /// <summary>
+    /// What a grid emptied by its filter says. Only the caller knows what was typed, so
+    /// only the caller can repeat it beside the way to clear it.
+    /// </summary>
+    public static readonly StyledProperty<object?> NoMatchesContentProperty =
+        AvaloniaProperty.Register<DataGrid, object?>(nameof(NoMatchesContent));
+
+    /// <summary>Whether the rows are still being fetched. Skeleton rows, never a spinner.</summary>
+    public static readonly StyledProperty<bool> IsLoadingProperty =
+        AvaloniaProperty.Register<DataGrid, bool>(nameof(IsLoading));
+
     public static readonly DirectProperty<DataGrid, string> SelectionTextProperty =
         AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(SelectionText), grid => grid.selectionText);
 
@@ -146,6 +164,27 @@ public class DataGrid : ListBox, IGridHost
     {
         get => GetValue(ToolbarProperty);
         set => SetValue(ToolbarProperty, value);
+    }
+
+    /// <inheritdoc cref="EmptyContentProperty"/>
+    public object? EmptyContent
+    {
+        get => GetValue(EmptyContentProperty);
+        set => SetValue(EmptyContentProperty, value);
+    }
+
+    /// <inheritdoc cref="NoMatchesContentProperty"/>
+    public object? NoMatchesContent
+    {
+        get => GetValue(NoMatchesContentProperty);
+        set => SetValue(NoMatchesContentProperty, value);
+    }
+
+    /// <inheritdoc cref="IsLoadingProperty"/>
+    public bool IsLoading
+    {
+        get => GetValue(IsLoadingProperty);
+        set => SetValue(IsLoadingProperty, value);
     }
 
     /// <summary>How many rows are picked, or empty when none are.</summary>
@@ -422,6 +461,10 @@ public class DataGrid : ListBox, IGridHost
             body.Selection = change.GetNewValue<GridSelectionUnit>();
             body.Refresh();
         }
+        else if (change.Property == IsLoadingProperty)
+        {
+            ShowEmpty();
+        }
         else if (change.Property == ItemsSourceProperty)
         {
             // A grid draws GridRows. Anything else misses the cast in Follow and fills
@@ -497,6 +540,25 @@ public class DataGrid : ListBox, IGridHost
         {
             seam.Margin = new Thickness(Math.Max(0, pinnedWidth - 1), 0, 0, 0);
         }
+    }
+
+    /// <summary>
+    /// Which of the three empty states is on, if any. All three keep the toolbar and the
+    /// header on screen, since a grid is a place rather than a page and the control that
+    /// gets a person out of the state has to stay where it was.
+    /// </summary>
+    private void ShowEmpty()
+    {
+        var loading = IsLoading;
+
+        // Emptied by a filter is not the same as never having had anything, and only one of
+        // them teaches, so they are told apart by whether the source held anything at all.
+        var filtered = !loading && rows is { Total: > 0, Matched: 0 };
+        var nothing = !loading && !filtered && ItemCount == 0;
+
+        PseudoClasses.Set(":loading", loading);
+        PseudoClasses.Set(":nomatches", filtered);
+        PseudoClasses.Set(":nothing", nothing);
     }
 
     private void OnDoubleTapped(object? sender, TappedEventArgs e)
@@ -654,5 +716,7 @@ public class DataGrid : ListBox, IGridHost
                 : $"{body.ErrorCount:N0} cells need fixing");
 
         PseudoClasses.Set(":errors", body.ErrorCount > 0);
+
+        ShowEmpty();
     }
 }
