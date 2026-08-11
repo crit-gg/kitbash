@@ -58,6 +58,9 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>Raised when the block moves, so a footer can say something else about it.</summary>
     public event EventHandler? RangeChanged;
 
+    /// <summary>Whether a drag that started on a cell is still going.</summary>
+    public bool Dragging { get; private set; }
+
     /// <summary>Whether a block of cells is a thing here at all.</summary>
     private bool Blocks => Selection == GridSelectionUnit.Cell;
 
@@ -219,6 +222,12 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
         current = column;
         Refresh();
     }
+
+    /// <summary>A press on a cell may be the start of a drag over the cells beside it.</summary>
+    public void BeginDrag() => Dragging = Blocks;
+
+    /// <summary>The button came up, so a drag over cells is over.</summary>
+    public void EndDrag() => Dragging = false;
 
     /// <summary>
     /// Takes the block out to a cell, keeping the anchor where it is. In row units there is

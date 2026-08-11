@@ -15,6 +15,9 @@
                     <TextBlock Classes="note"
                                Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do. Edit a value and the row wears the amber bar until it is saved." />
 
+                    <TextBlock Classes="note"
+                               Text="Rows are what a grid picks unless it is told otherwise, so Cell ranges is the other mode. Shift and an arrow or shift and a click take a block out from the cell the keyboard is in, the cells inside it wear the wash, the anchor does not, and the footer swaps the row count for what the block holds. Control and C copies either one." />
+
                     <ui:DataGrid Name="SampleGrid" Height="342" SelectionMode="Multiple">
                         <ui:DataGrid.Toolbar>
                             <DockPanel LastChildFill="False">
@@ -132,6 +135,7 @@
                         <!-- Toggled on the grid above rather than drawn as a second one,
                              so the two looks can be read against the same rows. -->
                         <ToggleButton Classes="ghost" Content="Plain" Click="OnPlainGrid" />
+                        <ToggleButton Classes="ghost" Content="Cell ranges" Click="OnCellRanges" />
 
                         <TextBlock Name="GridCount" Classes="caption" VerticalAlignment="Center" />
                     </StackPanel>

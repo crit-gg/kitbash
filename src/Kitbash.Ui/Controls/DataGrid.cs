@@ -243,6 +243,12 @@ public class DataGrid : ListBox, IGridHost
         base.OnKeyDown(e);
     }
 
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        body.EndDrag();
+        base.OnPointerReleased(e);
+    }
+
     protected override void OnTextInput(TextInputEventArgs e)
     {
         body.OnTextInput(e);

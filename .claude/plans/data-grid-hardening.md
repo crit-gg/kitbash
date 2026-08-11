@@ -892,6 +892,13 @@ than the anchor, and the body answers them so the list does not also extend its 
 an item, which is the opposite of what it does over rows. A person who picked a column
 meant it, and a blank field keeps the shape of what was picked.
 
+**Drag was missed the first time round and is the gesture that matters.** The plan named
+shift and click and named Control and drag for a second block, and said nothing about a
+plain drag, so the first pass built the keyboard and the shift click and left the obvious
+one out. A press on a cell starts it, each cell answers its own pointer moves so nothing
+has to be captured, and the move is marked handled so the list does not drag out a row
+selection underneath the block.
+
 **The footer stops at fifty thousand cells.** Past that it says the count and no sum, since
 the sum is worked out again on every step of a growing block and somebody selecting that
 many cells is selecting rather than adding up.

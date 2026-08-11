@@ -193,6 +193,66 @@ public sealed class GridRangeTests
         }
     }
 
+    /// <summary>A drag over the cells takes the block with it, which is how a person does it.</summary>
+    [AvaloniaFact]
+    public void ADragOverTheCellsMakesTheBlock()
+    {
+        var grid = Grid(out var window, GridSelectionUnit.Cell);
+
+        try
+        {
+            grid.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            var anchor = Cell(grid, 0, "ID");
+
+            anchor.RaiseEvent(Pressed(anchor, KeyModifiers.None));
+            Dispatcher.UIThread.RunJobs();
+
+            Drag(Cell(grid, 0, "NAME"));
+            Drag(Cell(grid, 1, "NAME"));
+
+            // Two rows by two columns, less the anchor.
+            Assert.Equal(3, InRange(grid).Count);
+
+            // The button comes up, so moving on afterwards leaves the block alone.
+            grid.RaiseEvent(Released(grid));
+            Drag(Cell(grid, 2, "KIND"));
+
+            Assert.Equal(3, InRange(grid).Count);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>A drag in row units is the list's own and makes no block.</summary>
+    [AvaloniaFact]
+    public void ADragInRowUnitsMakesNoBlock()
+    {
+        var grid = Grid(out var window);
+
+        try
+        {
+            grid.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            var anchor = Cell(grid, 0, "ID");
+
+            anchor.RaiseEvent(Pressed(anchor, KeyModifiers.None));
+            Dispatcher.UIThread.RunJobs();
+
+            Drag(Cell(grid, 1, "NAME"));
+
+            Assert.Empty(InRange(grid));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     /// <summary>The footer swaps the row count for what the block holds.</summary>
     [AvaloniaFact]
     public void TheFooterCountsTheBlock()
@@ -243,6 +303,32 @@ public sealed class GridRangeTests
 
         Dispatcher.UIThread.RunJobs();
     }
+
+    /// <summary>The pointer moving over a cell with the button still down.</summary>
+    private static void Drag(Control target)
+    {
+        target.RaiseEvent(new PointerEventArgs(
+            InputElement.PointerMovedEvent,
+            target,
+            new Pointer(0, PointerType.Mouse, true),
+            target,
+            default,
+            0,
+            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
+            KeyModifiers.None));
+
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static PointerReleasedEventArgs Released(Control target) => new(
+        target,
+        new Pointer(0, PointerType.Mouse, true),
+        target,
+        default,
+        0,
+        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
+        KeyModifiers.None,
+        MouseButton.Left);
 
     private static PointerPressedEventArgs Pressed(Control target, KeyModifiers modifiers) => new(
         target,

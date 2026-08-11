@@ -124,6 +124,18 @@ public partial class GridsPage : GalleryPage
         }
     }
 
+    /// <summary>
+    /// The other selection unit. Row is the default and the one the pick column belongs to,
+    /// so both are on the same grid rather than the page choosing for a reader.
+    /// </summary>
+    private void OnCellRanges(object? sender, RoutedEventArgs e)
+    {
+        if (sender is ToggleButton { IsChecked: var on })
+        {
+            SampleGrid.SelectionUnit = on is true ? GridSelectionUnit.Cell : GridSelectionUnit.Row;
+        }
+    }
+
     private void OnGroupGrid(object? sender, RoutedEventArgs e)
     {
         if (SampleGrid.Rows is not { } rows || sender is not Button button)

@@ -192,11 +192,34 @@ public class DataGridCell : ContentControl
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             host.Body.ExtendTo(this, column);
+            e.Handled = true;
+            return;
         }
-        else
+
+        host.Body.SetCurrent(column);
+        host.Body.BeginDrag();
+    }
+
+    /// <summary>
+    /// A drag over the cells takes the block with it. Each cell answers for itself, so the
+    /// pointer does not have to be captured to know which one it is over.
+    /// </summary>
+    protected override void OnPointerMoved(PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+
+        if (Column is not { } column
+            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || this.FindAncestorOfType<IGridHost>() is not { Body.Dragging: true } host)
         {
-            host.Body.SetCurrent(column);
+            return;
         }
+
+        host.Body.ExtendTo(this, column);
+
+        // The list drags out a row selection of its own otherwise, so a drag would pick
+        // rows and cells at once.
+        e.Handled = true;
     }
 
     private void Apply()
