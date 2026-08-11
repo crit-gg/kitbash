@@ -9,6 +9,16 @@
          value, and a value can only arrive as content. So the library owns what a count
          looks like and the view owns where it is. -->
 
+    <!-- The heading over a group in the column chooser. A label rather than a row, so it is
+         never mistaken for something that can be picked or dragged. -->
+    <Style Selector="TextBlock.chooserGroup">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkMuted}" />
+        <Setter Property="Margin" Value="0,8,0,3" />
+    </Style>
+
     <!-- What a row says there is more of. Always trailing, always mono, and a rung quieter
          than the label it follows, since a count is read after the name and never instead
          of it. Never draw a zero: a row saying nothing is there is a row saying nothing. -->

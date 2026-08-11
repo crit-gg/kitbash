@@ -709,10 +709,10 @@ anchor, the handle and the footer's aggregates. **Control and drag for a second 
 built**, since it turns the one block into a list of them and every reader of the block would
 have to answer for that. **A drag over the header taking a whole column is not built.**
 
-**5. Column power. Nearly done.** `ColumnGestures`, fit to contents, multi column sort from
-the header, the header menu, hiding a column, reorder, pinning and column state are built,
-along with the caret on hover, the ordinal beside it, the drop line and the pinned seam.
-**The chooser is not**, and column state has one layer rather than two. Draws the header menu, the multi key ordinals
+**5. Column power. Done, apart from one layer.** `ColumnGestures`, fit to contents, multi
+column sort from the header, the header menu, hiding a column, reorder, pinning, the chooser
+and column state are all built, along with the caret on hover, the ordinal beside it, both
+drop lines and the pinned seam. **Column state has one layer rather than two.** Draws the header menu, the multi key ordinals
 and the footer's spelled out sort, the pinned seam, and the chooser.
 
 **6. Controls inside a cell.** The eight in cell forms, as keyed themes over controls the
@@ -943,6 +943,17 @@ reaches for it. `Capture`, `Apply` and `Reset` are what the grid offers, and
 
 **Nothing changed means nothing kept.** Writing an empty layout deletes the file rather than
 leaving one behind that says nothing, so a grid put back to its declaration leaves no trace.
+
+**The chooser has no pin toggle, and that is the design's own call.** It says pinned columns
+are a group at the top **rather than a flag hidden in each row**, so dragging a row into the
+group is what pins a column and dragging it out is what lets it go. The group is drawn even
+when it is empty, wherever pinning is allowed, since otherwise there would be nowhere to drag
+to. The icon set has no pin glyph either, so the design and the library agreed here without
+being asked to.
+
+**A column that cannot be turned off stays in the list and sits flat**, which the design
+asks for, so the list is always the whole set of columns. `GridColumn.CanHide` is the
+column's half of that and the gesture is the grid's.
 
 **Column state has one layer, not two.** The plan wants a saved workspace default under the
 person's own, so the chooser's Reset returns what the team agreed rather than what the code

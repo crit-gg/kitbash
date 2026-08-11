@@ -61,6 +61,18 @@ public partial class GridsPage : GalleryPage
         Takes(SampleGrid.Columns[3], "KIND");
         Takes(SampleGrid.Columns[4], "VALUE");
 
+        SampleChooser.Columns = SampleGrid.Columns;
+
+        // The picker column has nothing to say and the identifier is what a row is, so
+        // neither is something a person can turn off.
+        SampleGrid.Columns[0].CanHide = false;
+        SampleGrid.Columns[1].CanHide = false;
+
+        for (var at = 0; at < SampleGrid.Columns.Count; at++)
+        {
+            SampleGrid.Columns[at].Key = $"column{at}";
+        }
+
         SampleGrid.ItemsSource = new GridRows(entries);
         SampleGrid.RowModified = item => ((Entry)item).IsModified;
         SampleGrid.SelectionChanged += (_, _) => ShowPickAll();
@@ -198,14 +210,6 @@ public partial class GridsPage : GalleryPage
         {
             (row.Item as Entry)?.Save();
         }
-    }
-
-    /// <summary>Hides a column, which is the whole of what a column chooser would do.</summary>
-    private void OnHideColumn(object? sender, RoutedEventArgs e)
-    {
-        var column = SampleGrid.Columns[3];
-
-        column.IsVisible = !column.IsVisible;
     }
 
     private void OnCountCells(object? sender, RoutedEventArgs e)

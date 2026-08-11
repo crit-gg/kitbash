@@ -55,7 +55,7 @@ public sealed class GridColumns : AvaloniaList<GridColumn>
     /// with no columns is a grid nothing can be put back through.
     /// </summary>
     public bool CanHide(GridColumn column) =>
-        Gestures.HasFlag(ColumnGestures.Hide) && column.IsVisible && Reachable.Count > 1;
+        Gestures.HasFlag(ColumnGestures.Hide) && column.CanHide && column.IsVisible && Reachable.Count > 1;
 
     /// <summary>
     /// Whether this column can be held against the left edge. The last one not pinned never

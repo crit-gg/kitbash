@@ -943,6 +943,80 @@
         </Setter>
     </ControlTheme>
 
+        <ControlTheme x:Key="{x:Type ui:GridColumnChooserRow}" TargetType="ui:GridColumnChooserRow">
+        <Setter Property="Height" Value="{DynamicResource HeightRow}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingRow}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="Cursor" Value="SizeAll" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <DockPanel LastChildFill="True">
+                        <CheckBox Name="PART_Shown"
+                                  DockPanel.Dock="Left"
+                                  IsChecked="{TemplateBinding IsShown, Mode=TwoWay}"
+                                  IsEnabled="{TemplateBinding CanHide}"
+                                  VerticalAlignment="Center"
+                                  Margin="{DynamicResource MarginRowLead}" />
+
+                        <TextBlock Text="{TemplateBinding Label}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource StateHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <!-- A column that cannot be turned off sits flat rather than leaving the list, so
+             the list is always the whole set of columns. -->
+        <Style Selector="^:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:GridColumnChooser}" TargetType="ui:GridColumnChooser">
+        <Setter Property="MinWidth" Value="220" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel LastChildFill="True">
+                    <!-- No apply button. A change lands as it is made, so closing the
+                         popover is not a commit and this only puts things back. -->
+                    <Button Name="PART_Reset"
+                            DockPanel.Dock="Bottom"
+                            Classes="ghost"
+                            Content="Reset columns"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,6,0,0" />
+
+                    <Panel>
+                        <StackPanel Name="PART_Rows" />
+
+                        <Border Name="PART_Drop"
+                                Height="2"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Stretch"
+                                Background="{DynamicResource DropPreviewLine}"
+                                IsHitTestVisible="False"
+                                IsVisible="False" />
+                    </Panel>
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
     </Styles.Resources>
 
     <!-- The reach of a resize edge, the same one the splitter needed, since one pixel

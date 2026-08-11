@@ -48,6 +48,13 @@ public class GridColumn : AvaloniaObject
     public static readonly StyledProperty<bool> CanPinProperty =
         AvaloniaProperty.Register<GridColumn, bool>(nameof(CanPin), true);
 
+    /// <summary>
+    /// Whether this column may be turned off at all. A grid usually has one or two that
+    /// cannot be, such as the one saying which row it is.
+    /// </summary>
+    public static readonly StyledProperty<bool> CanHideProperty =
+        AvaloniaProperty.Register<GridColumn, bool>(nameof(CanHide), true);
+
     public static readonly StyledProperty<IDataTemplate?> CellTemplateProperty =
         AvaloniaProperty.Register<GridColumn, IDataTemplate?>(nameof(CellTemplate));
 
@@ -143,6 +150,13 @@ public class GridColumn : AvaloniaObject
     {
         get => GetValue(CanPinProperty);
         set => SetValue(CanPinProperty, value);
+    }
+
+    /// <inheritdoc cref="CanHideProperty"/>
+    public bool CanHide
+    {
+        get => GetValue(CanHideProperty);
+        set => SetValue(CanHideProperty, value);
     }
 
     public IDataTemplate? CellTemplate

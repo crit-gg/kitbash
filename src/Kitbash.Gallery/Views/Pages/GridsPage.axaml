@@ -13,7 +13,7 @@
                                Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, shift and click to add a second key, drag the edge between two titles to resize and double click that edge to fit the column to what is on screen. Double click a value to edit it in place, and Escape puts the old one back. Hover a title for the chevron, which opens what that column allows, and drag a title sideways to move the column. Pin one from the menu and it holds the left edge while the rest go under it, and the seam grows a shadow once anything has." />
 
                     <TextBlock Classes="note"
-                               Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do. Edit a value and the row wears the amber bar until it is saved." />
+                               Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button opens the chooser, where a column is turned off, dragged into a new place or dragged into the pinned group at the top. Edit a value and the row wears the amber bar until it is saved." />
 
                     <TextBlock Classes="note"
                                Text="Rows are what a grid picks unless it is told otherwise, so Cell ranges is the other mode. Drag across the cells, or use shift with an arrow or a click, and the block takes the wash while the anchor keeps the plain surface. The footer swaps the row count for what the block holds. Control and C copies, and this grid also allows cut, paste and delete, which every grid refuses until it is told otherwise. NAME, KIND and VALUE take a value and the rest do not, so a block reaching ID refuses the whole write rather than doing part of it. The square at the corner of a block drags the block's values over the cells it reaches, and nothing lands until the button comes up." />
@@ -36,8 +36,13 @@
                                 <Button DockPanel.Dock="Right"
                                         Classes="ghost"
                                         Content="Columns"
-                                        Margin="0,0,7,0"
-                                        Click="OnHideColumn" />
+                                        Margin="0,0,7,0">
+                                    <Button.Flyout>
+                                        <Flyout Placement="BottomEdgeAlignedRight">
+                                            <ui:GridColumnChooser Name="SampleChooser" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
                             </DockPanel>
                         </ui:DataGrid.Toolbar>
 
