@@ -174,8 +174,21 @@ public class GridColumn : AvaloniaObject
     /// </summary>
     public IComparer<object?>? Comparer { get; set; }
 
+    /// <summary>
+    /// This column's value for an item, which is what copy writes out. A column that can be
+    /// sorted has already said what its value is, so this only has to be set for one that
+    /// cannot. Neither one means the column copies as nothing.
+    /// </summary>
+    public Func<object, object?>? Value { get; set; }
+
     /// <summary>Whether a header click does anything.</summary>
     public bool CanSort => SortKey is not null;
+
+    /// <summary>Whether this column says anything about an item, which copy needs it to.</summary>
+    internal bool HasValue => Value is not null || SortKey is not null;
+
+    /// <summary>What this column holds for an item, or null when it says nothing about one.</summary>
+    internal object? ValueOf(object item) => (Value ?? SortKey)?.Invoke(item);
 
     /// <summary>Up, then down, then back to the order the source came in.</summary>
     internal GridSortDirection NextSort() => SortDirection switch

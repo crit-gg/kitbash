@@ -41,6 +41,9 @@ public class DataGrid : ListBox, IGridHost
     public static readonly StyledProperty<GridEditUnit> EditUnitProperty =
         AvaloniaProperty.Register<DataGrid, GridEditUnit>(nameof(EditUnit));
 
+    public static readonly StyledProperty<CellActions> CellActionsProperty =
+        AvaloniaProperty.Register<DataGrid, CellActions>(nameof(CellActions), CellActions.Copy);
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -137,6 +140,13 @@ public class DataGrid : ListBox, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <inheritdoc cref="CellActions"/>
+    public CellActions CellActions
+    {
+        get => GetValue(CellActionsProperty);
+        set => SetValue(CellActionsProperty, value);
+    }
 
     /// <summary>
     /// Which rows hold changes that are not saved, which a tool alone knows. Null marks
@@ -282,6 +292,10 @@ public class DataGrid : ListBox, IGridHost
         {
             body.CommitRow();
             body.Unit = change.GetNewValue<GridEditUnit>();
+        }
+        else if (change.Property == CellActionsProperty)
+        {
+            body.Actions = change.GetNewValue<CellActions>();
         }
         else if (change.Property == ItemsSourceProperty)
         {

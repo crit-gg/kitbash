@@ -32,6 +32,10 @@ public class TreeDataGrid : Tree, IGridHost
     public static readonly StyledProperty<GridEditUnit> EditUnitProperty =
         DataGrid.EditUnitProperty.AddOwner<TreeDataGrid>();
 
+    /// <inheritdoc cref="BeginEditGesturesProperty"/>
+    public static readonly StyledProperty<CellActions> CellActionsProperty =
+        DataGrid.CellActionsProperty.AddOwner<TreeDataGrid>();
+
     private readonly GridColumns columns = new();
     private readonly GridFrame frame;
     private readonly GridBody body;
@@ -86,6 +90,13 @@ public class TreeDataGrid : Tree, IGridHost
 
     /// <summary>Puts the old value back and closes the editor.</summary>
     public void CancelEdit() => body.CancelEdit();
+
+    /// <inheritdoc cref="CellActions"/>
+    public CellActions CellActions
+    {
+        get => GetValue(CellActionsProperty);
+        set => SetValue(CellActionsProperty, value);
+    }
 
     /// <summary>
     /// Which rows hold changes that are not saved, which a tool alone knows. Null marks
@@ -224,6 +235,12 @@ public class TreeDataGrid : Tree, IGridHost
         {
             body.CommitRow();
             body.Unit = change.GetNewValue<GridEditUnit>();
+            return;
+        }
+
+        if (change.Property == CellActionsProperty)
+        {
+            body.Actions = change.GetNewValue<CellActions>();
             return;
         }
 

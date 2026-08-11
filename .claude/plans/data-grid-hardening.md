@@ -246,9 +246,9 @@ data entry convention and a grid that refuses to wrap makes a person reach for t
 at the end of every row. And whether Enter moves down or restores navigation depends on
 the editor, since a multi line editor wants the key.
 
-### No clipboard
+### No clipboard. Copy built in phase 4
 
-No copy, no cut, no paste. The settled convention across every grid read: tab separated
+No cut and no paste yet. The settled convention across every grid read: tab separated
 and Excel compatible, headers optional, paste anchored at the current cell and repeated
 to fill a selected range when it divides evenly, cells that cannot be edited refused
 rather than skipped silently.
@@ -706,7 +706,8 @@ and drew the current cell mark, the editable cell hint and the modified mark at 
 
 **4. Copy, then range selection, then the three that write, then fill.** Brings
 `SelectionUnit` and `CellActions`. Draws the range wash, the anchor, the handle and the
-footer's range aggregates.
+footer's range aggregates. **Copy is built and `CellActions` is in.** The rest of the phase
+is still open.
 
 **5. Column power.** Fit to contents, reorder, pin, the chooser, and persistence in two
 layers, since the chooser's Reset returns a saved workspace default. Brings
@@ -851,6 +852,24 @@ that does, and that is a behaviour to design rather than a translation of this o
 And multi column sort has no way in from the header yet, which is phase 5 and the
 `MultiSort` gesture. The model, the chained comparer and `GridColumn.SortOrder` are all
 there waiting for it.
+
+## Where phase 4 has departed so far
+
+**Copy needed a column to say what it holds.** A column carries a template, not a value, so
+there was nothing to write out. `GridColumn.Value` is a `Func<object, object?>` and it falls
+back to `SortKey`, since a column that can be ordered has already said what its value is.
+**A column that says neither is left out of the text**, not written as an empty field, so a
+picker column does not put a leading tab in front of every line somebody has to delete.
+
+**Copy writes what is on the page.** A hidden column is not copied, and the rows go out in
+the order they are drawn rather than the order they were picked in.
+
+**Nothing picked copies the row the keyboard is on**, which is what a person means when they
+hit the keys without selecting first.
+
+**Headers are not copied and there is no switch for one.** The plan called headers optional.
+A sixth property is exactly what the rule under What is optional warns against, so the
+simple case is what ships until something asks for the other.
 
 ## Where phase 3 departed from this plan
 

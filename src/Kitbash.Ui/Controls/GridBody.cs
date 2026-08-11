@@ -1,8 +1,10 @@
+using System.Collections;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.VisualTree;
 
 namespace Kitbash.Ui.Controls;
@@ -14,7 +16,7 @@ namespace Kitbash.Ui.Controls;
 /// </summary>
 /// <param name="owner">The grid. Its selected row is the row the current cell is in.</param>
 /// <param name="columns">The columns, which is what left and right move across.</param>
-internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
+internal sealed class GridBody(ListBox owner, GridColumns columns)
 {
     private DataGridCell? editing;
     private object? edited;
@@ -36,6 +38,9 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
 
     /// <summary>What an edit is a transaction over. The grid holds the property.</summary>
     public GridEditUnit Unit { get; set; } = GridEditUnit.Cell;
+
+    /// <summary>What a person may do to the values. The grid holds the property.</summary>
+    public CellActions Actions { get; set; } = CellActions.Copy;
 
     /// <summary>Which rows hold changes that are not saved. Null marks none of them.</summary>
     public Func<object, bool>? Modified { get; set; }
@@ -272,9 +277,69 @@ internal sealed class GridBody(SelectingItemsControl owner, GridColumns columns)
             Key.F2 when Gestures.HasFlag(BeginEditGestures.F2) => Open(),
             Key.Enter when Gestures.HasFlag(BeginEditGestures.Enter) && !control && !shift => Open(),
             Key.Space when shift && !control => Pick(),
+            Key.C when control && !shift && Actions.HasFlag(CellActions.Copy) => Copy(),
             _ => false,
         };
     }
+
+    /// <summary>
+    /// Writes what is picked to the clipboard as text a spreadsheet reads. Nothing picked
+    /// writes the row the keyboard is on, since that is the one a person means.
+    /// </summary>
+    public bool Copy()
+    {
+        if (TopLevel.GetTopLevel(owner)?.Clipboard is not { } clipboard)
+        {
+            return false;
+        }
+
+        var picked = Picked();
+
+        if (picked.Count == 0)
+        {
+            return false;
+        }
+
+        // A column that says nothing about an item, such as one holding a picker, is left
+        // out rather than written as an empty field somebody has to delete.
+        var written = columns.Reachable.Where(column => column.HasValue).ToList();
+
+        _ = clipboard.SetTextAsync(new GridClipboard().Write(picked, written));
+        return true;
+    }
+
+    /// <summary>The items copy works over, in the order the rows are drawn in.</summary>
+    private List<object> Picked()
+    {
+        var chosen = new HashSet<object>(
+            owner.SelectedItems?.Cast<object>() ?? [],
+            ReferenceEqualityComparer.Instance);
+
+        var found = new List<object>();
+
+        for (var index = 0; index < owner.ItemsView.Count; index++)
+        {
+            if (Held(index) is not { } item)
+            {
+                continue;
+            }
+
+            if (chosen.Count == 0 ? index == owner.SelectedIndex : chosen.Contains(owner.ItemsView[index]!))
+            {
+                found.Add(item);
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>What a row at an index stands for, or null when it is a group heading.</summary>
+    private object? Held(int index) => owner.ItemsView[index] switch
+    {
+        GridRow { IsGroup: false, Item: { } item } => item,
+        TreeRow { Item: { } item } => item,
+        _ => null,
+    };
 
     /// <summary>
     /// A printable character opens the editor and is the first thing typed into it. The
