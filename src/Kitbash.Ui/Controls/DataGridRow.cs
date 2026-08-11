@@ -44,6 +44,11 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
             before.PropertyChanged -= OnItemChanged;
         }
 
+        if (row?.Item is INotifyDataErrorInfo reported)
+        {
+            reported.ErrorsChanged -= OnItemErrored;
+        }
+
         row = next;
 
         if (row is not null)
@@ -56,6 +61,11 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
         if (row?.Item is INotifyPropertyChanged after)
         {
             after.PropertyChanged += OnItemChanged;
+        }
+
+        if (row?.Item is INotifyDataErrorInfo reporting)
+        {
+            reporting.ErrorsChanged += OnItemErrored;
         }
 
         PseudoClasses.Set(":alt", row?.IsAlternate == true);
@@ -105,6 +115,15 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
         if (this.FindAncestorOfType<IGridHost>()?.Body is { Marks: true } body)
         {
             body.Mark(this);
+        }
+    }
+
+    private void OnItemErrored(object? sender, DataErrorsChangedEventArgs e)
+    {
+        if (this.FindAncestorOfType<IGridHost>()?.Body is { } body)
+        {
+            body.Mark(this);
+            body.Recount();
         }
     }
 }

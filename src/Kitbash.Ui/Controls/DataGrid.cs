@@ -42,6 +42,10 @@ public class DataGrid : ListBox, IGridHost
     public static readonly DirectProperty<DataGrid, bool> IsPinnedScrolledProperty =
         AvaloniaProperty.RegisterDirect<DataGrid, bool>(nameof(IsPinnedScrolled), grid => grid.pinnedScrolled);
 
+    /// <summary>What is blocking a save, or empty when nothing is.</summary>
+    public static readonly DirectProperty<DataGrid, string> ErrorTextProperty =
+        AvaloniaProperty.RegisterDirect<DataGrid, string>(nameof(ErrorText), grid => grid.errorText);
+
     public static readonly StyledProperty<BeginEditGestures> BeginEditGesturesProperty =
         AvaloniaProperty.Register<DataGrid, BeginEditGestures>(
             nameof(BeginEditGestures),
@@ -82,6 +86,7 @@ public class DataGrid : ListBox, IGridHost
     private string selectionText = string.Empty;
     private string shownText = string.Empty;
     private string sortText = string.Empty;
+    private string errorText = string.Empty;
 
     static DataGrid()
     {
@@ -104,6 +109,7 @@ public class DataGrid : ListBox, IGridHost
         };
 
         body.RangeChanged += (_, _) => UpdateCounts();
+        body.ErrorsChanged += (_, _) => UpdateCounts();
 
         frame.Seam += (_, scrolled) => ShowSeam(scrolled);
 
@@ -157,6 +163,9 @@ public class DataGrid : ListBox, IGridHost
     /// <inheritdoc cref="IsPinnedScrolledProperty"/>
     public bool IsPinnedScrolled => pinnedScrolled;
 
+    /// <inheritdoc cref="ErrorTextProperty"/>
+    public string ErrorText => errorText;
+
     /// <summary>The rows this grid was given, or null when it was handed a plain list.</summary>
     public GridRows? Rows => rows;
 
@@ -205,6 +214,17 @@ public class DataGrid : ListBox, IGridHost
             body.Modified = value;
             body.Refresh();
         }
+    }
+
+    /// <summary>
+    /// Counts what is blocking a save again, over every row and not only the ones on screen.
+    /// A row nobody has scrolled to has no container to hear its errors change, so a tool
+    /// that has just checked its whole set says so here.
+    /// </summary>
+    public void Revalidate()
+    {
+        body.Recount();
+        UpdateCounts();
     }
 
     /// <inheritdoc cref="GridBody.CommitRow"/>
@@ -502,6 +522,7 @@ public class DataGrid : ListBox, IGridHost
             CancelEdit();
         }
 
+        body.Recount();
         Restore();
 
         // A page that turns starts at its first row. Staying where the last page was
@@ -622,5 +643,16 @@ public class DataGrid : ListBox, IGridHost
             rows is null ? string.Empty : $"{rows.Shown:N0} of {rows.Total:N0} shown");
 
         SetAndRaise(SortTextProperty, ref sortText, SortWords());
+
+        // A cell nobody has scrolled to still blocks a save, so this counts the whole source
+        // rather than what is on screen.
+        SetAndRaise(
+            ErrorTextProperty,
+            ref errorText,
+            body.ErrorCount == 0 ? string.Empty
+                : body.ErrorCount == 1 ? "1 cell needs fixing"
+                : $"{body.ErrorCount:N0} cells need fixing");
+
+        PseudoClasses.Set(":errors", body.ErrorCount > 0);
     }
 }

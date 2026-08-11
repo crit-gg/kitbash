@@ -29,6 +29,9 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     private int edgeRow = -1;
     private GridColumn? edgeColumn;
 
+    /// <summary>Whether anything in this grid reports errors at all.</summary>
+    private bool errors;
+
     /// <summary>How far a fill has been dragged, or nothing when one is not being dragged.</summary>
     private int fillRow = -1;
     private GridColumn? fillColumn;
@@ -75,8 +78,17 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>Which rows hold changes that are not saved. Null marks none of them.</summary>
     public Func<object, bool>? Modified { get; set; }
 
-    /// <summary>Whether anything is being marked at all, so a row can stop early.</summary>
-    public bool Marks => Modified is not null;
+    /// <summary>
+    /// Whether a row has anything to read off its item again. An item that reports its own
+    /// errors always does, whether or not a tool marks what is unsaved.
+    /// </summary>
+    public bool Marks => Modified is not null || errors;
+
+    /// <summary>How many cells are wrong, over every row and not only the ones on screen.</summary>
+    public int ErrorCount { get; private set; }
+
+    /// <summary>Raised when the number of cells in error moves, so a footer can say so.</summary>
+    public event EventHandler? ErrorsChanged;
 
     /// <summary>Whether a row transaction is open. False whenever the unit is the cell.</summary>
     public bool IsRowEditing => open is not null;
@@ -553,9 +565,79 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
         _ => null,
     };
 
-    /// <summary>Says whether one row holds unsaved changes, which its item decides.</summary>
-    public void Mark(IGridRowLayout row) =>
-        row.SetModified(Modified is { } modified && row.Held is { } item && modified(item));
+    /// <summary>
+    /// Says whether one row holds unsaved changes and what is wrong in each of its cells,
+    /// both of which its item decides.
+    /// </summary>
+    public void Mark(IGridRowLayout row)
+    {
+        var item = row.Held;
+
+        row.SetModified(Modified is { } modified && item is not null && modified(item));
+
+        if (item is not INotifyDataErrorInfo reporting)
+        {
+            foreach (var cell in row.Cells)
+            {
+                cell.Error = null;
+            }
+
+            return;
+        }
+
+        errors = true;
+
+        foreach (var cell in row.Cells)
+        {
+            cell.Error = Wrong(reporting, cell.Column);
+        }
+    }
+
+    /// <summary>What an item says is wrong with one column, as one sentence.</summary>
+    private static string? Wrong(INotifyDataErrorInfo reporting, GridColumn? column)
+    {
+        if (column?.Field is not { Length: > 0 } field)
+        {
+            return null;
+        }
+
+        var found = reporting.GetErrors(field)?.Cast<object?>().Where(one => one is not null).ToList();
+
+        return found is { Count: > 0 } ? string.Join(" ", found.Select(one => one!.ToString())) : null;
+    }
+
+    /// <summary>
+    /// Counts every cell that is wrong, over the whole source rather than the rows on
+    /// screen, since a footer saying what blocks a save has to count what is not in view.
+    /// </summary>
+    public void Recount()
+    {
+        if (!errors)
+        {
+            return;
+        }
+
+        var fields = columns.Reachable.Where(column => column.Field is { Length: > 0 }).ToList();
+        var found = 0;
+
+        for (var index = 0; index < owner.ItemsView.Count; index++)
+        {
+            if (Held(index) is not INotifyDataErrorInfo reporting)
+            {
+                continue;
+            }
+
+            found += fields.Count(column => Wrong(reporting, column) is not null);
+        }
+
+        if (found == ErrorCount)
+        {
+            return;
+        }
+
+        ErrorCount = found;
+        ErrorsChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>
     /// The keys that move the current cell or open an editor. Up and down are left to the

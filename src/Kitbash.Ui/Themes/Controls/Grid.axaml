@@ -92,6 +92,19 @@
                                                FontSize="{DynamicResource FontSizeSmall}"
                                                Foreground="{DynamicResource InkMuted}"
                                                VerticalAlignment="Center" />
+
+                                    <!-- What blocks a save. It leads the right hand side,
+                                         since it is the one thing there a person has to act
+                                         on. -->
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{TemplateBinding ErrorText}"
+                                               Margin="0,0,12,0"
+                                               FontFamily="{DynamicResource FontFamilyMono}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               FontWeight="{DynamicResource FontWeightMedium}"
+                                               Foreground="{DynamicResource Error}"
+                                               VerticalAlignment="Center"
+                                               IsVisible="{Binding $parent[ui:DataGrid].ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                 </DockPanel>
                             </Border>
 
@@ -507,6 +520,22 @@
         <Style Selector="^:editable:pointerover /template/ Border#PART_Hint">
             <Setter Property="BorderBrush" Value="{DynamicResource LineControlDeep}" />
             <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- A cell whose value is wrong. Fill, hairline and a corner mark, so the state
+             survives a colour blind reading and a greyscale screenshot. The message is
+             never in the cell, since a row is 31px and an error is a sentence. -->
+        <Style Selector="^:error /template/ Border#PART_Wash">
+            <Setter Property="IsVisible" Value="True" />
+            <Setter Property="Background" Value="{DynamicResource CellErrorFill}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CellErrorLine}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- Error beats focus for the colour of the ring, so a cell that is both wrong and
+             current says wrong rather than saying where the keyboard is. -->
+        <Style Selector="^:error /template/ Border#PART_Mark">
+            <Setter Property="BorderBrush" Value="{DynamicResource CellErrorMark}" />
         </Style>
 
         <!-- The cells inside a block. The anchor is not one of them, so the cell that still

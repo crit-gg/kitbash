@@ -271,10 +271,10 @@ cross field validation and no way to cancel a whole row, and a row that is only 
 once three fields agree could not be expressed. `EditUnit` is the switch and `Cell`, which
 is what the grid always did, is still the default.
 
-### No validation surface
+### No validation surface. Built in phase 7
 
-Nothing reads `INotifyDataErrorInfo` and there is no cell error state. Consumers hand
-roll it, which `CustomToolsEditorView.axaml:45` does with a class and a tooltip. A
+Nothing read `INotifyDataErrorInfo` and there was no cell error state. Consumers hand
+rolled it, which `CustomToolsEditorView.axaml:45` does with a class and a tooltip. A
 library that leaves this to every caller gets a different answer in every tool.
 
 ### No in cell form for any editor
@@ -719,9 +719,9 @@ and the footer's spelled out sort, the pinned seam, and the chooser.
 library already has. It sat here because the three steps of chrome it uses are row hover,
 cell hover and editing, and the first two only existed after phase 3.
 
-**7. The rest.** Validation surface, empty states, the selection action bar, trimming and
-tooltips by default, and the automation peers. Brings no switch at all, which is the point
-of that group.
+**7. The rest. Started.** The validation surface is built. **Empty states, the selection
+action bar, trimming and tooltips by default and the automation peers are not.** Brings no
+switch at all, which is the point of that group.
 
 **No phase adds a switch that is not in the table under What is optional.** If a feature
 turns out to need one that is not there, that is a sign the rule was applied wrongly and
@@ -959,6 +959,31 @@ column's half of that and the gesture is the grid's.
 workspace default under the person's own so the chooser's Reset returns what the team agreed.
 `Reset` puts the declaration back instead. **Dropped on purpose**, so the second layer is not
 outstanding work.
+
+## Where phase 7 has departed so far
+
+**A column says which property it draws, and that is what an error is looked up by.**
+`GridColumn.Field` is separate from `Key`, since one is a name for a layout and the other
+is a name in the data. A column with no `Field` never shows an error, which is the opt in.
+
+**The message is a tooltip rather than a popup under the cell.** The design says the message
+is never inline and arrives in a popup under the cell when that cell is current. A tooltip
+holds the never inline half and the reach for it, and it is what the launcher's hand rolled
+version already does. **The popup that follows the current cell is not built.**
+
+**The three marks are all there.** Fill, hairline and a corner mark, so the state survives a
+colour blind reading and a greyscale screenshot, and **error beats focus for the ring**, so a
+cell that is both wrong and current says wrong.
+
+**The count is over every row, and the trigger is not.** `Recount` walks the whole source, so
+what it reports is never only what is on screen. But a row nobody has scrolled to has no
+container to hear its errors change, so nothing fires. `DataGrid.Revalidate` is the way in
+for a tool that has just checked its whole set, which puts the trigger where the knowledge
+is. Subscribing to every item instead would mean ten thousand handlers on a ten thousand row
+grid and a rebuild on every filter keystroke.
+
+**A row that is invalid as a whole is not built.** The design marks the state column and puts
+the message in the row detail. There is no row detail, and the state column is the tool's own.
 
 ## Where phase 6 departed from this plan
 

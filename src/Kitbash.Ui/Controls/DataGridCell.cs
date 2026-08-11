@@ -27,6 +27,13 @@ public class DataGridCell : ContentControl
     public static readonly StyledProperty<bool> IsInRangeProperty =
         AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsInRange));
 
+    /// <summary>
+    /// What is wrong with this cell, or null when nothing is. The message is never drawn in
+    /// the cell, since a row is 31px and an error is a sentence.
+    /// </summary>
+    public static readonly StyledProperty<string?> ErrorProperty =
+        AvaloniaProperty.Register<DataGridCell, string?>(nameof(Error));
+
     /// <summary>Whether a fill would reach this cell. The wash only lands on release.</summary>
     public static readonly StyledProperty<bool> IsFillingProperty =
         AvaloniaProperty.Register<DataGridCell, bool>(nameof(IsFilling));
@@ -61,6 +68,13 @@ public class DataGridCell : ContentControl
     {
         get => GetValue(IsInRangeProperty);
         set => SetValue(IsInRangeProperty, value);
+    }
+
+    /// <inheritdoc cref="ErrorProperty"/>
+    public string? Error
+    {
+        get => GetValue(ErrorProperty);
+        set => SetValue(ErrorProperty, value);
     }
 
     /// <inheritdoc cref="IsFillingProperty"/>
@@ -112,6 +126,13 @@ public class DataGridCell : ContentControl
         else if (change.Property == IsInRangeProperty)
         {
             PseudoClasses.Set(":range", change.GetNewValue<bool>());
+        }
+        else if (change.Property == ErrorProperty)
+        {
+            var wrong = change.GetNewValue<string?>();
+
+            PseudoClasses.Set(":error", wrong is { Length: > 0 });
+            ToolTip.SetTip(this, wrong);
         }
         else if (change.Property == IsFillingProperty)
         {

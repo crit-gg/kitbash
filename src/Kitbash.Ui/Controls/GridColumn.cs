@@ -234,6 +234,13 @@ public class GridColumn : AvaloniaObject
     /// </summary>
     public string? Key { get; set; }
 
+    /// <summary>
+    /// Which property of an item this column draws. It is what an error is looked up by, so
+    /// a column with none never shows one, and it is separate from <see cref="Key"/> because
+    /// that is a name for a layout and this is a name in the data.
+    /// </summary>
+    public string? Field { get; set; }
+
     /// <summary>Whether a header click does anything.</summary>
     public bool CanSort => SortKey is not null;
 

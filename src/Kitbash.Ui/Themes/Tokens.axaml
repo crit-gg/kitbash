@@ -81,6 +81,12 @@
          ends, so the anchor keeps the plain surface and is marked by having no wash. -->
     <SolidColorBrush x:Key="CellRange" Color="#569eff" Opacity="0.1" />
 
+    <!-- A cell whose value is wrong. Three marks rather than one, so the state survives a
+         colour blind reading and a greyscale screenshot. -->
+    <SolidColorBrush x:Key="CellErrorFill" Color="#3a2325" />
+    <SolidColorBrush x:Key="CellErrorLine" Color="#7d3c3f" />
+    <SolidColorBrush x:Key="CellErrorMark" Color="#ef6a6e" />
+
     <!-- The handle at the corner of a block, half in and half out of the cell it sits on. -->
     <x:Double x:Key="SizeFillHandle">8</x:Double>
 
