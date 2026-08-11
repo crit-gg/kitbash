@@ -115,6 +115,12 @@ public sealed class GridRows
     /// <summary>How many items the filter kept. The same as <see cref="Total"/> when there is none.</summary>
     public int Matched { get; private set; }
 
+    /// <summary>
+    /// Whether an item is still one of these rows, on any page. False for an item the source
+    /// has dropped and for one the filter has taken out.
+    /// </summary>
+    public bool Keeps(object item) => wrappers.ContainsKey(item) && (filter is null || filter(item));
+
     /// <summary>How many data rows are in the list now.</summary>
     public int Shown { get; private set; }
 

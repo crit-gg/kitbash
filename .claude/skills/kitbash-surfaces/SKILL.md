@@ -408,6 +408,10 @@ of it.** Read that before changing anything below the look. What it settled, in 
   `GridCellChoice`, `GridCellCheckBox`, `GridCellRatio`, `GridCellColor`, `GridCellJump` and
   `GridCellTags`. Nothing inside a cell takes the control radius, because the cell is the
   shape now.
+- **A selection spans the pages, and it is two lists.** `SelectedItems` is what is picked and
+  on the page, which copy and the block read. `PickedItems` is the whole set, which a set wide
+  action reads. A filter unpicks what it hides, a page turn does not, and `GridRows.Keeps` is
+  the one rule behind both.
 - **A number is never printed twice.** `SelectionActions` raises the action bar, the bar takes
   the count in `PickedText`, and the footer's `SelectionText` gives it back to the query. A
   live block is a different number, so the footer keeps saying what the block holds.

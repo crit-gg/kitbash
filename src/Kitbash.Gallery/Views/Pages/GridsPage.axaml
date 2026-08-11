@@ -21,6 +21,9 @@
                     <TextBlock Classes="note"
                                Text="Pick a row and the action bar floats over the last rows rather than pushing them, so nothing moves under the pointer. It carries the count, so the footer gives that number back to the query, and an action that cannot apply to every picked row stays where it is and says why in its tooltip. Escape drops the selection, and so does the button on the end." />
 
+                    <TextBlock Classes="note"
+                               Text="A selection spans the pages. Pick some rows, turn the page and the bar still says how many are held, since a set wide action has to mean the whole set. Turning back picks them again where they are. A filter that hides a picked row unpicks it, so nothing can be acted on that cannot be seen." />
+
                     <ui:DataGrid Name="SampleGrid"
                                  Height="342"
                                  SelectionMode="Multiple"

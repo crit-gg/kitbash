@@ -860,11 +860,29 @@ caches that, so a filter over a very deep tree is a full walk on every keystroke
 keeps is open by construction. A filter that keeps nothing draws the no matches state, which
 the tree grid gained at the same time.
 
-**Two things phase 2 does not answer.** A selection does not survive a page turn, because
-`SelectedItems` can only hold rows that are in the list and the other pages' rows are not.
-And multi column sort has no way in from the header yet, which is phase 5 and the
-`MultiSort` gesture. The model, the chained comparer and `GridColumn.SortOrder` are all
-there waiting for it.
+**Two things phase 2 did not answer, and both were answered later.** Multi column sort from
+the header is phase 5 and the `MultiSort` gesture. A selection surviving a page turn is
+`DataGrid.PickedItems`, built once the action bar made the hole visible.
+
+**A selection spans the pages, and it is a second list beside the selection model.**
+`SelectedItems` still means what it always did, what is picked and on the page, so copy, the
+block and every other reader keeps working and copy still copies what is on screen. `PickedItems`
+is the whole set, and it is what a set wide action applies to.
+
+**It follows the delta rather than sweeping the page.** `SelectionChanged` carries what was
+added and what was removed, so a grid of ten thousand rows costs nothing per click. A rebuild
+is not a person changing their mind, so the tracking is suppressed across one and what the
+rebuild takes out of the list stays in the set.
+
+**A filter unpicks what it hides, and a page turn does not.** One rule does both:
+`GridRows.Keeps` says whether an item is still a row on any page, and every rebuild takes out
+of the set whatever it says no to. A filtered out row is gone, a row on another page is not,
+and nothing had to test for which kind of rebuild it was. The alternative, keeping a pick a
+filter has hidden, means Delete reaching rows nobody can see.
+
+**Restoring works off the set rather than off a snapshot.** The grid used to hold the previous
+selection across one rebuild. The set is a superset of that and is kept live, so the snapshot
+is gone and a page turn picks whatever the new page holds.
 
 ## Where phase 5 has departed so far
 

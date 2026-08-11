@@ -100,12 +100,21 @@ public class DataGrid : ListBox, IGridHost
     private readonly GridFrame frame;
     private readonly GridBody body;
 
+    /// <summary>
+    /// Every item picked, on any page. A page turn takes the other pages' rows out of the
+    /// list, so the selection model cannot hold them and this is what remembers.
+    /// </summary>
+    private readonly List<object> picked = [];
+    private readonly HashSet<object> pickedSet = new(ReferenceEqualityComparer.Instance);
+
     private GridRows? rows;
     private GridColumn? grouped;
     private bool dropping;
 
-    /// <summary>What was picked and where the body sat, held across one rebuild.</summary>
-    private List<GridRow>? held;
+    /// <summary>Whether the selection is being put back, so a rebuild is not read as a person.</summary>
+    private bool restoring;
+
+    /// <summary>Where the body sat, held across one rebuild.</summary>
     private Vector resting;
 
     /// <summary>Which page was last drawn, so a turn can be told from any other rebuild.</summary>
@@ -148,9 +157,10 @@ public class DataGrid : ListBox, IGridHost
 
         AddHandler(DoubleTappedEvent, OnDoubleTapped);
 
-        SelectionChanged += (_, _) =>
+        SelectionChanged += (_, e) =>
         {
             DropHeadings();
+            Track(e);
             UpdateCounts();
             body.OnSelectionMoved();
             body.Refresh();
@@ -211,6 +221,13 @@ public class DataGrid : ListBox, IGridHost
 
     /// <inheritdoc cref="PickedTextProperty"/>
     public string PickedText => pickedText;
+
+    /// <summary>
+    /// Every item picked, on every page and not only the one drawn. This is what a selection
+    /// action applies to, since <see cref="ListBox.SelectedItems"/> can only hold rows the
+    /// list has.
+    /// </summary>
+    public IReadOnlyList<object> PickedItems => picked;
 
     /// <summary>How many rows are picked, or empty when none are or the bar has the count.</summary>
     public string SelectionText => selectionText;
@@ -621,6 +638,9 @@ public class DataGrid : ListBox, IGridHost
     /// </summary>
     private void DropSelection()
     {
+        picked.Clear();
+        pickedSet.Clear();
+
         UnselectAll();
         body.ClearBlock();
         Focus();
@@ -634,10 +654,58 @@ public class DataGrid : ListBox, IGridHost
         }
     }
 
+    /// <summary>
+    /// Follows the picked set through the delta rather than by sweeping the page, so a grid
+    /// of ten thousand rows costs nothing per click. A rebuild is not a person changing their
+    /// mind, so what it takes out of the list is left in the set.
+    /// </summary>
+    private void Track(SelectionChangedEventArgs e)
+    {
+        if (restoring)
+        {
+            return;
+        }
+
+        foreach (var row in e.RemovedItems.OfType<GridRow>().Where(row => row.Item is not null))
+        {
+            if (pickedSet.Remove(row.Item!))
+            {
+                picked.RemoveAll(item => ReferenceEquals(item, row.Item));
+            }
+        }
+
+        foreach (var row in e.AddedItems.OfType<GridRow>())
+        {
+            if (!row.IsGroup && row.Item is not null && pickedSet.Add(row.Item))
+            {
+                picked.Add(row.Item);
+            }
+        }
+    }
+
+    /// <summary>Takes out of the picked set everything the rows no longer hold on any page.</summary>
+    private void Prune()
+    {
+        if (rows is not { } model)
+        {
+            return;
+        }
+
+        // A filter that hides a row unpicks it, so a set wide action never reaches something
+        // a person cannot see. A page turn hides nothing, so it keeps everything.
+        var gone = picked.Where(item => !model.Keeps(item)).ToList();
+
+        foreach (var item in gone)
+        {
+            pickedSet.Remove(item);
+            picked.RemoveAll(held => ReferenceEquals(held, item));
+        }
+    }
+
     private void OnRowsRebuilding(object? sender, EventArgs e)
     {
-        held = SelectedItems is { Count: > 0 } picked ? [.. picked.OfType<GridRow>()] : null;
         resting = frame.Offset;
+        restoring = true;
     }
 
     private void OnRowsRebuilt(object? sender, EventArgs e)
@@ -650,7 +718,10 @@ public class DataGrid : ListBox, IGridHost
         }
 
         body.Recount();
+        Prune();
         Restore();
+
+        restoring = false;
 
         // A page that turns starts at its first row. Staying where the last page was
         // scrolled to lands a person in the middle of a page they have not seen.
@@ -668,23 +739,21 @@ public class DataGrid : ListBox, IGridHost
     }
 
     /// <summary>
-    /// Picks again whatever was picked before the rebuild and is still in the list. A sort
-    /// reorders every row it keeps, so it is drawn again from scratch, and the selection has
-    /// to be put back by row rather than by where the row was.
+    /// Picks again every row on the page that is in the picked set. A sort reorders every
+    /// row it keeps, so the list is drawn from scratch and the selection has to be put back
+    /// by row rather than by where the row was.
     /// </summary>
     private void Restore()
     {
-        var picked = held;
-
-        held = null;
-
-        if (picked is not { Count: > 0 } || SelectedItems is not { } current)
+        if (SelectedItems is not { } current)
         {
             return;
         }
 
-        var live = new HashSet<object>(ItemsView.Where(item => item is not null)!);
-        var wanted = picked.Where(live.Contains).ToList();
+        var wanted = ItemsView
+            .OfType<GridRow>()
+            .Where(row => !row.IsGroup && row.Item is not null && pickedSet.Contains(row.Item))
+            .ToList();
 
         if (wanted.Count == current.Count && wanted.All(current.Contains))
         {
@@ -753,12 +822,14 @@ public class DataGrid : ListBox, IGridHost
 
     private void UpdateCounts()
     {
-        var picked = SelectedItems?.Count ?? 0;
-        var owned = picked > 0 && SelectionActions is not null;
+        // The picked set rather than the selection model, so a page turn does not silently
+        // change what a bar full of set wide actions is talking about.
+        var count = picked.Count;
+        var owned = count > 0 && SelectionActions is not null;
 
         PseudoClasses.Set(":picking", owned);
 
-        SetAndRaise(PickedTextProperty, ref pickedText, owned ? $"{picked:N0} selected" : string.Empty);
+        SetAndRaise(PickedTextProperty, ref pickedText, owned ? $"{count:N0} selected" : string.Empty);
 
         // A live block says what it holds instead of how many rows are picked, since the
         // same number twice over says nothing and the block is what a person is looking at.
@@ -767,8 +838,8 @@ public class DataGrid : ListBox, IGridHost
             SelectionTextProperty,
             ref selectionText,
             body.RangeText is { Length: > 0 } range ? range
-                : picked == 0 || owned ? string.Empty
-                : $"{picked:N0} selected");
+                : count == 0 || owned ? string.Empty
+                : $"{count:N0} selected");
 
         SetAndRaise(
             ShownTextProperty,
