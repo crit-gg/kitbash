@@ -54,9 +54,11 @@ public class DataGridHeaderCell : ContentControl
     {
         base.OnPointerReleased(e);
 
+        // Asked of whatever owns the columns rather than of a named grid. Naming DataGrid
+        // here is what left a tree grid header showing a hand cursor and doing nothing.
         if (Column is { CanSort: true } column
             && e.InitialPressMouseButton == MouseButton.Left
-            && this.FindAncestorOfType<DataGrid>() is { } grid)
+            && this.FindAncestorOfType<IGridSorting>() is { } grid)
         {
             grid.SortBy(column);
             e.Handled = true;

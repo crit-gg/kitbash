@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 
@@ -90,26 +91,41 @@ public class DataGridCell : ContentControl
     {
         base.OnLostFocus(e);
 
-        if (IsEditing && !this.IsKeyboardFocusWithin && !HasPopupOpen &&
-            this.FindAncestorOfType<DataGrid>() is { } grid)
+        if (IsEditing && !this.IsKeyboardFocusWithin && Left(e.NewFocusedElement)
+            && this.FindAncestorOfType<DataGrid>() is { } grid)
         {
             grid.CommitEdit();
         }
     }
 
     /// <summary>
-    /// A popup opened from inside the cell takes the focus with it, which would end the
-    /// edit under whatever was opened. A dropdown in an edit template is unusable without
-    /// this. TextBox.OnLostFocus guards its own selection the same way.
+    /// Whether the focus landed somewhere that ends the edit. Where it went decides,
+    /// never what opened it, because the things that can take a focus away cannot be
+    /// listed: a dropdown, a menu, a dialog and a native file picker all do it.
     /// </summary>
-    private bool HasPopupOpen =>
-        this.GetVisualDescendants()
-            .OfType<Control>()
-            .Any(child =>
-                child.ContextFlyout is { IsOpen: true }
-                || child.ContextMenu is { IsOpen: true }
-                || child is ComboBox { IsDropDownOpen: true }
-                || child is Button { Flyout.IsOpen: true });
+    private bool Left(IInputElement? landed)
+    {
+        // Nowhere at all. The app lost the focus, which is what a native picker does
+        // without ever building a window Avalonia can see.
+        if (landed is not Visual visual)
+        {
+            return false;
+        }
+
+        // Inside the cell, including a popup the cell opened, since a popup's content
+        // keeps the control that owns it as its logical parent whether the popup is its
+        // own window or an overlay.
+        for (ILogical? node = landed as ILogical; node is not null; node = node.LogicalParent)
+        {
+            if (ReferenceEquals(node, this))
+            {
+                return false;
+            }
+        }
+
+        // Another window, so a dialog opened over the grid. The edit waits for it.
+        return ReferenceEquals(TopLevel.GetTopLevel(visual), TopLevel.GetTopLevel(this));
+    }
 
     private void Apply()
     {

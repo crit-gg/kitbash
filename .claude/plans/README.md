@@ -16,7 +16,8 @@ The design lives in the Claude Design project **Workbench**,
 |---|---|
 | `CLAUDE.md` | the written spec, palette, density and icon rules |
 | `Theme Slate.dc.html` | the window, the control inventory, panels and the value editors |
-| `Theme Slate - Surfaces.dc.html` | the tree, both grids, docking and the overlays |
+| `Theme Slate - Surfaces.dc.html` | the tree, docking, the overlays and the scroll bars |
+| `Theme Slate - Data Grid.dc.html` | both grids, planned in `data-grid-hardening.md`. **The grids left the surfaces page**, so this is the only place they are drawn |
 | `Theme Slate - Toasts.dc.html` | toasts, their eight regions, and in content alerts |
 | `Workbench Launcher.dc.html` | the launcher shell, the activity rail and the workspace page |
 | `Engine Installs.dc.html` | the engines page the rail opens, planned in `engine-installs.md` |

@@ -11,6 +11,7 @@ public sealed class GridRow : INotifyPropertyChanged
 {
     private bool expanded = true;
     private bool alternate;
+    private int count;
 
     internal GridRow(object item)
     {
@@ -21,7 +22,7 @@ public sealed class GridRow : INotifyPropertyChanged
     {
         IsGroup = true;
         Key = key;
-        Count = count;
+        this.count = count;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -36,7 +37,11 @@ public sealed class GridRow : INotifyPropertyChanged
     public object? Key { get; }
 
     /// <summary>How many rows the group holds, whether or not they are shown.</summary>
-    public int Count { get; }
+    public int Count
+    {
+        get => count;
+        internal set => Set(ref count, value);
+    }
 
     /// <summary>
     /// Whether a group's rows are in the list under it. Set this through

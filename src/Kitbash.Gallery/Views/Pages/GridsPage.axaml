@@ -13,14 +13,16 @@
                                Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, drag the edge between two titles to resize, and double click a value to edit it in place. Escape puts the old one back." />
 
                     <TextBlock Classes="note"
-                               Text="Ten thousand rows, a hundred to a page. The Columns button hides one column, which is the whole of what a chooser would do." />
+                               Text="Ten thousand rows, a hundred to a page. Type in the box to filter, and the footer keeps saying how many rows there are. The Columns button hides one column, which is the whole of what a chooser would do." />
 
                     <ui:DataGrid Name="SampleGrid" Height="342" SelectionMode="Multiple">
                         <ui:DataGrid.Toolbar>
                             <DockPanel LastChildFill="False">
-                                <ui:SearchBox DockPanel.Dock="Left"
+                                <ui:SearchBox Name="GridFilter"
+                                              DockPanel.Dock="Left"
                                               Width="220"
-                                              PlaceholderText="Filter rows" />
+                                              PlaceholderText="Filter rows"
+                                              TextChanged="OnFilterGrid" />
 
                                 <Button DockPanel.Dock="Right" Classes="primary" Content="New row" />
 

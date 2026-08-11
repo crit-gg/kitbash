@@ -11,7 +11,7 @@
     <ui:DataGrid Classes="plain"
                  MaxHeight="220"
                  ItemsSource="{Binding Grid}"
-                 SelectedItem="{Binding Selected, Mode=TwoWay}">
+                 SelectedValue="{Binding Selected, Mode=TwoWay}">
         <ui:DataGrid.Toolbar>
             <StackPanel Orientation="Horizontal" Spacing="7">
                 <Button Theme="{StaticResource CompactButton}"

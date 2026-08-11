@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kitbash.Ui.Controls;
@@ -30,13 +31,16 @@ public sealed class DataGridEditPopupTests
 
             var box = Assert.Single(cell.GetVisualDescendants().OfType<ComboBox>());
 
-            // What a click on the chevron does. The list is its own window, so the cell is
-            // no longer holding the keyboard focus.
+            // What a click on the chevron does. The list lives in a popup, so the focus
+            // leaves the cell's visual tree while staying under it logically.
             box.IsDropDownOpen = true;
             Dispatcher.UIThread.RunJobs();
 
-            // Real focus, moved off the cell the way opening the list does.
-            elsewhere.Focus();
+            var row = box.GetLogicalDescendants().OfType<ListBoxItem>().First();
+
+            Assert.DoesNotContain(row, cell.GetVisualDescendants());
+
+            row.Focus();
             Dispatcher.UIThread.RunJobs();
 
             Assert.True(cell.IsEditing);

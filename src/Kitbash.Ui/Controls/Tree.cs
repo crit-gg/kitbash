@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
@@ -11,6 +12,14 @@ namespace Kitbash.Ui.Controls;
 /// </summary>
 public class Tree : ListBox
 {
+    static Tree()
+    {
+        // A tree's rows are wrappers, so SelectedItem is a TreeRow and binding it to a
+        // typed property never lands. SelectedValue is Avalonia's own answer and it
+        // unwraps both ways once it is told where the item is.
+        SelectedValueBindingProperty.OverrideDefaultValue<Tree>(new Binding(nameof(TreeRow.Item)));
+    }
+
     public Tree()
     {
         AddHandler(DoubleTappedEvent, OnDoubleTapped);

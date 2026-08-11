@@ -64,6 +64,14 @@ public class GridColumn : AvaloniaObject
     public static readonly StyledProperty<GridSortDirection> SortDirectionProperty =
         AvaloniaProperty.Register<GridColumn, GridSortDirection>(nameof(SortDirection));
 
+    /// <summary>
+    /// Where this column comes in a sort of more than one, counting from one. Zero when the
+    /// sort is on this column alone, so a header only draws an ordinal when there is a
+    /// second column to tell it from.
+    /// </summary>
+    public static readonly StyledProperty<int> SortOrderProperty =
+        AvaloniaProperty.Register<GridColumn, int>(nameof(SortOrder));
+
     static GridColumn()
     {
         WidthProperty.Changed.AddClassHandler<GridColumn>((column, _) => column.RaiseLayoutChanged());
@@ -147,14 +155,35 @@ public class GridColumn : AvaloniaObject
         set => SetValue(SortDirectionProperty, value);
     }
 
+    /// <inheritdoc cref="SortOrderProperty"/>
+    public int SortOrder
+    {
+        get => GetValue(SortOrderProperty);
+        set => SetValue(SortOrderProperty, value);
+    }
+
     /// <summary>
     /// What to sort a row by. Null means the column cannot be sorted, so its header does
     /// nothing when it is clicked and draws no indicator.
     /// </summary>
     public Func<object, object?>? SortKey { get; set; }
 
+    /// <summary>
+    /// How two of this column's keys order, or null for the built in one, which compares
+    /// numbers as numbers and text the way a person reads it.
+    /// </summary>
+    public IComparer<object?>? Comparer { get; set; }
+
     /// <summary>Whether a header click does anything.</summary>
     public bool CanSort => SortKey is not null;
+
+    /// <summary>Up, then down, then back to the order the source came in.</summary>
+    internal GridSortDirection NextSort() => SortDirection switch
+    {
+        GridSortDirection.Ascending => GridSortDirection.Descending,
+        GridSortDirection.Descending => GridSortDirection.None,
+        _ => GridSortDirection.Ascending,
+    };
 
     /// <summary>How wide the column came out. Written by <see cref="GridColumns"/> alone.</summary>
     public double ActualWidth { get; internal set; }

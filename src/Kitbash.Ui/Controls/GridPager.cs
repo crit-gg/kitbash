@@ -116,7 +116,18 @@ public class GridPager : TemplatedControl
             if (following is not null)
             {
                 following.Rebuilt += OnRebuilt;
-                following.PageSize = PageSize;
+
+                // A page size already on the rows was meant by whoever set it, so the
+                // pager adopts it rather than writing its own default over the top. Rows
+                // that have never been paged take the pager's.
+                if (following.PageSize > 0)
+                {
+                    SetCurrentValue(PageSizeProperty, following.PageSize);
+                }
+                else
+                {
+                    following.PageSize = PageSize;
+                }
             }
 
             Update();

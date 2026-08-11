@@ -150,6 +150,25 @@ public partial class GridsPage : GalleryPage
         button.Content = paging ? "Turn paging on" : "Turn paging off";
     }
 
+    /// <summary>
+    /// The filter sits on the rows rather than on the source, so the footer still says how
+    /// many rows there are as well as how many are drawn.
+    /// </summary>
+    private void OnFilterGrid(object? sender, TextChangedEventArgs e)
+    {
+        if (SampleGrid.Rows is not { } rows)
+        {
+            return;
+        }
+
+        var text = GridFilter.Text;
+
+        rows.Filter = string.IsNullOrWhiteSpace(text)
+            ? null
+            : item => ((Entry)item).Id.Contains(text, StringComparison.OrdinalIgnoreCase)
+                || ((Entry)item).Name.Contains(text, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>Hides a column, which is the whole of what a column chooser would do.</summary>
     private void OnHideColumn(object? sender, RoutedEventArgs e)
     {

@@ -25,7 +25,6 @@ public abstract partial class SettingsListEditor<TRow> : ObservableObject, ISett
 
     protected SettingsListEditor()
     {
-        // The grid takes a snapshot, so every change here has to say so.
         Grid = new GridRows(Rows);
 
         Rows.CollectionChanged += OnRowsChanged;
@@ -90,11 +89,9 @@ public abstract partial class SettingsListEditor<TRow> : ObservableObject, ISett
         Announce();
     }
 
-    /// <summary>Rebuilds the grid and tells the page. Call after a row is added or removed.</summary>
+    /// <summary>Tells the page a row has been added or taken off. The grid hears for itself.</summary>
     protected void Announce()
     {
-        Grid.Refresh();
-
         OnPropertyChanged(nameof(IsEmpty));
         Notify();
     }

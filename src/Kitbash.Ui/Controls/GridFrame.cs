@@ -11,6 +11,7 @@ namespace Kitbash.Ui.Controls;
 internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
 {
     private DataGridHeader? header;
+    private ScrollViewer? body;
     private IDisposable? watchingViewport;
     private IDisposable? watchingOffset;
     private double viewport;
@@ -24,6 +25,7 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
         watchingOffset = null;
 
         header = next;
+        body = scroller;
 
         if (header is not null)
         {
@@ -44,8 +46,27 @@ internal sealed class GridFrame(ItemsControl owner, GridColumns columns)
             .Subscribe(new AnonymousObserver<Vector>(offset => Sync(offset.X)));
     }
 
+    /// <summary>Where the body is scrolled to. Nothing at all before a template has run.</summary>
+    public Vector Offset
+    {
+        get => body?.Offset ?? default;
+        set
+        {
+            if (body is { } scroller)
+            {
+                scroller.Offset = value;
+            }
+        }
+    }
+
     /// <summary>Works the widths out again at the width already known.</summary>
     public void Resolve() => Resolve(viewport);
+
+    /// <summary>
+    /// Puts the body back to the first row, keeping the sideways offset. For a page turn,
+    /// where staying halfway down means landing in the middle of the new page.
+    /// </summary>
+    public void ToTop() => Offset = Offset.WithY(0);
 
     /// <summary>The set of columns has changed, so the header and every row are made again.</summary>
     public void Rebuild()

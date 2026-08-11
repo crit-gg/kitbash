@@ -13,6 +13,7 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
     private readonly Func<object, IEnumerable?> children;
 
     private IEnumerable roots;
+    private IComparer<object>? order;
 
     /// <param name="roots">The items at the top of the tree.</param>
     /// <param name="children">
@@ -44,6 +45,17 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
 
     /// <summary>Builds the whole thing again from the roots it already has.</summary>
     public void Reset() => Reset(roots);
+
+    /// <summary>
+    /// Orders siblings under every parent, or drops the ordering when handed null. It
+    /// holds for a branch opened later too, since expanding builds its rows the same way.
+    /// The tree is rebuilt, so everything closes.
+    /// </summary>
+    public void Sort(IComparer<object>? order)
+    {
+        this.order = order;
+        Reset();
+    }
 
     /// <summary>Opens a row, putting its children in the list under it.</summary>
     public void Expand(TreeRow row)
@@ -128,13 +140,15 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
 
     private IEnumerable<TreeRow> Build(IEnumerable items, int level)
     {
-        foreach (var item in items)
-        {
-            if (item is null)
-            {
-                continue;
-            }
+        var kept = items.Cast<object?>().Where(item => item is not null).Select(item => item!);
 
+        if (order is { } sorting)
+        {
+            kept = kept.OrderBy(item => item, sorting);
+        }
+
+        foreach (var item in kept)
+        {
             yield return new TreeRow(item, level, Any(children(item)));
         }
     }

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 
@@ -11,7 +12,7 @@ namespace Kitbash.Ui.Controls;
 /// The flat grid. A list underneath, so it virtualises and selects without any of that
 /// being written again, with a column layout over the top.
 /// </summary>
-public class DataGrid : ListBox
+public class DataGrid : ListBox, IGridSorting
 {
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
@@ -38,10 +39,26 @@ public class DataGrid : ListBox
     private GridRows? rows;
     private DataGridCell? editing;
     private object? edited;
+    private bool dropping;
+
+    /// <summary>What was picked and where the body sat, held across one rebuild.</summary>
+    private List<GridRow>? held;
+    private Vector resting;
+
+    /// <summary>Which page was last drawn, so a turn can be told from any other rebuild.</summary>
+    private int page = 1;
 
     private string selectionText = string.Empty;
     private string shownText = string.Empty;
     private string sortText = string.Empty;
+
+    static DataGrid()
+    {
+        // A grid's rows are wrappers, so SelectedItem is a GridRow and binding it to a
+        // typed property never lands. SelectedValue is Avalonia's own answer and it
+        // unwraps both ways once it is told where the item is.
+        SelectedValueBindingProperty.OverrideDefaultValue<DataGrid>(new Binding(nameof(GridRow.Item)));
+    }
 
     public DataGrid()
     {
@@ -51,7 +68,12 @@ public class DataGrid : ListBox
         columns.CollectionChanged += (_, _) => frame.Rebuild();
 
         AddHandler(DoubleTappedEvent, OnDoubleTapped);
-        SelectionChanged += (_, _) => UpdateCounts();
+
+        SelectionChanged += (_, _) =>
+        {
+            DropHeadings();
+            UpdateCounts();
+        };
     }
 
     /// <summary>The columns, shared with the header and every row.</summary>
@@ -114,6 +136,8 @@ public class DataGrid : ListBox
     /// Sorts on a column, cycling up, then down, then back to the order the source came
     /// in, so a person can always get back to where they started.
     /// </summary>
+    void IGridSorting.SortBy(GridColumn column) => SortBy(column);
+
     internal void SortBy(GridColumn column)
     {
         if (rows is null || !column.CanSort)
@@ -121,17 +145,41 @@ public class DataGrid : ListBox
             return;
         }
 
-        var next = ReferenceEquals(rows.SortColumn, column)
-            ? rows.SortDirection switch
-            {
-                GridSortDirection.Ascending => GridSortDirection.Descending,
-                GridSortDirection.Descending => GridSortDirection.None,
-                _ => GridSortDirection.Ascending,
-            }
-            : GridSortDirection.Ascending;
-
         CommitEdit();
-        rows.Sort(column, next);
+        rows.Sort(column, column.NextSort());
+    }
+
+    /// <summary>
+    /// Arrowing past a heading rather than onto one. Taken only when the next row is a
+    /// heading and nothing is held down, so extending a selection is still the list's own.
+    /// </summary>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        var by = e.Key switch
+        {
+            Key.Down => 1,
+            Key.Up => -1,
+            _ => 0,
+        };
+
+        if (!e.Handled && by != 0 && e.KeyModifiers == KeyModifiers.None && IsHeading(SelectedIndex + by))
+        {
+            var next = SelectedIndex + by;
+
+            while (IsHeading(next))
+            {
+                next += by;
+            }
+
+            if (next >= 0 && next < ItemsView.Count)
+            {
+                SelectedIndex = next;
+                e.Handled = true;
+                return;
+            }
+        }
+
+        base.OnKeyDown(e);
     }
 
     protected override bool NeedsContainerOverride(object? item, int index, out object? recycleKey)
@@ -183,8 +231,19 @@ public class DataGrid : ListBox
 
         if (change.Property == ItemsSourceProperty)
         {
+            // A grid draws GridRows. Anything else misses the cast in Follow and fills
+            // every cell with nothing, so a plain list becomes a grid of blank rows with
+            // no error anywhere. SetCurrentValue rather than an assignment, so wrapping
+            // does not overwrite a binding the view wrote.
+            if (change.GetNewValue<System.Collections.IEnumerable?>() is { } given and not GridRows)
+            {
+                SetCurrentValue(ItemsSourceProperty, new GridRows(given));
+                return;
+            }
+
             if (rows is not null)
             {
+                rows.Rebuilding -= OnRowsRebuilding;
                 rows.Rebuilt -= OnRowsRebuilt;
             }
 
@@ -192,6 +251,7 @@ public class DataGrid : ListBox
 
             if (rows is not null)
             {
+                rows.Rebuilding += OnRowsRebuilding;
                 rows.Rebuilt += OnRowsRebuilt;
             }
 
@@ -202,6 +262,14 @@ public class DataGrid : ListBox
 
     private void Follow(Control container, GridRow? row)
     {
+        // Before the container is told anything, since it is about to stand for another
+        // row. An editor left open would be showing one row's field over another row's
+        // data, and the grid would still be holding a cell that has moved on.
+        if (editing is { } open && ReferenceEquals(open.FindAncestorOfType<DataGridRow>(), container))
+        {
+            CommitEdit();
+        }
+
         switch (container)
         {
             case DataGridRow data:
@@ -252,10 +320,101 @@ public class DataGrid : ListBox
         }
     }
 
+    private void OnRowsRebuilding(object? sender, EventArgs e)
+    {
+        held = SelectedItems is { Count: > 0 } picked ? [.. picked.OfType<GridRow>()] : null;
+        resting = frame.Offset;
+    }
+
     private void OnRowsRebuilt(object? sender, EventArgs e)
     {
-        CancelEdit();
+        // An edit whose row has left the list has nowhere to land. One still on the page
+        // carries on, so an item arriving from the source does not end it.
+        if (editing?.FindAncestorOfType<DataGridRow>()?.Row is not { } open || rows?.Contains(open) != true)
+        {
+            CancelEdit();
+        }
+
+        Restore();
+
+        // A page that turns starts at its first row. Staying where the last page was
+        // scrolled to lands a person in the middle of a page they have not seen.
+        if (rows is { } current && current.Page != page)
+        {
+            page = current.Page;
+            frame.ToTop();
+        }
+        else
+        {
+            frame.Offset = resting;
+        }
+
         UpdateCounts();
+    }
+
+    /// <summary>
+    /// Picks again whatever was picked before the rebuild and is still in the list. A sort
+    /// reorders every row it keeps, so it is drawn again from scratch, and the selection has
+    /// to be put back by row rather than by where the row was.
+    /// </summary>
+    private void Restore()
+    {
+        var picked = held;
+
+        held = null;
+
+        if (picked is not { Count: > 0 } || SelectedItems is not { } current)
+        {
+            return;
+        }
+
+        var live = new HashSet<object>(ItemsView.Where(item => item is not null)!);
+        var wanted = picked.Where(live.Contains).ToList();
+
+        if (wanted.Count == current.Count && wanted.All(current.Contains))
+        {
+            return;
+        }
+
+        current.Clear();
+
+        foreach (var row in wanted)
+        {
+            current.Add(row);
+        }
+    }
+
+    private bool IsHeading(int index) =>
+        index >= 0 && index < ItemsView.Count && ItemsView[index] is GridRow { IsGroup: true };
+
+    /// <summary>
+    /// Takes any heading back out of the selection. Select all goes straight to the
+    /// selection model rather than through the arrow keys, so this is the one place that
+    /// catches every way a heading can end up picked.
+    /// </summary>
+    private void DropHeadings()
+    {
+        if (dropping || SelectedItems is not { Count: > 0 } picked)
+        {
+            return;
+        }
+
+        dropping = true;
+
+        try
+        {
+            for (var index = picked.Count - 1; index >= 0; index--)
+            {
+                if (picked[index] is GridRow { IsGroup: true })
+                {
+                    picked.RemoveAt(index);
+                }
+            }
+        }
+        finally
+        {
+            dropping = false;
+        }
     }
 
     private void UpdateCounts()
