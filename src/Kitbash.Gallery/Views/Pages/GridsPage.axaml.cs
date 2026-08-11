@@ -203,6 +203,24 @@ public partial class GridsPage : GalleryPage
                 || ((Entry)item).Name.Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// A tree filter keeps the way to a match as well as the match, so a branch that does
+    /// not match itself still stands when something under it does.
+    /// </summary>
+    private void OnFilterTree(object? sender, TextChangedEventArgs e)
+    {
+        if (SampleTreeGrid.ItemsSource is not TreeRows rows)
+        {
+            return;
+        }
+
+        var text = TreeFilter.Text;
+
+        rows.Filter(string.IsNullOrWhiteSpace(text)
+            ? null
+            : item => ((Aggregate)item).Name.Contains(text, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>Takes every edit as saved, which is what clears the amber bars.</summary>
     private void OnSaveEdits(object? sender, RoutedEventArgs e)
     {

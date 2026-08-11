@@ -14,6 +14,7 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
 
     private IEnumerable roots;
     private IComparer<object>? order;
+    private Func<object, bool>? match;
 
     /// <param name="roots">The items at the top of the tree.</param>
     /// <param name="children">
@@ -54,6 +55,17 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
     public void Sort(IComparer<object>? order)
     {
         this.order = order;
+        Reset();
+    }
+
+    /// <summary>
+    /// Which items are rows at all, or null for every one of them. A row survives when it
+    /// matches or when anything under it does, so nothing is on screen that is not a match
+    /// or the way to one. The tree is rebuilt, so everything closes.
+    /// </summary>
+    public void Filter(Func<object, bool>? match)
+    {
+        this.match = match;
         Reset();
     }
 
@@ -147,9 +159,34 @@ public sealed class TreeRows : IReadOnlyList<TreeRow>, IList, INotifyCollectionC
             kept = kept.OrderBy(item => item, sorting);
         }
 
+        if (match is null)
+        {
+            foreach (var item in kept)
+            {
+                yield return new TreeRow(item, level, Any(children(item)));
+            }
+
+            yield break;
+        }
+
+        // A filter costs the whole tree, since whether a branch survives cannot be known
+        // without walking everything under it. Without one only what is open is ever built.
         foreach (var item in kept)
         {
-            yield return new TreeRow(item, level, Any(children(item)));
+            var under = Build(children(item) ?? Array.Empty<object>(), level + 1).ToList();
+
+            if (under.Count == 0 && !match(item))
+            {
+                continue;
+            }
+
+            // Open, since a branch kept for something under it hides that thing when closed.
+            yield return new TreeRow(item, level, under.Count > 0) { IsExpanded = under.Count > 0 };
+
+            foreach (var row in under)
+            {
+                yield return row;
+            }
         }
     }
 

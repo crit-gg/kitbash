@@ -417,6 +417,10 @@ of it.** Read that before changing anything below the look. What it settled, in 
   takes that tooltip away, since the cell's own is the one that has to be read. A column
   title does not trim: it is measured with infinite width, and fixing that moves the sort
   caret to the cell's right edge.
+- **A tree filters by keeping the way to a match.** `TreeRows.Filter`: a row survives when it
+  matches or when anything under it does, a branch kept for a descendant opens, and a branch
+  that matches on its own name keeps nothing under it. It walks the whole tree, where an
+  unfiltered one only builds what is open.
 - **Everything a grid says out loud is a name or a help text.** Avalonia ships no
   `IGridProvider` or `IGridItemProvider`, so indices and counts have nowhere to be published.
   `GridAutomationPeers.cs` holds the five peers, and a cell reads `Content` rather than

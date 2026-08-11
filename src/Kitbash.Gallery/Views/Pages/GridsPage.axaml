@@ -188,6 +188,15 @@
                     <TextBlock Classes="note"
                                Text="One column model, laid out by both grids. Only the leading column indents, and a branch row carries what its children add up to, so a closed branch still answers the question they would." />
 
+                    <TextBlock Classes="note"
+                               Text="Type in the box to filter the tree. A branch survives when it matches or when anything under it does, and one kept for something under it opens, so nothing on screen is other than a match or the way to one. A branch that matches on its own name keeps nothing under it and draws no caret." />
+
+                    <ui:SearchBox Name="TreeFilter"
+                                  Width="220"
+                                  HorizontalAlignment="Left"
+                                  PlaceholderText="Filter the tree"
+                                  TextChanged="OnFilterTree" />
+
                     <ui:TreeDataGrid Name="SampleTreeGrid" Height="250">
                         <ui:TreeDataGrid.Columns>
                             <ui:GridColumn Width="34" MinWidth="34" CanResize="False" Alignment="Center">

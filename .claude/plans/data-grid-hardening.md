@@ -844,9 +844,21 @@ doing nothing. The method still tells the page.
 **The gallery's filter box was wired up rather than added.** It was already on the page
 with a placeholder reading "Filter rows" and no handler at all.
 
-**Filtering the tree grid is not built.** Everything else in phase 2 is `GridRows` alone.
-A tree filter has to decide what happens to a branch that does not match but holds a child
-that does, and that is a behaviour to design rather than a translation of this one.
+**Filtering the tree grid was left out of phase 2 and built later.** `TreeRows.Filter` takes
+the same predicate `GridRows.Filter` does. **The rule is that a row survives when it matches
+or when anything under it does**, so nothing on screen is other than a match or the way to
+one, and a branch kept for something under it opens, since a closed one hides the match. **A
+branch that matches on its own name keeps nothing under it and draws no caret**, because a
+child that does not match is not a match. That is the file explorer rule rather than the file
+manager one, and it is the only one that can be stated in a sentence.
+
+**A filter costs the whole tree.** Whether a branch survives cannot be known without walking
+everything under it, where an unfiltered tree only ever builds what is open. Nothing here
+caches that, so a filter over a very deep tree is a full walk on every keystroke.
+
+**A filter change closes everything**, the way `Sort` already did, and everything a filter
+keeps is open by construction. The tree grid has no no matches state, so a filter that keeps
+nothing draws an empty body.
 
 **Two things phase 2 does not answer.** A selection does not survive a page turn, because
 `SelectedItems` can only hold rows that are in the list and the other pages' rows are not.
