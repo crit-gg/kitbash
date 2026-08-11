@@ -339,12 +339,16 @@
         <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="ClipToBounds" Value="True" />
 
         <Setter Property="Template">
             <ControlTemplate>
+                <!-- The clip is on the content and not on the cell. A mark sits on the
+                     cell's own edge, and a clip there shaves it wherever a column lands on
+                     a fraction of a pixel. -->
                 <Panel>
-                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <Border Background="Transparent"
+                            Padding="{TemplateBinding Padding}"
+                            ClipToBounds="True">
                         <ContentPresenter Name="PART_ContentPresenter"
                                           Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
@@ -353,11 +357,14 @@
                     </Border>
 
                     <!-- Over the content rather than around it, so a mark arriving moves
-                         nothing. Square, which is the one square cornered thing here. -->
+                         nothing. Square, which is the one square cornered thing here, and
+                         aliased, so a one pixel edge stays one pixel at any display scale
+                         instead of blurring across two and reading as a gap. -->
                     <Border Name="PART_Mark"
                             IsHitTestVisible="False"
                             CornerRadius="0"
-                            BorderThickness="0" />
+                            BorderThickness="0"
+                            RenderOptions.EdgeMode="Aliased" />
                 </Panel>
             </ControlTemplate>
         </Setter>
@@ -394,7 +401,9 @@
         <Setter Property="Template">
             <ControlTemplate>
                 <Panel>
-                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                    <Border Background="Transparent"
+                            Padding="{TemplateBinding Padding}"
+                            ClipToBounds="True">
                         <DockPanel LastChildFill="True" Margin="{TemplateBinding Indent}">
                             <Border Name="PART_Caret"
                                     DockPanel.Dock="Left"
@@ -421,7 +430,8 @@
                     <Border Name="PART_Mark"
                             IsHitTestVisible="False"
                             CornerRadius="0"
-                            BorderThickness="0" />
+                            BorderThickness="0"
+                            RenderOptions.EdgeMode="Aliased" />
                 </Panel>
             </ControlTemplate>
         </Setter>
