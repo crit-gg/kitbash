@@ -531,6 +531,15 @@ content draws nothing at all. Measured: content is 150px wide whether or not the
 overflows, because Avalonia overlays the bar rather than giving it a column, so a panel never
 shifts by a lane's width when a list grows past its box.
 
+**A grid is the one surface that takes the lane off its own width**, and it has to.
+Everywhere else the content is as wide as it likes and an overlaid bar sits over the end of
+it. A grid's star columns are sized to fill the viewport exactly, so the lane lands on the
+last column and covers its values, its edge and the current cell mark. `GridFrame.Resolve`
+subtracts the vertical bar's width whenever it is up, which is why it watches the extent as
+well as the viewport: the viewport does not move when an overlaid bar appears. The header
+strip still spans the full width, so a scrolling grid shows a lane's worth of header beside
+the last column, which is what a grid is supposed to look like.
+
 Thumbs take `RadiusControl` like every other control and clamp to half their own width.
 
 ### Docking

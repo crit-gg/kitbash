@@ -923,6 +923,15 @@ long values is all it does, and the mark draws aliased so its edge stays one pix
 display scale. A render test walks every cell, reads the pixels along all four edges and
 also asserts the cell's own boundary carries no mark.
 
+**The vertical scroll bar was sitting on the last column.** The library overlays a scroll
+bar on purpose, so a panel never shifts by a lane's width when its list grows. A grid is
+where that breaks, because its star columns are sized to fill the viewport exactly, so the
+lane and its thumb land on the last column and cover its values as well as the mark.
+`GridFrame` now takes the bar's width off the width it resolves columns against, and it
+watches the extent as well as the viewport, since an overlaid bar appearing does not move
+the viewport. **The horizontal bar has the same shape of problem** against the last row and
+is not fixed, since row height is not something the column model can resolve.
+
 **Two things drawn that the plan listed under gaps.** The editable cell hint, in its two
 steps, and the row giving up its focus line while one of its cells holds the mark, which is
 the `:cell` state on the row.

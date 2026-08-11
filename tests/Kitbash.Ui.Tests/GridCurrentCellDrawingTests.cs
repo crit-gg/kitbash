@@ -89,6 +89,44 @@ public sealed class GridCurrentCellDrawingTests
         }
     }
 
+    /// <summary>
+    /// The last column's mark is drawn when a vertical scroll bar is up. The bar overlays
+    /// the content rather than taking a column of its own, so the lane lands on the last
+    /// column unless the columns are resolved into what is left.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheLastColumnKeepsItsMarkBehindAScrollBar()
+    {
+        var grid = Grid(out var window, rows: 200);
+
+        try
+        {
+            grid.SelectedIndex = 0;
+            Dispatcher.UIThread.RunJobs();
+
+            Key(grid, Avalonia.Input.Key.End);
+
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+
+            var cell = Assert.Single(Cells(grid), cell => cell.IsCurrent);
+
+            Assert.Equal("KIND", cell.Column?.Header);
+
+            var box = Box(cell, window);
+            var inside = new PixelRect(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2);
+            var frame = Pixels(window);
+
+            Assert.True(
+                Runs(frame, inside, Edge.Right),
+                $"the right edge is drawn in {box}. {Scan(frame, inside)}");
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     private static void Key(Control target, Avalonia.Input.Key key)
     {
         target.RaiseEvent(new Avalonia.Input.KeyEventArgs
@@ -210,7 +248,7 @@ public sealed class GridCurrentCellDrawingTests
     private static IEnumerable<DataGridCell> Cells(DataGrid grid) =>
         grid.GetVisualDescendants().OfType<DataGridCell>().Where(cell => cell.IsVisible);
 
-    private static DataGrid Grid(out Window window)
+    private static DataGrid Grid(out Window window, int rows = 3)
     {
         var grid = new DataGrid();
 
@@ -218,12 +256,8 @@ public sealed class GridCurrentCellDrawingTests
         grid.Columns.Add(Column("NAME"));
         grid.Columns.Add(Column("KIND"));
 
-        grid.ItemsSource = new GridRows(new[]
-        {
-            new Entry("one"),
-            new Entry("two"),
-            new Entry("three"),
-        });
+        grid.ItemsSource = new GridRows(
+            Enumerable.Range(0, rows).Select(number => new Entry($"row {number}")).ToList());
 
         window = new Window { Content = grid, Width = 520, Height = 320 };
         window.Show();
