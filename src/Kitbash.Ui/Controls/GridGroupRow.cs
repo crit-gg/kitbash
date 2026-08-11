@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -70,6 +71,8 @@ public class GridGroupRow : ListBoxItem
         Count = row?.Count ?? 0;
         IsExpanded = row?.IsExpanded ?? true;
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new GridGroupRowAutomationPeer(this);
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

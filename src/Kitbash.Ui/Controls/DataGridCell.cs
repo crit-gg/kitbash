@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
@@ -110,6 +111,8 @@ public class DataGridCell : ContentControl
 
     /// <summary>Whether this cell could be edited at all.</summary>
     public bool CanEdit => Column?.EditTemplate is not null;
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new DataGridCellAutomationPeer(this);
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

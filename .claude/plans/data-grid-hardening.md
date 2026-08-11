@@ -323,7 +323,7 @@ Every cell template writes its own trimming. A header cell has none and simply c
 glyph, since the theme only sets `ClipToBounds`. Truncated text has no tooltip unless a
 caller remembers `ui:TextTip`.
 
-### No accessibility
+### No accessibility. Built in phase 7, apart from what the platform lacks
 
 There are no automation peers, so a screen reader hears a list box full of content
 controls. The pattern asks for a grid, rows, column headers and cells, with the sort
@@ -719,9 +719,10 @@ and the footer's spelled out sort, the pinned seam, and the chooser.
 library already has. It sat here because the three steps of chrome it uses are row hover,
 cell hover and editing, and the first two only existed after phase 3.
 
-**7. The rest. Nearly done.** The validation surface, the three empty states, trimming and its
-tooltip, and the selection action bar are built. **The automation peers are not, and a column
-title does not trim.** Brings no switch at all, which is the point of that group.
+**7. The rest. Done, apart from one layout.** The validation surface, the three empty states,
+trimming and its tooltip, the selection action bar and the automation peers are all built.
+**A column title does not trim**, because it is measured with infinite width, and fixing that
+moves the sort caret. Brings no switch at all, which is the point of that group.
 
 **No phase adds a switch that is not in the table under What is optional.** If a feature
 turns out to need one that is not there, that is a sign the rule was applied wrongly and
@@ -1056,6 +1057,36 @@ grid.
 **`TextTip` reads once when it is switched on** as well as on every layout pass. A label that
 is already laid out may not be in another pass for a while, and until this it carried no
 tooltip until something else moved.
+
+**The automation peers are built, and the grid pattern itself cannot be.** Avalonia 12.1.1
+ships `IInvokeProvider`, `IToggleProvider`, `IValueProvider`, `IRangeValueProvider`,
+`ISelectionProvider`, `ISelectionItemProvider`, `IExpandCollapseProvider`, `IScrollProvider`
+and `IRootProvider`. **There is no `IGridProvider`, no `IGridItemProvider` and no
+`ITableProvider`**, so the row and column indices, the row and column counts and the header
+set have nowhere to be published, whatever the pattern asks for. Everything the peers say is
+said in a name or a help text instead, which every reader speaks.
+
+**Five peers, in `GridAutomationPeers.cs`.** The grid says it is a `DataGrid` and carries what
+is shown, the sort and what is blocking a save. A row is a `DataItem` named as its cells. A
+cell names its column before its value, so moving sideways says where the keyboard landed, and
+its error is its help text, since the message is never drawn in the cell. A title is a
+`HeaderItem` carrying which way it sorts and which key it is. A group heading is a `Group` with
+its count.
+
+**A cell reads `Content`, not `DataContext`.** A cell is handed the row's item and the row
+holds the wrapper, so the `DataContext` is a `GridRow` that no column reader takes. The column's
+own `Value` or `SortKey` is asked first and a text walk is the fallback, since a template can
+draw a pill or a swatch that no walk finds words for.
+
+**A cell is `Custom` with a localised type of "cell".** There is no cell member on
+`AutomationControlType`, and `DataItem` is the row.
+
+**Sorting announces through the footer.** The footer's sort line carries
+`AutomationProperties.LiveSetting="Polite"`, so changing the sort speaks. The caret and the
+ordinal are the only other word on it and neither is reachable.
+
+**The tree grid's rows share the flat grid's row peer**, since a `TreeDataGridRow` lays out the
+same cells. The hierarchy level is not published, because there is nothing to publish it on.
 
 **A column title still does not trim, and the reason is a layout one.** The title sits in a
 horizontal `StackPanel` beside the sort caret and the ordinal, which hands it infinite width,

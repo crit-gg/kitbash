@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Data;
@@ -451,6 +452,8 @@ public class DataGrid : ListBox, IGridHost
         base.ClearContainerForItemOverride(container);
         Follow(container, null);
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new DataGridAutomationPeer(this);
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

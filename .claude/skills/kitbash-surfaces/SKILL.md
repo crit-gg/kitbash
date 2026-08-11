@@ -417,6 +417,10 @@ of it.** Read that before changing anything below the look. What it settled, in 
   takes that tooltip away, since the cell's own is the one that has to be read. A column
   title does not trim: it is measured with infinite width, and fixing that moves the sort
   caret to the cell's right edge.
+- **Everything a grid says out loud is a name or a help text.** Avalonia ships no
+  `IGridProvider` or `IGridItemProvider`, so indices and counts have nowhere to be published.
+  `GridAutomationPeers.cs` holds the five peers, and a cell reads `Content` rather than
+  `DataContext`, since the wrapper is the row's.
 
 **Do not base a grid theme on another grid's.** `TreeDataGridRow` is a `TreeItem` and
 `DataGridRow` is a `ListBoxItem`, so `BasedOn` between them is accepted and silently ignored,

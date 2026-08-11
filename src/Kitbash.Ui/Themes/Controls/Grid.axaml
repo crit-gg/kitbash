@@ -86,8 +86,12 @@
                                                Foreground="{DynamicResource InkMuted}"
                                                VerticalAlignment="Center" />
 
+                                    <!-- Polite, so a sort says what it did. The caret and the
+                                         ordinal are the only other word on it and neither is
+                                         reachable. -->
                                     <TextBlock DockPanel.Dock="Right"
                                                Text="{TemplateBinding SortText}"
+                                               AutomationProperties.LiveSetting="Polite"
                                                FontFamily="{DynamicResource FontFamilyMono}"
                                                FontSize="{DynamicResource FontSizeSmall}"
                                                Foreground="{DynamicResource InkMuted}"

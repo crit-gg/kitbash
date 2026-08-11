@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
@@ -74,6 +75,8 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
     void IGridRowLayout.SetModified(bool modified) => PseudoClasses.Set(":modified", modified);
 
     object? IGridRowLayout.Held => held;
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new DataGridRowAutomationPeer(this);
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

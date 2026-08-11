@@ -1,3 +1,4 @@
+using Avalonia.Automation.Peers;
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -90,6 +91,8 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
     void IGridRowLayout.SetModified(bool modified) => PseudoClasses.Set(":modified", modified);
 
     object? IGridRowLayout.Held => row?.Item;
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new DataGridRowAutomationPeer(this);
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {

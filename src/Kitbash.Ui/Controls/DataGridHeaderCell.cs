@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Reactive;
@@ -50,6 +51,8 @@ public class DataGridHeaderCell : ContentControl
         get => GetValue(HasOrdinalProperty);
         set => SetValue(HasOrdinalProperty, value);
     }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new DataGridHeaderCellAutomationPeer(this);
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
