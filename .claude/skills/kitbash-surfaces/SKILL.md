@@ -417,6 +417,9 @@ of it.** Read that before changing anything below the look. What it settled, in 
   live block is a different number, so the footer keeps saying what the block holds.
 - **Escape drops the selection only while the action bar is up.** A grid inside a dialog has
   to leave Escape to the dialog.
+- **A wrong cell says why in a popup under it, and only while the keyboard is on it.** Every
+  other wrong cell stays quiet. `GridBody.Marked` and `MarkMoved` are what the popup follows,
+  and it has to close before it retargets, since an open Avalonia `Popup` does not move.
 - **Text in a cell trims and puts what was trimmed in a tooltip**, and an error on the cell
   takes that tooltip away, since the cell's own is the one that has to be read. A column
   title does not trim: it is measured with infinite width, and fixing that moves the sort

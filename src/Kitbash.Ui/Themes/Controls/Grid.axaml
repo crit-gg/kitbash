@@ -201,6 +201,28 @@
                                                      Count="{TemplateBinding PickedText}"
                                                      Content="{TemplateBinding SelectionActions}"
                                                      IsVisible="False" />
+
+                                <!-- What is wrong with the cell the keyboard is in. Never
+                                     inline, since a row is one line and a message is a
+                                     sentence, and never light dismissed, since it follows
+                                     the keyboard rather than answering a click. -->
+                                <Popup Name="PART_ErrorTip"
+                                       Placement="BottomEdgeAlignedLeft"
+                                       VerticalOffset="2"
+                                       IsLightDismissEnabled="False">
+                                    <Border Background="{DynamicResource ErrorSurface}"
+                                            BorderBrush="{DynamicResource ErrorLine}"
+                                            BorderThickness="1"
+                                            CornerRadius="{DynamicResource RadiusControl}"
+                                            Padding="9,5"
+                                            MaxWidth="320"
+                                            BoxShadow="{DynamicResource ShadowOverlay}">
+                                        <TextBlock Name="PART_ErrorTipText"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   Foreground="{DynamicResource ErrorInk}"
+                                                   TextWrapping="Wrap" />
+                                    </Border>
+                                </Popup>
                             </Panel>
                         </DockPanel>
                     </Border>

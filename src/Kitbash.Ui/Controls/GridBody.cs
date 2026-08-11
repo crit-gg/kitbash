@@ -42,6 +42,15 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     /// <summary>The cell being edited, or null when none is.</summary>
     public DataGridCell? EditingCell => editing;
 
+    /// <summary>
+    /// The realised cell wearing the current mark, or null when the keyboard is on a row
+    /// nothing has scrolled to.
+    /// </summary>
+    public DataGridCell? Marked { get; private set; }
+
+    /// <summary>Raised when the marked cell changes, so what follows it can be moved.</summary>
+    public event EventHandler? MarkMoved;
+
     /// <summary>Which column the keyboard is in. The row is whichever one is selected.</summary>
     public GridColumn? CurrentColumn => current;
 
@@ -509,6 +518,12 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
 
             row.SetCurrent(here);
             Mark(row);
+        }
+
+        if (!ReferenceEquals(Marked, wanted))
+        {
+            Marked = wanted;
+            MarkMoved?.Invoke(this, EventArgs.Empty);
         }
     }
 

@@ -19,6 +19,8 @@ public class DataGrid : ListBox, IGridHost
     private const string ScrollerPart = "PART_ScrollViewer";
     private const string SeamPart = "PART_Seam";
     private const string ActionBarPart = "PART_ActionBar";
+    private const string ErrorTipPart = "PART_ErrorTip";
+    private const string ErrorTipTextPart = "PART_ErrorTipText";
 
     /// <summary>Tells a recycled data row from a recycled group header.</summary>
     private static readonly object DataToken = new();
@@ -122,6 +124,8 @@ public class DataGrid : ListBox, IGridHost
 
     private Border? seam;
     private GridSelectionBar? bar;
+    private Popup? errorTip;
+    private TextBlock? errorTipText;
     private double pinnedWidth;
     private bool pinnedScrolled;
     private string selectionText = string.Empty;
@@ -151,7 +155,13 @@ public class DataGrid : ListBox, IGridHost
         };
 
         body.RangeChanged += (_, _) => UpdateCounts();
-        body.ErrorsChanged += (_, _) => UpdateCounts();
+        body.ErrorsChanged += (_, _) =>
+        {
+            UpdateCounts();
+            ShowError();
+        };
+
+        body.MarkMoved += (_, _) => ShowError();
 
         frame.Seam += (_, scrolled) => ShowSeam(scrolled);
 
@@ -490,12 +500,48 @@ public class DataGrid : ListBox, IGridHost
             bar.Dropped += OnSelectionDropped;
         }
 
+        errorTip = e.NameScope.Find<Popup>(ErrorTipPart);
+        errorTipText = e.NameScope.Find<TextBlock>(ErrorTipTextPart);
+
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
 
         ShowSeam(pinnedScrolled);
         UpdateCounts();
+        ShowError();
+    }
+
+    /// <summary>
+    /// Puts the message under the cell the keyboard is in. Every other wrong cell stays
+    /// quiet until it is reached, since a grid of them would be a wall of popups.
+    /// </summary>
+    private void ShowError()
+    {
+        if (errorTip is null)
+        {
+            return;
+        }
+
+        var wrong = body.Marked is { Error: { Length: > 0 } message, IsVisible: true } cell
+            ? (cell, message)
+            : ((DataGridCell, string)?)null;
+
+        if (wrong is not { } found)
+        {
+            errorTip.IsOpen = false;
+            return;
+        }
+
+        if (errorTipText is not null)
+        {
+            errorTipText.Text = found.Item2;
+        }
+
+        // Closed first, because a popup that is already open does not move to a new target.
+        errorTip.IsOpen = false;
+        errorTip.PlacementTarget = found.Item1;
+        errorTip.IsOpen = true;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

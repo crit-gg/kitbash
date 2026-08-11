@@ -997,10 +997,24 @@ outstanding work.
 `GridColumn.Field` is separate from `Key`, since one is a name for a layout and the other
 is a name in the data. A column with no `Field` never shows an error, which is the opt in.
 
-**The message is a tooltip rather than a popup under the cell.** The design says the message
-is never inline and arrives in a popup under the cell when that cell is current. A tooltip
-holds the never inline half and the reach for it, and it is what the launcher's hand rolled
-version already does. **The popup that follows the current cell is not built.**
+**The message is both a tooltip and a popup, and the design only asked for the popup.** The
+popup follows the current cell, which is what the design says and what a keyboard needs, since
+a tooltip needs a pointer and a person arrowing through a grid would meet a red cell that says
+nothing. The tooltip stayed because it is how a pointer reaches a wrong cell without making it
+current, and it costs nothing. Every other wrong cell is still quiet, which was the point of
+the rule.
+
+**The popup closes before it moves.** An Avalonia `Popup` that is already open does not follow
+a new `PlacementTarget`, so `ShowError` shuts it, retargets and opens it again.
+
+**`GridBody` publishes the marked cell.** `Marked` is the realised cell wearing the current
+mark, and `MarkMoved` is what the grid listens to. Null when the keyboard is on a row nothing
+has scrolled to, so scrolling the current cell out closes the popup rather than leaving it
+pointing at a recycled container.
+
+**The tree grid has no error popup.** Its cells still take the error marks, since those are
+`GridBody`'s, but the footer count and the popup are both the flat grid's, the way validation
+has been from the start.
 
 **The three marks are all there.** Fill, hairline and a corner mark, so the state survives a
 colour blind reading and a greyscale screenshot, and **error beats focus for the ring**, so a
