@@ -255,6 +255,11 @@
          takes the hover and the click that belong to the control the tip came from. -->
     <Thickness x:Key="TooltipRoom">28,0,28,38</Thickness>
 
+    <!-- What a tooltip placed beside a control stands off by, and all the room its shadow gets
+         on that side. Room facing the control would be popup window laid over it, and a
+         control the pointer has left drops its hover and closes the tip it opened. -->
+    <x:Double x:Key="TooltipGap">8</x:Double>
+
     <!-- Depth. On a dark ground elevation is an edge plus ambient darkness, so these
          stay soft and are never stacked. Overlays are the one place the theme uses
          elevation rather than a seam, because a popup has no panel to belong to. -->

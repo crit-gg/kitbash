@@ -55,9 +55,9 @@ public class Popups
     }
 
     /// <summary>
-    /// This element is a popup's room and the popup is placed at the pointer, so the popup
-    /// is pulled back by the room's own left inset and the overlay stays where it was.
-    /// For a tooltip, whose offsets are bound from the control it belongs to.
+    /// This element is a popup's room, and the room is fitted to where the popup is placed so
+    /// the popup window never lands over the control it belongs to. For a tooltip, whose
+    /// offsets are bound from the control and cannot be reached from a theme.
     /// </summary>
     public static readonly AttachedProperty<bool> PullsRoomProperty =
         AvaloniaProperty.RegisterAttached<Popups, Decorator, bool>("PullsRoom");
@@ -65,6 +65,10 @@ public class Popups
     public static bool GetPullsRoom(Decorator room) => room.GetValue(PullsRoomProperty);
 
     public static void SetPullsRoom(Decorator room, bool value) => room.SetValue(PullsRoomProperty, value);
+
+    /// <summary>The room the theme asked for, kept because a placement can take a side of it.</summary>
+    private static readonly AttachedProperty<Thickness?> WantedRoomProperty =
+        AvaloniaProperty.RegisterAttached<Popups, Decorator, Thickness?>("WantedRoom");
 
     private static void OnPullsRoomChanged(Decorator room, AvaloniaPropertyChangedEventArgs<bool> change)
     {
@@ -76,15 +80,85 @@ public class Popups
         }
     }
 
-    // A tooltip binds the offset from its control on every open, so the pull is written each
-    // time the room is attached rather than once. The room has none above it, so only the
-    // horizontal offset moves.
+    // A tooltip binds its offsets from its control on every open, so the room is written each
+    // time it is attached rather than once. A popup is positioned after its child is attached,
+    // so this still reaches the open that is happening.
     private static void OnRoomAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
-        if (sender is Decorator room && Containing(room) is { } popup)
+        if (sender is not Decorator room || Containing(room) is not { } popup)
         {
-            popup.SetCurrentValue(Popup.HorizontalOffsetProperty, -room.Padding.Left);
+            return;
         }
+
+        var wanted = WantedRoom(room);
+
+        if (Facing(popup.Placement) is not { } facing)
+        {
+            // At the pointer. Avalonia opens the tip 20px below it and the room has none
+            // above the card, so only the horizontal offset moves.
+            room.SetCurrentValue(Decorator.PaddingProperty, wanted);
+            popup.SetCurrentValue(Popup.HorizontalOffsetProperty, -wanted.Left);
+            return;
+        }
+
+        // Beside a control, room facing it is popup window over the control, which takes the
+        // pointer, so the control drops its hover and the tip closes itself. That side is the
+        // standoff instead, and it is all the room the shadow gets there.
+        var gap = room.FindResource("TooltipGap") as double? ?? 0;
+        var middle = Middle(popup.Placement, wanted);
+
+        room.SetCurrentValue(Decorator.PaddingProperty, Standoff(wanted, facing, gap));
+        popup.SetCurrentValue(Popup.HorizontalOffsetProperty, middle.X);
+        popup.SetCurrentValue(Popup.VerticalOffsetProperty, middle.Y);
+    }
+
+    private static Thickness WantedRoom(Decorator room)
+    {
+        if (room.GetValue(WantedRoomProperty) is { } wanted)
+        {
+            return wanted;
+        }
+
+        room.SetValue(WantedRoomProperty, room.Padding);
+
+        return room.Padding;
+    }
+
+    /// <summary>Which side of the room faces the control, or none when the popup is at the pointer.</summary>
+    private static Edge? Facing(PlacementMode placement) => placement switch
+    {
+        PlacementMode.Right or PlacementMode.RightEdgeAlignedTop or PlacementMode.RightEdgeAlignedBottom => Edge.Left,
+        PlacementMode.Left or PlacementMode.LeftEdgeAlignedTop or PlacementMode.LeftEdgeAlignedBottom => Edge.Right,
+        PlacementMode.Bottom or PlacementMode.BottomEdgeAlignedLeft or PlacementMode.BottomEdgeAlignedRight => Edge.Top,
+        PlacementMode.Top or PlacementMode.TopEdgeAlignedLeft or PlacementMode.TopEdgeAlignedRight => Edge.Bottom,
+        _ => null,
+    };
+
+    private static Thickness Standoff(Thickness room, Edge facing, double gap) => facing switch
+    {
+        Edge.Left => new Thickness(gap, room.Top, room.Right, room.Bottom),
+        Edge.Top => new Thickness(room.Left, gap, room.Right, room.Bottom),
+        Edge.Right => new Thickness(room.Left, room.Top, gap, room.Bottom),
+        _ => new Thickness(room.Left, room.Top, room.Right, gap),
+    };
+
+    /// <summary>
+    /// A popup beside a control is centred on it across the other axis, room and all, so a
+    /// room that is deeper on one side carries the card off centre. This puts it back.
+    /// </summary>
+    private static Point Middle(PlacementMode placement, Thickness room) => placement switch
+    {
+        PlacementMode.Right or PlacementMode.Left => new Point(0, (room.Bottom - room.Top) / 2),
+        PlacementMode.Top or PlacementMode.Bottom => new Point((room.Right - room.Left) / 2, 0),
+        _ => default,
+    };
+
+    private enum Edge
+    {
+        Left,
+        Top,
+        Right,
+        Bottom,
     }
 
     /// <summary>

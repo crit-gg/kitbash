@@ -428,6 +428,18 @@ offsets are bound from the control the tip belongs to and a theme cannot reach t
 `MinHeight` and `MaxWidth` sit on the card for the same reason a margin does not work: on
 the tooltip they would measure the room as well.
 
+**A tooltip beside a control gets a different room, and `PullsRoom` works it out from the
+placement.** Room facing the control is popup window laid over the control, which is the same
+window that takes a click and takes the pointer with it: the control drops its hover, and a
+pointer that has left the window closes the tip a moment later. So the side facing the control
+is `TooltipGap` and nothing more, which is the standoff and all the shadow room there is on
+that side. The card is then centred back onto the control, since a popup is centred across the
+placement as a whole and the room under the card is deeper than the room over it.
+
+`ToolTip.Placement="Right"` is what every rail item sets, and it is the only side placement in
+the app. The four sides are all handled the same way, so a tip placed under or over a control
+gets its standoff too.
+
 **An overlay is at least as wide as what opened it.** A menu narrower than the button that
 opened it reads as a mistake. `ui:Popups.MatchesTarget` puts a floor under the width, read
 off the placement target the popup already holds, so an overlay with more to say is still
