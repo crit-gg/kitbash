@@ -44,7 +44,8 @@ is already the shared row seam. Grow those rather than writing a second copy.
 
 **All ten are fixed**, eight in phase 1 and the rest in phase 2. Each was proved with a
 failing headless test first, and seven were proved a second way by putting the old code
-back and watching the new test go red.
+back and watching the new test go red. **An eleventh was found later by the gallery** and
+is at the end of this file, under what the gallery found.
 
 | # | What | Where | State |
 |---|---|---|---|
@@ -1400,3 +1401,102 @@ each template, which no style can beat, so a colourless halo still held its reac
 is set by nothing, so a plain rule takes the element out. One pair of rules over
 `PART_Halo` and `PART_Focus` covers every templated control, scoped to the cell so the toolbar
 and the footer keep their focus rings.
+
+## What the gallery found
+
+The grids page was rebuilt into seven sections so every switch, every cell form and every
+state is on it. Building it turned up one defect that none of the 355 tests caught.
+
+**A row that is already wrong is never marked.** Validation only ever reached a cell
+through `ErrorsChanged` or `PropertyChanged`, so a grid handed rows that were wrong before
+it drew them showed nothing at all. Every validation test broke a value after the grid was
+up, which is the one case that worked.
+
+There are two ways in and both were shut:
+
+- **A container being prepared is not one the panel has published.** `GridBody.Refresh`
+  sweeps `GetRealizedContainers`, and the row that just changed hands is not in that list
+  yet, so scrolling to a wrong row marked nothing. Both grids now mark that container by
+  name as they prepare it.
+- **A container has no cells until its template applies.** A freshly created one is
+  prepared first and templated after, so the mark by name lands on nothing. Both row types
+  read the marks again at the end of `OnApplyTemplate`, which is where the cells begin.
+
+**The count bootstraps off the first row that reports.** `Recount` returns early until
+something has said this grid has errors at all, and nothing else was going to say it, so
+`Mark` recounts once when it latches. Scrolling costs nothing after that, which is what the
+early return is for.
+
+`GridValidationTests.ARowThatArrivesWrongIsMarked` and `ARowScrolledToIsMarkedAsItArrives`
+pin the two. The second was proved by putting the old code back and watching it go red.
+
+## What driving it by hand found
+
+Five things, all found by using the gallery page rather than by reading the code, and four
+of them were gestures that had tests passing over them.
+
+**Every pointer test in the suite raised its events straight at the control it meant.** That
+skips hit testing and it skips the capture Avalonia takes on a press, which is exactly where
+these went wrong. `GridPointerTests` drives the window instead, and the two tests that were
+covering a drag were rewritten the same way. A headless move carries no button state of its
+own, so `RawInputModifiers.LeftMouseButton` has to be passed or the grid reads it as a
+hover.
+
+**A drag over the cells did nothing.** Avalonia captures the pointer to the control that was
+pressed, so every move belonged to the cell the drag started in and the block never grew
+past one cell. The comment in `DataGridCell` claiming each cell answers for itself was
+simply wrong. `GridBody.DragTo` hit tests the grid for the cell under the pointer, and the
+fill handle was dead for the same reason and came back with it.
+
+**Shift and a click did not extend the rows.** The cell took the press whatever the
+selection unit was and marked it handled, so the list never saw it, and in row units
+`ExtendTo` only moved the keyboard. The cell now takes it in cell units alone.
+
+**A choice took three clicks to show its values.** A double click opened the editor and left
+the list shut, so the third click opened it, and any click that missed closed the editor
+again. Opening a choice means opening the list, so `FocusEditor` opens the dropdown of a
+`ComboBox` it has just focused. The theme already said as much: the cell's chevron turns and
+takes the accent while the cell is editing.
+
+**The loading state was ten grey blocks.** The design draws rows at the real row height with
+a bar where each value will be, so `ui:GridSkeleton` draws that against the real column
+widths: a share of the room for a star column and a fixed bar for a pinned width, aligned
+the way the column is. It stands in for the rows rather than sitting over them, and the
+footer drops its count while it is up, since a count then is a count of what was there
+before.
+
+**The chooser was a list of checkboxes with a button under it.** It has the design's shape
+now: a find field, the pinned group with the mark that says which columns are frozen, a
+seam, the rest of the columns, a grip in front of every row, and a footer carrying the count
+and Reset as a text action. The drop line is the size of a row rather than a hairline, since
+a row is what is moving. `HeightRow` and `PaddingRow` were named by the old row theme and
+neither exists, so the rows had no height and no padding at all.
+
+**A column whose title is a control now falls back to its key.** The chooser printed
+`Avalonia.Controls.CheckBox` for the picker column, since a header can be anything and
+`ToString` answers for all of it.
+
+## A mark answers on the first click
+
+The chevron drew on row hover and did nothing at all, so the only way into a choice was a
+double click somewhere else in the cell. An affordance that answers nothing reads as
+decoration, and the design draws it because it is a promise.
+
+**A press on the trailing mark is its own gesture.** The chevron opens the editor, which for
+a choice means the list, and the jump goes where the column says. It goes through
+`GridBody.BeginEdit`, so a grid whose `BeginEditGestures` is `None` still refuses.
+
+**The chevron stands down with the grid, not only with the column.** `:editable` now reads
+the grid's gestures as well as the column's edit template, so a read only grid draws no
+chevron, no row hover underline and no cell hover ring. `DataGridCell.Reapply` is what lets
+a cell hear a switch that lives on the grid, and `GridBody.Refresh` calls it.
+
+**A reference draws its jump only when it has one.** `GridColumn.Jump` is an
+`Action<object>`, in the shape `Write` and `SortKey` already use, and a column with none
+reserves nothing and draws nothing. Only a tool knows what its own records open into, so the
+alternative was a mark that could never answer.
+
+**The room was never actually reserved.** The comment said the affordance holds its room
+whether or not it is drawn, and it did not: the glyph inside it was hidden, and Avalonia does
+not lay out what is not visible, so the panel measured zero and the value shifted sideways
+the moment a row was hovered. The panel carries the width now.

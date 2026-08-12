@@ -243,6 +243,13 @@ public class GridColumn : AvaloniaObject
     public Action<object, string?>? Write { get; set; }
 
     /// <summary>
+    /// What a reference cell's jump mark does. Only a tool knows what its own records open
+    /// into, so a column with none draws no mark, since a mark that answers nothing is worse
+    /// than no mark at all.
+    /// </summary>
+    public Action<object>? Jump { get; set; }
+
+    /// <summary>
     /// This column's own name, which is what ties a kept layout to it across runs. A column
     /// with none is never kept, which is the opt in.
     /// </summary>

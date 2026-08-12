@@ -119,6 +119,70 @@ public sealed class GridValidationTests
         }
     }
 
+    /// <summary>
+    /// A row that is already wrong when it is drawn says so. A container is prepared before
+    /// its template exists, so the marks have to be read again once the cells are there, or
+    /// a grid handed bad data only ever marks a row somebody has since touched.
+    /// </summary>
+    [AvaloniaFact]
+    public void ARowThatArrivesWrongIsMarked()
+    {
+        var items = new[] { new Entry("a0", "b0"), new Entry("a1", "b1") };
+
+        items[0].Break("Name", "A name cannot be empty.");
+
+        var grid = Grid(out var window, items);
+
+        try
+        {
+            var wrong = Assert.Single(Cells(grid), cell => cell.Error is not null);
+
+            Assert.Equal("NAME", wrong.Column?.Header);
+            Assert.Equal("1 cell needs fixing", grid.ErrorText);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// A row scrolled to for the first time is marked as it arrives. A container being
+    /// prepared is not one the panel has published, so the sweep over the realised rows
+    /// misses the very row that just changed hands.
+    /// </summary>
+    [AvaloniaFact]
+    public void ARowScrolledToIsMarkedAsItArrives()
+    {
+        var items = Enumerable.Range(0, 40)
+            .Select(number => new Entry($"a{number}", $"b{number}"))
+            .ToArray();
+
+        items[35].Break("Name", "A name cannot be empty.");
+
+        var grid = Grid(out var window, items);
+
+        try
+        {
+            Assert.DoesNotContain(Cells(grid), cell => cell.Error is not null);
+
+            var scroller = grid.Scroll!;
+
+            scroller.Offset = new Vector(0, scroller.Extent.Height);
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+
+            var wrong = Assert.Single(Cells(grid), cell => cell.Error is not null);
+
+            Assert.Equal("NAME", wrong.Column?.Header);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     /// <summary>An item that reports nothing at all is left alone.</summary>
     [AvaloniaFact]
     public void APlainItemIsLeftAlone()
@@ -160,6 +224,11 @@ public sealed class GridValidationTests
     {
         items = [.. Enumerable.Range(0, rows).Select(number => new Entry($"a{number}", $"b{number}"))];
 
+        return Grid(out window, items);
+    }
+
+    private static DataGrid Grid(out Window window, Entry[] items)
+    {
         var grid = new DataGrid();
 
         grid.Columns.Add(Column("ID", "Id", entry => entry.Id));

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -267,20 +268,21 @@ public sealed class GridWriteTests
             grid.SelectedIndex = 0;
             Dispatcher.UIThread.RunJobs();
 
-            var grip = Grip(Cell(grid, 0, "ID"));
+            var anchor = Cell(grid, 0, "ID");
 
-            // Raised on the grip itself, since RaiseEvent takes the source from the element
-            // it is raised on rather than from the arguments.
-            grip.RaiseEvent(Pressed(grip));
+            // Through the window, on the corner the handle sits over. The pointer is
+            // captured by what was pressed, so the reach is worked out by hit testing.
+            window.MouseDown(Corner(window, anchor), MouseButton.Left);
             Dispatcher.UIThread.RunJobs();
 
             // Nothing lands while the pointer is down, so the reach is a preview.
-            Drag(Cell(grid, 2, "ID"));
+            window.MouseMove(At(window, Cell(grid, 2, "ID")), RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
 
             Assert.Equal("a1", items[1].Id);
             Assert.Contains(grid.GetVisualDescendants().OfType<DataGridCell>(), cell => cell.IsFilling);
 
-            grid.RaiseEvent(Released(grid));
+            window.MouseUp(At(window, Cell(grid, 2, "ID")), MouseButton.Left);
             Dispatcher.UIThread.RunJobs();
 
             Assert.Equal("a0", items[1].Id);
@@ -302,42 +304,13 @@ public sealed class GridWriteTests
             .Single(cell => (string?)cell.Column?.Header == header);
 
     /// <summary>The grip at the corner of the block.</summary>
-    private static Border Grip(DataGridCell cell) =>
-        cell.GetVisualDescendants().OfType<Border>().Single(border => border.Name == "PART_Handle");
+    /// <summary>The middle of a cell, in the window's own coordinates.</summary>
+    private static Point At(Window window, Visual cell) =>
+        cell.TranslatePoint(new Point(cell.Bounds.Width / 2, cell.Bounds.Height / 2), window)!.Value;
 
-    private static PointerPressedEventArgs Pressed(Control target) => new(
-        target,
-        new Pointer(0, PointerType.Mouse, true),
-        target,
-        default,
-        0,
-        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonPressed),
-        KeyModifiers.None);
-
-    private static void Drag(Control target)
-    {
-        target.RaiseEvent(new PointerEventArgs(
-            InputElement.PointerMovedEvent,
-            target,
-            new Pointer(0, PointerType.Mouse, true),
-            target,
-            default,
-            0,
-            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
-            KeyModifiers.None));
-
-        Dispatcher.UIThread.RunJobs();
-    }
-
-    private static PointerReleasedEventArgs Released(Control target) => new(
-        target,
-        new Pointer(0, PointerType.Mouse, true),
-        target,
-        default,
-        0,
-        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
-        KeyModifiers.None,
-        MouseButton.Left);
+    /// <summary>The bottom right corner of a cell, which is where the fill handle sits.</summary>
+    private static Point Corner(Window window, Visual cell) =>
+        cell.TranslatePoint(new Point(cell.Bounds.Width - 1, cell.Bounds.Height - 1), window)!.Value;
 
     private static async Task Put(Window window, string text)
     {

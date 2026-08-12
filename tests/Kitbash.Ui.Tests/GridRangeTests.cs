@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -201,23 +202,23 @@ public sealed class GridRangeTests
 
         try
         {
-            grid.SelectedIndex = 0;
+            // Through the window rather than at the cell, since the pointer is captured by
+            // whatever was pressed and hit testing is what finds the cell under it.
+            window.MouseDown(At(window, Cell(grid, 0, "ID")), MouseButton.Left);
             Dispatcher.UIThread.RunJobs();
 
-            var anchor = Cell(grid, 0, "ID");
-
-            anchor.RaiseEvent(Pressed(anchor, KeyModifiers.None));
-            Dispatcher.UIThread.RunJobs();
-
-            Drag(Cell(grid, 0, "NAME"));
-            Drag(Cell(grid, 1, "NAME"));
+            Over(window, Cell(grid, 0, "NAME"));
+            Over(window, Cell(grid, 1, "NAME"));
 
             // Two rows by two columns, less the anchor.
             Assert.Equal(3, InRange(grid).Count);
 
             // The button comes up, so moving on afterwards leaves the block alone.
-            grid.RaiseEvent(Released(grid));
-            Drag(Cell(grid, 2, "KIND"));
+            window.MouseUp(At(window, Cell(grid, 1, "NAME")), MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            window.MouseMove(At(window, Cell(grid, 2, "KIND")));
+            Dispatcher.UIThread.RunJobs();
 
             Assert.Equal(3, InRange(grid).Count);
         }
@@ -238,12 +239,10 @@ public sealed class GridRangeTests
             grid.SelectedIndex = 0;
             Dispatcher.UIThread.RunJobs();
 
-            var anchor = Cell(grid, 0, "ID");
-
-            anchor.RaiseEvent(Pressed(anchor, KeyModifiers.None));
+            window.MouseDown(At(window, Cell(grid, 0, "ID")), MouseButton.Left);
             Dispatcher.UIThread.RunJobs();
 
-            Drag(Cell(grid, 1, "NAME"));
+            Over(window, Cell(grid, 1, "NAME"));
 
             Assert.Empty(InRange(grid));
         }
@@ -291,6 +290,17 @@ public sealed class GridRangeTests
             .OfType<DataGridCell>()
             .Single(cell => (string?)cell.Column?.Header == header);
 
+    /// <summary>The middle of a cell, in the window's own coordinates.</summary>
+    private static Point At(Window window, Visual cell) =>
+        cell.TranslatePoint(new Point(cell.Bounds.Width / 2, cell.Bounds.Height / 2), window)!.Value;
+
+    /// <summary>The pointer travelling over a cell with the button still down.</summary>
+    private static void Over(Window window, Visual cell)
+    {
+        window.MouseMove(At(window, cell), RawInputModifiers.LeftMouseButton);
+        Dispatcher.UIThread.RunJobs();
+    }
+
     private static void Press(Control target, Key key, KeyModifiers modifiers = KeyModifiers.None)
     {
         target.RaiseEvent(new KeyEventArgs
@@ -303,32 +313,6 @@ public sealed class GridRangeTests
 
         Dispatcher.UIThread.RunJobs();
     }
-
-    /// <summary>The pointer moving over a cell with the button still down.</summary>
-    private static void Drag(Control target)
-    {
-        target.RaiseEvent(new PointerEventArgs(
-            InputElement.PointerMovedEvent,
-            target,
-            new Pointer(0, PointerType.Mouse, true),
-            target,
-            default,
-            0,
-            new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.Other),
-            KeyModifiers.None));
-
-        Dispatcher.UIThread.RunJobs();
-    }
-
-    private static PointerReleasedEventArgs Released(Control target) => new(
-        target,
-        new Pointer(0, PointerType.Mouse, true),
-        target,
-        default,
-        0,
-        new PointerPointProperties(RawInputModifiers.None, PointerUpdateKind.LeftButtonReleased),
-        KeyModifiers.None,
-        MouseButton.Left);
 
     private static PointerPressedEventArgs Pressed(Control target, KeyModifiers modifiers) => new(
         target,

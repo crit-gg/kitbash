@@ -328,9 +328,28 @@
     <Thickness x:Key="MarginDiffBar">0,0,20,0</Thickness>
     <x:Double x:Key="HeightGridRow">31</x:Double>
 
+    <!-- A skeleton bar, which stands where a value will be while the rows are fetched. The
+         width is what a column pinned to one gets, since a number is the same size every
+         time and a column that fills the row takes a share of it instead. -->
+    <!-- The column chooser. A popover of rows with a find field over them and a footer
+         under them, so the width is fixed rather than growing with the longest name. -->
+    <x:Double x:Key="WidthColumnChooser">268</x:Double>
+    <x:Double x:Key="HeightChooserFooter">30</x:Double>
+    <Thickness x:Key="PaddingChooserRow">8,0</Thickness>
+    <Thickness x:Key="PaddingChooserFooter">2,0</Thickness>
+    <Thickness x:Key="MarginChooserFind">0,0,0,6</Thickness>
+    <Thickness x:Key="MarginChooserFooter">0,5,0,0</Thickness>
+    <Thickness x:Key="MarginChooserGrip">0,0,9,0</Thickness>
+    <Thickness x:Key="MarginChooserSeam">8,5</Thickness>
+
+    <x:Double x:Key="HeightSkeletonBar">9</x:Double>
+    <x:Double x:Key="WidthSkeletonBar">34</x:Double>
+    <x:Double x:Key="RadiusSkeletonBar">3</x:Double>
+
     <!-- A colour well inside a cell, square and the row height less the padding, so a column
          of them reads as a strip of colour. The jump button a reference cell carries is the
          only button in the set and takes the far edge. -->
+    <Thickness x:Key="MarginGridAffordance">4,0,0,0</Thickness>
     <x:Double x:Key="SizeGridCellSwatch">15</x:Double>
     <x:Double x:Key="SizeGridCellJump">22</x:Double>
 

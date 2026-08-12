@@ -445,6 +445,21 @@ of it.** Read that before changing anything below the look. What it settled, in 
 - **Both grids have the same three empty states**, over the body and never over the header.
   The flat one tells nothing yet from no matches by `Total` against `Matched`, the tree by
   `TreeRows.IsFiltered`, since a tree has no such pair. The words are always the caller's.
+- **Loading is `ui:GridSkeleton`, a bar per column at the real row height.** It draws against
+  the same widths the rows are laid out with, so nothing moves when the data lands, and it
+  stands in for the rows rather than sitting over them. The footer says nothing while it is
+  up, since a count then is a count of what was there before.
+- **A mark on a cell answers on the first click, or it is not drawn.** The chevron opens the
+  editor and the jump runs `GridColumn.Jump`, both from one press on the trailing mark. A
+  grid whose `BeginEditGestures` is `None` draws no chevron and no hover chrome, and a
+  reference with no `Jump` draws no mark, so what a cell shows is only ever what it does.
+- **A drag over the cells is hit tested rather than routed.** Avalonia captures the pointer
+  to the control that was pressed, so the cells a drag travels over never hear a move of
+  their own. `GridBody.DragTo` is the one place that works out what is under the pointer,
+  and both the block and the fill handle go through it.
+- **Shift and a click belongs to whichever unit is in force.** In cell units the cell takes
+  it and extends the block. In row units the cell must leave it alone, or the list never
+  extends the run of rows.
 - **Everything a grid says out loud is a name or a help text.** Avalonia ships no
   `IGridProvider` or `IGridItemProvider`, so indices and counts have nowhere to be published.
   `GridAutomationPeers.cs` holds the five peers, and a cell reads `Content` rather than

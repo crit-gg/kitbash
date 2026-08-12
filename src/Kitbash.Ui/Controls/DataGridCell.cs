@@ -15,6 +15,8 @@ namespace Kitbash.Ui.Controls;
 /// </summary>
 public class DataGridCell : ContentControl
 {
+    private const string AffordancePart = "PART_Affordance";
+
     private IDisposable? following;
 
     public static readonly StyledProperty<GridColumn?> ColumnProperty =
@@ -260,9 +262,29 @@ public class DataGridCell : ContentControl
             return;
         }
 
+        // The mark at the trailing edge is a promise, so it answers on the first click. A
+        // chevron opens the list it is pointing at and a jump goes where it says.
+        if (e.Source is Visual mark && In(mark, AffordancePart))
+        {
+            host.Body.SetCurrent(column);
+
+            if (column.Jump is { } jump && Content is { } item)
+            {
+                jump(item);
+            }
+            else
+            {
+                host.Body.BeginEdit(this);
+            }
+
+            e.Handled = true;
+            return;
+        }
+
         // Shift extends the block from the anchor, which is what it does in every grid and
-        // in every spreadsheet.
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        // in every spreadsheet. In row units there is no block, so the press is left to the
+        // list, which is what extends a run of rows.
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && host.Body.Selection == GridSelectionUnit.Cell)
         {
             host.Body.ExtendTo(this, column);
             e.Handled = true;
@@ -274,45 +296,61 @@ public class DataGridCell : ContentControl
     }
 
     /// <summary>
-    /// A drag over the cells takes the block with it. Each cell answers for itself, so the
-    /// pointer does not have to be captured to know which one it is over.
+    /// A drag over the cells takes the block with it. Every move belongs to the cell that
+    /// was pressed, since Avalonia captures the pointer there, so the body works out which
+    /// cell the pointer is actually over.
     /// </summary>
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
 
-        if (Column is not { } column
-            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
             || this.FindAncestorOfType<IGridHost>() is not { } host)
-        {
-            return;
-        }
-
-        if (host.Body.Filling)
-        {
-            host.Body.PreviewFill(this, column);
-        }
-        else if (host.Body.Dragging)
-        {
-            host.Body.ExtendTo(this, column);
-        }
-        else
         {
             return;
         }
 
         // The list drags out a row selection of its own otherwise, so a drag would pick
         // rows and cells at once.
-        e.Handled = true;
+        if (host.Body.DragTo(e))
+        {
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Reads the column and the grid again. The grid calls this when what a person may do
+    /// has changed, since a cell cannot hear a switch that lives on the grid.
+    /// </summary>
+    internal void Reapply() => Apply();
+
+    /// <summary>Whether a press landed inside a named part of this cell's own template.</summary>
+    private static bool In(Visual source, string part)
+    {
+        for (Visual? node = source; node is not null; node = node.GetVisualParent())
+        {
+            if (node is Control { Name: { } name } && string.Equals(name, part, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void Apply()
     {
         var column = Column;
 
+        // A grid that opens no editors offers nothing, so the hint, the ring and the
+        // chevron all stand down with it rather than promising an edit that never comes.
+        var opens = this.FindAncestorOfType<IGridHost>() is not { } host
+            || host.Body.Gestures != BeginEditGestures.None;
+
         PseudoClasses.Set(":mono", column?.IsMono == true);
         PseudoClasses.Set(":strong", column?.IsStrong == true);
-        PseudoClasses.Set(":editable", column?.EditTemplate is not null);
+        PseudoClasses.Set(":editable", column?.EditTemplate is not null && opens);
+        PseudoClasses.Set(":jumps", column?.Jump is not null);
 
         // One class per kind rather than one carrying a name, so the theme selects on it the
         // way it selects on every other cell state.
@@ -342,11 +380,21 @@ public class DataGridCell : ContentControl
 
         foreach (var child in this.GetVisualDescendants().OfType<InputElement>())
         {
-            if (child.Focusable && child.IsEffectivelyEnabled && child.IsEffectivelyVisible)
+            if (!child.Focusable || !child.IsEffectivelyEnabled || !child.IsEffectivelyVisible)
             {
-                child.Focus(NavigationMethod.Tab);
-                return;
+                continue;
             }
+
+            child.Focus(NavigationMethod.Tab);
+
+            // A list is what opening a choice means, so the editor arrives open. The cell
+            // is the whole target and a person has already spent a gesture reaching it.
+            if (child is ComboBox list)
+            {
+                list.IsDropDownOpen = true;
+            }
+
+            return;
         }
     }
 }

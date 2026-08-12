@@ -12,13 +12,17 @@ namespace Kitbash.Ui.Controls;
 /// matters as much as visibility and a list is what can be dragged.
 /// </summary>
 [TemplatePart(RowsPart, typeof(Panel))]
-[TemplatePart(DropPart, typeof(Border))]
+[TemplatePart(DropPart, typeof(Control))]
 [TemplatePart(ResetPart, typeof(Button))]
+[TemplatePart(FindPart, typeof(TextBox))]
+[TemplatePart(CountPart, typeof(TextBlock))]
 public class GridColumnChooser : TemplatedControl
 {
     private const string RowsPart = "PART_Rows";
     private const string DropPart = "PART_Drop";
     private const string ResetPart = "PART_Reset";
+    private const string FindPart = "PART_Find";
+    private const string CountPart = "PART_Count";
 
     /// <summary>How far a press has to travel before it is a drag and not a click.</summary>
     private const double Slack = 4;
@@ -29,8 +33,10 @@ public class GridColumnChooser : TemplatedControl
     private readonly List<GridColumnChooserRow> rows = [];
 
     private Panel? host;
-    private Border? drop;
+    private Control? drop;
     private Button? reset;
+    private TextBox? find;
+    private TextBlock? count;
     private GridColumns? following;
     private GridColumn? moving;
     private Point? from;
@@ -54,13 +60,25 @@ public class GridColumnChooser : TemplatedControl
             reset.Click -= OnReset;
         }
 
+        if (find is not null)
+        {
+            find.TextChanged -= OnFind;
+        }
+
         host = e.NameScope.Find<Panel>(RowsPart);
-        drop = e.NameScope.Find<Border>(DropPart);
+        drop = e.NameScope.Find<Control>(DropPart);
         reset = e.NameScope.Find<Button>(ResetPart);
+        find = e.NameScope.Find<TextBox>(FindPart);
+        count = e.NameScope.Find<TextBlock>(CountPart);
 
         if (reset is not null)
         {
             reset.Click += OnReset;
+        }
+
+        if (find is not null)
+        {
+            find.TextChanged += OnFind;
         }
 
         Build();
@@ -96,7 +114,17 @@ public class GridColumnChooser : TemplatedControl
 
     private void OnColumnsMoved(object? sender, EventArgs e) => Build();
 
-    private void OnReset(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Columns?.Reset();
+    private void OnReset(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        Columns?.Reset();
+
+        if (find is not null)
+        {
+            find.Text = null;
+        }
+    }
+
+    private void OnFind(object? sender, TextChangedEventArgs e) => Build();
 
     /// <summary>
     /// The rows, pinned ones first under a heading of their own. A group rather than a flag
@@ -117,7 +145,8 @@ public class GridColumnChooser : TemplatedControl
             return;
         }
 
-        var pinned = columns.Where(column => column.IsPinned).ToList();
+        var pinned = columns.Where(column => column.IsPinned).Where(Matches).ToList();
+        var rest = columns.Where(column => !column.IsPinned).Where(Matches).ToList();
 
         // The group is there whenever pinning is allowed, even with nothing in it, since
         // dragging into it is the only way to pin a column from here.
@@ -125,21 +154,41 @@ public class GridColumnChooser : TemplatedControl
 
         if (pins)
         {
-            host.Children.Add(Heading("PINNED"));
+            host.Children.Add(Heading("PINNED LEFT"));
 
             foreach (var column in pinned)
             {
                 Add(columns, column);
             }
 
+            host.Children.Add(new Border { Classes = { "chooserSeam" } });
             host.Children.Add(Heading("COLUMNS"));
         }
 
         held = pinned.Count;
 
-        foreach (var column in columns.Where(column => !column.IsPinned))
+        foreach (var column in rest)
         {
             Add(columns, column);
+        }
+
+        Count(columns);
+    }
+
+    /// <summary>Whether a column survives what was typed in the find field.</summary>
+    private bool Matches(GridColumn column) =>
+        find?.Text is not { Length: > 0 } text
+        || GridColumnChooserRow.Words(column).Contains(text, StringComparison.CurrentCultureIgnoreCase);
+
+    /// <summary>
+    /// How many columns are drawn out of how many there are, which is the one number a
+    /// person turning columns off wants and cannot count while the list is filtered.
+    /// </summary>
+    private void Count(GridColumns columns)
+    {
+        if (count is not null)
+        {
+            count.Text = $"{columns.Count(column => column.IsVisible):N0} of {columns.Count:N0} shown";
         }
     }
 
@@ -238,6 +287,10 @@ public class GridColumnChooser : TemplatedControl
         return best;
     }
 
+    /// <summary>
+    /// The line where the row would land. It is the size of a row rather than a hairline,
+    /// since a row is what is being moved and the list closes up around it.
+    /// </summary>
     private void Show()
     {
         if (drop is null)
@@ -247,10 +300,13 @@ public class GridColumnChooser : TemplatedControl
 
         drop.IsVisible = moving is not null && at >= 0 && at < rows.Count;
 
-        if (drop.IsVisible)
+        if (!drop.IsVisible)
         {
-            drop.Margin = new Thickness(0, Math.Max(0, rows[at].Bounds.Y), 0, 0);
+            return;
         }
+
+        drop.Margin = new Thickness(0, Math.Max(0, rows[at].Bounds.Y), 0, 0);
+        drop.Height = rows[at].Bounds.Height;
     }
 }
 
@@ -338,6 +394,17 @@ public class GridColumnChooserRow : TemplatedControl
         set => SetValue(CanPinProperty, value);
     }
 
+    /// <summary>
+    /// What to call a column here. A title can be a control, and a control has no words, so
+    /// the key stands in rather than the type's own name.
+    /// </summary>
+    internal static string Words(GridColumn column) => column.Header switch
+    {
+        string words => words,
+        null => column.Key ?? string.Empty,
+        _ => column.Key ?? string.Empty,
+    };
+
     /// <summary>The column this row stands for, and where its rules come from.</summary>
     internal void Follow(GridColumns columns, GridColumn column)
     {
@@ -345,7 +412,7 @@ public class GridColumnChooserRow : TemplatedControl
         settling = true;
 
         Column = column;
-        Label = column.Header?.ToString() ?? column.Key ?? string.Empty;
+        Label = Words(column);
         IsShown = column.IsVisible;
         IsPinned = column.IsPinned;
 
@@ -360,6 +427,17 @@ public class GridColumnChooserRow : TemplatedControl
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+
+        // A column that cannot be turned off keeps its shape and drops to the disabled tier
+        // rather than leaving the list, and a pinned one carries the mark that says so.
+        if (change.Property == CanHideProperty)
+        {
+            PseudoClasses.Set(":locked", !change.GetNewValue<bool>());
+        }
+        else if (change.Property == IsPinnedProperty)
+        {
+            PseudoClasses.Set(":pinned", change.GetNewValue<bool>());
+        }
 
         if (settling || Column is not { } column || owner is null)
         {

@@ -262,6 +262,40 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
     public void BeginFill() => Filling = Blocks && Actions.HasFlag(CellActions.Fill);
 
     /// <summary>
+    /// Takes a drag to whatever cell the pointer is over, and whether it did. Avalonia
+    /// captures the pointer to the control that was pressed, so the cells a drag travels
+    /// over never hear a move of their own and the one under the pointer has to be found.
+    /// </summary>
+    public bool DragTo(PointerEventArgs e)
+    {
+        if (!Dragging && !Filling)
+        {
+            return false;
+        }
+
+        if (owner.InputHitTest(e.GetPosition(owner)) is not Visual hit)
+        {
+            return false;
+        }
+
+        if (hit.FindAncestorOfType<DataGridCell>(includeSelf: true) is not { Column: { } column } cell)
+        {
+            return false;
+        }
+
+        if (Filling)
+        {
+            PreviewFill(cell, column);
+        }
+        else
+        {
+            ExtendTo(cell, column);
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Takes the reach of the fill out to a cell. Nothing is written while the pointer is
     /// down, so the preview says what would land rather than landing it.
     /// </summary>
@@ -497,6 +531,10 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
                     && inside
                     && (index < held.Top || index > held.Bottom || at < held.Left || at > held.Right);
 
+                // What a cell offers reads the grid as well as the column, and a switch on
+                // the grid is not something a cell can hear on its own.
+                cell.Reapply();
+
                 cell.IsCurrent = mine;
 
                 // The anchor keeps the plain surface, so the one cell that still takes
@@ -612,11 +650,21 @@ internal sealed class GridBody(ListBox owner, GridColumns columns)
             return;
         }
 
+        // The first row that reports its own errors is what turns marking on, so the count
+        // is worked out once from here. A grid handed rows that are already wrong has
+        // nothing else to announce them.
+        var first = !errors;
+
         errors = true;
 
         foreach (var cell in row.Cells)
         {
             cell.Error = Wrong(reporting, cell.Column);
+        }
+
+        if (first)
+        {
+            Recount();
         }
     }
 

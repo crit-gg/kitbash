@@ -1,5 +1,9 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kitbash.Ui.Controls;
@@ -87,7 +91,7 @@ public sealed class GridColumnChooserTests
             Dispatcher.UIThread.RunJobs();
 
             Assert.Equal(["KIND", "ID", "NAME"], Labels(chooser));
-            Assert.Contains("PINNED", Headings(chooser));
+            Assert.Contains("PINNED LEFT", Headings(chooser));
             Assert.Contains("COLUMNS", Headings(chooser));
         }
         finally
@@ -121,6 +125,148 @@ public sealed class GridColumnChooserTests
             window.Close();
         }
     }
+
+    /// <summary>The find field cuts the list down, since a wide grid has too many to scan.</summary>
+    [AvaloniaFact]
+    public void FindingCutsTheListDown()
+    {
+        var chooser = Chooser(out var window, out _);
+
+        try
+        {
+            Find(chooser).Text = "na";
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(["NAME"], Labels(chooser));
+
+            Find(chooser).Text = null;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(["ID", "NAME", "KIND"], Labels(chooser));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// The footer says how many columns are drawn out of how many there are, which is the
+    /// one number that cannot be counted off a list a filter has cut down.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheFooterCountsWhatIsShown()
+    {
+        var chooser = Chooser(out var window, out _);
+
+        try
+        {
+            Assert.Equal("3 of 3 shown", Count(chooser).Text);
+
+            Row(chooser, "KIND").IsShown = false;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal("2 of 3 shown", Count(chooser).Text);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>A title that is a control has no words, so the key stands in for it.</summary>
+    [AvaloniaFact]
+    public void ATitleThatIsAControlFallsBackToTheKey()
+    {
+        var chooser = Chooser(out var window, out var columns);
+
+        try
+        {
+            columns[0].Header = new CheckBox();
+            chooser.Columns = null;
+            chooser.Columns = columns;
+
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(["id", "NAME", "KIND"], Labels(chooser));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>A pinned row says so, and a locked one keeps its shape and drops a tier.</summary>
+    [AvaloniaFact]
+    public void ARowSaysWhetherItIsPinnedOrLocked()
+    {
+        var chooser = Chooser(out var window, out var columns);
+
+        try
+        {
+            columns[0].CanHide = false;
+            columns[2].IsPinned = true;
+            chooser.Columns = null;
+            chooser.Columns = columns;
+
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Contains(":locked", Row(chooser, "ID").Classes);
+            Assert.Contains(":pinned", Row(chooser, "KIND").Classes);
+            Assert.DoesNotContain(":pinned", Row(chooser, "NAME").Classes);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// The line where a dragged row would land. It is the size of a row, since a row is
+    /// what is moving and the list closes up around it.
+    /// </summary>
+    [AvaloniaFact]
+    public void DraggingARowShowsWhereItWouldLand()
+    {
+        var chooser = Chooser(out var window, out _);
+
+        try
+        {
+            var drop = chooser.GetVisualDescendants().OfType<Shape>().Single(shape => shape.Name == "PART_Drop");
+
+            Assert.False(drop.IsVisible);
+
+            var row = Row(chooser, "ID");
+            var from = row.TranslatePoint(new Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window)!.Value;
+            var onto = Row(chooser, "KIND");
+            var to = onto.TranslatePoint(new Point(onto.Bounds.Width / 2, onto.Bounds.Height / 2), window)!.Value;
+
+            window.MouseDown(from, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            window.MouseMove(to, RawInputModifiers.LeftMouseButton);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(drop.IsVisible);
+            Assert.Equal(onto.Bounds.Height, drop.Height);
+
+            window.MouseUp(to, MouseButton.Left);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.False(drop.IsVisible);
+            Assert.Equal(["NAME", "KIND", "ID"], Labels(chooser));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    private static TextBox Find(GridColumnChooser chooser) =>
+        chooser.GetVisualDescendants().OfType<SearchBox>().Single();
+
+    private static TextBlock Count(GridColumnChooser chooser) =>
+        chooser.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Name == "PART_Count");
 
     private static List<string> Labels(GridColumnChooser chooser) =>
     [

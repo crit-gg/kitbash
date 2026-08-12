@@ -100,6 +100,14 @@ public class DataGridRow : ListBoxItem, IGridRowLayout
 
         strip.Attach(e.NameScope.Find<GridCells>(CellsPart));
         strip.Fill(row?.Item);
+
+        // The cells only exist from here, so what is read off the item is read again. A
+        // container prepared before its template has none, and a row holding a value that
+        // was already wrong would never be marked.
+        if (this.FindAncestorOfType<IGridHost>()?.Body is { } body)
+        {
+            body.Mark(this);
+        }
     }
 
     /// <summary>What goes in a cell. The tree grid overrides it to lead with its caret.</summary>

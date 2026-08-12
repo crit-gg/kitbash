@@ -85,11 +85,12 @@ public sealed class GridCellKindTests
     /// <summary>
     /// The two kinds that carry a trailing affordance reserve its room from the start, so a
     /// value never reflows the moment a pointer arrives. A number has none, since a stepper
-    /// in a cell is a widget in a column that is supposed to read as numbers.
+    /// in a cell is a widget in a column that is supposed to read as numbers. A reference
+    /// reserves nothing until it is told where it goes, which is the test below.
     /// </summary>
     [AvaloniaTheory]
     [InlineData(GridCellKind.Enum, true)]
-    [InlineData(GridCellKind.Reference, true)]
+    [InlineData(GridCellKind.Reference, false)]
     [InlineData(GridCellKind.Number, false)]
     [InlineData(GridCellKind.Text, false)]
     [InlineData(GridCellKind.Boolean, false)]
@@ -101,6 +102,49 @@ public sealed class GridCellKindTests
         try
         {
             Assert.Equal(reserves, Part(grid, "PART_Affordance")?.IsVisible == true);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// A reference draws its jump only when the column says where it goes. A mark that
+    /// answers nothing is worse than no mark at all.
+    /// </summary>
+    [AvaloniaFact]
+    public void AReferenceReservesTheEdgeOnlyWhenItGoesSomewhere()
+    {
+        var grid = Grid(out var window, GridCellKind.Reference, jumps: true);
+
+        try
+        {
+            Assert.True(Part(grid, "PART_Affordance")?.IsVisible);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>
+    /// The room is held whether or not the glyph is drawn, so a value does not shift
+    /// sideways the moment a pointer arrives. The glyph alone reserved nothing, since an
+    /// element that is not visible is not laid out either.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheRoomIsHeldWhileTheGlyphIsNot()
+    {
+        var grid = Grid(out var window, GridCellKind.Enum);
+
+        try
+        {
+            var mark = Part(grid, "PART_Affordance");
+            var chevron = Part(grid, "PART_Chevron");
+
+            Assert.False(chevron?.IsVisible);
+            Assert.True(mark?.Bounds.Width > 0);
         }
         finally
         {
@@ -189,7 +233,8 @@ public sealed class GridCellKindTests
     private static IEnumerable<DataGridCell> Cells(DataGrid grid) =>
         grid.GetVisualDescendants().OfType<DataGridCell>();
 
-    private static DataGrid Grid(out Window window, GridCellKind kind, bool editable = true)
+    private static DataGrid Grid(
+        out Window window, GridCellKind kind, bool editable = true, bool jumps = false)
     {
         var grid = new DataGrid();
 
@@ -197,6 +242,7 @@ public sealed class GridCellKindTests
         {
             Header = "VALUE",
             Kind = kind,
+            Jump = jumps ? _ => { } : null,
             Width = new GridLength(1, GridUnitType.Star),
             CellTemplate = new FuncDataTemplate<Entry>((entry, _) => new TextBlock { Text = entry?.Name }),
             EditTemplate = editable

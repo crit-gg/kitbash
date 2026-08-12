@@ -85,6 +85,13 @@ public class TreeDataGridRow : TreeItem, IGridRowLayout
         strip.Attach(e.NameScope.Find<GridCells>(CellsPart));
         strip.Fill(Row?.Item);
         UpdateLead();
+
+        // The cells only exist from here, so what is read off the item is read again, the
+        // way the flat grid's row does it.
+        if (this.FindAncestorOfType<IGridHost>()?.Body is { } body)
+        {
+            body.Mark(this);
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

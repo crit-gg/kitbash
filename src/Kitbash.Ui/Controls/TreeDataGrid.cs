@@ -13,6 +13,7 @@ public class TreeDataGrid : Tree, IGridHost
 {
     private const string HeaderPart = "PART_Header";
     private const string ScrollerPart = "PART_ScrollViewer";
+    private const string SkeletonPart = "PART_Skeleton";
 
     /// <summary>
     /// The column the hierarchy indents in. The first column when unset, which is right
@@ -249,6 +250,7 @@ public class TreeDataGrid : Tree, IGridHost
         }
 
         base.PrepareContainerForItemOverride(container, item, index);
+        Mark(container);
         body.Refresh();
     }
 
@@ -256,7 +258,20 @@ public class TreeDataGrid : Tree, IGridHost
     {
         Release(container);
         base.ContainerIndexChangedOverride(container, oldIndex, newIndex);
+        Mark(container);
         body.Refresh();
+    }
+
+    /// <summary>
+    /// Reads one container's marks off its item. By name, since the sweep only reaches the
+    /// containers the panel has published and a row being prepared is not one of them.
+    /// </summary>
+    private void Mark(Control container)
+    {
+        if (container is IGridRowLayout row)
+        {
+            body.Mark(row);
+        }
     }
 
     protected override void ClearContainerForItemOverride(Control container)
@@ -272,6 +287,13 @@ public class TreeDataGrid : Tree, IGridHost
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
+
+        // The skeleton draws a bar where each value will be, so it needs the same widths
+        // the rows are laid out against.
+        if (e.NameScope.Find<GridSkeleton>(SkeletonPart) is { } skeleton)
+        {
+            skeleton.Columns = columns;
+        }
 
         ShowEmpty();
     }
@@ -314,6 +336,7 @@ public class TreeDataGrid : Tree, IGridHost
         if (change.Property == BeginEditGesturesProperty)
         {
             body.Gestures = change.GetNewValue<BeginEditGestures>();
+            body.Refresh();
             return;
         }
 

@@ -19,6 +19,13 @@
         <Setter Property="Margin" Value="0,8,0,3" />
     </Style>
 
+    <!-- The hairline between the pinned group and the rest of the columns. -->
+    <Style Selector="Border.chooserSeam">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="{DynamicResource MarginChooserSeam}" />
+        <Setter Property="Background" Value="{DynamicResource LineSeam}" />
+    </Style>
+
     <!-- What a row says there is more of. Always trailing, always mono, and a rung quieter
          than the label it follows, since a count is read after the name and never instead
          of it. Never draw a zero: a row saying nothing is there is a row saying nothing. -->

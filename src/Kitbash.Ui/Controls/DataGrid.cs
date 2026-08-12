@@ -21,6 +21,7 @@ public class DataGrid : ListBox, IGridHost
     private const string ActionBarPart = "PART_ActionBar";
     private const string ErrorTipPart = "PART_ErrorTip";
     private const string ErrorTipTextPart = "PART_ErrorTipText";
+    private const string SkeletonPart = "PART_Skeleton";
 
     /// <summary>Tells a recycled data row from a recycled group header.</summary>
     private static readonly object DataToken = new();
@@ -503,6 +504,13 @@ public class DataGrid : ListBox, IGridHost
         errorTip = e.NameScope.Find<Popup>(ErrorTipPart);
         errorTipText = e.NameScope.Find<TextBlock>(ErrorTipTextPart);
 
+        // The skeleton draws a bar where each value will be, so it needs the same widths
+        // the rows are laid out against.
+        if (e.NameScope.Find<GridSkeleton>(SkeletonPart) is { } skeleton)
+        {
+            skeleton.Columns = columns;
+        }
+
         frame.Attach(
             e.NameScope.Find<DataGridHeader>(HeaderPart),
             e.NameScope.Find<ScrollViewer>(ScrollerPart));
@@ -551,6 +559,10 @@ public class DataGrid : ListBox, IGridHost
         if (change.Property == BeginEditGesturesProperty)
         {
             body.Gestures = change.GetNewValue<BeginEditGestures>();
+
+            // A grid that opens no editors offers no chevron and no hint, and a cell has no
+            // way to hear a switch that lives here.
+            body.Refresh();
         }
         else if (change.Property == EditUnitProperty)
         {
@@ -574,7 +586,7 @@ public class DataGrid : ListBox, IGridHost
         }
         else if (change.Property == IsLoadingProperty)
         {
-            ShowEmpty();
+            UpdateCounts();
         }
         else if (change.Property == SelectionActionsProperty)
         {
@@ -627,6 +639,10 @@ public class DataGrid : ListBox, IGridHost
                 data.Attach(columns);
                 ((IGridRowLayout)data).SetEditing(false);
                 data.Follow(row);
+
+                // This container by name, since the sweep below only reaches the ones the
+                // panel has already published and a row being prepared is not one of them.
+                body.Mark(data);
                 break;
 
             case GridGroupRow group:
@@ -887,10 +903,12 @@ public class DataGrid : ListBox, IGridHost
                 : count == 0 || owned ? string.Empty
                 : $"{count:N0} selected");
 
+        // A count while the rows are being fetched is a count of what was there before, so
+        // the footer says nothing until they land.
         SetAndRaise(
             ShownTextProperty,
             ref shownText,
-            rows is null ? string.Empty : $"{rows.Shown:N0} of {rows.Total:N0} shown");
+            rows is null || IsLoading ? string.Empty : $"{rows.Shown:N0} of {rows.Total:N0} shown");
 
         SetAndRaise(SortTextProperty, ref sortText, SortWords());
 

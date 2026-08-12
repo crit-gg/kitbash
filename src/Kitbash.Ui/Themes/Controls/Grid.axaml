@@ -142,41 +142,16 @@
                                      when the data lands. Flat, with no shimmer, and no
                                      spinner, since a grid can reload on every keystroke of
                                      a filter. -->
-                                <StackPanel Name="PART_Skeleton"
-                                            VerticalAlignment="Top"
-                                            IsHitTestVisible="False"
-                                            IsVisible="False">
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                </StackPanel>
+                                <ui:GridSkeleton Name="PART_Skeleton"
+                                                 Fill="{DynamicResource SurfaceNest2}"
+                                                 Line="{DynamicResource LineRow}"
+                                                 RowHeight="{DynamicResource HeightGridRow}"
+                                                 BarHeight="{DynamicResource HeightSkeletonBar}"
+                                                 BarWidth="{DynamicResource WidthSkeletonBar}"
+                                                 BarRadius="{DynamicResource RadiusSkeletonBar}"
+                                                 CellPadding="{DynamicResource PaddingGridCell}"
+                                                 IsHitTestVisible="False"
+                                                 IsVisible="False" />
 
                                 <!-- The pinned seam. One element over the whole body rather
                                      than a line per row, so the shadow is one shadow. -->
@@ -276,41 +251,17 @@
                                                   Margin="{DynamicResource PaddingNotes}"
                                                   IsVisible="False" />
 
-                                <StackPanel Name="PART_Skeleton"
-                                            VerticalAlignment="Top"
-                                            IsHitTestVisible="False"
-                                            IsVisible="False">
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                        <Border Height="{DynamicResource HeightGridRow}"
-                                                Background="{DynamicResource SurfaceNest2}"
-                                                Margin="0,0,0,1" />
-                                </StackPanel>
+                                <ui:GridSkeleton Name="PART_Skeleton"
+                                                 Fill="{DynamicResource SurfaceNest2}"
+                                                 Line="{DynamicResource LineRow}"
+                                                 RowHeight="{DynamicResource HeightGridRow}"
+                                                 BarHeight="{DynamicResource HeightSkeletonBar}"
+                                                 BarWidth="{DynamicResource WidthSkeletonBar}"
+                                                 BarRadius="{DynamicResource RadiusSkeletonBar}"
+                                                 CellPadding="{DynamicResource PaddingGridCell}"
+                                                 IsHitTestVisible="False"
+                                                 IsVisible="False" />
+
                                 <!-- The pinned seam. One element over the whole body rather
                                      than a line per row, so the shadow is one shadow. -->
                                 <Border Name="PART_Seam"
@@ -615,13 +566,19 @@
                                  is drawn, so a value never reflows the moment a pointer
                                  arrives, and only the two kinds that have one reserve it.
                                  A number has none: a stepper in a cell is a widget in a
-                                 column of numbers. -->
+                                 column of numbers.
+
+                                 It answers a press on itself, so a chevron opens the list
+                                 and a jump goes where it says. A mark that does nothing is
+                                 worse than no mark. -->
                             <Panel Name="PART_Affordance"
                                    DockPanel.Dock="Right"
-                                   Margin="4,0,0,0"
+                                   Width="{DynamicResource IconSizeStatus}"
+                                   Margin="{DynamicResource MarginGridAffordance}"
+                                   Background="Transparent"
+                                   Cursor="Hand"
                                    IsVisible="False"
-                                   IsHitTestVisible="False"
-                                   VerticalAlignment="Center">
+                                   VerticalAlignment="Stretch">
                                 <ui:Icon Name="PART_Chevron"
                                          Glyph="ChevronDown"
                                          Size="{DynamicResource IconSizeStatus}"
@@ -716,7 +673,7 @@
 
         <!-- Three kinds carry a trailing affordance and reserve its room from the start. -->
         <Style Selector="^:enum:editable /template/ Panel#PART_Affordance,
-                         ^:reference:editable /template/ Panel#PART_Affordance">
+                         ^:reference:jumps /template/ Panel#PART_Affordance">
             <Setter Property="IsVisible" Value="True" />
         </Style>
 
@@ -724,12 +681,12 @@
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
         </Style>
 
-        <Style Selector="^:reference:pointerover /template/ ui|Icon#PART_Jump">
+        <Style Selector="^:reference:jumps:pointerover /template/ ui|Icon#PART_Jump">
             <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
         </Style>
 
         <!-- A reference reads as the link it is once the pointer is on it. -->
-        <Style Selector="^:reference:pointerover">
+        <Style Selector="^:reference:jumps:pointerover">
             <Setter Property="Foreground" Value="{DynamicResource AccentTintInk}" />
         </Style>
 
@@ -1250,12 +1207,14 @@
         </Setter>
     </ControlTheme>
 
-        <ControlTheme x:Key="{x:Type ui:GridColumnChooserRow}" TargetType="ui:GridColumnChooserRow">
-        <Setter Property="Height" Value="{DynamicResource HeightRow}" />
-        <Setter Property="Padding" Value="{DynamicResource PaddingRow}" />
+    <!-- One column in the chooser. It is a list row with a grip in front of it, since the
+         grip is the drag target and the row is the click target. -->
+    <ControlTheme x:Key="{x:Type ui:GridColumnChooserRow}" TargetType="ui:GridColumnChooserRow">
+        <Setter Property="Height" Value="{DynamicResource HeightControlTall}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingChooserRow}" />
         <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
         <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="Cursor" Value="SizeAll" />
@@ -1266,6 +1225,14 @@
                         CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}">
                     <DockPanel LastChildFill="True">
+                        <ui:Icon Name="PART_Grip"
+                                 DockPanel.Dock="Left"
+                                 Glyph="DotsVerticalRounded"
+                                 Size="{DynamicResource IconSizeStatus}"
+                                 Foreground="{DynamicResource InkDisabled}"
+                                 VerticalAlignment="Center"
+                                 Margin="{DynamicResource MarginChooserGrip}" />
+
                         <CheckBox Name="PART_Shown"
                                   DockPanel.Dock="Left"
                                   IsChecked="{TemplateBinding IsShown, Mode=TwoWay}"
@@ -1273,7 +1240,19 @@
                                   VerticalAlignment="Center"
                                   Margin="{DynamicResource MarginRowLead}" />
 
-                        <TextBlock Text="{TemplateBinding Label}"
+                        <!-- The mark that says a column is in the frozen block. Pinning is
+                             done by dragging into the group, so this says it rather than
+                             offering it. -->
+                        <ui:Icon Name="PART_Pinned"
+                                 DockPanel.Dock="Right"
+                                 Glyph="Columns"
+                                 Size="{DynamicResource IconSizeCompact}"
+                                 Foreground="{DynamicResource Accent}"
+                                 VerticalAlignment="Center"
+                                 IsVisible="False" />
+
+                        <TextBlock Name="PART_Label"
+                                   Text="{TemplateBinding Label}"
                                    TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center" />
                     </DockPanel>
@@ -1281,43 +1260,79 @@
             </ControlTemplate>
         </Setter>
 
+        <!-- Hover lights the whole row and the grip together, since one is what is clicked
+             and the other is what is dragged. -->
         <Style Selector="^:pointerover">
             <Setter Property="Background" Value="{DynamicResource StateHover}" />
-            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="^:pointerover /template/ ui|Icon#PART_Grip">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <Style Selector="^:pinned /template/ ui|Icon#PART_Pinned">
+            <Setter Property="IsVisible" Value="True" />
         </Style>
 
         <!-- A column that cannot be turned off sits flat rather than leaving the list, so
              the list is always the whole set of columns. -->
-        <Style Selector="^:disabled">
+        <Style Selector="^:locked /template/ TextBlock#PART_Label">
             <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
         </Style>
     </ControlTheme>
 
     <ControlTheme x:Key="{x:Type ui:GridColumnChooser}" TargetType="ui:GridColumnChooser">
-        <Setter Property="MinWidth" Value="220" />
+        <Setter Property="Width" Value="{DynamicResource WidthColumnChooser}" />
 
         <Setter Property="Template">
             <ControlTemplate>
                 <DockPanel LastChildFill="True">
+                    <ui:SearchBox Name="PART_Find"
+                                  DockPanel.Dock="Top"
+                                  PlaceholderText="Find a column"
+                                  Margin="{DynamicResource MarginChooserFind}" />
+
                     <!-- No apply button. A change lands as it is made, so closing the
-                         popover is not a commit and this only puts things back. -->
-                    <Button Name="PART_Reset"
-                            DockPanel.Dock="Bottom"
-                            Classes="ghost"
-                            Content="Reset columns"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,6,0,0" />
+                         popover is not a commit and Reset only puts things back. -->
+                    <Border DockPanel.Dock="Bottom"
+                            BorderBrush="{DynamicResource LineSeam}"
+                            BorderThickness="0,1,0,0"
+                            Margin="{DynamicResource MarginChooserFooter}"
+                            Padding="{DynamicResource PaddingChooserFooter}"
+                            MinHeight="{DynamicResource HeightChooserFooter}">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock Name="PART_Count"
+                                       DockPanel.Dock="Left"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       VerticalAlignment="Center" />
+
+                            <Button Name="PART_Reset"
+                                    DockPanel.Dock="Right"
+                                    Theme="{StaticResource CompactButton}"
+                                    Classes="link"
+                                    Content="Reset" />
+                        </DockPanel>
+                    </Border>
 
                     <Panel>
                         <StackPanel Name="PART_Rows" />
 
-                        <Border Name="PART_Drop"
-                                Height="2"
-                                VerticalAlignment="Top"
-                                HorizontalAlignment="Stretch"
-                                Background="{DynamicResource DropPreviewLine}"
-                                IsHitTestVisible="False"
-                                IsVisible="False" />
+                        <!-- Where the row would land. A Rectangle rather than a border,
+                             since a Border in Avalonia 12 has no dash of any kind, and the
+                             same dashed accent every drop target in the app draws. -->
+                        <Rectangle Name="PART_Drop"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Stretch"
+                                   Fill="{DynamicResource SurfaceDrop}"
+                                   Stroke="{DynamicResource DropPreviewLine}"
+                                   StrokeThickness="1"
+                                   StrokeDashArray="3,2"
+                                   RadiusX="{DynamicResource SizeRadiusControl}"
+                                   RadiusY="{DynamicResource SizeRadiusControl}"
+                                   IsHitTestVisible="False"
+                                   IsVisible="False" />
                     </Panel>
                 </DockPanel>
             </ControlTemplate>
@@ -1343,8 +1358,14 @@
         <Setter Property="IsVisible" Value="True" />
     </Style>
 
-    <Style Selector="ui|DataGrid:loading /template/ StackPanel#PART_Skeleton">
+    <Style Selector="ui|DataGrid:loading /template/ ui|GridSkeleton#PART_Skeleton">
         <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <!-- The skeleton stands in for the rows rather than over them, so whatever the grid was
+         showing before goes while it is fetching. -->
+    <Style Selector="ui|DataGrid:loading /template/ ItemsPresenter#PART_ItemsPresenter">
+        <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <Style Selector="ui|TreeDataGrid:nothing /template/ ContentPresenter#PART_Nothing">
@@ -1355,8 +1376,12 @@
         <Setter Property="IsVisible" Value="True" />
     </Style>
 
-    <Style Selector="ui|TreeDataGrid:loading /template/ StackPanel#PART_Skeleton">
+    <Style Selector="ui|TreeDataGrid:loading /template/ ui|GridSkeleton#PART_Skeleton">
         <Setter Property="IsVisible" Value="True" />
+    </Style>
+
+    <Style Selector="ui|TreeDataGrid:loading /template/ ItemsPresenter#PART_ItemsPresenter">
+        <Setter Property="IsVisible" Value="False" />
     </Style>
 
     <!-- The bar is up only when rows are picked and the caller gave it something to do, so a
@@ -1404,8 +1429,8 @@
         <Setter Property="IsVisible" Value="True" />
     </Style>
 
-    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump,
-                     ui|TreeDataGridRow:pointerover ui|DataGridCell:reference:editable /template/ ui|Icon#PART_Jump">
+    <Style Selector="ui|DataGridRow:pointerover ui|DataGridCell:reference:jumps /template/ ui|Icon#PART_Jump,
+                     ui|TreeDataGridRow:pointerover ui|DataGridCell:reference:jumps /template/ ui|Icon#PART_Jump">
         <Setter Property="IsVisible" Value="True" />
     </Style>
 
