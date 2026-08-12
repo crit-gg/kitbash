@@ -2,13 +2,27 @@
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
                    xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   xmlns:sys="clr-namespace:System;assembly=System.Runtime"
                    x:Class="Kitbash.Gallery.Views.Pages.GridsPage">
+
+    <views:GalleryPage.Styles>
+        <!-- The jump button is the library's theme and the reveal is the view's, since the
+             theme rests at nothing and only a view knows what the button belongs to. -->
+        <Style Selector="ui|DataGridRow:pointerover Button.jump">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+    </views:GalleryPage.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="16" Margin="20">
 
             <Border Classes="panel">
                 <StackPanel Spacing="14">
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="THE WHOLE GRID"
+                                            Content="every gesture at once" />
+
                     <TextBlock Classes="note"
                                Text="A grid is the list underneath with a column layout over the top, so virtualisation, selection and the row states are the ones already built. Click a title to sort, shift and click to add a second key, drag the edge between two titles to resize and double click that edge to fit the column to what is on screen. Double click a value to edit it in place, and Escape puts the old one back. Hover a title for the chevron, which opens what that column allows, and drag a title sideways to move the column. Pin one from the menu and it holds the left edge while the rest go under it, and the seam grows a shadow once anything has." />
 
@@ -207,10 +221,427 @@
                         <ToggleButton Classes="ghost" Content="Cell ranges" Click="OnCellRanges" />
 
                         <TextBlock Name="GridCount" Classes="caption" VerticalAlignment="Center" />
+
+                        <TextBlock Name="GridJump" Classes="caption" VerticalAlignment="Center" />
                     </StackPanel>
 
                     <TextBlock Classes="note"
-                               Text="Plain is the other thing a table can be: a way of looking at a list that is already on a page, beside a second way of looking at the same list. It drops the rule under every row, the stripe and the header's fill, and its rows take the list's radius and spacing instead." />
+                               Text="Column state is a person's, and only what they changed is kept. Move a column, resize one, pin one or turn one off, then remember the layout and reset the grid to see what it holds. A column left as the markup declared it says nothing at all, and a column with no key is never kept. An app registers AddKitbashGridColumns to write this to disk, and the gallery keeps it in memory instead." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="ghost" Content="Remember the columns" Click="OnKeepColumns" />
+                        <Button Classes="ghost" Content="Put them back" Click="OnApplyColumns" />
+                        <Button Classes="ghost" Content="Reset the columns" Click="OnResetColumns" />
+
+                        <TextBlock Name="ColumnState" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="Plain is the other thing a table can be: a way of looking at a list that is already on a page, beside a second way of looking at the same list. It drops the rule under every row, the stripe and the header's fill, and its rows take the list's radius and spacing instead. Pinning, the header menu, the pager and cell ranges all stand down while it is on, since each of those assumes a document." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="CELLS AND THEIR FORMS"
+                                            Content="one column per kind" />
+
+                    <TextBlock Classes="note"
+                               Text="Nine kinds of value, each drawn the way it is drawn when it is the whole content of a cell. The cell owns every piece of chrome and the control inside draws none, so a column of editors still reads as data. Chrome is earned in three steps everywhere: a muted underline on row hover, a full border on cell hover, then the well and its accent ring while it is being edited." />
+
+                    <TextBlock Classes="note"
+                               Text="The affordances belong to the cell rather than to the editor, since a cell shows its value until a double click opens one. An enum reserves the room for its chevron from the start and a reference reserves the room for its jump, so nothing reflows under the pointer, and a number has no stepper at all. ID takes no value, so that cell never reacts, which is the whole signal that it is read only." />
+
+                    <TextBlock Classes="note"
+                               Text="A mark answers on the first click, since a mark that does nothing is worse than no mark. The chevron opens the list without waiting for a double click, and the jump goes wherever the column says. A grid that opens no editors draws no chevron, and a reference with nowhere to go draws no jump, so what is on a cell is only ever what it will do." />
+
+                    <ui:DataGrid Name="FormsGrid" Height="330" SelectionMode="Multiple">
+                        <ui:DataGrid.Columns>
+                            <ui:GridColumn Header="ID" Width="110" IsMono="True" IsStrong="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <!-- boolean. The tick is content, so it takes the click itself
+                                 rather than opening an editor first. -->
+                            <ui:GridColumn Header="ON" Width="52" Alignment="Center" Kind="Boolean">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <CheckBox Theme="{StaticResource GridCellCheckBox}"
+                                                  IsChecked="{Binding IsOn, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="LABEL" MinWidth="130" Kind="Text">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Label, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="KIND" Width="130" Kind="Enum">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Kind}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <ComboBox Theme="{StaticResource GridCellChoice}"
+                                                  ItemsSource="{x:Static views:Part.Kinds}"
+                                                  SelectedItem="{Binding Kind, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="COUNT" Width="88" IsMono="True" Alignment="Right" Kind="Number">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Count}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <NumericUpDown Theme="{StaticResource GridCellNumber}"
+                                                       Value="{Binding Count, Mode=TwoWay}"
+                                                       Increment="1"
+                                                       FormatString="0" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <!-- reference. The jump as a real button, which is the other form
+                                 the library themes. The main grid above draws the cell's own
+                                 mark instead, so both are on this page. -->
+                            <ui:GridColumn Header="SOURCE" Width="170">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <DockPanel LastChildFill="True">
+                                            <Button Classes="jump"
+                                                    Theme="{StaticResource GridCellJump}"
+                                                    DockPanel.Dock="Right"
+                                                    ToolTip.Tip="Open what this points at">
+                                                <ui:Icon Glyph="Link" />
+                                            </Button>
+
+                                            <ui:GridRefCell Text="{Binding Source}"
+                                                            Mark="{DynamicResource Data}" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <!-- tags. The chips laid out by the keyed theme, which is what a
+                                 view takes when it counts its own overflow. -->
+                            <ui:GridColumn Header="TAGS" Width="170" Kind="Tags">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <ItemsControl Theme="{StaticResource GridCellTags}"
+                                                      ItemsSource="{Binding Tags}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="sys:String">
+                                                    <ui:Chip Content="{Binding}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="DONE" Width="96" Kind="Ratio" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <ui:GridRatioCell Value="{Binding Done}" Text="{Binding DoneText}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="TINT" Width="128" Kind="Colour">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <ui:ColorField Theme="{StaticResource GridCellColor}"
+                                                       Color="{Binding Tint, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+                        </ui:DataGrid.Columns>
+                    </ui:DataGrid>
+
+                    <TextBlock Classes="note"
+                               Text="TAGS here is the keyed theme, which lays the chips in a row and clips what does not fit, since counting the overflow means knowing how many fit and that is a measure a view does against its own data. The grid at the top of the page uses the control instead, which counts. The SOURCE column is the other half of the same choice: the jump is a real button here and the cell's own mark there." />
+
+                    <TextBlock Classes="note"
+                               Text="What opens an editor is the author's choice and there are four gestures. A double click, F2 and Enter are on by default. Type to edit takes a printable key as the first character, which is what data entry expects and is also a stray keystroke starting an edit, so it is asked for. None is the read only grid and there is no separate switch for one." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <ToggleButton Name="TypeToEdit"
+                                      Classes="ghost"
+                                      Content="Type to edit"
+                                      Click="OnTypeToEdit" />
+
+                        <ToggleButton Name="ReadOnlyForms"
+                                      Classes="ghost"
+                                      Content="Read only"
+                                      Click="OnReadOnlyForms" />
+
+                        <TextBlock Name="FormsGestures" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="VALIDATION"
+                                            Content="a wrong cell says why" />
+
+                    <TextBlock Classes="note"
+                               Text="A row reports its own errors and the grid reads them, so nothing here is hand rolled in a view. A wrong cell takes a fill, a hairline and a corner mark, which is three ways of saying it, so the state survives a colour blind reading and a greyscale screenshot. Error beats focus for the ring, so a cell that is both wrong and current says wrong." />
+
+                    <TextBlock Classes="note"
+                               Text="The message is never in the cell. It arrives in a popup under the cell the keyboard is on, and every other wrong cell stays quiet until it is reached. Hovering one shows the same message as a tooltip, which is how a pointer reaches a wrong cell without making it current. The footer counts what is blocking a save over every row and not only the ones on screen." />
+
+                    <TextBlock Classes="note"
+                               Text="This grid edits a row at a time rather than a cell at a time, which is what a rule spanning two fields needs. The row opens on the first cell touched and closes when the edit leaves the row, so the high and the low are checked once they both hold values, and Escape puts the whole row back rather than the last field." />
+
+                    <ui:DataGrid Name="ChecksGrid"
+                                 Height="270"
+                                 EditUnit="Row"
+                                 SelectionMode="Multiple">
+                        <ui:DataGrid.Columns>
+                            <ui:GridColumn Header="CODE" Width="150" Field="Code" IsMono="True" IsStrong="True" Kind="Text">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBlock Text="{Binding Code}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Code, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="NAME" MinWidth="140" Field="Name" Kind="Text">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Name, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="LOW" Width="96" Field="Low" IsMono="True" Alignment="Right" Kind="Number">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBlock Text="{Binding Low}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <NumericUpDown Theme="{StaticResource GridCellNumber}"
+                                                       Value="{Binding Low, Mode=TwoWay}"
+                                                       Increment="1"
+                                                       FormatString="0" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="HIGH" Width="96" Field="High" IsMono="True" Alignment="Right" Kind="Number">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <TextBlock Text="{Binding High}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Sample">
+                                        <NumericUpDown Theme="{StaticResource GridCellNumber}"
+                                                       Value="{Binding High, Mode=TwoWay}"
+                                                       Increment="1"
+                                                       FormatString="0" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+                        </ui:DataGrid.Columns>
+                    </ui:DataGrid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="ghost" Content="Break the last row" Click="OnBreakRow" />
+                        <Button Classes="ghost" Content="Check everything" Click="OnRecheck" />
+                        <Button Classes="ghost" Content="Put them right" Click="OnFixChecks" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
+                               Text="Break the last row and the footer does not move, because a row nobody has scrolled to has no container to hear that its errors changed. Check everything walks the whole source and puts the count right, which is where a tool that has just checked its own data says so." />
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="EMPTY, FILTERED AND LOADING"
+                                            Content="the three states" />
+
+                    <TextBlock Classes="note"
+                               Text="All three keep the toolbar and the column header on screen, since a grid is a place rather than a page and the control that gets a person out of the state has to stay where it was. Nothing yet is the only one that teaches. No matches repeats what emptied the grid beside the way to clear it, so the cause and the cure are in one place. Loading is skeleton rows at the real row height, so nothing moves when the data lands, and there is no spinner, because a grid can reload on every keystroke of a filter." />
+
+                    <ui:Segmented HorizontalAlignment="Left">
+                        <RadioButton Name="StateRows"
+                                     GroupName="gridStates"
+                                     Content="Rows"
+                                     IsChecked="True"
+                                     Click="OnGridState" />
+
+                        <RadioButton Name="StateNothing"
+                                     GroupName="gridStates"
+                                     Content="Nothing yet"
+                                     Click="OnGridState" />
+
+                        <RadioButton Name="StateNoMatches"
+                                     GroupName="gridStates"
+                                     Content="No matches"
+                                     Click="OnGridState" />
+
+                        <RadioButton Name="StateLoading"
+                                     GroupName="gridStates"
+                                     Content="Loading"
+                                     Click="OnGridState" />
+                    </ui:Segmented>
+
+                    <ui:DataGrid Name="StatesGrid" Height="300">
+                        <ui:DataGrid.Toolbar>
+                            <ui:SearchBox Name="StatesFilter"
+                                          Width="220"
+                                          HorizontalAlignment="Left"
+                                          PlaceholderText="Filter rows"
+                                          TextChanged="OnFilterStates" />
+                        </ui:DataGrid.Toolbar>
+
+                        <ui:DataGrid.EmptyContent>
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Classes="note"
+                                           Text="No parts yet. A part is one row of the data file this tool writes."
+                                           HorizontalAlignment="Center" />
+
+                                <Button Classes="primary"
+                                        Content="New part"
+                                        HorizontalAlignment="Center"
+                                        Click="OnFirstPart" />
+                            </StackPanel>
+                        </ui:DataGrid.EmptyContent>
+
+                        <ui:DataGrid.NoMatchesContent>
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <TextBlock Name="StatesNoMatches"
+                                           Classes="note"
+                                           HorizontalAlignment="Center" />
+
+                                <Button Classes="ghost"
+                                        Content="Clear the filter"
+                                        HorizontalAlignment="Center"
+                                        Click="OnClearStatesFilter" />
+                            </StackPanel>
+                        </ui:DataGrid.NoMatchesContent>
+
+                        <ui:DataGrid.Columns>
+                            <ui:GridColumn Header="ID" Width="130" IsMono="True" IsStrong="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="LABEL" MinWidth="160">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="KIND" Width="140">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Kind}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+                        </ui:DataGrid.Columns>
+                    </ui:DataGrid>
+
+                    <HeaderedContentControl Theme="{StaticResource SectionLabel}"
+                                            Header="THE ROW MODEL"
+                                            Content="identity, order and the source" />
+
+                    <TextBlock Classes="note"
+                               Text="The grid holds one wrapper per item, so a row picked before a sort is the same row after it. Pick a few rows and sort a column: the selection and the scroll position come back. Add a row and the source is heard for itself, so nothing calls refresh and the rows already on screen never leave their containers." />
+
+                    <TextBlock Classes="note"
+                               Text="Sorting a name orders it the way it is read, so asset_2 comes before asset_10 rather than after it. STAGE names a comparer of its own, so it goes draft, review, final rather than alphabetically, and the row with no stage sorts first whichever way the column points. What is picked is the item and not the wrapper, which is what the readout under the grid is bound to." />
+
+                    <ui:DataGrid Name="ModelGrid" Height="250" SelectionMode="Multiple">
+                        <ui:DataGrid.Columns>
+                            <ui:GridColumn Header="ID" Width="150" IsMono="True" IsStrong="True">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Id}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="LABEL" MinWidth="140" Kind="Text">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Label, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="STAGE" Width="130">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Stage}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+
+                            <ui:GridColumn Header="COUNT" Width="96" IsMono="True" Alignment="Right">
+                                <ui:GridColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:Part">
+                                        <TextBlock Text="{Binding Count}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ui:GridColumn.CellTemplate>
+                            </ui:GridColumn>
+                        </ui:DataGrid.Columns>
+                    </ui:DataGrid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Classes="ghost" Content="Add a row" Click="OnAddRow" />
+                        <Button Classes="ghost" Content="Remove the picked rows" Click="OnRemoveRows" />
+
+                        <TextBlock Name="ModelPicked" Classes="caption" VerticalAlignment="Center" />
+                    </StackPanel>
 
                     <HeaderedContentControl Theme="{StaticResource SectionLabel}"
                                             Header="TREE DATA GRID"
@@ -220,15 +651,27 @@
                                Text="One column model, laid out by both grids. Only the leading column indents, and a branch row carries what its children add up to, so a closed branch still answers the question they would." />
 
                     <TextBlock Classes="note"
+                               Text="Sorting a tree orders the children under every parent, and a branch opened after the sort takes it as well. Its titles cycle up, then down, then back to the order the source came in, and shift and a click is an ordinary click here, since a second key over a hierarchy has no settled meaning. Double click a value to edit it, which is the flat grid's own editing rather than a second copy, and a leaf whose value has moved wears the amber bar." />
+
+                    <TextBlock Classes="note"
                                Text="Type in the box to filter the tree. A branch survives when it matches or when anything under it does, and one kept for something under it opens, so nothing on screen is other than a match or the way to one. A branch that matches on its own name keeps nothing under it and draws no caret." />
 
-                    <ui:SearchBox Name="TreeFilter"
-                                  Width="220"
-                                  HorizontalAlignment="Left"
-                                  PlaceholderText="Filter the tree"
-                                  TextChanged="OnFilterTree" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <ui:SearchBox Name="TreeFilter"
+                                      Width="220"
+                                      PlaceholderText="Filter the tree"
+                                      TextChanged="OnFilterTree" />
+
+                        <Button Classes="ghost" Content="Save the tree edits" Click="OnSaveTree" />
+                    </StackPanel>
 
                     <ui:TreeDataGrid Name="SampleTreeGrid" Height="250">
+                        <ui:TreeDataGrid.EmptyContent>
+                            <TextBlock Classes="note"
+                                       Text="Nothing in this tree yet."
+                                       HorizontalAlignment="Center" />
+                        </ui:TreeDataGrid.EmptyContent>
+
                         <ui:TreeDataGrid.NoMatchesContent>
                             <StackPanel Spacing="8" HorizontalAlignment="Center">
                                 <TextBlock Classes="note"
@@ -278,6 +721,13 @@
                                         <TextBlock Text="{Binding Value}" VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ui:GridColumn.CellTemplate>
+
+                                <ui:GridColumn.EditTemplate>
+                                    <DataTemplate x:DataType="views:Aggregate">
+                                        <TextBox Theme="{StaticResource GridCellText}"
+                                                 Text="{Binding Value, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ui:GridColumn.EditTemplate>
                             </ui:GridColumn>
 
                             <ui:GridColumn Header="TIER" Width="104" IsMono="True" Alignment="Right">
