@@ -53,7 +53,7 @@ internal sealed class ProjectsWindows : IProjectsWindows
         // effect the next time a window opens.
         var window = new ProjectsWindow
         {
-            UsesNativeChrome = _windows.UseNativeChrome,
+            Chrome = _windows.Chrome,
             Kind = _kind,
             Platform = _platform,
             FileSystem = _files,

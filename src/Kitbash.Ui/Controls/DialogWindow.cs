@@ -23,6 +23,23 @@ public class DialogWindow : ChromelessWindow
         AddHandler(Button.ClickEvent, OnClick);
     }
 
+    /// <summary>
+    /// Opens the dialog wearing the same frame as the window that owns it. Setting it here
+    /// rather than reading Owner, because a window is given its owner after its first layout
+    /// pass, which is already too late to change the template or the size.
+    /// </summary>
+    public Task<TResult> ShowFor<TResult>(Window owner)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+
+        if (owner is ChromelessWindow framed)
+        {
+            Chrome = framed.Chrome;
+        }
+
+        return ShowDialog<TResult>(owner);
+    }
+
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);

@@ -59,6 +59,8 @@ public static class KitbashCoreServices
             // capture of the desktop, which is not built.
             services.TryAddSingleton<IScreenColour, NoScreenColour>();
 
+            services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Drawn));
+
             return services;
         }
 
@@ -74,6 +76,8 @@ public static class KitbashCoreServices
 #else
             services.TryAddSingleton<IScreenColour, NoScreenColour>();
 #endif
+
+            services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Drawn));
 
             return services;
         }
@@ -92,6 +96,11 @@ public static class KitbashCoreServices
             // No portal here either. Reading the screen means the screen recording
             // permission, which an eyedropper does not warrant.
             services.TryAddSingleton<IScreenColour, NoScreenColour>();
+
+            // Drawn is not offered here. BeginResizeDrag is a no operation on macOS and
+            // WindowDecorations.None drops the resizable style mask, so a window Kitbash
+            // framed itself could not be resized by anything.
+            services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Overlay));
 
             return services;
         }

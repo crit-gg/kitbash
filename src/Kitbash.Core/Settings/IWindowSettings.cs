@@ -14,6 +14,12 @@ public interface IWindowSettings
     /// </summary>
     bool UseNativeChrome { get; }
 
+    /// <summary>
+    /// What <see cref="UseNativeChrome"/> means on this desktop. Read once when a window is
+    /// built, since nothing watches it.
+    /// </summary>
+    WindowChromeKind Chrome { get; }
+
     /// <summary>Writes <see cref="UseNativeChrome"/>. Open windows do not follow it.</summary>
     void SetUseNativeChrome(bool value);
 }

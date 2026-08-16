@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Kitbash.Core.Settings;
 
 namespace Kitbash.Ui.Controls;
 
@@ -12,12 +13,18 @@ namespace Kitbash.Ui.Controls;
 public class ChromelessWindow : Window
 {
     /// <summary>
-    /// Whether the desktop draws the frame. Set from
-    /// <c>Kitbash.Core.Settings.IWindowSettings</c> when the window is built. It is
-    /// not watched, so changing the setting takes effect on the next launch.
+    /// Who draws the frame. Set from <c>Kitbash.Core.Settings.IWindowSettings.Chrome</c>
+    /// when the window is built. It is not watched, so changing the setting takes effect
+    /// on the next launch.
     /// </summary>
-    public static readonly StyledProperty<bool> UsesNativeChromeProperty =
-        AvaloniaProperty.Register<ChromelessWindow, bool>(nameof(UsesNativeChrome));
+    public static readonly StyledProperty<WindowChromeKind> ChromeProperty =
+        AvaloniaProperty.Register<ChromelessWindow, WindowChromeKind>(nameof(Chrome));
+
+    /// <summary>
+    /// The transparent room the drawn frame's shadow falls into, on every side. Held here
+    /// as well as in the theme because a window's Width and Height include it.
+    /// </summary>
+    private const double ShadowGutter = 12;
 
     public ChromelessWindow()
     {
@@ -31,39 +38,73 @@ public class ChromelessWindow : Window
         Classes.Set("inactive", !IsActive);
     }
 
-    /// <inheritdoc cref="UsesNativeChromeProperty"/>
-    public bool UsesNativeChrome
+    /// <inheritdoc cref="ChromeProperty"/>
+    public WindowChromeKind Chrome
     {
-        get => GetValue(UsesNativeChromeProperty);
-        set => SetValue(UsesNativeChromeProperty, value);
+        get => GetValue(ChromeProperty);
+        set => SetValue(ChromeProperty, value);
     }
+
+    /// <summary>Whether Kitbash draws the frame, which is the only mode with a gutter.</summary>
+    private bool IsDrawn => Chrome is WindowChromeKind.Drawn;
 
     /// <summary>Styles target Window, so a derived window keeps the same frame.</summary>
     protected override Type StyleKeyOverride => typeof(Window);
 
     /// <summary>
-    /// The classes the frame selects on. <c>chromeless</c> picks the drawn template and
-    /// its resize grips, <c>nativeChrome</c> drops it because the desktop supplies its
-    /// own, and the two are mutually exclusive. <c>inactive</c> drops the chrome to the
-    /// muted tier. Every control carries its own classes rather than a selector reaching
-    /// across the window, so the title bar mirrors the same state onto itself.
+    /// The classes the frame selects on, one per mode and mutually exclusive.
+    /// <c>chromeless</c> picks the drawn template and its resize grips, <c>nativeChrome</c>
+    /// drops it because the desktop draws a title bar of its own, and <c>overlayChrome</c>
+    /// drops it because the desktop draws its caption buttons over ours. <c>inactive</c>
+    /// drops the chrome to the muted tier. Every control carries its own classes rather
+    /// than a selector reaching across the window, so the title bar mirrors the same state.
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == UsesNativeChromeProperty)
+        if (change.Property == ChromeProperty)
         {
-            var native = change.GetNewValue<bool>();
+            var chrome = change.GetNewValue<WindowChromeKind>();
 
-            Classes.Set("chromeless", !native);
-            Classes.Set("nativeChrome", native);
+            Classes.Set("chromeless", chrome is WindowChromeKind.Drawn);
+            Classes.Set("nativeChrome", chrome is WindowChromeKind.Desktop);
+            Classes.Set("overlayChrome", chrome is WindowChromeKind.Overlay);
+
+            TakeBackTheGutter(change.GetOldValue<WindowChromeKind>(), chrome);
         }
         else if (change.Property == IsActiveProperty)
         {
             Classes.Set("inactive", !change.GetNewValue<bool>());
         }
     }
+
+    /// <summary>
+    /// Every window asks for the size its design wants plus the gutter, since the frame
+    /// sits inside the window's own Padding. A mode that draws no frame has no gutter, so
+    /// the same numbers would make the window 24 wider and taller than it should be. The
+    /// constructor has already run the XAML by the time Chrome is set, so this corrects
+    /// what was declared rather than fighting it.
+    /// </summary>
+    private void TakeBackTheGutter(WindowChromeKind was, WindowChromeKind now)
+    {
+        var room = ((was is WindowChromeKind.Drawn ? 0 : 1) - (now is WindowChromeKind.Drawn ? 0 : 1))
+                   * ShadowGutter * 2;
+
+        if (room == 0)
+        {
+            return;
+        }
+
+        Width = Shift(Width, room);
+        Height = Shift(Height, room);
+        MinWidth = Shift(MinWidth, room);
+        MinHeight = Shift(MinHeight, room);
+    }
+
+    // NaN is a window sizing to its content, which has no declared number to correct.
+    private static double Shift(double value, double by) =>
+        double.IsNaN(value) || value <= 0 ? value : Math.Max(0, value + by);
 
     /// <summary>
     /// Moves the window. The second click of a double click is ignored so it can
@@ -73,7 +114,10 @@ public class ChromelessWindow : Window
     /// </summary>
     protected internal void BeginMoveWindow(PointerPressedEventArgs e)
     {
-        if (UsesNativeChrome)
+        // Under either desktop drawn mode the platform owns the gesture. Overlay tags the
+        // title bar with WindowDecorationProperties.ElementRole, so the move is the real
+        // native one, and doing it here as well would start two drags from one press.
+        if (!IsDrawn)
         {
             return;
         }
@@ -90,13 +134,12 @@ public class ChromelessWindow : Window
             : WindowState.Maximized;
 
     /// <summary>
-    /// The double click gesture on the title bar. It does nothing when the desktop
-    /// draws the frame, since the desktop's own title bar already carries the gesture
-    /// and ours is then ordinary content.
+    /// The double click gesture on the title bar. It does nothing under either desktop
+    /// drawn mode, since the platform already carries it there.
     /// </summary>
     protected internal void ToggleMaximizedFromTitleBar()
     {
-        if (UsesNativeChrome)
+        if (!IsDrawn)
         {
             return;
         }

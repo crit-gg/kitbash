@@ -73,6 +73,6 @@ public partial class EnginesPage : UserControl
             return false;
         }
 
-        return await UninstallDialog.For(engine).ShowDialog<bool>(owner);
+        return await UninstallDialog.For(engine).ShowFor<bool>(owner);
     }
 }

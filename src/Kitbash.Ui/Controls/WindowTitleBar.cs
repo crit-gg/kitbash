@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
+using Kitbash.Core.Settings;
 
 namespace Kitbash.Ui.Controls;
 
@@ -96,7 +97,7 @@ public class WindowTitleBar : ContentControl
     // the window and into this control's template.
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == ChromelessWindow.UsesNativeChromeProperty
+        if (e.Property == ChromelessWindow.ChromeProperty
             || e.Property == Window.CanMinimizeProperty
             || e.Property == Window.WindowStateProperty
             || e.Property == Window.CanResizeProperty
@@ -190,18 +191,27 @@ public class WindowTitleBar : ContentControl
     /// </summary>
     private void Apply()
     {
-        var native = _window?.UsesNativeChrome ?? false;
+        var chrome = _window?.Chrome ?? WindowChromeKind.Drawn;
 
-        Classes.Set("nativeChrome", native);
+        Classes.Set("nativeChrome", chrome is WindowChromeKind.Desktop);
+        Classes.Set("overlayChrome", chrome is WindowChromeKind.Overlay);
         Classes.Set("maximized", _window?.WindowState == WindowState.Maximized);
         Classes.Set("fixedSize", _window is { CanResize: false });
         Classes.Set("noMinimize", _window is { CanMinimize: false });
 
+        // Full screen moves the caption buttons out of the window, so the row goes back to
+        // its ordinary leading margin.
+        Classes.Set("fullScreen", _window?.WindowState == WindowState.FullScreen);
+
         // A bar with no window reads as active, which is what a preview should show.
         Classes.Set("inactive", _window is { IsActive: false });
 
-        // SetCurrentValue rather than a local write, so a window that binds IsVisible
-        // for its own reasons is not overridden for good.
-        SetCurrentValue(IsVisibleProperty, !native || HasExtraContent);
+        // Desktop chrome draws a title bar of its own, so a row carrying nothing else says
+        // nothing. Overlay has no other title bar, so the row is the title bar and stays.
+        // SetCurrentValue rather than a local write, so a window that binds IsVisible for
+        // its own reasons is not overridden for good.
+        SetCurrentValue(
+            IsVisibleProperty,
+            chrome is not WindowChromeKind.Desktop || HasExtraContent);
     }
 }

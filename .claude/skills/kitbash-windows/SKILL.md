@@ -149,9 +149,15 @@ window that opened it and stays out of the task bar. There is no scrim behind it
 `ui:DialogFooter` is the row its actions sit in, on `SurfaceRoot` with a seam above.
 The dialog lays out its own content between the two.
 
+**Open a dialog with `ShowFor`, not `ShowDialog`.** It copies the owner's frame onto the
+dialog first, so a launcher wearing traffic lights does not open a dialog wearing Kitbash
+caption buttons. Reading `Owner` inside the dialog cannot do this: a window is given its
+owner after its first layout pass, which is already too late to change the template or the
+size. `ShowDialog` still works and still leaves the dialog on the drawn frame.
+
 **A dialog's buttons carry a role, not a handler.** `ui:Dialog.Role` is `Accept` or
 `Cancel`, and a roled button closes the dialog and answers for it, so
-`await dialog.ShowDialog<bool>(owner)` says which was pressed and the caller wires nothing.
+`await dialog.ShowFor<bool>(owner)` says which was pressed and the caller wires nothing.
 Closing any other way, the frame included, is a no. A button with no role is an ordinary
 button, which is how a third answer such as Don't save is written.
 
@@ -183,18 +189,47 @@ keypress can answer yes.
 and user only, so a workspace can never set it for everyone. It is read once when a
 window is built and is not watched, so a change applies at the next launch.
 
-`ChromelessWindow.UsesNativeChrome` carries it and keeps two mutually exclusive classes
-in step. Style against the class, never against the property, and never assume the
-drawn frame.
+**What turning it off means is the desktop's answer, not the setting's.**
+`WindowChromeRule` in Core says so, registered per OS in `AddPlatformIO`, and
+`IWindowSettings.Chrome` is what a window reads. So no UI file learns what OS it is on.
+
+| | `nativeChrome` off | on |
+|---|---|---|
+| Windows and Linux | `Drawn` | `Desktop` |
+| macOS | `Overlay` | `Desktop` |
+
+**`Drawn` is not offered on macOS, and that is correctness rather than taste.**
+`BeginResizeDrag` is a no operation on the macOS backend and `WindowDecorations.None` drops
+`NSWindowStyleMaskResizable`, so a window Kitbash framed itself could not be resized by our
+grips or by the OS.
+
+`ChromelessWindow.Chrome` carries the mode and keeps three mutually exclusive classes in
+step. Style against the class, never against the property, and never assume the drawn frame.
 
 | Class | Frame | Caption buttons | Drag | Double click |
 |---|---|---|---|---|
 | `chromeless` | Kitbash draws it, `WindowDecorations="None"` | shown | moves the window | toggles maximise |
 | `nativeChrome` | the desktop draws it, `WindowDecorations="Full"` | hidden | nothing | nothing |
+| `overlayChrome` | the desktop draws it over an extended client area | hidden | the platform's | the platform's |
 
 Under `nativeChrome` the row is ordinary content. It is not a title bar, because the
 desktop already supplies one, so both gestures are disabled at their entry points,
 `BeginMoveWindow` and `ToggleMaximizedFromTitleBar`.
+
+**Under `overlayChrome` the row is the title bar and the platform owns the gestures.**
+`ExtendClientAreaToDecorationsHint` is true and `WindowDecorations` stays `Full`, since the
+macOS backend zeroes its extended margins and hides the caption buttons for anything else.
+The title bar already carries `WindowDecorationProperties.ElementRole="TitleBar"`, so
+`ChromeHitTest` starts the real native move, which is why both entry points stay disabled
+here too. Doing it ourselves as well would start two drags from one press.
+
+**The caption inset is 80 and it is a constant, because Avalonia 12.1.1 exposes no way to
+read it.** Measured on macOS 26.4 through `standardWindowButton`: the three buttons are 14
+wide on 23 centres from x=9, so the last ends at 69, and 80 leaves the same 11 the drawn
+frame leaves at its own edge. Two more measurements that happen to line up and are worth not
+rediscovering: the system title bar is 32, exactly `HeightTitleBar`, and the buttons' vertical
+centre is 16 from the top of the client area, exactly the centre of that row. **The inset is
+dropped in full screen**, since macOS moves the buttons out of the window there.
 
 **A bar with nothing of its own disappears.** Under `nativeChrome` the row is hidden
 outright when the window put no content in it, since the desktop's title bar already
@@ -236,6 +271,14 @@ Two things follow. A window's `Width` and `Height` include the gutter, so the la
 asks for 964 by 724 to show the design's 940 by 700. Maximizing drops the gutter, which
 drops the shadow with it, so the screen edge carries no transparent strip and no dark
 band.
+
+**Only the drawn frame has a gutter, so `ChromelessWindow` takes it back out under the other
+two.** Every window in the repository asks for its design size plus 24 on each axis, and
+under a desktop drawn frame there is nothing for that 24 to pay for. `TakeBackTheGutter`
+corrects `Width`, `Height`, `MinWidth` and `MinHeight` when the mode is set, which works
+because the XAML has already run by then. A window sizing to its content has `NaN` there and
+is left alone. **Keep the constant in `ChromelessWindow` and the thickness in the theme in
+step**, since they are the same 12 said twice.
 
 Anything clickable needs a `Background`, even `Transparent`. A control with no
 background is not hit tested, so a look that only appears on `:pointerover` can never

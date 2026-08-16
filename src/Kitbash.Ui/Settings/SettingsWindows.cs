@@ -60,7 +60,7 @@ internal sealed class SettingsWindows : ISettingsWindows
         // effect the next time a window opens.
         var window = new SettingsWindow
         {
-            UsesNativeChrome = _windows.UseNativeChrome,
+            Chrome = _windows.Chrome,
             DataContext = new SettingsWindowViewModel(
                 _schema, _inspector, _writer, _converter, _shortener, _restart),
         };

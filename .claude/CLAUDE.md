@@ -309,13 +309,18 @@ registry holds and opening one reports that it is not built. No tool is implemen
 no file format or Godot integration work has started.
 
 **macOS runs.** `osx-arm64` is a third runtime identifier, `Kitbash.Core/Platform/MacOS`
-holds the five services that differ, and the whole suite passes on a Mac with 21 new tests
-over the macOS answers. **Two things are not done**: there is no `.app` packaging or release
-job, and the window still wears Kitbash's own drawn frame, which on macOS cannot be resized
-at all, since `BeginResizeDrag` is a no operation there and `WindowDecorations.None` drops
-the resizable style mask. The system traffic lights over an extended client area are the fix
-and are planned rather than built. The `kitbash-platform` and `kitbash-updates` skills carry
-the rules and what is still only reasoned.
+holds the five services that differ, and the whole suite passes on a Mac.
+
+**There are three window frames now, not two.** `WindowChromeKind` is `Drawn`, `Desktop` or
+`Overlay`, and `WindowChromeRule` in Core says which one `window.nativeChrome` off means on
+this desktop, so no UI file asks about the OS. macOS gets `Overlay`, the system traffic lights
+over an extended client area, and **`Drawn` is not offered there**, since `BeginResizeDrag`
+is a no operation on that backend and `WindowDecorations.None` drops the resizable style
+mask, so a window Kitbash framed itself could not be resized at all. A dialog now opens with
+`ShowFor` so it wears its owner's frame.
+
+**What is left is packaging.** There is no `.app`, no `.icns` and no macOS release job, and
+`vpk [osx] pack` needs its own runner. The `kitbash-updates` skill has what that costs.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes both runtimes and packs both from one machine, and at start

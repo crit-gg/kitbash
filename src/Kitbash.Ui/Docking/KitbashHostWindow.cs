@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Dock.Avalonia.Controls;
+using Kitbash.Core.Settings;
 using Kitbash.Ui.Controls;
 
 namespace Kitbash.Ui.Docking;
@@ -16,27 +17,27 @@ namespace Kitbash.Ui.Docking;
 /// <code>
 /// HostWindowLocator = new Dictionary&lt;string, Func&lt;IHostWindow?&gt;&gt;
 /// {
-///     [nameof(IDockWindow)] = () =&gt; new KitbashHostWindow(settings.UsesNativeChrome)
+///     [nameof(IDockWindow)] = () =&gt; new KitbashHostWindow(settings.Chrome)
 /// };
 /// </code>
 /// </example>
 public class KitbashHostWindow : HostWindow
 {
-    /// <inheritdoc cref="ChromelessWindow.UsesNativeChromeProperty"/>
-    public static readonly StyledProperty<bool> UsesNativeChromeProperty =
-        AvaloniaProperty.Register<KitbashHostWindow, bool>(nameof(UsesNativeChrome));
+    /// <inheritdoc cref="ChromelessWindow.ChromeProperty"/>
+    public static readonly StyledProperty<WindowChromeKind> ChromeProperty =
+        AvaloniaProperty.Register<KitbashHostWindow, WindowChromeKind>(nameof(Chrome));
 
-    public KitbashHostWindow() => Wear(UsesNativeChrome);
+    public KitbashHostWindow() => Wear(Chrome);
 
-    public KitbashHostWindow(bool usesNativeChrome)
+    public KitbashHostWindow(WindowChromeKind chrome)
         : this() =>
-        UsesNativeChrome = usesNativeChrome;
+        Chrome = chrome;
 
-    /// <inheritdoc cref="ChromelessWindow.UsesNativeChromeProperty"/>
-    public bool UsesNativeChrome
+    /// <inheritdoc cref="ChromelessWindow.ChromeProperty"/>
+    public WindowChromeKind Chrome
     {
-        get => GetValue(UsesNativeChromeProperty);
-        set => SetValue(UsesNativeChromeProperty, value);
+        get => GetValue(ChromeProperty);
+        set => SetValue(ChromeProperty, value);
     }
 
     /// <summary>
@@ -49,9 +50,9 @@ public class KitbashHostWindow : HostWindow
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == UsesNativeChromeProperty)
+        if (change.Property == ChromeProperty)
         {
-            Wear(change.GetNewValue<bool>());
+            Wear(change.GetNewValue<WindowChromeKind>());
         }
     }
 
@@ -60,20 +61,26 @@ public class KitbashHostWindow : HostWindow
     /// chromeless style, because Dock hands the desktop the frame from a style carrying an
     /// activator and a plain style will not beat one.
     /// </summary>
-    private void Wear(bool native)
+    private void Wear(WindowChromeKind chrome)
     {
-        Classes.Set("chromeless", !native);
-        Classes.Set("nativeChrome", native);
+        var drawn = chrome is WindowChromeKind.Drawn;
 
-        WindowResize.SetGrips(this, !native);
+        Classes.Set("chromeless", drawn);
+        Classes.Set("nativeChrome", chrome is WindowChromeKind.Desktop);
+        Classes.Set("overlayChrome", chrome is WindowChromeKind.Overlay);
 
-        if (native)
+        WindowResize.SetGrips(this, drawn);
+
+        if (!drawn)
         {
             // The desktop draws the whole frame, title bar included. Dock would hand it
             // the edge alone and keep the tool chrome as the title bar, which is our
-            // chrome under another name.
+            // chrome under another name. Overlay differs only in running the client area
+            // under it, which is what puts its caption buttons on our row.
             SetValue(WindowDecorationsProperty, WindowDecorations.Full);
-            SetValue(ExtendClientAreaToDecorationsHintProperty, false);
+            SetValue(
+                ExtendClientAreaToDecorationsHintProperty,
+                chrome is WindowChromeKind.Overlay);
             ClearValue(BackgroundProperty);
             ClearValue(TransparencyLevelHintProperty);
 

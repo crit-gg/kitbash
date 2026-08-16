@@ -375,7 +375,7 @@ public partial class App : Application
 
         var window = new LauncherWindow
         {
-            UsesNativeChrome = windows.UseNativeChrome,
+            Chrome = windows.Chrome,
 
             // A window is built without a container, so the services it opens for
             // itself are handed over here rather than resolved inside it.

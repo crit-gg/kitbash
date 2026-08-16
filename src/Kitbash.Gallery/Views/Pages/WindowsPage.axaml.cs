@@ -142,7 +142,7 @@ public partial class WindowsPage : GalleryPage
 
         dialog.Content = layout;
 
-        var removed = await dialog.ShowDialog<bool>(owner);
+        var removed = await dialog.ShowFor<bool>(owner);
         DialogAnswer.Text = removed ? "The dialog said remove." : "The dialog said no.";
     }
 

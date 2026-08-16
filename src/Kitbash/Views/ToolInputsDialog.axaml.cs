@@ -28,6 +28,6 @@ public partial class ToolInputsDialog : DialogWindow
 
         var dialog = new ToolInputsDialog { Title = model.Title, DataContext = model };
 
-        return dialog.ShowDialog<bool>(owner);
+        return dialog.ShowFor<bool>(owner);
     }
 }

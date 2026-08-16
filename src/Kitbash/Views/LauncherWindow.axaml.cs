@@ -204,7 +204,7 @@ public partial class LauncherWindow : ChromelessWindow
 
         var dialog = new NewWorkspaceDialog { DataContext = model.NewWorkspace() };
 
-        if (await dialog.ShowDialog<bool>(this) && dialog.Request is { } request)
+        if (await dialog.ShowFor<bool>(this) && dialog.Request is { } request)
         {
             await model.CreateWorkspaceAsync(request, dialog.NeedsInstall);
         }
@@ -228,7 +228,7 @@ public partial class LauncherWindow : ChromelessWindow
         var dialog = new CloneWorkspaceDialog { DataContext = model.NewClone() };
 
         // The dialog only says yes once git has finished, so the folder is really there.
-        if (await dialog.ShowDialog<bool>(this) && dialog.Root is { } root)
+        if (await dialog.ShowFor<bool>(this) && dialog.Root is { } root)
         {
             await model.AddWorkspaceAsync(root);
         }
@@ -301,7 +301,7 @@ public partial class LauncherWindow : ChromelessWindow
 
         var dialog = RenameWorkspaceDialog.For(workspace);
 
-        if (await dialog.ShowDialog<bool>(this) && Model is { } model)
+        if (await dialog.ShowFor<bool>(this) && Model is { } model)
         {
             await model.RenameWorkspaceAsync(workspace, dialog.ChosenName);
         }
@@ -313,7 +313,7 @@ public partial class LauncherWindow : ChromelessWindow
 
         var dialog = RemoveWorkspaceDialog.For(workspace);
 
-        if (await dialog.ShowDialog<bool>(this) && Model is { } model)
+        if (await dialog.ShowFor<bool>(this) && Model is { } model)
         {
             await model.RemoveWorkspaceAsync(workspace);
         }
@@ -392,7 +392,7 @@ public partial class LauncherWindow : ChromelessWindow
         // rather than while the UI thread is drawing it.
         var size = await Task.Run(() => model.SizeOnDisk(tool));
 
-        if (await UninstallDialog.For(tool, size).ShowDialog<bool>(this))
+        if (await UninstallDialog.For(tool, size).ShowFor<bool>(this))
         {
             await model.UninstallToolAsync(tool);
         }

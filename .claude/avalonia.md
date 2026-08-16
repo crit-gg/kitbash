@@ -249,7 +249,9 @@ This is the area that changed most, and the area where version 11 advice is wron
 
 Removed in 12: `ExtendClientAreaChromeHints`, `TitleBar`, `CaptionButtons`,
 `ChromeOverlayLayer`. Renamed: `SystemDecorations` is now `WindowDecorations`, with
-values `None`, `BorderOnly` and `Full`.
+values `None`, `BorderOnly` and `Full`. **`SystemDecorations` is still findable**, as an
+obsolete CLR forwarder rather than a property, so a search turns it up and it must not be
+used. It cannot be set from a style at all.
 
 There are two supported ways to draw your own frame.
 
@@ -323,9 +325,35 @@ maximized  client=5120,1400 padding=0   frame=5120x1400
 restored   client=964,724   padding=12  frame=940x700
 ```
 
-### Roles do not work on Linux yet
+### Roles work on macOS and not on Linux
 
-Measured on 12.1.1 on this machine, with the hint set from the window constructor:
+Measured on 12.1.1 on macOS 26.4, with the hint set before the window is shown:
+
+```
+WindowDecorations=Full  IsExtendedIntoWindowDecorations=True
+WindowDecorationMargin=0,28,0,0  ClientSize=940,700  FrameSize=940,700
+```
+
+So the hint takes on macOS, the roles do take effect, and the client area really is the
+whole window, which is why a window's size no longer needs the shadow gutter added to it
+there. **`WindowDecorationMargin.Top` is the one measurement Avalonia gives back**, and it
+is only meaningful once the window is shown.
+
+Three more facts about that backend, read from `Avalonia.Native` at 12.1.1 and worth not
+rediscovering. `NeedsManagedDecorations` is always false, so `WindowDrawnDecorations` and
+its whole theme are dead there. The extended margins are zeroed unless decorations are
+`Full`, so the hint and `WindowDecorations.None` cannot be combined. And
+`ExtendClientAreaTitleBarHeightHint` moves nothing that matters, since the native hit
+testing always reads the real title bar, so leave it at `-1`.
+
+**`BeginResizeDrag` is a no operation on macOS**, and `WindowDecorations.None` drops
+`NSWindowStyleMaskResizable`, so a window drawing its own frame there cannot be resized by
+anything. That is why Kitbash does not offer the drawn frame on macOS at all.
+
+`MacOSProperties` has exactly one member, `IsTemplateIcon`, registered on `TrayIcon`. There
+is no macOS window chrome attached property, so nothing can read or move the traffic lights.
+
+Measured on Linux, 12.1.1, with the hint set from the window constructor:
 
 ```
 hint=True titleBarHint=-1 decorations=Full extended=False   backend=XID

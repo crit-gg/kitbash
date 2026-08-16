@@ -4,8 +4,15 @@
 
     <Styles.Resources>
         <!-- The window is larger than its visible frame by this much on every side, and the extra
-             is transparent so the shadow has somewhere to fall. -->
+             is transparent so the shadow has somewhere to fall. ChromelessWindow holds the same
+             number, since a window's Width and Height include it. -->
         <Thickness x:Key="WindowShadowGutter">12</Thickness>
+
+        <!-- Where the title bar's content starts. Measured on macOS 26.4: the three caption
+             buttons are 14 wide on 23 centres from x=9, so the last one ends at 69, and 11
+             after it is the same gap the drawn frame leaves at its own edge. -->
+        <Thickness x:Key="TitleBarLeadingInset">11,0,0,0</Thickness>
+        <Thickness x:Key="TitleBarCaptionInset">80,0,0,0</Thickness>
 
         <!-- Caption glyphs, drawn as strokes on a 10 by 10 box. -->
         <StreamGeometry x:Key="GlyphMinimize">M 0,5 H 10</StreamGeometry>
@@ -332,7 +339,9 @@
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}"
                         WindowDecorationProperties.ElementRole="TitleBar">
-                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="11,0,0,0">
+                    <!-- The margin is a style rather than a literal here, so the caption
+                         inset can win over it. A literal would take the same priority. -->
+                    <Grid Name="PART_Row" ColumnDefinitions="Auto,Auto,Auto,*,Auto">
                         <!-- The leading slot is an icon or nothing. There is no
                              lettermark: the design's square is a placeholder for an icon,
                              not a thing to build. -->
@@ -397,9 +406,31 @@
         </Setter>
     </Style>
 
-    <!-- The desktop draws the frame, so it supplies the caption buttons and ours go.
-         A row that still carries content keeps everything else. -->
-    <Style Selector="ui|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons">
+    <!-- The desktop draws the frame under either of its modes, so it supplies the caption
+         buttons and ours go. A row that still carries content keeps everything else. -->
+    <Style Selector="ui|WindowTitleBar.nativeChrome /template/ StackPanel#PART_CaptionButtons,
+                     ui|WindowTitleBar.overlayChrome /template/ StackPanel#PART_CaptionButtons">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+
+    <!-- The resting leading inset, declared with no activator so a state can win over it. -->
+    <Style Selector="ui|WindowTitleBar /template/ Grid#PART_Row">
+        <Setter Property="Margin" Value="{StaticResource TitleBarLeadingInset}" />
+    </Style>
+
+    <!-- The desktop's caption buttons sit over the top left of the client area, so the row
+         starts after them. Avalonia 12.1.1 exposes no way to read where they are. -->
+    <Style Selector="ui|WindowTitleBar.overlayChrome /template/ Grid#PART_Row">
+        <Setter Property="Margin" Value="{StaticResource TitleBarCaptionInset}" />
+    </Style>
+
+    <!-- Full screen takes them out of the window entirely. -->
+    <Style Selector="ui|WindowTitleBar.overlayChrome.fullScreen /template/ Grid#PART_Row">
+        <Setter Property="Margin" Value="{StaticResource TitleBarLeadingInset}" />
+    </Style>
+
+    <!-- A window icon is the Dock's business on the desktop that draws these, not the row's. -->
+    <Style Selector="ui|WindowTitleBar.overlayChrome /template/ Image#PART_Icon">
         <Setter Property="IsVisible" Value="False" />
     </Style>
 
@@ -471,6 +502,15 @@
     <Style Selector=":is(Window).chromeless[CanResize=False] /template/ Border.resizeGrip">
         <Setter Property="IsVisible" Value="False" />
         <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <!-- The desktop draws the frame and the client area runs under it, so its caption buttons
+         land on our title bar. WindowDecorations stays Full: the macOS backend zeroes the
+         extended margins and hides the caption buttons for anything else. No template, so
+         there is no gutter, no drawn shadow and no rounding, all of which the OS supplies. -->
+    <Style Selector=":is(Window).overlayChrome">
+        <Setter Property="ExtendClientAreaToDecorationsHint" Value="True" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRoot}" />
     </Style>
 
 </Styles>
