@@ -319,8 +319,12 @@ is a no operation on that backend and `WindowDecorations.None` drops the resizab
 mask, so a window Kitbash framed itself could not be resized at all. A dialog now opens with
 `ShowFor` so it wears its owner's frame.
 
-**What is left is packaging.** There is no `.app`, no `.icns` and no macOS release job, and
-`vpk [osx] pack` needs its own runner. The `kitbash-updates` skill has what that costs.
+**macOS packs too.** `build/release.sh <feed> osx` builds the bundle, the portable zip and the
+pkg, `icons/icon.icns` is committed with `tools/icon_builder/icns.sh` to regenerate it, and
+the release workflow has a second job on a macOS runner, since `vpk` registers `[osx] pack`
+only when it is itself on a Mac. **Nothing is signed or notarized**, which on macOS costs a
+person a trip through System Settings on first install. No update has been taken yet. The
+`kitbash-updates` skill has the rest.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes both runtimes and packs both from one machine, and at start

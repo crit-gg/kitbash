@@ -353,6 +353,15 @@ anything. That is why Kitbash does not offer the drawn frame on macOS at all.
 `MacOSProperties` has exactly one member, `IsTemplateIcon`, registered on `TrayIcon`. There
 is no macOS window chrome attached property, so nothing can read or move the traffic lights.
 
+**An Avalonia app will not start on macOS while the display is asleep**, and the message does
+not say so. It throws `Avalonia.Native was not able to start the RenderTimer. Native error
+code is: -6661` out of `AvaloniaNativeRenderTimer.EnsureRegistered`, and takes the process
+down with a SIGABRT. `-6661` is `kCVReturnInvalidArgument`, from
+`CVDisplayLinkCreateWithActiveCGDisplays` finding no active display. Confirmed here against
+`system_profiler SPDisplaysDataType`, which reported `Display Asleep: Yes` while the same
+build had run twice with the screen awake. **Wake the screen before blaming the change.**
+`screencapture` still works in that state, so it is not a test of whether the app will run.
+
 Measured on Linux, 12.1.1, with the hint set from the window constructor:
 
 ```

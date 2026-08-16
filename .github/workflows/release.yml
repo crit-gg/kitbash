@@ -36,6 +36,12 @@ jobs:
     name: Determine Version
     uses: ./.github/workflows/_version.yml
 
+  # Two publish jobs, because vpk registers the [osx] pack command only when it is itself
+  # running on a Mac. They cannot race on the bucket: each reads and writes one key per
+  # channel, releases.<channel>.json, prunes only within that channel's own index, and every
+  # asset name outside the default win channel carries its channel. So the key sets are
+  # disjoint and no ordering is needed. The concurrency group above still keeps two whole
+  # runs apart, which is the case that would collide.
   publish:
     name: Publish To The Feed
     needs: [version]
@@ -87,11 +93,60 @@ jobs:
               --keepMaxReleases 5
           done
 
+  publish_osx:
+    name: Publish The macOS Feed
+    needs: [version]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install vpk
+        run: |
+          dotnet tool install -g vpk --version "$VPK_VERSION"
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
+      - name: Fetch the published releases
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          vpk download s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel osx --outputDir "$RUNNER_TEMP/feed" \
+            || echo "Nothing published on osx yet, so this release carries no delta."
+
+      - name: Build and pack
+        env:
+          KITBASH_VERSION: ${{ needs.version.outputs.version }}
+        run: build/release.sh "$RUNNER_TEMP/feed" osx
+
+      - name: Upload to the feed
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          vpk upload s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel osx --outputDir "$RUNNER_TEMP/feed" \
+            --keepMaxReleases 5
+
   # The tag is the baseline the next version counts from, so it is written only after a
   # release really published. It is a tag and nothing else. No commit lands on the branch.
+  #
+  # Both publish jobs, so a half published release writes no tag. The next push then works
+  # out the same version again and republishes, which the upload survives: it merges the
+  # local entries over the remote ones and overwrites.
   create_tag:
     name: Create Tag
-    needs: [version, publish]
+    needs: [version, publish, publish_osx]
     runs-on: ubuntu-latest
     permissions:
       contents: write

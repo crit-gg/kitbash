@@ -2,7 +2,7 @@
 #
 # Publishes Kitbash and packs it into a release feed.
 #
-#   build/release.sh <feed directory> [linux|win]
+#   build/release.sh <feed directory> [linux|win|osx|both]
 #
 # KITBASH_VERSION overrides the version, and is how CI passes the one it worked out from
 # git history. Unset, the placeholder in Directory.Build.props is used.
@@ -10,6 +10,11 @@
 # vpk cross compiles between Linux and Windows, and dotnet publishes for both from
 # either, so one machine builds both releases. Building is not testing: a package made
 # here for the other OS has not been run anywhere.
+#
+# macOS is the exception and it is not a soft one. vpk registers the [osx] pack command
+# only when it is itself running on a Mac, so anywhere else it is an unrecognised command
+# rather than a failure that explains itself. So both means linux and win, and osx is
+# asked for by name on a Mac.
 #
 # Packing straight into the feed means the previous release is already beside the new
 # one, so deltas are generated with no download step. vpk upload local does the same job
@@ -30,7 +35,7 @@ feed="${1:-}"
 only="${2:-both}"
 
 if [ -z "$feed" ]; then
-  echo "Usage: build/release.sh <feed directory> [linux|win]" >&2
+  echo "Usage: build/release.sh <feed directory> [linux|win|osx|both]" >&2
   exit 2
 fi
 
@@ -100,15 +105,28 @@ release() {
 linux_release() { release linux linux-x64 Kitbash icons/icon_256x256.png --categories Development; }
 win_release() { release win win-x64 Kitbash.exe icons/icon.ico; }
 
+# --icon must be an icns here, which vpk enforces. --bundleId is named rather than left to
+# default, since the default is com.{packAuthors}.{packId} and both are Kitbash. --mainExe
+# names the program inside the publish output, and vpk builds the .app around it.
+osx_release() {
+  if [ "$(uname -s)" != "Darwin" ]; then
+    echo "vpk registers [osx] pack only on a Mac, so this cannot run on $(uname -s)." >&2
+    exit 3
+  fi
+
+  release osx osx-arm64 Kitbash icons/icon.icns --bundleId run.kitbash.launcher
+}
+
 case "$only" in
   linux) linux_release ;;
   win)   win_release ;;
+  osx)   osx_release ;;
   both)
     linux_release
     win_release
     ;;
   *)
-    echo "Second argument must be linux, win or both." >&2
+    echo "Second argument must be linux, win, osx or both." >&2
     exit 2
     ;;
 esac

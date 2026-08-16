@@ -206,6 +206,20 @@ file, and `[major]`, `[minor]` or `[version:x.y.z]` in a commit message moves it
 than the patch it would take on its own. `build/release.sh` publishes both runtimes and
 packs both.
 
+**Two publish jobs, and they cannot race.** `publish` packs linux and win on Ubuntu and
+`publish_osx` packs osx on `macos-latest`. Each reads and writes one key per channel,
+`releases.<channel>.json`, prunes only within that channel's own index, and every asset name
+outside the default win channel carries its channel in it. So the key sets are disjoint and
+nothing has to be ordered. `create_tag` waits for both, so a half published release writes no
+tag, and the next push works the same version out again and republishes, which the upload
+survives since it merges local entries over remote ones and overwrites.
+
+**`--icon` for macOS must be an `.icns`**, which vpk enforces. `icons/icon.icns` is committed
+the way `icon.ico` is, and `tools/icon_builder/icns.sh` regenerates it from `icon.svg` with
+`sips` and `iconutil`, both of which are part of macOS. Every size is rasterised from the
+vector rather than scaled from one bitmap. **`--bundleId` is named rather than defaulted**,
+since the default is `com.{packAuthors}.{packId}` and both of those are Kitbash.
+
 **A push that touches nothing the packed app is built from does not release.** The trigger's
 `paths-ignore` holds everything outside `src/Kitbash`, `src/Kitbash.Ui`, `src/Kitbash.Core`,
 `icons`, `build` and `Directory.Build.props`, so the gallery, the tests and the icon scripts
@@ -372,8 +386,17 @@ executed. Still unwatched there: that `Setup.exe` installs without elevation, wh
 uninstaller actually removes now that state and cache have moved out of the install root,
 whether an automatic update triggers SmartScreen, and everything about the per machine MSI.
 
-**Nothing has been packed for macOS at all.** `build/release.sh` has no `osx` branch yet, the
-repository holds no `.icns`, and the release workflow has one job on Linux. The launcher does
-run from an osx-arm64 publish, ad hoc signed, and Velopack correctly reports it is not in a
-bundle and declines to update it. Everything else in the macOS column above is read from the
-Velopack source rather than measured.
+**The macOS pack has been run and the update path has not.** `build/release.sh <feed> osx`
+works and writes exactly what the table above says, in seven seconds, with two warnings naming
+the signing arguments that are absent. **`[osx] pack` really is registered only on a Mac**,
+confirmed by `vpk [osx] --help` listing it here.
+
+The bundle it builds is correct: `CFBundleIdentifier` is the `--bundleId` passed,
+`CFBundleExecutable` and `CFBundleName` are `Kitbash`, `icon.icns` lands in
+`Contents/Resources`, and the apphost keeps its ad hoc signature. **Velopack recognises its
+own install**, logging `Located valid manifest file at Contents/MacOS/sq.version`, where the
+unbundled publish says it is not in a bundle and declines to update.
+
+**Still to do: take a real update.** Point `updates.feed` at a feed directory, run a second
+version through, then `xattr -l` the applied bundle to settle the quarantine question above.
+Nothing has been signed or notarized and no `.pkg` has been installed.
