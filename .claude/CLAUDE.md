@@ -9,9 +9,9 @@ be able to work without the editor open.
 
 ## Cross platform is a requirement, not a goal
 
-Every change is written for Windows and for Linux, and on Linux for any distribution
-and any desktop. Development happens on one machine, so the other cases are never
-the ones being looked at. They are still the ones that break.
+Every change is written for Windows, for Linux and for macOS, and on Linux for any
+distribution and any desktop. Development happens on one machine, so the other two are
+never the ones being looked at. They are still the ones that break.
 
 Before writing anything that touches the filesystem, the environment, a path, a
 process, a window or a user visible directory, answer three questions:
@@ -36,7 +36,7 @@ code that hardcodes a path does not.
 
 State the assumption in a comment when behavior is pinned to something external, such
 as a spec rule or a variable a platform always sets. Verify what can be verified here,
-and say plainly what could not be tested because this machine is Linux.
+and say plainly what could not be tested on this machine, which is a Mac.
 
 ## Comment and documentation style
 
@@ -267,12 +267,15 @@ A runtime identifier cannot be passed to the solution, only to a project.
 ```
 dotnet publish src/Kitbash/Kitbash.csproj -r win-x64 --self-contained
 dotnet publish src/Kitbash/Kitbash.csproj -r linux-x64 --self-contained
+dotnet publish src/Kitbash/Kitbash.csproj -r osx-arm64 --self-contained
 ```
 
-Releasing is `build/release.sh <feed directory> [linux|win]`, which does both of those and
+Releasing is `build/release.sh <feed directory> [linux|win]`, which does the first two and
 packs each into a Velopack feed. It needs `dotnet tool install -g vpk`. `vpk` cross
 compiles between Windows and Linux, so one machine builds both, and the version comes from
-`<Version>` in `Directory.Build.props` rather than being typed again.
+`<Version>` in `Directory.Build.props` rather than being typed again. **There is no macOS
+branch yet**, and it needs its own runner, since `vpk [osx] pack` is not a command at all off
+a Mac. The `kitbash-updates` skill has the rest.
 
 Set `updates.feed` to that directory to watch a real update happen. A copy started with
 `dotnet run` never updates itself, whatever the feed says.
@@ -304,6 +307,15 @@ Set `updates.feed` to that directory to watch a real update happen. A copy start
 Scaffolding, on the Slate design. The launcher lists the three placeholder tools the
 registry holds and opening one reports that it is not built. No tool is implemented, and
 no file format or Godot integration work has started.
+
+**macOS runs.** `osx-arm64` is a third runtime identifier, `Kitbash.Core/Platform/MacOS`
+holds the five services that differ, and the whole suite passes on a Mac with 21 new tests
+over the macOS answers. **Two things are not done**: there is no `.app` packaging or release
+job, and the window still wears Kitbash's own drawn frame, which on macOS cannot be resized
+at all, since `BeginResizeDrag` is a no operation there and `WindowDecorations.None` drops
+the resizable style mask. The system traffic lights over an extended client area are the fix
+and are planned rather than built. The `kitbash-platform` and `kitbash-updates` skills carry
+the rules and what is still only reasoned.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes both runtimes and packs both from one machine, and at start
@@ -437,7 +449,7 @@ SourceGit, and each tool wears its own brand PNG rather than a glyph, which is t
 place the launcher carries art the icon generator did not make. `tests/Kitbash.Tests` is a
 third test project, headless, and it is where the menu and the button are checked. Read the
 `kitbash-platform` skill and `.claude/plans/external-tools.md` before changing any of it.
-**None of the Windows half has ever been executed**, since this machine is Linux.
+**None of the Windows half has ever been executed.**
 
 **`ui:TextDiff` reads a diff as text**, built for Splice and useful to any tool that shows
 one. It is a read only AvaloniaEdit `TextEditor` with its rendering replaced, the way

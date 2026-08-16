@@ -3,12 +3,14 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
 
-    <!-- Gives the executable its icon in Explorer and on the Windows task bar.
-         Ignored on Linux, where the desktop reads the icon from a .desktop entry
-         at packaging time instead. -->
+  <!-- Both are Windows resources. Linux reads the icon from a .desktop entry and macOS
+       from the bundle, and naming them for another runtime only produces a warning. An
+       empty identifier is a plain build and keeps them. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' or $(RuntimeIdentifier.StartsWith('win'))">
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../../icons/icon.ico</ApplicationIcon>
   </PropertyGroup>
 

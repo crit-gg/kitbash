@@ -79,7 +79,10 @@ choice, and the `Open as folder` row went with the submenu that held it.
 
 - **The `~/.local/bin` fallback is in the Linux finder, not in `IExecutableFinder`.**
   Moving it up would quietly change how git and dotnet resolve.
-- **No macOS.** Kitbash is Windows and Linux.
+- **macOS is built.** `MacWorkspaceOpenerFinder` finds bundles rather than programs on PATH,
+  every opener runs through `/usr/bin/open`, and a terminal takes the path argument there
+  because `open` ignores the working directory. The `kitbash-platform` skill has the rules.
+  Four terminal marks are missing, which draws a row with no icon and blocks nothing.
 - **No GitHub style per workspace tool list.** `tools.custom` is global only, the same
   shape `tools.repositories` started as.
 

@@ -1,16 +1,16 @@
 using Kitbash.Core.IO;
 
-namespace Kitbash.Core.Platform.Linux;
+namespace Kitbash.Core.Platform;
 
 /// <summary>
-/// Writes a path the way a shell does. The home directory collapses to a tilde, which
-/// is where most of the saving comes from, since projects live under it.
+/// Writes a path the way a shell does, on Linux and on macOS. The home directory collapses
+/// to a tilde, which is where most of the saving comes from, since projects live under it.
 /// </summary>
-internal sealed class LinuxPathShortener : PathShortener
+internal sealed class UnixPathShortener : PathShortener
 {
     private readonly IEnvironment _environment;
 
-    public LinuxPathShortener(IEnvironment environment)
+    public UnixPathShortener(IEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(environment);
         _environment = environment;

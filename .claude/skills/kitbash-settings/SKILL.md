@@ -585,12 +585,12 @@ be read before a workspace is known. Four places, because they are backed up, ro
 and cleared differently. `IUserDirectories` says where each one is and is the only
 thing that knows the OS layout. `ApplicationPaths` names the files under them.
 
-| | Linux | Windows |
-|---|---|---|
-| Configuration | `$XDG_CONFIG_HOME/kitbash` or `~/.config/kitbash` | `%APPDATA%\Kitbash`, roams |
-| State | `$XDG_DATA_HOME/kitbash` or `~/.local/share/kitbash` | `%LOCALAPPDATA%\KitbashData\State` |
-| Cache | `$XDG_CACHE_HOME/kitbash` or `~/.cache/kitbash` | `%LOCALAPPDATA%\KitbashData\Cache` |
-| Runtime | `$XDG_RUNTIME_DIR/kitbash`, or the cache when unset | `%LOCALAPPDATA%\KitbashData\Runtime` |
+| | Linux | Windows | macOS |
+|---|---|---|---|
+| Configuration | `$XDG_CONFIG_HOME/kitbash` or `~/.config/kitbash` | `%APPDATA%\Kitbash`, roams | `~/Library/Application Support/Kitbash/Config` |
+| State | `$XDG_DATA_HOME/kitbash` or `~/.local/share/kitbash` | `%LOCALAPPDATA%\KitbashData\State` | `~/Library/Application Support/Kitbash/State` |
+| Cache | `$XDG_CACHE_HOME/kitbash` or `~/.cache/kitbash` | `%LOCALAPPDATA%\KitbashData\Cache` | `~/Library/Caches/Kitbash` |
+| Runtime | `$XDG_RUNTIME_DIR/kitbash`, or the cache when unset | `%LOCALAPPDATA%\KitbashData\Runtime` | the cache |
 
 An XDG variable holding a relative path is ignored, which the spec requires.
 
@@ -598,6 +598,22 @@ An XDG variable holding a relative path is ignored, which the spec requires.
 lock is its only user. `XDG_RUNTIME_DIR` has no defined fallback and the spec says so, since
 a login that does not go through a session manager leaves it unset, so the cache directory
 stands in. The `kitbash-updates` skill has the lock itself.
+
+**On macOS configuration is a subfolder rather than the application folder itself**, because
+`ApplicationPaths` calls both files `kitbash.toml` and one directory would write one over the
+other. That mirrors the Windows shape, which already splits State, Cache and Runtime under
+one data folder.
+
+**Two macOS answers that look wrong until the reason is written down.** `~/Library/Preferences`
+is not used, because it belongs to `NSUserDefaults`, which caches and rewrites what is in it,
+and hand edited TOML has no business there. And `TMPDIR` is not the runtime directory, because
+macOS sweeps anything untouched for three days, and a lock file deleted while it is held lets
+a second launcher take a new one.
+
+**A missing home directory has a defined answer on macOS**, `TMPDIR` if it is rooted and
+`/tmp` otherwise, so an empty `HOME` writes somewhere real rather than making a `Library`
+folder wherever the app happened to be started. `LinuxUserDirectories` has the same hole and
+has not been given the same answer.
 
 **The Windows local folder is the application name plus `Data`, and that is Velopack's
 doing.** It installs the app to `%LOCALAPPDATA%\Kitbash` and its uninstaller deletes that
@@ -612,9 +628,11 @@ pointed at a folder, and `install.repository` with `install.global` for the repo
 version came from, which is what says whether the open workspace provides it.
 `.claude/plans/tool-distribution.md` has all of them.
 
-The application folder is lower case on Unix and keeps its written case on Windows,
-which is what each platform does with its own directories. `IUserDirectories` folds it,
-so a caller passes the application name once and never thinks about case.
+The application folder is lower case on Linux and keeps its written case on Windows and on
+macOS, which is what each platform does with its own directories. Every folder under
+`~/Library/Application Support` carries its own application's spelling, so macOS follows
+Windows here rather than Linux. `IUserDirectories` decides it, so a caller passes the
+application name once and never thinks about case.
 
 State sits in the data directory by choice. The spec would put it under
 `$XDG_STATE_HOME`, since a workspace list is a recently used list. It is here instead,

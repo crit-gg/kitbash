@@ -21,13 +21,16 @@ easy, not the contract every tool obeys.
 Velopack 1.2.0, MIT, the successor to Squirrel.Windows. Only the launcher takes it, since
 neither library needs it.
 
-| | Windows | Linux |
-|---|---|---|
-| Output | `Setup.exe` | one `.AppImage`, no installer |
-| Install location | `%LocalAppData%\Kitbash`, no elevation | wherever the person put the file |
-| Feed | `releases.win.json` over static HTTP | `releases.linux.json`, same |
-| Update | swaps the whole `current` folder | replaces the AppImage in one rename |
-| Deltas | zstd patches per file | yes, after the first update |
+| | Windows | Linux | macOS |
+|---|---|---|---|
+| Output | `Setup.exe` | one `.AppImage`, no installer | a `.app` in a `.zip`, plus a `.pkg`. Never a `.dmg` |
+| Install location | `%LocalAppData%\Kitbash`, no elevation | wherever the person put the file | wherever the person put it, `/Applications` from the pkg |
+| Feed | `releases.win.json` over static HTTP | `releases.linux.json`, same | `releases.osx.json`, same |
+| Update | swaps the whole `current` folder | replaces the AppImage in one rename | renames the whole bundle aside and deletes it |
+| Deltas | zstd patches per file | yes, after the first update | yes, after the first update |
+
+**The macOS column is read from the Velopack 1.2.0 source rather than run.** Nothing has been
+packed for macOS yet.
 
 **`VelopackApp.Build().Run()` has to be the first statement in `Main`.** Velopack reruns
 the binary with `--veloapp-` hook arguments during install, update and uninstall, and those
@@ -35,10 +38,17 @@ hooks exit from inside `Run`. It is wrapped, and a launch carrying a hook argume
 a code rather than opening a window, since a window in the middle of an install is worse
 than stopping.
 
-**`vpk` cross compiles.** The OS directive goes before the verb, so `vpk [win] pack` runs
-on Linux and `vpk [linux] pack` runs on Windows. One runner builds both releases, which is
-what `build/release.sh` does. Only macOS needs a Mac. Signing a Windows package still needs
-`signtool.exe`, and nothing is signed.
+**`vpk` cross compiles between Windows and Linux.** The OS directive goes before the verb, so
+`vpk [win] pack` runs on Linux and `vpk [linux] pack` runs on Windows. One runner builds both,
+which is what `build/release.sh` does. Signing a Windows package still needs `signtool.exe`,
+and nothing is signed.
+
+**macOS is harder than needing a Mac: `vpk [osx] pack` is not registered as a command at all
+unless `vpk` is running on one.** In its own `Program.cs` the pack command is added inside an
+`if (VelopackRuntimeInfo.IsOSX)`, so on Linux it is an unrecognised command rather than a
+capability that fails. `[osx] bundle` is registered everywhere but cannot produce a release.
+So the release pipeline needs a second job on a macOS runner. `build/release.sh` should test
+`uname` and say so, since the failure otherwise reads as a typo.
 
 ## Nothing a person owns may sit under the install root
 
@@ -50,6 +60,12 @@ what `build/release.sh` does. Only macOS needs a Mac. Signing a Windows package 
 **This applies to anything added later**, so a new user directory goes beside the install
 root and never inside it. The workspace list, every setting, every installed engine and
 every installed tool are what the rule is protecting.
+
+**On macOS the rule is stronger, because it bites on every release rather than on uninstall.**
+An update renames the whole old `.app` aside and deletes it, so anything written inside the
+bundle is gone at the next version, not at the end. `/Applications` is usually not writable by
+the person running the app either, so the writes would fail first. `MacUserDirectories` puts
+everything under `~/Library`, and the `kitbash-settings` skill has the paths.
 
 `--mainExe` is required rather than optional, since it otherwise defaults to the pack id
 and the executable is named after the project.
@@ -298,6 +314,34 @@ warning on every automatic update is bad enough to reopen this.
 Azure Artifact Signing is about ten dollars a month, carries reputation immediately, and
 Velopack drives it through `--signTemplate`, so turning it on later is a build argument.
 
+**On macOS the same decision costs more, and three parts of it are separate.**
+
+**Ad hoc signing is not optional on Apple silicon**, since the kernel refuses to execute a
+Mach-O with no signature at all. The SDK ad hoc signs the apphost and Microsoft signs the
+runtime pack, so a self contained publish runs. Verified here: `codesign -dv` on an osx-arm64
+publish reports `Signature=adhoc` and `codesign --verify` passes.
+
+**An applied update should carry no quarantine.** `com.apple.quarantine` is written by the
+downloading process, which opts in through `LSFileQuarantineEnabled` or by using a framework
+that does. Velopack fetches over `HttpClient` from inside our process and applies through a
+helper doing ordinary writes, so neither opts in. This is the same reasoning already applied
+to SmartScreen and it should be confirmed the same way, by taking a real update and running
+`xattr -l` on the bundle.
+
+**The first install is the part that hurts, and the usual advice is out of date.** A browser
+does write the attribute, so the downloaded artefact is refused. **Control clicking and
+choosing Open no longer works: Apple removed that bypass in macOS 15.** The flow is now to be
+refused, then go to System Settings, Privacy and Security, and press Open Anyway. The one line
+alternative is `xattr -d com.apple.quarantine`.
+
+**Point people at the zip rather than the pkg.** An unsigned `.pkg` asks for an admin password
+to install something macOS is simultaneously refusing to verify, which reads much worse than
+dragging a `.app` to Applications. Build both, since the pkg costs nothing.
+
+An Apple Developer Program membership plus notarisation removes all of it, and Velopack drives
+that through `--signAppIdentity`, `--signEntitlements` and `--notaryProfile`, so it is three
+arguments and a keychain profile, the same shape as the Windows case.
+
 ### AppImage on Linux, kept without enthusiasm
 
 **Velopack builds nothing else on Linux**, so dropping the format means dropping Velopack
@@ -322,8 +366,14 @@ diff against.
 
 ## What could not be tested here
 
-This machine is Linux. The Windows package is built here, since `vpk` cross compiles, and
-none of it has been executed. Still unwatched: that `Setup.exe` installs without elevation,
-what the uninstaller actually removes now that state and cache have moved out of the install
-root, whether an automatic update triggers SmartScreen, and everything about the per machine
-MSI.
+**Development is on an Apple silicon Mac now, so Windows and Linux are both unwatched.**
+The Windows package is built by CI, since `vpk` cross compiles, and none of it has been
+executed. Still unwatched there: that `Setup.exe` installs without elevation, what the
+uninstaller actually removes now that state and cache have moved out of the install root,
+whether an automatic update triggers SmartScreen, and everything about the per machine MSI.
+
+**Nothing has been packed for macOS at all.** `build/release.sh` has no `osx` branch yet, the
+repository holds no `.icns`, and the release workflow has one job on Linux. The launcher does
+run from an osx-arm64 publish, ad hoc signed, and Velopack correctly reports it is not in a
+bundle and declines to update it. Everything else in the macOS column above is read from the
+Velopack source rather than measured.

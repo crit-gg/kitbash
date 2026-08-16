@@ -5,6 +5,7 @@ using Kitbash.Core.Godot;
 using Kitbash.Core.IO;
 using Kitbash.Core.Platform;
 using Kitbash.Core.Platform.Linux;
+using Kitbash.Core.Platform.MacOS;
 using Kitbash.Core.Platform.Openers;
 using Kitbash.Core.Platform.Windows;
 using Kitbash.Core.Projects;
@@ -21,6 +22,10 @@ namespace Kitbash.Core;
 /// </summary>
 public static class KitbashCoreServices
 {
+    /// <summary>Said by every factory here, so the five cannot drift apart.</summary>
+    private const string Unsupported =
+        "Kitbash supports Windows and Linux on x64 and macOS on Apple silicon.";
+
     /// <summary>Filesystem and environment access. Everything else builds on these.</summary>
     public static IServiceCollection AddKitbashIO(this IServiceCollection services)
     {
@@ -48,7 +53,7 @@ public static class KitbashCoreServices
             // Setup.exe writes the shortcut and the uninstall entry, and there is no
             // bundle to correct for, so both of these have nothing to do here.
             services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
-            services.TryAddSingleton<IDesktopIntegration, WindowsDesktopIntegration>();
+            services.TryAddSingleton<IDesktopIntegration, NoDesktopIntegration>();
 
             // No portal here, so picking a colour off the screen would mean a window over a
             // capture of the desktop, which is not built.
@@ -60,7 +65,7 @@ public static class KitbashCoreServices
         if (OperatingSystem.IsLinux())
         {
             services.TryAddSingleton<IUserDirectories, LinuxUserDirectories>();
-            services.TryAddSingleton<IPathShortener, LinuxPathShortener>();
+            services.TryAddSingleton<IPathShortener, UnixPathShortener>();
             services.TryAddSingleton<IPathRules, LinuxPathRules>();
             services.TryAddSingleton<IBundleEnvironment, AppImageEnvironment>();
             services.TryAddSingleton<IDesktopIntegration, LinuxDesktopIntegration>();
@@ -73,7 +78,25 @@ public static class KitbashCoreServices
             return services;
         }
 
-        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+        if (OperatingSystem.IsMacOS())
+        {
+            services.TryAddSingleton<IUserDirectories, MacUserDirectories>();
+            services.TryAddSingleton<IPathShortener, UnixPathShortener>();
+            services.TryAddSingleton<IPathRules, MacPathRules>();
+
+            // The bundle prepends nothing, and an app in Applications is already in
+            // Launchpad and Spotlight, so neither of these has anything to do.
+            services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
+            services.TryAddSingleton<IDesktopIntegration, NoDesktopIntegration>();
+
+            // No portal here either. Reading the screen means the screen recording
+            // permission, which an eyedropper does not warrant.
+            services.TryAddSingleton<IScreenColour, NoScreenColour>();
+
+            return services;
+        }
+
+        throw new PlatformNotSupportedException(Unsupported);
     }
 
     public static IServiceCollection AddKitbashPlatform(this IServiceCollection services)
@@ -207,8 +230,8 @@ public static class KitbashCoreServices
     }
 
     /// <summary>
-    /// The one part of engine handling that differs per OS. A third place in this file that
-    /// tests the running OS, and the file is still the only one allowed to.
+    /// The one part of engine handling that differs per OS. One of five places in this file
+    /// that test the running OS, and the file is still the only one allowed to.
     /// </summary>
     private static IServiceCollection AddEngineFiles(this IServiceCollection services)
     {
@@ -226,7 +249,14 @@ public static class KitbashCoreServices
             return services;
         }
 
-        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+        if (OperatingSystem.IsMacOS())
+        {
+            services.TryAddSingleton<IEngineFiles, MacEngineFiles>();
+
+            return services;
+        }
+
+        throw new PlatformNotSupportedException(Unsupported);
     }
 
     public static IServiceCollection AddKitbashWorkspaces(this IServiceCollection services)
@@ -394,7 +424,7 @@ public static class KitbashCoreServices
     }
 
     /// <summary>
-    /// A fifth place in this file that tests the running OS. Nothing about the registry
+    /// Another place in this file that tests the running OS. Nothing about the registry
     /// needs the version test the secret store has, since its annotation carries no version.
     /// </summary>
     private static IWorkspaceOpenerFinder CreateOpenerFinder(IServiceProvider provider)
@@ -420,7 +450,13 @@ public static class KitbashCoreServices
             return new LinuxWorkspaceOpenerFinder(executables, environment, fileSystem, toolbox);
         }
 
-        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+        // Bundles are found by looking, so this one wants neither PATH nor a process.
+        if (OperatingSystem.IsMacOS())
+        {
+            return new MacWorkspaceOpenerFinder(environment, fileSystem, toolbox);
+        }
+
+        throw new PlatformNotSupportedException(Unsupported);
     }
 
     private static IPlatformServices CreatePlatform(IServiceProvider provider)
@@ -442,15 +478,27 @@ public static class KitbashCoreServices
                 provider.GetRequiredService<IExecutableFinder>());
         }
 
-        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+        if (OperatingSystem.IsMacOS())
+        {
+            return new MacPlatform(fileSystem, processes);
+        }
+
+        throw new PlatformNotSupportedException(Unsupported);
     }
 
     /// <summary>
-    /// The fourth place in this file that tests the running OS. The constants come from
+    /// The last place in this file that tests the running OS. The constants come from
     /// the project file, which drops the store a runtime is not being built for.
     /// </summary>
     private static ISecretStore CreateSecretStore(IServiceProvider provider)
     {
+        // Outside both blocks below, since an osx build defines neither constant and this
+        // store needs no package of its own.
+        if (OperatingSystem.IsMacOS())
+        {
+            return new UnavailableSecretStore();
+        }
+
 #if KITBASH_WINDOWS_SECRETS
         // The version is the credential package's own floor, which CA1416 makes this test
         // rather than the plain Windows one every other factory here uses.
@@ -467,6 +515,6 @@ public static class KitbashCoreServices
         }
 #endif
 
-        throw new PlatformNotSupportedException("Kitbash supports Windows and Linux on x64.");
+        throw new PlatformNotSupportedException(Unsupported);
     }
 }

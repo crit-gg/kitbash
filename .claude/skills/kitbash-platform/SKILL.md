@@ -5,8 +5,9 @@ description: "Kitbash platform rules. The per OS services behind IPlatformServic
 
 ## Platforms
 
-Linux and Windows, 64 bit only. `Directory.Build.props` sets `RuntimeIdentifiers`
-to `linux-x64` and `win-x64`.
+Linux and Windows on x64, macOS on Apple silicon. `Directory.Build.props` sets
+`RuntimeIdentifiers` to `linux-x64`, `win-x64` and `osx-arm64`. There is no Intel Mac
+package and no universal binary.
 
 Behavior that differs per OS lives in `Kitbash.Core/Platform`, with one folder per
 OS. Most of it sits behind `IPlatformServices`.
@@ -18,14 +19,24 @@ Platform/
   WebAddress.cs, DirectoryLocation.cs
   IProcessRunner.cs, ProcessRunner.cs, ProcessRequest.cs, ProcessStartException.cs
   IExecutableFinder.cs, ExecutableFinder.cs
+  UnixPathShortener.cs                path display, Linux and macOS both
+  NoDesktopIntegration.cs             nothing to write, Windows and macOS both
+  UnavailableSecretStore.cs           a machine whose keyring is not spoken to yet
   Linux/                              LinuxPlatform, launcher resolution,
-                                      user directories, path display
-  Windows/                            WindowsPlatform, user directories, path display
+                                      user directories, path rules
+  Windows/                            WindowsPlatform, user directories, path rules
+  MacOS/                              MacPlatform, user directories, path rules,
+                                      opener discovery by bundle
 ```
 
 `DesktopPlatform` holds everything shared and leaves two abstract members, `Open` and
 `Detach`. Resolve `IPlatformServices` from the container and never test the running OS
 at the call site.
+
+**A shared implementation is named for the family, not for one member.** `UnixPathShortener`
+is Linux and macOS, `NoDesktopIntegration` is Windows and macOS, and `UnixEngineFiles` was
+already the precedent. A class named after one OS registered on another reads as a mistake
+every time somebody finds it.
 
 **A program that should outlive Kitbash goes through `StartDetached`, not through
 `IProcessRunner.Run`.** Not waiting for a process is not the same as detaching from it.
@@ -43,8 +54,26 @@ Linux wraps the request in `setsid`, which is util-linux, looked up through
 `IExecutableFinder` rather than assumed present. Without it the request goes as it is,
 which still outlives a launcher that simply exits. Windows hands it to the shell, which
 is how everything else there is opened, and the case that closes is a job object rather
-than a process group. That half is reasoned rather than measured, since this machine is
-Linux.
+than a process group. That half is reasoned rather than measured.
+
+**macOS ships no `setsid` binary, so it detaches by launching differently rather than by
+wrapping.** A program inside an application bundle is rewritten to
+`open -n -a <bundle> --args <arguments>`, which hands the launch to LaunchServices, so the
+child belongs to launchd and was never ours. That is a stronger detach than `setsid` gives.
+`-n` is required: without it a second `open` of a running app raises its window and drops
+everything after `--args`, so opening a second project would do nothing.
+
+**Three guards stop the rewrite, and each is load bearing.** `open` cannot set a working
+directory, so a request naming one is left alone rather than silently losing it. An
+environment overlay would land on `open` rather than on the program, so a request carrying
+one is left alone too. And the program is checked with `IsExecutableFile` first, because
+`open` reports a broken bundle in an exit code nothing reads, where starting the program
+directly throws and becomes the `ProcessStartException` callers already handle.
+
+Anything else runs unchanged, which is the same answer Linux gives when `setsid` is missing.
+A GUI launch has no controlling terminal, so the signals `setsid` exists to escape do not
+arise. The rewrite lives in `Detach` alone, so `ApplicationRestart` needed no edit: it builds
+a request over `Environment.ProcessPath`, which inside a bundle is already the right shape.
 
 Godot's project manager is the one caller. An engine is a person's next few hours of
 work and the launcher is a window they may well close, so the two do not share a fate.
@@ -55,9 +84,15 @@ OS test.
 
 - `IUserDirectories` the per user directories, covered by the `kitbash-settings` skill
 - `IPathShortener` writes a path for display. `PathShortener` in `IO` holds the
-  elision and a subclass per OS supplies the separator, the display form and the root
+  elision and a subclass supplies the separator, the display form and the root. There are
+  two, since `UnixPathShortener` answers for Linux and macOS both
 - `IPathRules` says whether two paths mean the same place, and whether one sits inside
   another. Only case sensitivity differs, so the subclasses are one line each
+
+**macOS splits these two, and that is the one place where treating it as a Linux is wrong.**
+Display follows Unix, with a tilde and forward slashes. Identity follows Windows, because
+APFS ships case insensitive and case preserving. A volume formatted case sensitive is the
+case `MacPathRules` is wrong for, which is the safer of the two ways to be wrong.
 
 Two more are registered there, both about the app being packaged rather than about IO.
 
@@ -96,7 +131,29 @@ that token, so two picks at once cannot read each other's answer. A response cod
 zero is a person changing their mind, which comes back as no colour rather than as a failure.
 
 `NoScreenColour` is Windows, which has no portal. The gesture there would be a window over a
-capture of the desktop, which is Godot's own fallback and is not built.
+capture of the desktop, which is Godot's own fallback and is not built. **macOS takes it too.**
+It has a real answer in `NSColorSampler`, which needs no permission, but it needs AppKit
+interop and the eyedropper is drawn only where a host supplies a picker that can pick, so
+nothing on screen is wrong for its absence. Reading the screen any other way would mean the
+screen recording permission, which an eyedropper does not warrant.
+
+## A bundle launched from Finder has almost no PATH
+
+**launchd gives a `.app` `PATH=/usr/bin:/bin:/usr/sbin:/sbin` and nothing else.** It is not the
+login shell's PATH, and `/etc/paths.d` is read by `path_helper` from shell startup rather than
+by launchd. So Homebrew at `/opt/homebrew/bin` and a `dotnet` symlinked into `/usr/local/bin`
+are both invisible to `IExecutableFinder`, and `GodotBuildTool` quietly falls back to the
+editor because it believes this machine has no dotnet.
+
+**`IBundleEnvironment` is where the correction belongs when it is built.** `ExecutableFinder`
+already reads the corrected `PATH` and `ProcessRunner` already merges the same overlay under
+every request, so what is found is what runs, and it costs no new interface and no new OS
+test. macOS registers `PlainEnvironment` today, which is the honest answer until the PATH a
+real Finder launch gives has been measured rather than assumed.
+
+**macOS also has a `git` on PATH that does not work.** `/usr/bin/git` is a Command Line Tools
+shim, and on a machine without them it exists, passes `IsExecutableFile`, and opens an install
+dialog when run.
 
 **`IDesktopIntegration` makes the AppImage findable.** An AppImage is a file in Downloads
 with no menu entry. `LinuxDesktopIntegration` writes `applications/kitbash.desktop` and
@@ -118,14 +175,17 @@ without it is skipped. It is a path and not a command line, so it carries no quo
 `Exec` keeps the quoting the specification asks for.
 
 **There is no `Remove`.** Velopack runs no uninstall hook on Linux and an AppImage has no
-uninstaller, so nothing would call one. `WindowsDesktopIntegration` does nothing, since
-`Setup.exe` writes the shortcut and the uninstall entry.
+uninstaller, so nothing would call one. `NoDesktopIntegration` does nothing and answers for
+Windows and macOS both, since `Setup.exe` writes the shortcut and the uninstall entry, and an
+application bundle in Applications is already in Launchpad and Spotlight where it sits.
 
 **`StartupWMClass` is deliberately absent** from the entry. A wrong one is worse than none,
 and the value Avalonia actually sets has not been checked with `xprop WM_CLASS`.
 
-`AddPlatformIO`, `AddEngineFiles`, `CreatePlatform` and `CreateSecretStore`, all in
-`KitbashCoreServices`, are the only places that test the running OS.
+`AddPlatformIO`, `AddEngineFiles`, `CreateOpenerFinder`, `CreatePlatform` and
+`CreateSecretStore`, all in `KitbashCoreServices`, are the only places that test the running
+OS. All five say the same sentence when they do not recognise it, from one `Unsupported`
+constant, so they cannot drift apart.
 
 Targets are value objects. `WebAddress` accepts absolute http and https only, and
 `DirectoryLocation` requires a rooted path. Parsing is the only way to make either,
@@ -199,9 +259,36 @@ answer, which is the rule `launcher.after.tools` already follows for a tool that
 it a tool stays in the menu until the workspace changes, which is also true of a custom
 tool being added.
 
-**A terminal takes no path argument.** It is told where it is by `WorkingDirectory`, and a
-path in argv would be read as a command to run. `TakesPathArgument` is what says so, and a
-terminal needing its own flag carries it in `FixedArguments`, such as `wt -d .`.
+**A terminal is told where it is exactly once.** On Linux and Windows that is
+`WorkingDirectory`, and a path in argv would be read as a command to run, so
+`TakesPathArgument` is false and a terminal needing its own flag carries it in
+`FixedArguments`, such as `wt -d .`. **On macOS it is the opposite**, because every opener
+there runs through `open`, which ignores the working directory entirely, so the folder is the
+only way to say where a terminal opens and it reaches LaunchServices rather than a shell.
+`OpenerFinderTests` asserts the invariant rather than either answer.
+
+## Finding an opener on macOS
+
+**Bundles are found by looking, not by PATH**, which is the launchd PATH rule above making
+itself felt. `MacWorkspaceOpenerFinder` probes `/Applications`, `/Applications/Utilities`,
+`/System/Applications`, `/System/Applications/Utilities` and `~/Applications`, and a bundle
+counts as installed only when it holds a runnable program, so a folder left by an uninstall
+is not offered. It needs neither `IExecutableFinder` nor `IProcessRunner`.
+
+**A bundle cannot be `WorkspaceOpener.Program`**, since it is a directory and would fail
+`IsExecutableFile`, which `OpenerFinderTests` pins. So every macOS opener names `/usr/bin/open`
+and carries `-a <bundle>` in `FixedArguments`. **No `-n` here**, unlike `Detach`: `open -a Code
+<folder>` asks the running editor for a new window, which is what a person wants, where `-n`
+would start a second whole editor. The request detaches itself, since `open` is not inside a
+bundle and `Detach` leaves it alone.
+
+**There is no Visual Studio and no `vswhere`**, since Visual Studio for Mac is discontinued.
+JetBrains Toolbox keeps its `state.json` under `~/Library/Application Support/JetBrains/Toolbox`,
+and `JetBrainsToolbox` needed no change at all, because it already tests `Path.IsPathRooted`
+before combining and so covers either spelling of `launchCommand`.
+
+**Four terminal marks do not exist yet**, for Terminal, iTerm, Alacritty and Warp. A missing
+mark draws no icon and still draws the row, so it blocks nothing.
 
 **A custom tool's arguments are one token, `{workspace}`.** The template is split into argv
 **before** the token is filled in, so a path with spaces stays one argument. Whitespace
@@ -253,11 +340,33 @@ draws each value with the line copyable. A secret has no business in any of that
 this machine has no keyring, which is not the same as being signed out, and the two need
 different words on screen. `NotFound` is nothing stored, `Failed` is a store that refused.
 
-| | Windows | Linux |
-|---|---|---|
-| Behind it | Credential Manager, via `Meziantou.Framework.Win32.CredentialManager` | freedesktop Secret Service, via `Ace4896.DBus.Services.Secrets` |
-| Native dependency | none | none, it speaks D-Bus rather than binding libsecret |
-| `Unavailable` | never, the store is part of the OS | no session bus, or no daemon answering |
+| | Windows | Linux | macOS |
+|---|---|---|---|
+| Behind it | Credential Manager, via `Meziantou.Framework.Win32.CredentialManager` | freedesktop Secret Service, via `Ace4896.DBus.Services.Secrets` | nothing yet |
+| Native dependency | none | none, it speaks D-Bus rather than binding libsecret | none |
+| `Unavailable` | never, the store is part of the OS | no session bus, or no daemon answering | always, for now |
+
+**macOS answers `Unavailable` deliberately.** `UnavailableSecretStore` says so through an
+outcome the interface already names and every caller already handles, and nothing consumes
+`ISecretStore` yet, since the GitHub login is the unbuilt step of the tool distribution plan.
+What must not go back is the throw, since a resolve would take the app down.
+
+**The Keychain is the eventual answer and `/usr/bin/security` is not.**
+`add-generic-password -w <secret>` puts the secret in argv where any process can read it out of
+`ps`, and that subcommand does not read a password from stdin, so `ProcessRequest.StandardInput`
+cannot rescue it. `SecItemAdd`, `SecItemCopyMatching` and `SecItemDelete` over
+`kSecClassGenericPassword` is the right shape, P/Invoked into Security.framework, which keeps
+the no native dependency row the other two fill.
+
+**It wants the app signed with a stable identity first.** A keychain ACL is keyed on the code
+signature, so an ad hoc signed build changes identity on every rebuild and macOS asks a person
+for permission on every launch. That ties this to signing rather than to this change.
+
+**No third `#if` for it, now or later.** The two that exist are there because a package is per
+OS, and Security.framework needs no package, so `[SupportedOSPlatform("macos")]` plus the
+`OperatingSystem.IsMacOS()` guard at the one call site satisfies CA1416 on every runtime.
+`UnavailableSecretStore` is never removed from the compile set either, which is why its branch
+in `CreateSecretStore` sits outside both blocks.
 
 Windows keys on a target name alone, so both halves go into it as `Kitbash:service:account`,
 and persistence is `LocalMachine` rather than `Enterprise` so a token does not roam to a
@@ -291,7 +400,7 @@ in `Directory.Build.props` and restore covers every declared one. So `project.as
 naming a package proves nothing. The build is where the condition applies, and the publish
 output is the thing to check.
 
-Measured on this machine, Linux, through a harness resolving the store from a real
+Measured on a Linux machine, through a harness resolving the store from a real
 container: a secret written, read back byte for byte, removed and read again as `NotFound`,
 a remove of a key never written answering `NotFound`, the label reading
 `Kitbash: kitbash-harness (probe)` in the keyring, and all three operations answering
@@ -300,8 +409,21 @@ both runtimes from this one Linux machine: `win-x64` carries the credential pack
 `DBus.Services.Secrets.dll`, and `linux-x64` the reverse. `Tmds.DBus.Protocol.dll` is in
 both and always was, since `Avalonia.FreeDesktop` depends on it.
 
-**The Windows store has never been executed**, since this machine is Linux. Its target name,
-persistence, size refusal and the 1168 mapping are reasoned rather than measured.
+**The Windows store has never been executed.** Its target name, persistence, size refusal
+and the 1168 mapping are reasoned rather than measured.
+
+## Which machine is the one being looked at
+
+**Development moved to an Apple silicon Mac, so Linux is now an untested platform too.**
+The AppImage path, the desktop entry, the portal eyedropper and the Secret Service store
+cannot be exercised from here at all, and everything the Linux sections above record as
+measured was measured somewhere else. Windows was never the daily machine and still is not.
+
+What has been run on macOS: the whole suite, 880 tests with none failing and 11 skipped,
+`dotnet build` and `dotnet build -r osx-arm64` both clean under `TreatWarningsAsErrors`, and
+the published launcher opening and reading the engine catalogue into `~/Library/Caches/Kitbash`.
+The osx-arm64 apphost is ad hoc signed by the SDK and `codesign --verify` passes, which is
+what Apple silicon requires of any binary at all.
 
 ## Workspaces
 

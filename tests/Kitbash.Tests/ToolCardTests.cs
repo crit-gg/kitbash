@@ -465,14 +465,18 @@ public sealed class ToolCardTests
 
         var drawn = new Colour[side, side];
 
+        // A render target is Bgra8888 on Windows and Linux and Rgba8888 on macOS, so the
+        // order is asked for rather than assumed. Anything else would be a new backend.
+        var red = target.Format == PixelFormat.Rgba8888 ? 0 : 2;
+        var blue = 2 - red;
+
         for (var y = 0; y < side; y++)
         {
             for (var x = 0; x < side; x++)
             {
                 var at = (((int)origin!.Value.Y + y) * stride) + (((int)origin.Value.X + x) * 4);
 
-                // Bgra8888, which is what a render target is on every platform.
-                drawn[x, y] = new Colour(buffer[at + 2], buffer[at + 1], buffer[at]);
+                drawn[x, y] = new Colour(buffer[at + red], buffer[at + 1], buffer[at + blue]);
             }
         }
 

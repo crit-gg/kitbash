@@ -164,12 +164,21 @@ public sealed class SingleInstance : ISingleInstance
         },
         _closing.Token);
 
+    /// <summary>
+    /// A unix domain socket path is capped at 104 bytes on macOS, and a pipe name is part
+    /// of one, so a long name is cut rather than allowed to make an unopenable socket.
+    /// </summary>
+    private const int NameLimit = 32;
+
     private static string Safe(string name)
     {
         var safe = name.AsSpan().Trim();
 
-        return safe.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && safe.Length > 0
-            ? safe.ToString()
-            : "anyone";
+        if (safe.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || safe.Length == 0)
+        {
+            return "anyone";
+        }
+
+        return safe.Length > NameLimit ? safe[..NameLimit].ToString() : safe.ToString();
     }
 }

@@ -10,6 +10,12 @@ namespace Kitbash.Core.Tests.Openers;
 /// </summary>
 public sealed class OpenerFinderTests
 {
+    /// <summary>
+    /// Whether this machine starts a found program through LaunchServices rather than
+    /// directly. Only macOS does, since an application bundle is a directory.
+    /// </summary>
+    private static bool LaunchServices => OperatingSystem.IsMacOS();
+
     private static ServiceProvider Provider()
     {
         var services = new ServiceCollection();
@@ -48,9 +54,13 @@ public sealed class OpenerFinderTests
         Assert.Distinct(found.Select(opener => opener.Id));
     }
 
-    /// <summary>A terminal is told where it is by the working directory, never an argument.</summary>
+    /// <summary>
+    /// A terminal is told where it is exactly once. Run directly it is told by the working
+    /// directory, and a path in argv would be read as a command. Started through open it is
+    /// told by the path, since LaunchServices ignores the working directory.
+    /// </summary>
     [Fact]
-    public async Task ATerminalTakesNoPathArgument()
+    public async Task ATerminalIsToldWhereItIsExactlyOnce()
     {
         using var provider = Provider();
 
@@ -58,7 +68,7 @@ public sealed class OpenerFinderTests
 
         Assert.All(
             found.Where(opener => opener.Kind is WorkspaceOpenerKind.Terminal),
-            opener => Assert.False(opener.TakesPathArgument));
+            opener => Assert.Equal(LaunchServices, opener.TakesPathArgument));
     }
 
     /// <summary>Nothing detected is a quiet machine, not a failure.</summary>
