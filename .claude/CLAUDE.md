@@ -321,18 +321,24 @@ mask, so a window Kitbash framed itself could not be resized at all. A dialog no
 
 **macOS packs too.** `build/release.sh <feed> osx` builds the bundle, the portable zip and the
 pkg, `icons/icon.icns` is committed with `tools/icon_builder/icns.sh` to regenerate it, and
-the release workflow has a second job on a macOS runner, since `vpk` registers `[osx] pack`
-only when it is itself on a Mac. **Nothing is signed or notarized**, which on macOS costs a
+the release workflow has a job on a macOS runner, since `vpk` registers `[osx] pack`
+only when it is itself on a Mac. **Nothing is signed or notarized on macOS**, which costs a
 person a trip through System Settings on first install. No update has been taken yet. The
 `kitbash-updates` skill has the rest.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
-`build/release.sh` publishes both runtimes and packs both from one machine, and at start
-the app checks its feed and replaces itself over a progress dialog before drawing anything.
-A push to main publishes to the Backblaze bucket behind `updates.kitbash.run` through
-`.github/workflows/release.yml`, which works the version out from git rather than from a
-tracked file. **One launcher at a time is enforced**, and a second copy brings the first
-forward rather than opening. `KITBASH_MANY_LAUNCHERS` turns that off for working on the app.
+`build/release.sh` publishes each runtime, and at start the app checks its feed and replaces
+itself over a progress dialog before drawing anything. A push to main publishes to the
+Backblaze bucket behind `updates.kitbash.run` through `.github/workflows/release.yml`, which
+works the version out from git rather than from a tracked file. **There is a publish job per
+channel**, since vpk pins two of the three to an OS. **One launcher at a time is enforced**,
+and a second copy brings the first forward rather than opening. `KITBASH_MANY_LAUNCHERS`
+turns that off for working on the app.
+
+**The Windows packages are signed with Azure Artifact Signing.** One argument to `vpk pack`,
+a federated credential rather than a secret, and vpk carries signtool and the dlib itself. It
+runs on `win-runner-x64`, because vpk offers the option only when it is itself on Windows.
+**None of it has been executed yet.** The `kitbash-updates` skill has the whole of it.
 
 The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash` and
 Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there**:

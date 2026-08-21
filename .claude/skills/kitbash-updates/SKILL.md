@@ -40,8 +40,9 @@ than stopping.
 
 **`vpk` cross compiles between Windows and Linux.** The OS directive goes before the verb, so
 `vpk [win] pack` runs on Linux and `vpk [linux] pack` runs on Windows. One runner builds both,
-which is what `build/release.sh` does. Signing a Windows package still needs `signtool.exe`,
-and nothing is signed.
+which is what `build/release.sh both` still does locally. **Signing takes that away in CI**,
+since `vpk pack` registers `--azureTrustedSignFile` only when it is itself on Windows, the
+same shape as `[osx] pack` below.
 
 **macOS is harder than needing a Mac: `vpk [osx] pack` is not registered as a command at all
 unless `vpk` is running on one.** In its own `Program.cs` the pack command is added inside an
@@ -175,10 +176,11 @@ declare. Nothing announces it either, which is why it is written down here.
 
 ### Four things the host has to get right
 
-**HTTPS with a certificate that validates.** Nothing is signed, so the feed is the entire
-chain of trust. Velopack checks the size and hash of every package against the feed and
-does nothing at all about a tampered feed. Over plain HTTP anyone who can answer for that
-hostname can hand every installation a program of their choosing.
+**HTTPS with a certificate that validates.** Velopack checks the size and hash of every
+package against the feed and does nothing at all about a tampered feed, so the feed is the
+chain of trust. Over plain HTTP anyone who can answer for that hostname can hand every
+installation a program of their choosing. **Windows being signed does not soften this**,
+since Velopack verifies no signature on what it downloads. Linux and macOS have none at all.
 
 **Do not cache the feed. Do cache the packages, and only the packages.** A long cache
 lifetime on `releases.*.json` hides new releases for as long as it lasts, and the symptom is
@@ -206,13 +208,31 @@ file, and `[major]`, `[minor]` or `[version:x.y.z]` in a commit message moves it
 than the patch it would take on its own. `build/release.sh` publishes both runtimes and
 packs both.
 
-**Two publish jobs, and they cannot race.** `publish` packs linux and win on Ubuntu and
-`publish_osx` packs osx on `macos-latest`. Each reads and writes one key per channel,
-`releases.<channel>.json`, prunes only within that channel's own index, and every asset name
-outside the default win channel carries its channel in it. So the key sets are disjoint and
-nothing has to be ordered. `create_tag` waits for both, so a half published release writes no
-tag, and the next push works the same version out again and republishes, which the upload
-survives since it merges local entries over remote ones and overwrites.
+**Three publish jobs, one per channel, and they cannot race.** `publish_linux` on
+`ubuntu-latest`, `publish_win` on `win-runner-x64` and `publish_osx` on `macos-latest`. Two
+of them are pinned to an OS by vpk rather than by choice, and the split is one job per
+channel so nothing has to reason about which half of a job pinned it.
+
+Each reads and writes one key per channel, `releases.<channel>.json`, prunes only within that
+channel's own index, and every asset name outside the default win channel carries its channel
+in it. So the key sets are disjoint and nothing has to be ordered. `create_tag` waits for all
+three, so a half published release writes no tag, and the next push works the same version out
+again and republishes, which the upload survives since it merges local entries over remote
+ones and overwrites.
+
+**`win-runner-x64` is a GitHub hosted runner with a custom label**, not a self hosted one, so
+it is the standard Windows image on a fresh machine each run and nothing persists between
+jobs.
+
+**The three signing values are secrets, so a wrong one is masked in the log.** `publish_win`
+checks all three are present before it builds, because `release.sh` reads all three unset as
+an unsigned release, which is right locally and would ship unsigned here.
+
+**`build/release.sh` runs under Git Bash there and the paths do not match.** `runner.temp` is
+`D:\a\_temp`, which bash cannot `cd` into, and a path bash hands back is `/d/a/_temp`, which
+vpk cannot read. `to_posix` and `to_native` in the script wrap `cygpath`, which ships with Git
+for Windows and exists nowhere else, and `uname` is what picks. Every path handed to `dotnet`
+or `vpk` goes through `to_native`.
 
 **`--icon` for macOS must be an `.icns`**, which vpk enforces. `icons/icon.icns` is committed
 the way `icon.ico` is, and `tools/icon_builder/icns.sh` regenerates it from `icon.svg` with
@@ -308,25 +328,71 @@ the cache directory. Through two real launchers headless: the second drew no win
 first raised its own. **Whether a compositor honours the raise is the compositor's business
 and was not measured here.**
 
-## Two decisions that stand, with what they cost
+## Two decisions and what they cost
 
-### Nothing is signed
+### Windows is signed, Linux and macOS are not
 
-On Linux it costs nothing, since no desktop verifies an AppImage signature. On Windows it
-costs one SmartScreen warning at first install, and Defender may quarantine outright.
+**Windows is signed with Azure Artifact Signing**, formerly called Trusted Signing. About ten
+dollars a month, and reputation accrues per certificate rather than per file, so it does not
+have to be waited out.
 
-**Reputation was never going to accrue anyway.** SmartScreen builds reputation per
-certificate for a signed application and per file for an unsigned one, and every release is
-a new file. So the choice is one warning forever against paying, not paying against
-waiting.
+On Linux signing would cost nothing and buy nothing, since no desktop verifies an AppImage
+signature. macOS is its own decision and is below.
+
+**It is one argument to `vpk pack`.** `--azureTrustedSignFile` takes a metadata file naming
+the endpoint, the account and the certificate profile. **vpk carries the whole toolchain** in
+`vendor/signing`: `signtool.exe`, `Azure.CodeSigning.Dlib.dll`, `Azure.Identity.dll`,
+`mssign32.dll`, `wintrust.dll` and the VC++ redistributable. So the runner installs no Windows
+SDK, no dlib and no redistributable, and Microsoft's manual setup steps are already done. The
+dlib asks for .NET 6 and rolls forward, so the SDK `setup-dotnet` installs covers it.
+
+**Signing happens inside the pack and cannot happen after it.** Velopack builds `Update.exe`
+and `Setup.exe` partway through and signs each as it appears. A pass over the finished feed
+reaches `Setup.exe` and never reaches the `Update.exe` inside the package, which is the binary
+that runs every update. **This is why `Azure/artifact-signing-action` is not used here.** It
+signs a folder, and a folder is the wrong unit.
+
+**`--azureTrustedSignFile` is registered only when vpk is itself on Windows**, which is what
+pins `publish_win` to a Windows runner. On Linux it is an unrecognised argument rather than a
+capability that fails.
+
+**Authentication is a federated credential and there is no secret anywhere.** `azure/login`
+trades the workflow's OIDC token for an Azure session, and `DefaultAzureCredential` inside the
+dlib picks that session up as `AzureCliCredential`. The metadata file names `ExcludeCredentials`
+to skip everything ahead of it, since `ManagedIdentityCredential` otherwise spends seconds
+probing for an identity a runner does not have.
+
+`build/release.sh` writes that metadata file itself from `KITBASH_SIGN_ENDPOINT`,
+`KITBASH_SIGN_ACCOUNT` and `KITBASH_SIGN_PROFILE`. All three or none, and it refuses to run on
+anything but Windows. The file is UTF-8 with no byte order mark, which the dlib requires.
+
+**What the Azure side needs**, once:
+
+- An app registration with a federated credential. Issuer
+  `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject
+  `repo:crit-gg/kitbash:ref:refs/heads/main`. **The subject is matched literally and it is case
+  sensitive**, so a dispatch from any other branch fails at `az login`.
+- The **Artifact Signing Certificate Profile Signer** role, assignable down to the certificate
+  profile. `Artifact Signing Identity Verifier` is a different role, is portal only, and is
+  needed to create the identity validation rather than to sign.
+- A **Public Trust** certificate profile. Private Trust signs fine and does nothing for
+  SmartScreen.
+
+**The endpoint must name the region both the account and the profile live in.** A mismatch
+answers 403 with an internal `SignerSign()` failure, which reads as a permissions problem
+rather than as a typo. East US is `https://eus.codesigning.azure.net`.
+
+**A certificate lives three days, so the timestamp is what carries the signature.** The
+authority is `http://timestamp.acs.microsoft.com`. vpk passes the timestamp arguments itself.
+**Confirm that with `signtool verify /pa /v` on the first real release**, since a signature
+without one expires three days after it ships.
+
+`--signParallel` defaults to ten files per call, so a release is a handful of service calls
+rather than one per file. The ten dollar tier includes five thousand signatures a month.
 
 **Updates should not hit SmartScreen at all**, because the warning comes from the mark of
 the web that a browser writes, and Velopack fetches packages itself. **That is expected
-behaviour rather than something watched, so confirm it on the first Windows test.** A
-warning on every automatic update is bad enough to reopen this.
-
-Azure Artifact Signing is about ten dollars a month, carries reputation immediately, and
-Velopack drives it through `--signTemplate`, so turning it on later is a build argument.
+behaviour rather than something watched, so confirm it on the first Windows test.**
 
 **On macOS the same decision costs more, and three parts of it are separate.**
 
@@ -381,10 +447,18 @@ diff against.
 ## What could not be tested here
 
 **Development is on an Apple silicon Mac now, so Windows and Linux are both unwatched.**
-The Windows package is built by CI, since `vpk` cross compiles, and none of it has been
-executed. Still unwatched there: that `Setup.exe` installs without elevation, what the
+Still unwatched on Windows: that `Setup.exe` installs without elevation, what the
 uninstaller actually removes now that state and cache have moved out of the install root,
 whether an automatic update triggers SmartScreen, and everything about the per machine MSI.
+
+**No part of the Windows signing has been executed.** The Azure side has a certificate
+profile and nothing else, `publish_win` has never run, and neither has the `cygpath` path
+handling `build/release.sh` grew for Git Bash. What was verified here is narrower and worth
+knowing: vpk 1.2.0 really does carry `signtool.exe` and the dlib in `vendor/signing`, and
+`vpk [win] pack --help` on Linux really does omit `--azureTrustedSignFile`, so the Windows
+runner is not a preference. Both channels still pack unsigned from this machine after the
+rewrite. **`publish_win` is also the first real Windows x64 machine this project has had**,
+so the four questions above can finally be answered there.
 
 **The macOS pack has been run and the update path has not.** `build/release.sh <feed> osx`
 works and writes exactly what the table above says, in seven seconds, with two warnings naming

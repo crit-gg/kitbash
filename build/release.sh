@@ -7,14 +7,19 @@
 # KITBASH_VERSION overrides the version, and is how CI passes the one it worked out from
 # git history. Unset, the placeholder in Directory.Build.props is used.
 #
+# KITBASH_SIGN_ENDPOINT, KITBASH_SIGN_ACCOUNT and KITBASH_SIGN_PROFILE turn on Azure
+# Artifact Signing for the win release. All three or none. vpk carries its own signtool
+# and dlib, so nothing has to be installed, and it authenticates through the Azure CLI,
+# so an az login has to have happened first.
+#
 # vpk cross compiles between Linux and Windows, and dotnet publishes for both from
 # either, so one machine builds both releases. Building is not testing: a package made
 # here for the other OS has not been run anywhere.
 #
-# macOS is the exception and it is not a soft one. vpk registers the [osx] pack command
-# only when it is itself running on a Mac, so anywhere else it is an unrecognised command
-# rather than a failure that explains itself. So both means linux and win, and osx is
-# asked for by name on a Mac.
+# Two things break that and both are the same shape. vpk registers [osx] pack only when
+# it is itself on a Mac, and --azureTrustedSignFile only when it is itself on Windows.
+# So both means linux and win, osx is asked for by name on a Mac, and a signed win
+# release is asked for on Windows.
 #
 # Packing straight into the feed means the previous release is already beside the new
 # one, so deltas are generated with no download step. vpk upload local does the same job
@@ -24,6 +29,30 @@
 
 set -euo pipefail
 
+# Git Bash hands this script Windows paths such as D:\a\_temp, which bash cannot cd into,
+# and it hands vpk paths such as /d/a/_temp, which a Windows program cannot read back.
+# cygpath converts both ways and exists only where the problem does.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) windows=true ;;
+  *) windows=false ;;
+esac
+
+to_posix() {
+  if [ "$windows" = true ]; then
+    cygpath -u "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
+to_native() {
+  if [ "$windows" = true ]; then
+    cygpath -w "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 project="$root/src/Kitbash/Kitbash.csproj"
 
@@ -31,10 +60,10 @@ pack_id="Kitbash"
 pack_title="Kitbash"
 pack_authors="Kitbash"
 
-feed="${1:-}"
+feed_arg="${1:-}"
 only="${2:-both}"
 
-if [ -z "$feed" ]; then
+if [ -z "$feed_arg" ]; then
   echo "Usage: build/release.sh <feed directory> [linux|win|osx|both]" >&2
   exit 2
 fi
@@ -44,15 +73,58 @@ if ! command -v vpk >/dev/null 2>&1; then
   exit 127
 fi
 
+feed=$(to_posix "$feed_arg")
 mkdir -p "$feed"
 feed=$(cd "$feed" && pwd)
+
+sign_endpoint="${KITBASH_SIGN_ENDPOINT:-}"
+sign_account="${KITBASH_SIGN_ACCOUNT:-}"
+sign_profile="${KITBASH_SIGN_PROFILE:-}"
+sign_file=""
+
+if [ -n "$sign_endpoint$sign_account$sign_profile" ]; then
+  if [ -z "$sign_endpoint" ] || [ -z "$sign_account" ] || [ -z "$sign_profile" ]; then
+    echo "Signing needs all three of KITBASH_SIGN_ENDPOINT, KITBASH_SIGN_ACCOUNT and KITBASH_SIGN_PROFILE." >&2
+    exit 2
+  fi
+
+  if [ "$windows" = false ]; then
+    echo "vpk registers --azureTrustedSignFile only on Windows, so signing cannot run on $(uname -s)." >&2
+    exit 4
+  fi
+
+  # The dlib requires UTF-8 with no byte order mark, which a heredoc writes.
+  # ExcludeCredentials leaves AzureCliCredential alone, so DefaultAzureCredential does not
+  # spend seconds probing for a managed identity a runner does not have.
+  sign_file=$(mktemp)
+  trap 'rm -f "$sign_file"' EXIT
+
+  cat > "$sign_file" <<JSON
+{
+  "Endpoint": "$sign_endpoint",
+  "CodeSigningAccountName": "$sign_account",
+  "CertificateProfileName": "$sign_profile",
+  "ExcludeCredentials": [
+    "EnvironmentCredential",
+    "ManagedIdentityCredential",
+    "WorkloadIdentityCredential",
+    "SharedTokenCacheCredential",
+    "VisualStudioCredential",
+    "VisualStudioCodeCredential",
+    "AzurePowerShellCredential",
+    "AzureDeveloperCliCredential",
+    "InteractiveBrowserCredential"
+  ]
+}
+JSON
+fi
 
 # CI works the version out from git history and sets it here. A local run has no history
 # to read, so it falls back to the placeholder in Directory.Build.props.
 version="${KITBASH_VERSION:-}"
 
 if [ -z "$version" ]; then
-  version=$(dotnet msbuild "$project" -getProperty:Version -nologo | tr -d '[:space:]')
+  version=$(dotnet msbuild "$(to_native "$project")" -getProperty:Version -nologo | tr -d '[:space:]')
 fi
 
 if [ -z "$version" ]; then
@@ -75,11 +147,11 @@ release() {
 
   # Self contained, so nothing on the machine has to have .NET. No trimming and no
   # Native AOT, because Avalonia's reflection roots would have to be protected by hand.
-  dotnet publish "$project" \
+  dotnet publish "$(to_native "$project")" \
     --configuration Release \
     --runtime "$runtime" \
     --self-contained \
-    --output "$out" \
+    --output "$(to_native "$out")" \
     -p:Version="$version"
 
   # The channel is left at its default, which is the OS short name, so this writes
@@ -92,18 +164,27 @@ release() {
     --packTitle "$pack_title" \
     --packAuthors "$pack_authors" \
     --packVersion "$version" \
-    --packDir "$out" \
+    --packDir "$(to_native "$out")" \
     --runtime "$runtime" \
     --mainExe "$exe" \
-    --icon "$root/$icon" \
-    --outputDir "$feed" \
+    --icon "$(to_native "$root/$icon")" \
+    --outputDir "$(to_native "$feed")" \
     "${extra[@]}"
 }
 
 # --categories is Linux only and names a freedesktop menu section. It defaults to
 # Utility, which is not where a person looks for this.
 linux_release() { release linux linux-x64 Kitbash icons/icon_256x256.png --categories Development; }
-win_release() { release win win-x64 Kitbash.exe icons/icon.ico; }
+
+# vpk signs its own binaries at points inside the pack, so signing is an argument to it
+# rather than a pass over the finished feed. Unsigned is still a supported release.
+win_release() {
+  if [ -n "$sign_file" ]; then
+    release win win-x64 Kitbash.exe icons/icon.ico --azureTrustedSignFile "$(to_native "$sign_file")"
+  else
+    release win win-x64 Kitbash.exe icons/icon.ico
+  fi
+}
 
 # --icon must be an icns here, which vpk enforces. --bundleId is named rather than left to
 # default, since the default is com.{packAuthors}.{packId} and both are Kitbash. --mainExe

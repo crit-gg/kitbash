@@ -16,6 +16,9 @@ on:
       - 'Kitbash.slnx'
 
   # No path filter, so this is how a skipped push is released.
+  #
+  # The Azure federated credential names refs/heads/main, so a dispatch from any other
+  # branch fails at az login rather than at signing.
   workflow_dispatch:
 
 # One release at a time. Two at once would work out the same version and race on the feed.
@@ -36,14 +39,17 @@ jobs:
     name: Determine Version
     uses: ./.github/workflows/_version.yml
 
-  # Two publish jobs, because vpk registers the [osx] pack command only when it is itself
-  # running on a Mac. They cannot race on the bucket: each reads and writes one key per
-  # channel, releases.<channel>.json, prunes only within that channel's own index, and every
-  # asset name outside the default win channel carries its channel. So the key sets are
-  # disjoint and no ordering is needed. The concurrency group above still keeps two whole
-  # runs apart, which is the case that would collide.
-  publish:
-    name: Publish To The Feed
+  # Three publish jobs, one per channel, because two of the three pin themselves to an OS.
+  # vpk registers [osx] pack only when it is itself on a Mac, and --azureTrustedSignFile
+  # only when it is itself on Windows.
+  #
+  # They cannot race on the bucket: each reads and writes one key per channel,
+  # releases.<channel>.json, prunes only within that channel's own index, and every asset
+  # name outside the default win channel carries its channel. So the key sets are disjoint
+  # and no ordering is needed. The concurrency group above still keeps two whole runs
+  # apart, which is the case that would collide.
+  publish_linux:
+    name: Publish The Linux Feed
     needs: [version]
     runs-on: ubuntu-latest
     steps:
@@ -65,33 +71,117 @@ jobs:
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
         run: |
-          for channel in linux win; do
-            vpk download s3 \
-              --endpoint "$B2_ENDPOINT" \
-              --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
-              --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
-              --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
-              || echo "Nothing published on $channel yet, so this release carries no delta."
-          done
+          vpk download s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel linux --outputDir "$RUNNER_TEMP/feed" \
+            || echo "Nothing published on linux yet, so this release carries no delta."
 
       - name: Build and pack
         env:
           KITBASH_VERSION: ${{ needs.version.outputs.version }}
-        run: build/release.sh "$RUNNER_TEMP/feed"
+        run: build/release.sh "$RUNNER_TEMP/feed" linux
 
       - name: Upload to the feed
         env:
           B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
           B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
         run: |
-          for channel in linux win; do
-            vpk upload s3 \
-              --endpoint "$B2_ENDPOINT" \
-              --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
-              --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
-              --channel "$channel" --outputDir "$RUNNER_TEMP/feed" \
-              --keepMaxReleases 5
+          vpk upload s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel linux --outputDir "$RUNNER_TEMP/feed" \
+            --keepMaxReleases 5
+
+  # Windows because the packages are signed with Azure Artifact Signing, which is signtool
+  # and a dlib, and vpk carries both. Nothing here installs a signing tool.
+  publish_win:
+    name: Publish The Windows Feed
+    needs: [version]
+    runs-on: win-runner-x64
+    permissions:
+      # id-token for the federated credential az login trades for a token. contents
+      # because naming any permission drops the defaults, and checkout still needs it.
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        # release.sh is bash and so are the vpk lines. The default here is pwsh.
+        shell: bash
+    env:
+      # runner.temp is a Windows path. release.sh converts it, and vpk wants it as it is.
+      FEED: ${{ runner.temp }}\feed
+    steps:
+      - uses: actions/checkout@v4
+
+      # The dlib vpk carries asks for .NET 6 and rolls forward, so the SDK below covers it.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install vpk
+        run: |
+          dotnet tool install -g vpk --version "$VPK_VERSION"
+          # USERPROFILE rather than HOME, since GITHUB_PATH takes a Windows path.
+          echo "$USERPROFILE\.dotnet\tools" >> "$GITHUB_PATH"
+
+      # signtool authenticates with DefaultAzureCredential, and the one this leaves behind
+      # for it is the Azure CLI session. There is no client secret anywhere.
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch the published releases
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          vpk download s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel win --outputDir "$FEED" \
+            || echo "Nothing published on win yet, so this release carries no delta."
+
+      # release.sh treats all three unset as an unsigned release, which is right for a
+      # local run and wrong here. Without this a missing secret ships unsigned and passes.
+      - name: Check the signing secrets are there
+        env:
+          KITBASH_SIGN_ENDPOINT: ${{ secrets.SIGNING_ENDPOINT }}
+          KITBASH_SIGN_ACCOUNT: ${{ secrets.SIGNING_ACCOUNT }}
+          KITBASH_SIGN_PROFILE: ${{ secrets.SIGNING_PROFILE }}
+        run: |
+          for name in KITBASH_SIGN_ENDPOINT KITBASH_SIGN_ACCOUNT KITBASH_SIGN_PROFILE; do
+            if [ -z "${!name}" ]; then
+              echo "$name is empty. This job only publishes signed packages." >&2
+              exit 1
+            fi
           done
+
+      - name: Build, sign and pack
+        env:
+          KITBASH_VERSION: ${{ needs.version.outputs.version }}
+          KITBASH_SIGN_ENDPOINT: ${{ secrets.SIGNING_ENDPOINT }}
+          KITBASH_SIGN_ACCOUNT: ${{ secrets.SIGNING_ACCOUNT }}
+          KITBASH_SIGN_PROFILE: ${{ secrets.SIGNING_PROFILE }}
+        run: build/release.sh "$FEED" win
+
+      - name: Upload to the feed
+        env:
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        run: |
+          vpk upload s3 \
+            --endpoint "$B2_ENDPOINT" \
+            --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
+            --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
+            --channel win --outputDir "$FEED" \
+            --keepMaxReleases 5
 
   publish_osx:
     name: Publish The macOS Feed
@@ -141,12 +231,12 @@ jobs:
   # The tag is the baseline the next version counts from, so it is written only after a
   # release really published. It is a tag and nothing else. No commit lands on the branch.
   #
-  # Both publish jobs, so a half published release writes no tag. The next push then works
-  # out the same version again and republishes, which the upload survives: it merges the
-  # local entries over the remote ones and overwrites.
+  # All three publish jobs, so a half published release writes no tag. The next push then
+  # works out the same version again and republishes, which the upload survives: it merges
+  # the local entries over the remote ones and overwrites.
   create_tag:
     name: Create Tag
-    needs: [version, publish, publish_osx]
+    needs: [version, publish_linux, publish_win, publish_osx]
     runs-on: ubuntu-latest
     permissions:
       contents: write
