@@ -37,7 +37,9 @@ internal sealed class ScopedDocuments
                 return cached;
             }
 
-            var values = new LayeredSettings([_store.Read(_fileFor(scope))], _converter);
+            // Open rather than Read, so a file that will not parse reads as empty here
+            // instead of throwing at whoever asked for a setting. Writing still refuses it.
+            var values = new LayeredSettings([_store.Open(_fileFor(scope)).Document], _converter);
             _cache[scope] = values;
             return values;
         }

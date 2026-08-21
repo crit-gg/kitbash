@@ -71,7 +71,9 @@ internal sealed class WorkspaceNameResolver : IWorkspaceNameResolver
             return null;
         }
 
-        var document = _store.Read(path);
+        // This runs while the launcher is starting, so a file that will not parse gives
+        // up its name rather than the whole start.
+        var document = _store.Open(path).Document;
 
         return document.TryGetValue(NameKey, out var value) && value is string name && name.Length > 0
             ? name

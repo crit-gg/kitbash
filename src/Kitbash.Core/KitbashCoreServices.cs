@@ -344,6 +344,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<ApplicationPaths>();
         services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
         services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.TryAddSingleton<ISettingsRepair, SettingsRepair>();
         services.TryAddSingleton<IApplicationSettings, ApplicationSettings>();
         services.TryAddSingleton<IApplicationState, ApplicationState>();
         services.TryAddSingleton<WindowSettingsSchema>();

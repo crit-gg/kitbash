@@ -89,6 +89,10 @@ public partial class App : Application
                 return;
             }
 
+            // Before the first read of a settings file, since one that will not parse has
+            // nowhere to report itself this early and would otherwise stop the launch.
+            Repair();
+
             _ = StartAsync(desktop);
         }
 
@@ -134,8 +138,8 @@ public partial class App : Application
 
     /// <summary>
     /// The splash, then the update, then the launcher. **Every path through this ends with a
-    /// window** unless a person dismissed the splash, because an app that fails to update and
-    /// shows nothing is worse than one that never tried.
+    /// window or with the app gone**, because an app that fails to update and shows nothing is
+    /// worse than one that never tried, and a splash nothing replaces is worse than both.
     /// </summary>
     private async Task StartAsync(IClassicDesktopStyleApplicationLifetime desktop)
     {
@@ -176,24 +180,94 @@ public partial class App : Application
         // download that failed alike.
         splash.IsProgressVisible = false;
 
-        LoadTheme();
-
-        var left = SplashFloor - since.Elapsed;
-
-        if (left > TimeSpan.Zero)
+        try
         {
-            await Task.Delay(left, CancellationToken.None);
+            LoadTheme();
+
+            var left = SplashFloor - since.Elapsed;
+
+            if (left > TimeSpan.Zero)
+            {
+                await Task.Delay(left, CancellationToken.None);
+            }
+
+            if (dismissed.IsCancellationRequested)
+            {
+                return;
+            }
+
+            Open(desktop);
+
+            // After the swap, so the splash closing is a replacement rather than the last window.
+            splash.Close();
+        }
+        catch (Exception exception)
+        {
+            GiveUp(desktop, splash, exception);
+        }
+    }
+
+    /// <summary>
+    /// Ends a launch that threw on the way to the window. Leaving the splash up would hold
+    /// the single launcher lock for ever, and every later launch would then be turned away.
+    /// </summary>
+    private void GiveUp(
+        IClassicDesktopStyleApplicationLifetime desktop, SplashWindow splash, Exception exception)
+    {
+        var log = _services?.GetService<StartupLog>();
+
+        log?.Say("the launcher could not open", exception);
+
+        try
+        {
+            splash.Close();
+        }
+        catch (Exception closing)
+        {
+            log?.Say("the splash could not close either", closing);
         }
 
-        if (dismissed.IsCancellationRequested)
+        // Explicit, since ShutdownMode is still OnExplicitShutdown at this point.
+        desktop.Shutdown(1);
+    }
+
+    /// <summary>
+    /// Replaces a settings or state file that will not parse, so every reader of it takes
+    /// a default instead. The broken file is kept beside where it was.
+    /// </summary>
+    private void Repair()
+    {
+        if (_services is not { } services)
         {
             return;
         }
 
-        Open(desktop);
+        try
+        {
+            var paths = services.GetRequiredService<ApplicationPaths>();
+            var repair = services.GetRequiredService<ISettingsRepair>();
+            var log = services.GetRequiredService<StartupLog>();
 
-        // After the swap, so the splash closing is a replacement rather than the last window.
-        splash.Close();
+            string[] files =
+            [
+                paths.SettingsFileFor(SettingsScope.Global),
+                paths.StateFileFor(SettingsScope.Global),
+            ];
+
+            foreach (var file in files)
+            {
+                if (repair.Replace(file) is { } broken)
+                {
+                    log.Say($"{file} would not parse and was moved to {broken}");
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            // The start carries on either way. A file this could not deal with reads as
+            // empty now rather than throwing at whoever asks it for a setting.
+            services.GetService<StartupLog>()?.Say("the settings files could not be checked", exception);
+        }
     }
 
     /// <summary>
@@ -412,6 +486,7 @@ public partial class App : Application
             .AddKitbashDispatcher()
             .AddKitbashToasts()
             .AddKitbashSettingsWindow()
+            .AddSingleton<StartupLog>()
             .AddSingleton<IApplicationVersion, ApplicationVersion>()
             .AddSingleton<UpdateSettingsSchema>()
             .AddSingleton<UpdateLog>()

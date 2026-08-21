@@ -4,8 +4,9 @@ namespace Kitbash.Core.Settings;
 internal interface ISettingsDocumentStore
 {
     /// <summary>
-    /// A missing file reads as an empty document. A file that will not parse throws,
-    /// which is what stops a caller that cannot report the failure from writing over it.
+    /// A missing file reads as an empty document. A file that will not parse throws, so
+    /// this is for a caller that treats a broken file as absent and writes it again.
+    /// Anything backing a live setting uses <see cref="Open"/> instead.
     /// </summary>
     SettingsDocument Read(string path);
 

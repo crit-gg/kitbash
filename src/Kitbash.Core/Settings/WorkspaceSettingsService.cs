@@ -47,7 +47,7 @@ internal sealed class WorkspaceSettingsService : ISettingsService
                 return cached;
             }
 
-            var settings = new LayeredSettings([_store.Read(_paths.FileFor(scope, layer))], _converter);
+            var settings = new LayeredSettings([_store.Open(_paths.FileFor(scope, layer)).Document], _converter);
 
             _layers[(scope, layer)] = settings;
             return settings;
@@ -106,11 +106,12 @@ internal sealed class WorkspaceSettingsService : ISettingsService
                 return cached;
             }
 
-            // Highest precedence first.
+            // Highest precedence first. Open rather than Read, so a layer that will not
+            // parse reads as empty and the other one still answers.
             var settings = new LayeredSettings(
                 [
-                    _store.Read(_paths.FileFor(scope, SettingsLayer.User)),
-                    _store.Read(_paths.FileFor(scope, SettingsLayer.TeamShared)),
+                    _store.Open(_paths.FileFor(scope, SettingsLayer.User)).Document,
+                    _store.Open(_paths.FileFor(scope, SettingsLayer.TeamShared)).Document,
                 ],
                 _converter);
 

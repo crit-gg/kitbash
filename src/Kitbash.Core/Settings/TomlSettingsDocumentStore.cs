@@ -10,6 +10,9 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
     /// <summary>Matches what File.WriteAllText uses, apart from emitting the mark.</summary>
     private static readonly UTF8Encoding MarkedUtf8 = new(encoderShouldEmitUTF8Identifier: true);
 
+    /// <summary>What File.WriteAllText uses, named here since every write goes by stream.</summary>
+    private static readonly UTF8Encoding PlainUtf8 = new(encoderShouldEmitUTF8Identifier: false);
+
     private readonly IFileSystem _fileSystem;
 
     public TomlSettingsDocumentStore(IFileSystem fileSystem)
@@ -49,12 +52,12 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
         catch (TomlException exception)
         {
             failure = exception;
-            return Unreadable(path, $"'{path}' is not valid TOML. {exception.Message}");
+            return Unreadable(path, $"'{path}' is not valid TOML. {exception.Message}", willNotParse: true);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             failure = exception;
-            return Unreadable(path, $"'{path}' could not be read. {exception.Message}");
+            return Unreadable(path, $"'{path}' could not be read. {exception.Message}", willNotParse: false);
         }
     }
 
@@ -62,8 +65,8 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
     /// The document is empty and the error says why, which is the pair that makes this
     /// file unwritable. After the fact an empty document and a broken one look the same.
     /// </summary>
-    private static SettingsFile Unreadable(string path, string error) =>
-        new(path, Exists: true, new SettingsDocument(), error);
+    private static SettingsFile Unreadable(string path, string error, bool willNotParse) =>
+        new(path, Exists: true, new SettingsDocument(), error) { WillNotParse = willNotParse };
 
     /// <summary>
     /// Rewrites the file from the model, so comments, blank lines and key order all go.
@@ -131,20 +134,33 @@ internal sealed class TomlSettingsDocumentStore : ISettingsDocumentStore
         // Move into place so an interrupted write cannot truncate the file.
         var temporary = path + ".tmp";
 
-        if (byteOrderMark)
+        using (var stream = _fileSystem.Create(temporary))
         {
-            using (var stream = _fileSystem.Create(temporary))
-            using (var writer = new StreamWriter(stream, MarkedUtf8))
+            using (var writer = new StreamWriter(stream, byteOrderMark ? MarkedUtf8 : PlainUtf8, -1, leaveOpen: true))
             {
                 writer.Write(text);
             }
-        }
-        else
-        {
-            _fileSystem.WriteAllText(temporary, text);
+
+            // A rename is journalled and the content it moves is not, so without this a
+            // machine losing power soon after can leave a file of the right length full
+            // of zero bytes, which is a settings file nothing can parse.
+            Flush(stream);
         }
 
         _fileSystem.MoveFile(temporary, path, overwrite: true);
+    }
+
+    /// <summary>Pushes the content past the operating system's own cache.</summary>
+    private static void Flush(Stream stream)
+    {
+        if (stream is FileStream file)
+        {
+            file.Flush(flushToDisk: true);
+
+            return;
+        }
+
+        stream.Flush();
     }
 
     /// <summary>
