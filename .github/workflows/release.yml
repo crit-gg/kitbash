@@ -110,9 +110,9 @@ jobs:
       run:
         # release.sh is bash and so are the vpk lines. The default here is pwsh.
         shell: bash
-    env:
-      # runner.temp is a Windows path. release.sh converts it, and vpk wants it as it is.
-      FEED: ${{ runner.temp }}\feed
+    # RUNNER_TEMP is D:\a\_temp here, so the feed path below carries a backslash rather
+    # than the slash the other two jobs use. Bash leaves it alone inside double quotes,
+    # vpk wants it that way, and release.sh converts it back with cygpath.
     steps:
       - uses: actions/checkout@v4
 
@@ -145,7 +145,7 @@ jobs:
             --endpoint "$B2_ENDPOINT" \
             --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
             --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
-            --channel win --outputDir "$FEED" \
+            --channel win --outputDir "$RUNNER_TEMP\feed" \
             || echo "Nothing published on win yet, so this release carries no delta."
 
       # release.sh treats all three unset as an unsigned release, which is right for a
@@ -169,7 +169,7 @@ jobs:
           KITBASH_SIGN_ENDPOINT: ${{ secrets.SIGNING_ENDPOINT }}
           KITBASH_SIGN_ACCOUNT: ${{ secrets.SIGNING_ACCOUNT }}
           KITBASH_SIGN_PROFILE: ${{ secrets.SIGNING_PROFILE }}
-        run: build/release.sh "$FEED" win
+        run: build/release.sh "$RUNNER_TEMP\feed" win
 
       - name: Upload to the feed
         env:
@@ -180,7 +180,7 @@ jobs:
             --endpoint "$B2_ENDPOINT" \
             --bucket "$B2_BUCKET" --prefix "$B2_PREFIX" \
             --keyId "$B2_KEY_ID" --secret "$B2_APP_KEY" \
-            --channel win --outputDir "$FEED" \
+            --channel win --outputDir "$RUNNER_TEMP\feed" \
             --keepMaxReleases 5
 
   publish_osx:
