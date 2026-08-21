@@ -333,8 +333,18 @@ and was not measured here.**
 ### Windows is signed, Linux and macOS are not
 
 **Windows is signed with Azure Artifact Signing**, formerly called Trusted Signing. About ten
-dollars a month, and reputation accrues per certificate rather than per file, so it does not
-have to be waited out.
+dollars a month.
+
+**It does not stop SmartScreen and nothing sold does.** Microsoft's own FAQ says reputation
+builds against **the file hash** once it has download history, and **Artifact Signing issues no
+EV certificate and never will**. EV was the thing that used to skip the warning on a first
+download and that stopped working in 2024. Artifact Signing also moved to new intermediate CAs
+in March 2026, which reset what reputation existed for everyone under them.
+
+**What the signature buys is the dialog naming the publisher rather than saying unknown**, a
+much lower chance of Defender quarantining outright, and reputation accruing at all, which
+cannot start unsigned. Submitting the signed `Setup.exe` to Microsoft Security Intelligence is
+the only lever that moves faster than download volume, and the FAQ recommends it for this.
 
 On Linux signing would cost nothing and buy nothing, since no desktop verifies an AppImage
 signature. macOS is its own decision and is below.
@@ -400,8 +410,11 @@ without one expires three days after it ships.
 rather than one per file. The ten dollar tier includes five thousand signatures a month.
 
 **Updates should not hit SmartScreen at all**, because the warning comes from the mark of
-the web that a browser writes, and Velopack fetches packages itself. **That is expected
-behaviour rather than something watched, so confirm it on the first Windows test.**
+the web that a browser writes, and Velopack fetches packages itself over `HttpClient` and
+applies through ordinary writes. **So the warning is a first install cost, paid once per
+person.** That is what makes it survivable and it is still only reasoning, so confirm it by
+taking a real update on Windows and watching for a prompt. A warning on every automatic update
+would be bad enough to reopen the whole decision.
 
 **On macOS the same decision costs more, and three parts of it are separate.**
 

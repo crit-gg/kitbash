@@ -338,7 +338,9 @@ turns that off for working on the app.
 **The Windows packages are signed with Azure Artifact Signing.** One argument to `vpk pack`,
 a federated credential rather than a secret, and vpk carries signtool and the dlib itself. It
 runs on `win-runner-x64`, because vpk offers the option only when it is itself on Windows.
-**None of it has been executed yet.** The `kitbash-updates` skill has the whole of it.
+**It does not stop SmartScreen**, which builds against a file hash over downloads and which no
+certificate on sale skips any more. What it buys is a dialog that names the publisher. The
+`kitbash-updates` skill has the whole of it.
 
 The pack id is `Kitbash`, so on Windows the install root is `%LocalAppData%\Kitbash` and
 Velopack's uninstaller deletes the whole of it. **Nothing a person owns is in there**:
