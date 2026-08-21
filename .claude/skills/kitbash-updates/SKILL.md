@@ -370,8 +370,17 @@ anything but Windows. The file is UTF-8 with no byte order mark, which the dlib 
 
 - An app registration with a federated credential. Issuer
   `https://token.actions.githubusercontent.com`, audience `api://AzureADTokenExchange`, subject
-  `repo:crit-gg/kitbash:ref:refs/heads/main`. **The subject is matched literally and it is case
-  sensitive**, so a dispatch from any other branch fails at `az login`.
+  `repo:crit-gg@204265473/kitbash@1322211478:ref:refs/heads/main`. **The subject is matched
+  literally and it is case sensitive**, so a dispatch from any other branch fails at `az login`.
+
+**Those numbers are GitHub's immutable subject format and they are not optional here.** The
+owner id and the repository id are appended to the names with `@`, they are assigned once and
+never reused, and a rename or a transfer cannot move the trust to another repository. **GitHub
+has applied this automatically to any repository created, renamed or transferred since 15 July
+2026**, so this one has never emitted the name based form and a credential naming it matches
+nothing. `gh api repos/crit-gg/kitbash --jq '{r: .id, o: .owner.id}'` reads the two numbers.
+The failure is `AADSTS700213`, and it quotes the subject it was given, which is the value to
+copy.
 - The **Artifact Signing Certificate Profile Signer** role, assignable down to the certificate
   profile. `Artifact Signing Identity Verifier` is a different role, is portal only, and is
   needed to create the identity validation rather than to sign.
