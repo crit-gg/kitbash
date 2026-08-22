@@ -186,16 +186,76 @@ win_release() {
   fi
 }
 
-# --icon must be an icns here, which vpk enforces. --bundleId is named rather than left to
-# default, since the default is com.{packAuthors}.{packId} and both are Kitbash. --mainExe
-# names the program inside the publish output, and vpk builds the .app around it.
+# --icon must be an icns here, which vpk enforces. --mainExe names the program inside the
+# publish output, and vpk builds the .app around it.
+#
+# The bundle declares the kitbash url scheme, and CFBundleURLTypes is the only way to say
+# so, which means handing vpk the whole Info.plist. It copies the file in unchanged, it
+# substitutes nothing, and it refuses --plist and --bundleId together, so the identifier
+# and both versions are written here. Everything below is what vpk 1.2.0 generates on its
+# own, plus the URL types block.
+#
+# CFBundleShortVersionString carries a fourth part where CFBundleVersion does not, which is
+# vpk's own choice. Velopack reads neither at runtime, since it keeps its own sq.version.
 osx_release() {
   if [ "$(uname -s)" != "Darwin" ]; then
     echo "vpk registers [osx] pack only on a Mac, so this cannot run on $(uname -s)." >&2
     exit 3
   fi
 
-  release osx osx-arm64 Kitbash icons/icon.icns --bundleId run.kitbash.launcher
+  local short="$version"
+
+  if [[ "$version" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+    short="${BASH_REMATCH[1]}.0"
+  fi
+
+  # A template rather than a bare mktemp, which BSD mktemp refuses and which is the only
+  # one this function ever meets.
+  local plist
+  plist=$(mktemp "${TMPDIR:-/tmp}/kitbash-plist.XXXXXX")
+  trap 'rm -f "$plist"' RETURN
+
+  cat > "$plist" <<PLIST
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundleName</key>
+    <string>$pack_title</string>
+    <key>CFBundleIdentifier</key>
+    <string>run.kitbash.launcher</string>
+    <key>CFBundleVersion</key>
+    <string>$version</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleExecutable</key>
+    <string>Kitbash</string>
+    <key>CFBundleIconFile</key>
+    <string>icon.icns</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$short</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <true />
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>run.kitbash.launcher</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>kitbash</string>
+        </array>
+      </dict>
+    </array>
+  </dict>
+</plist>
+PLIST
+
+  release osx osx-arm64 Kitbash icons/icon.icns --plist "$(to_native "$plist")"
 }
 
 case "$only" in

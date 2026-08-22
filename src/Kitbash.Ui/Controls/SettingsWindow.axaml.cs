@@ -26,6 +26,26 @@ public partial class SettingsWindow : ChromelessWindow
         Activated += OnActivated;
     }
 
+    /// <summary>
+    /// The id of the page to open on. Null opens the first page in the tree, which is
+    /// what an app that simply opened its settings gets.
+    /// </summary>
+    public string? StartPage { get; init; }
+
+    /// <summary>
+    /// Shows one page by id, for a window that is already open. An id the schema does not
+    /// hold leaves the window on the page it is on.
+    /// </summary>
+    public void ShowPage(string? page)
+    {
+        if (page is null || Model?.Find(page) is not { } node)
+        {
+            return;
+        }
+
+        _ = Show(node);
+    }
+
     private SettingsWindowViewModel? Model => DataContext as SettingsWindowViewModel;
 
     /// <summary>
@@ -56,7 +76,9 @@ public partial class SettingsWindow : ChromelessWindow
 
         model.Saved += OnSaved;
 
-        if (model.First() is { } first)
+        var start = StartPage is { } page ? model.Find(page) : null;
+
+        if ((start ?? model.First()) is { } first)
         {
             await Show(first);
         }

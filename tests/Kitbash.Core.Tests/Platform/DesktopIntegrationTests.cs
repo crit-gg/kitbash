@@ -19,6 +19,8 @@ public sealed class DesktopIntegrationTests : IDisposable
 
     private string DataHome => Path.Combine(_root, "data");
 
+    private string ConfigHome => Path.Combine(_root, "config");
+
     private string Mount => Path.Combine(_root, "mount");
 
     private string Image => Path.Combine(_root, "kitbash.appimage");
@@ -27,6 +29,8 @@ public sealed class DesktopIntegrationTests : IDisposable
 
     private string IconFile =>
         Path.Combine(DataHome, "icons", "hicolor", "256x256", "apps", "kitbash.png");
+
+    private string AssociationFile => Path.Combine(ConfigHome, "mimeapps.list");
 
     private readonly List<ServiceProvider> _providers = [];
 
@@ -123,6 +127,99 @@ public sealed class DesktopIntegrationTests : IDisposable
         Assert.False(File.Exists(IconFile));
     }
 
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void TheEntrySaysItOpensAKitbashLink()
+    {
+        Bundle();
+        Integration().Install();
+
+        var entry = File.ReadAllText(EntryFile);
+
+        // The field code carries the url. Without it the desktop drops the link and
+        // Kitbash opens with nothing to show.
+        Assert.Contains($"Exec=\"{Image}\" %u", entry, StringComparison.Ordinal);
+        Assert.Contains("MimeType=x-scheme-handler/kitbash;", entry, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void TheEntryIsMadeTheDefaultForTheScheme()
+    {
+        Bundle();
+        Integration().Install();
+
+        var list = File.ReadAllText(AssociationFile);
+
+        Assert.Contains("[Default Applications]", list, StringComparison.Ordinal);
+        Assert.Contains("x-scheme-handler/kitbash=kitbash.desktop", list, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void EverythingElseInTheListIsLeftAlone()
+    {
+        Bundle();
+
+        var theirs = """
+            [Added Associations]
+            text/plain=someone.desktop;
+
+            [Default Applications]
+            text/plain=someone.desktop
+            x-scheme-handler/https=browser.desktop
+
+            [Removed Associations]
+            application/pdf=old.desktop;
+            """;
+
+        Directory.CreateDirectory(ConfigHome);
+        File.WriteAllText(AssociationFile, theirs);
+
+        Integration().Install();
+
+        var list = File.ReadAllText(AssociationFile);
+
+        Assert.Contains("[Added Associations]", list, StringComparison.Ordinal);
+        Assert.Contains("text/plain=someone.desktop;", list, StringComparison.Ordinal);
+        Assert.Contains("x-scheme-handler/https=browser.desktop", list, StringComparison.Ordinal);
+        Assert.Contains("[Removed Associations]", list, StringComparison.Ordinal);
+        Assert.Contains("application/pdf=old.desktop;", list, StringComparison.Ordinal);
+
+        // Under the keys already in the section rather than against the next heading,
+        // which parses the same and reads like somebody wrote it.
+        Assert.Contains(
+            "x-scheme-handler/https=browser.desktop\nx-scheme-handler/kitbash=kitbash.desktop",
+            list,
+            StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void TheSchemeIsNamedOnceHoweverOftenItRuns()
+    {
+        Bundle();
+
+        var integration = Integration();
+
+        integration.Install();
+        integration.Install();
+
+        var lines = File.ReadAllText(AssociationFile).Split('\n');
+
+        Assert.Single(lines, line =>
+            line.StartsWith("x-scheme-handler/kitbash=", StringComparison.Ordinal));
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AnEntrySomebodyElseWroteTakesNoAssociationEither()
+    {
+        Bundle();
+
+        Directory.CreateDirectory(Path.GetDirectoryName(EntryFile)!);
+        File.WriteAllText(EntryFile, "[Desktop Entry]\nName=Kitbash\n");
+
+        Integration().Install();
+
+        Assert.False(File.Exists(AssociationFile));
+    }
+
     /// <summary>The files the AppImage runtime would have mounted and pointed at.</summary>
     private void Bundle()
     {
@@ -138,6 +235,7 @@ public sealed class DesktopIntegrationTests : IDisposable
         var variables = new Dictionary<string, string>
         {
             ["XDG_DATA_HOME"] = DataHome,
+            ["XDG_CONFIG_HOME"] = ConfigHome,
             ["APPDIR"] = Mount,
         };
 

@@ -51,9 +51,9 @@ public static class KitbashCoreServices
             services.TryAddSingleton<IPathRules, WindowsPathRules>();
 
             // Setup.exe writes the shortcut and the uninstall entry, and there is no
-            // bundle to correct for, so both of these have nothing to do here.
+            // bundle to correct for, so the integration is the url scheme alone.
             services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
-            services.TryAddSingleton<IDesktopIntegration, NoDesktopIntegration>();
+            services.TryAddSingleton<IDesktopIntegration, WindowsDesktopIntegration>();
 
             // No portal here, so picking a colour off the screen would mean a window over a
             // capture of the desktop, which is not built.
@@ -88,8 +88,9 @@ public static class KitbashCoreServices
             services.TryAddSingleton<IPathShortener, UnixPathShortener>();
             services.TryAddSingleton<IPathRules, MacPathRules>();
 
-            // The bundle prepends nothing, and an app in Applications is already in
-            // Launchpad and Spotlight, so neither of these has anything to do.
+            // The bundle prepends nothing, an app in Applications is already in Launchpad
+            // and Spotlight, and Info.plist declares the url scheme, so neither of these
+            // has anything to do.
             services.TryAddSingleton<IBundleEnvironment, PlainEnvironment>();
             services.TryAddSingleton<IDesktopIntegration, NoDesktopIntegration>();
 

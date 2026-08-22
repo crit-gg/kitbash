@@ -672,6 +672,13 @@ app opens its own, and opening it again brings the one already open to the front
 than making a second. Register it with `AddKitbashSettingsWindow`, plus a
 `SettingsSchema` of the app's own.
 
+**`Open` also takes a page id**, which is a `SettingsPage.Id`, and a window already open is
+moved to that page rather than a second one being made. **An id the schema does not hold
+opens the first page rather than nothing**, since the caller may be a `kitbash://settings/`
+link somebody wrote against an older version. The launcher's ids are in
+`.claude/plans/deep-links.md`, which is also the only caller that passes one so far. Where a
+store repeats a page once per place, the first place wins.
+
 **`ISettingsWindows.Closed` is how the app behind it catches up.** Nothing watches a
 settings file, so anything an app read once and holds is stale until it reads again, and
 this is the moment to do it. It says nothing about what changed, since the window writes

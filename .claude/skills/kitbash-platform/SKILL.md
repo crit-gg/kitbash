@@ -20,7 +20,8 @@ Platform/
   IProcessRunner.cs, ProcessRunner.cs, ProcessRequest.cs, ProcessStartException.cs
   IExecutableFinder.cs, ExecutableFinder.cs
   UnixPathShortener.cs                path display, Linux and macOS both
-  NoDesktopIntegration.cs             nothing to write, Windows and macOS both
+  NoDesktopIntegration.cs             nothing to write, macOS alone
+  DeepLink.cs                         a kitbash link, taken apart
   UnavailableSecretStore.cs           a machine whose keyring is not spoken to yet
   Linux/                              LinuxPlatform, launcher resolution,
                                       user directories, path rules
@@ -34,7 +35,7 @@ Platform/
 at the call site.
 
 **A shared implementation is named for the family, not for one member.** `UnixPathShortener`
-is Linux and macOS, `NoDesktopIntegration` is Windows and macOS, and `UnixEngineFiles` was
+is Linux and macOS, `PlainEnvironment` is Windows and macOS, and `UnixEngineFiles` was
 already the precedent. A class named after one OS registered on another reads as a mistake
 every time somebody finds it.
 
@@ -155,6 +156,11 @@ real Finder launch gives has been measured rather than assumed.
 shim, and on a machine without them it exists, passes `IsExecutableFile`, and opens an install
 dialog when run.
 
+**`IDesktopIntegration` makes the running copy findable, and names it as what opens a
+`kitbash` link.** Two jobs, one interface, because both are the same question: how does this
+desktop learn that a program is here. There is one implementation per OS and no call site
+asks which. The links themselves are in `.claude/plans/deep-links.md`.
+
 **`IDesktopIntegration` makes the AppImage findable.** An AppImage is a file in Downloads
 with no menu entry. `LinuxDesktopIntegration` writes `applications/kitbash.desktop` and
 `icons/hicolor/256x256/apps/kitbash.png` under `XDG_DATA_HOME`, and rewrites whenever
@@ -174,10 +180,37 @@ installed AppImage only when the entry's `TryExec` names a file that exists, so 
 without it is skipped. It is a path and not a command line, so it carries no quoting, while
 `Exec` keeps the quoting the specification asks for.
 
-**There is no `Remove`.** Velopack runs no uninstall hook on Linux and an AppImage has no
-uninstaller, so nothing would call one. `NoDesktopIntegration` does nothing and answers for
-Windows and macOS both, since `Setup.exe` writes the shortcut and the uninstall entry, and an
-application bundle in Applications is already in Launchpad and Spotlight where it sits.
+**The entry also carries the url scheme.** `Exec` ends in `%u`, the field code for one url,
+and without it the desktop drops the link and Kitbash opens with nothing to show. A
+`MimeType=x-scheme-handler/kitbash;` line says the entry can open one, and the trailing
+semicolon is required because the key is a list.
+
+**Saying it can is not saying it does.** `$XDG_CONFIG_HOME/mimeapps.list` gains
+`x-scheme-handler/kitbash=kitbash.desktop` under `[Default Applications]`, which is what
+`xdg-mime default` writes. It is a person's own file and holds their choices for everything
+else, so it is read, amended and written back: every other section, key and comment survives,
+and a run that changes nothing writes nothing. **`update-desktop-database` is deliberately
+not run.** It builds `mimeinfo.cache`, which is a fallback, and an explicit default is read
+first, so skipping it costs nothing and drops a dependency on `desktop-file-utils` being
+installed.
+
+**Windows registers a scheme and nothing else.** `WindowsDesktopIntegration` writes
+`HKCU\Software\Classes\kitbash`, per user so nothing needs elevation, with the empty
+`URL Protocol` value that makes the key a scheme rather than a file type. `Setup.exe` already
+writes the shortcut and the uninstall entry, so that is the whole of it. `Microsoft.Win32.Registry`
+needs no package and no conditional compilation, unlike `WindowsSecretStore`: it is in the
+shared framework for plain `net10.0` and ships in every self contained publish.
+
+**`Remove` is Windows only in practice.** Velopack deletes `%LocalAppData%\Kitbash` whole,
+so a key left behind names a program that has gone, and the uninstall hook in `Program.cs`
+takes it back. Linux implements `Remove` as nothing, because an AppImage has no uninstaller
+and the entry is rewritten or replaced at the next launch instead. macOS keeps
+`NoDesktopIntegration`, since an application bundle in Applications is already in Launchpad
+and Spotlight and `Info.plist` declares the scheme.
+
+**A copy that is not packaged registers nothing.** Linux stops when `$APPIMAGE` is unset, and
+Windows stops when `IEnvironment.GetProcessCommand` is anything but one path that exists, so
+a `dotnet run` copy takes over no scheme on the machine somebody is working on.
 
 **`StartupWMClass` is deliberately absent** from the entry. A wrong one is worse than none,
 and the value Avalonia actually sets has not been checked with `xprop WM_CLASS`.

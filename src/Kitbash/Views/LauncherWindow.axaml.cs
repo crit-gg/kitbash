@@ -4,10 +4,15 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Kitbash.Core.Godot;
+using Kitbash.Core.Platform;
+using Kitbash.Core.Settings;
 using Kitbash.Tools;
 using Kitbash.Ui.Controls;
 using Kitbash.Ui.Settings;
+using Kitbash.Ui.Toasts;
 using Kitbash.Updates;
 using Kitbash.ViewModels;
 
@@ -48,6 +53,8 @@ public partial class LauncherWindow : ChromelessWindow
                 model.AskingInputs ??= form => ToolInputsDialog.AskAsync(this, form);
 
                 model.RunningScript ??= (subject, work) => ToolRunDialog.RunAsync(this, subject, work);
+
+                model.RevealTool ??= RevealTool;
 
                 model.OpenIn.PropertyChanged += OnOpenInChanged;
                 FillOpenIn();
@@ -96,6 +103,12 @@ public partial class LauncherWindow : ChromelessWindow
 
     /// <summary>Builds the Open in menu's controls. Handed over by the composition root.</summary>
     public OpenInMenu? OpenIn { get; init; }
+
+    /// <summary>
+    /// The repository list a link may add to. Handed over by the composition root, since
+    /// the window is built without a container.
+    /// </summary>
+    public IToolRepositoryList? Repositories { get; init; }
 
     /// <summary>
     /// What the title bar reads out beside the name. Set here rather than bound, since a
@@ -426,6 +439,231 @@ public partial class LauncherWindow : ChromelessWindow
             return null;
         }
     }
+
+    /// <summary>
+    /// Does what a kitbash link asks for. Every verb ends in something on screen, and none
+    /// of them clones, installs or runs anything without a person pressing a button.
+    /// </summary>
+    public async Task FollowAsync(DeepLink link)
+    {
+        ArgumentNullException.ThrowIfNull(link);
+
+        switch (link.Verb)
+        {
+            case "clone":
+                await CloneFromLinkAsync(link.Value("repo"));
+                break;
+
+            case "settings":
+                Settings?.Open(this, link.First);
+                break;
+
+            case "engine":
+                await ShowEngineFromLinkAsync(link.First);
+                break;
+
+            case "tool":
+                await ShowToolFromLinkAsync(link.First);
+                break;
+
+            case "tools" when Names(link.First, "repository"):
+                await AddRepositoryFromLinkAsync(link.Value("add"));
+                break;
+
+            default:
+                // The link itself is not read back out, since it came from a web page and
+                // a toast is not the place to put whatever it says.
+                Say(ToastTier.Warn, "Kitbash does not know that link");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Opens the clone dialog with the address a link carried already in it. Nothing is
+    /// cloned until the dialog is answered.
+    /// </summary>
+    private async Task CloneFromLinkAsync(string? address)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            Say(ToastTier.Warn, "That link did not name a repository");
+
+            return;
+        }
+
+        var clone = model.NewClone();
+
+        // Whatever the link carried, so a person sees it before git does. The dialog
+        // refuses to run until GitRemote accepts it, which is what keeps this safe.
+        clone.Address = address;
+
+        var dialog = new CloneWorkspaceDialog { DataContext = clone };
+
+        if (await dialog.ShowFor<bool>(this) && dialog.Root is { } root)
+        {
+            await model.AddWorkspaceAsync(root);
+        }
+    }
+
+    private async Task ShowEngineFromLinkAsync(string? version)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        if (!EngineVersionPattern.TryParse(version, out var wanted))
+        {
+            Say(ToastTier.Warn, "That link did not name a Godot version");
+
+            return;
+        }
+
+        await model.ShowEngineAsync(wanted);
+    }
+
+    private async Task ShowToolFromLinkAsync(string? id)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            Say(ToastTier.Warn, "That link did not name a tool");
+
+            return;
+        }
+
+        if (!await model.ShowToolAsync(id))
+        {
+            Say(
+                ToastTier.Warn,
+                $"No tool here is called {Short(id)}",
+                "A repository offering it has to be on the list first.");
+        }
+    }
+
+    /// <summary>
+    /// Adds a repository a link named, once a person has said so. This is how a program
+    /// gets onto the machine, so the dialog is the whole point of it.
+    /// </summary>
+    private async Task AddRepositoryFromLinkAsync(string? address)
+    {
+        if (Model is not { } model || Repositories is not { } repositories)
+        {
+            return;
+        }
+
+        if (Address(address) is not { } url)
+        {
+            Say(
+                ToastTier.Warn,
+                "That link did not name a repository",
+                "A repository address is http or https.");
+
+            return;
+        }
+
+        // Both lists, since a workspace already offering it makes this nothing to do.
+        // Reading them touches a disk, so it happens before the dialog is built.
+        var listed = await Task.Run(repositories.Read);
+
+        if (listed.Any(source => source.Url == url))
+        {
+            Say(ToastTier.Info, "That repository is already on the list");
+
+            return;
+        }
+
+        if (!await AddRepositoryDialog.For(url).ShowFor<bool>(this))
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() => repositories.WriteGlobal(
+                [.. repositories.ReadGlobal(), new ToolRepositorySource(ToolRepositorySource.GitHub, url, string.Empty)]));
+        }
+        catch (SettingsFileUnreadableException)
+        {
+            Say(
+                ToastTier.Error,
+                "The global config would not parse, so nothing was added",
+                "Fix it by hand and follow the link again.");
+
+            return;
+        }
+
+        await model.RefreshToolsAsync(refresh: true);
+
+        Say(ToastTier.Ok, $"Added {url.Value.Host}", "Whatever it offers is on the page now.");
+    }
+
+    /// <summary>
+    /// Scrolls a tool card into view. Neither of the two lists holding cards virtualises,
+    /// so every container is real and the visual tree is where one is found.
+    /// </summary>
+    private void RevealTool(ToolCardViewModel card) =>
+        Dispatcher.UIThread.Post(
+            () => Container(ToolGroups, card)?.BringIntoView(),
+            DispatcherPriority.Background);
+
+    private static Control? Container(Visual root, object item)
+    {
+        if (root is Control control && ReferenceEquals(control.DataContext, item))
+        {
+            return control;
+        }
+
+        foreach (var child in root.GetVisualChildren())
+        {
+            if (Container(child, item) is { } found)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Http and https only, which is what WebAddress already refuses anything else for.</summary>
+    private static WebAddress? Address(string? address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return null;
+        }
+
+        try
+        {
+            return WebAddress.Parse(address.Trim());
+        }
+        catch (Exception exception) when (exception is ArgumentException or FormatException or UriFormatException)
+        {
+            return null;
+        }
+    }
+
+    private static bool Names(string? segment, string word) =>
+        string.Equals(segment, word, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Enough of a link's own word to recognise it, since a link chose the length.</summary>
+    private static string Short(string value) => value.Length <= 48 ? value : value[..48];
+
+    /// <summary>
+    /// Says something about a link. The host is wired to the engines page's service, which
+    /// is the launcher's only one.
+    /// </summary>
+    private void Say(ToastTier tier, string title, string? body = null) =>
+        Model?.Engines.Toasts.Post(new ToastRequest { Tier = tier, Title = title, Body = body });
 
     private async Task AddWorkspaceFromFolderAsync()
     {

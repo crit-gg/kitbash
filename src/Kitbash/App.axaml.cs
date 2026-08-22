@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using Avalonia.Themes.Fluent;
 using Microsoft.Extensions.DependencyInjection;
 using Kitbash.Core;
@@ -31,6 +32,12 @@ namespace Kitbash;
 public partial class App : Application
 {
     private ServiceProvider? _services;
+
+    /// <summary>
+    /// A link with nowhere to go yet. A desktop can hand one over before the launcher has
+    /// a window, so it waits here rather than being dropped. UI thread only.
+    /// </summary>
+    private string? _pending;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -80,13 +87,29 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.ShutdownRequested += (_, _) => _services?.Dispose();
 
+            // Windows and Linux hand a link over as an ordinary argument to a new copy.
+            // Read before the lock, since the copy that already holds it is the one that
+            // has to be given the link.
+            _pending = desktop.Args?.FirstOrDefault(argument => DeepLink.TryParse(argument, out _));
+
             // Before the update and before any window. A copy that is not the first has
             // already asked the first to come forward, so it leaves without drawing.
-            if (!Hold())
+            if (!Hold(_pending ?? string.Empty))
             {
-                desktop.Shutdown();
+                // Posted rather than called. The main loop has not started yet, and
+                // shutting the dispatcher down before it does makes it throw on the way
+                // in. Following a link is the common way to be the second copy, so this
+                // path has to end in an ordinary exit.
+                Dispatcher.UIThread.Post(() => desktop.Shutdown());
 
                 return;
+            }
+
+            // macOS never starts a second copy for a link. It hands one to the app that is
+            // already running, which Avalonia raises as an activation and nothing else does.
+            if (this.TryGetFeature<IActivatableLifetime>() is { } activatable)
+            {
+                activatable.Activated += OnActivated;
             }
 
             // Before the first read of a settings file, since one that will not parse has
@@ -103,23 +126,24 @@ public partial class App : Application
     /// Takes the single launcher lock, and listens for a later copy asking this one to
     /// come forward. False means this copy is the later one and should go.
     /// </summary>
-    private bool Hold()
+    private bool Hold(string message)
     {
         if (_services?.GetService<ISingleInstance>() is not { } instance)
         {
             return true;
         }
 
-        instance.AskedToComeForward += (_, _) => ComeForward();
+        instance.AskedToComeForward += (_, asked) => ComeForward(asked.Message);
 
-        return instance.TryHold();
+        return instance.TryHold(message);
     }
 
     /// <summary>
-    /// Brings the launcher to the front for somebody who started a second copy. The event
-    /// arrives on a background thread, so the window is touched through the dispatcher.
+    /// Brings the launcher to the front for somebody who started a second copy, and shows
+    /// whatever link that copy was following. The event arrives on a background thread, so
+    /// the window is touched through the dispatcher.
     /// </summary>
-    private void ComeForward() =>
+    private void ComeForward(string message) =>
         _services?.GetService<IUiDispatcher>()?.Post(() =>
         {
             if (ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
@@ -134,7 +158,55 @@ public partial class App : Application
 
             window.Show();
             window.Activate();
+
+            // A copy running an older build sends one byte rather than a link, so what
+            // arrives is checked before it is kept.
+            if (!DeepLink.TryParse(message, out _))
+            {
+                return;
+            }
+
+            _pending = message;
+            Follow(window);
         });
+
+    /// <summary>
+    /// macOS hands a link to the app that is already running rather than starting another
+    /// copy. Windows and Linux reach the same place through the arguments instead.
+    /// </summary>
+    private void OnActivated(object? sender, ActivatedEventArgs e)
+    {
+        if (e is not ProtocolActivatedEventArgs { Kind: ActivationKind.OpenUri } opened)
+        {
+            return;
+        }
+
+        _pending = opened.Uri.ToString();
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
+        {
+            Follow(window);
+        }
+    }
+
+    /// <summary>
+    /// Shows what a link asked for, once there is a launcher to show it in. Called with
+    /// the splash still up does nothing, and the link waits for the window instead.
+    /// </summary>
+    private void Follow(Window window)
+    {
+        if (_pending is not { } text || window is not LauncherWindow launcher)
+        {
+            return;
+        }
+
+        _pending = null;
+
+        if (DeepLink.TryParse(text, out var link))
+        {
+            _ = launcher.FollowAsync(link);
+        }
+    }
 
     /// <summary>
     /// The splash, then the update, then the launcher. **Every path through this ends with a
@@ -455,6 +527,7 @@ public partial class App : Application
             // itself are handed over here rather than resolved inside it.
             Settings = services.GetRequiredService<ISettingsWindows>(),
             OpenIn = services.GetRequiredService<OpenInMenu>(),
+            Repositories = services.GetRequiredService<IToolRepositoryList>(),
             Version = services.GetRequiredService<IApplicationVersion>(),
             DataContext = services.GetRequiredService<LauncherViewModel>(),
         };
@@ -466,8 +539,12 @@ public partial class App : Application
 
         window.Show();
 
-        // Writes a menu entry for the AppImage. Touches a disk and matters to nothing
-        // else that happens here, so it goes off the UI thread and is not waited on.
+        // The launcher is up, so anything a link asked for on the way in can happen now.
+        Follow(window);
+
+        // Writes the menu entry and the url scheme this desktop needs. Touches a disk and
+        // matters to nothing else that happens here, so it goes off the UI thread and is
+        // not waited on.
         var integration = services.GetRequiredService<IDesktopIntegration>();
         _ = Task.Run(integration.Install);
     }

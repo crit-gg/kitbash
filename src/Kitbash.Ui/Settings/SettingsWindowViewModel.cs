@@ -147,6 +147,20 @@ public sealed partial class SettingsWindowViewModel : ObservableObject
         Rows.Select(row => row.Item).OfType<SettingsTreeNode>().FirstOrDefault(node => !node.IsGroup);
 
     /// <summary>
+    /// The node opening the page with this id, or null when the schema holds none. A page
+    /// a store repeats once per place answers with the first place.
+    /// </summary>
+    public SettingsTreeNode? Find(string page)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(page);
+
+        return Rows
+            .Select(row => row.Item)
+            .OfType<SettingsTreeNode>()
+            .FirstOrDefault(node => string.Equals(node.Page?.Id, page, StringComparison.Ordinal));
+    }
+
+    /// <summary>
     /// Where a node sits in the tree right now, or minus one when it is not shown. By key
     /// rather than by reference, since the tree is built again whenever it is reloaded.
     /// </summary>

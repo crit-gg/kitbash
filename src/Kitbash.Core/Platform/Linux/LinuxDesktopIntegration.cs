@@ -4,7 +4,8 @@ namespace Kitbash.Core.Platform.Linux;
 
 /// <summary>
 /// Writes a desktop entry and an icon for the running AppImage, so it appears in the
-/// menu instead of being a file somebody has to find again.
+/// menu instead of being a file somebody has to find again, and names Kitbash as the
+/// program that opens a <c>kitbash</c> link.
 /// </summary>
 internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 {
@@ -20,6 +21,13 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
     private const string EntryName = "kitbash";
     private const string IconSize = "256x256";
+
+    /// <summary>The mime type a url scheme is named by, which is the shared mime info rule.</summary>
+    private const string SchemeType = "x-scheme-handler/" + DeepLink.Scheme;
+
+    /// <summary>Where a person's own default program per mime type is kept.</summary>
+    private const string AssociationFile = "mimeapps.list";
+    private const string DefaultsSection = "[Default Applications]";
 
     private readonly IFileSystem _fileSystem;
     private readonly IEnvironment _environment;
@@ -51,12 +59,21 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
             WriteIcon();
             WriteEntry(image);
+            WriteAssociation();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             // The app works without a menu entry, so a data directory that cannot be
             // written is survived rather than reported.
         }
+    }
+
+    /// <summary>
+    /// Nothing to take back. An AppImage has no uninstaller, so the entry outlives the
+    /// file and is rewritten or replaced at the next launch instead.
+    /// </summary>
+    public void Remove()
+    {
     }
 
     /// <summary>
@@ -122,7 +139,8 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
     /// <summary>
     /// TryExec is how an AppImage manager decides the file is still there, and it is a
-    /// path rather than a command line, so it carries no quoting.
+    /// path rather than a command line, so it carries no quoting. %u is the field code
+    /// for the one url the desktop passes, and without it the link is dropped.
     /// </summary>
     private static string Entry(string image) =>
         $"""
@@ -131,13 +149,97 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         Name=Kitbash
         Comment=Godot, without the version wrangling.
         Icon={EntryName}
-        Exec={Quote(image)}
+        Exec={Quote(image)} %u
         TryExec={image}
         Categories=Development;
+        MimeType={SchemeType};
         Terminal=false
         {Mark}
 
         """;
+
+    /// <summary>
+    /// Names this entry as what opens a kitbash link. The MimeType line above only says
+    /// the entry can, and a desktop reads the default from here.
+    /// </summary>
+    private void WriteAssociation()
+    {
+        var file = Path.Combine(ConfigRoot, AssociationFile);
+
+        var lines = _fileSystem.FileExists(file)
+            ? _fileSystem.ReadAllText(file).Split('\n').ToList()
+            : [];
+
+        if (!Associate(lines))
+        {
+            return;
+        }
+
+        _fileSystem.CreateDirectory(ConfigRoot);
+        _fileSystem.WriteAllText(file, string.Join('\n', lines));
+    }
+
+    /// <summary>
+    /// Puts the association into the lines of a mimeapps.list, leaving every other
+    /// section and every other key exactly as it was. False means it was already there.
+    /// </summary>
+    private static bool Associate(List<string> lines)
+    {
+        var wanted = $"{SchemeType}={EntryName}.desktop";
+        var section = lines.FindIndex(line => line.Trim() == DefaultsSection);
+
+        if (section < 0)
+        {
+            if (lines.Count > 0 && lines[^1].Trim().Length > 0)
+            {
+                lines.Add(string.Empty);
+            }
+
+            lines.Add(DefaultsSection);
+            lines.Add(wanted);
+            lines.Add(string.Empty);
+
+            return true;
+        }
+
+        // Everything up to the next section heading belongs to this section.
+        var end = section + 1;
+
+        while (end < lines.Count && !lines[end].TrimStart().StartsWith('['))
+        {
+            end++;
+        }
+
+        var existing = lines.FindIndex(
+            section + 1,
+            end - section - 1,
+            line => line.TrimStart().StartsWith(SchemeType + "=", StringComparison.Ordinal));
+
+        if (existing < 0)
+        {
+            // Back over the blank lines that separate this section from the next, so the
+            // key lands under the ones already here rather than against the next heading.
+            var last = end;
+
+            while (last > section + 1 && lines[last - 1].Trim().Length == 0)
+            {
+                last--;
+            }
+
+            lines.Insert(last, wanted);
+
+            return true;
+        }
+
+        if (lines[existing] == wanted)
+        {
+            return false;
+        }
+
+        lines[existing] = wanted;
+
+        return true;
+    }
 
     private string EntryFile => Path.Combine(DataRoot, "applications", EntryName + ".desktop");
 
@@ -160,15 +262,17 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     /// The data root itself rather than the folder Kitbash keeps its own files in, so
     /// this reads the variable rather than going through IUserDirectories.
     /// </summary>
-    private string DataRoot
-    {
-        get
-        {
-            var configured = _environment.GetVariable("XDG_DATA_HOME");
+    private string DataRoot => Root("XDG_DATA_HOME", ".local", "share");
 
-            return !string.IsNullOrWhiteSpace(configured) && Path.IsPathRooted(configured)
-                ? configured
-                : Path.Combine(_environment.GetHomeDirectory(), ".local", "share");
-        }
+    /// <summary>The config root, for the same reason, and where mimeapps.list lives.</summary>
+    private string ConfigRoot => Root("XDG_CONFIG_HOME", ".config");
+
+    private string Root(string variable, params string[] fallback)
+    {
+        var configured = _environment.GetVariable(variable);
+
+        return !string.IsNullOrWhiteSpace(configured) && Path.IsPathRooted(configured)
+            ? configured
+            : Path.Combine([_environment.GetHomeDirectory(), .. fallback]);
     }
 }

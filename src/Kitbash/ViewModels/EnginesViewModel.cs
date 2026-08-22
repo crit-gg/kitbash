@@ -210,10 +210,15 @@ public sealed partial class EnginesViewModel : ViewModelBase
     public Action<ReleaseCardViewModel>? Reveal { get; set; }
 
     /// <summary>
-    /// Installs the build that answers a requirement, and shows it happening.
+    /// Opens the card holding the build that answers a requirement and scrolls to it.
+    /// Null when nothing published answers, which is said in a toast.
     /// </summary>
-    public async Task InstallForAsync(EngineVersionPattern wanted, bool mono)
+    /// <param name="advice">The second line of that toast, since only the caller knows who asked.</param>
+    public async Task<EngineBuildViewModel?> RevealForAsync(
+        EngineVersionPattern wanted, bool mono, string advice)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(advice);
+
         // The page may never have been opened, so nothing has been read yet.
         if (_cards.Count == 0)
         {
@@ -224,12 +229,9 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         if (wanted.BestMatch(_cards.Keys) is not { } tag)
         {
-            Post(
-                ToastTier.Error,
-                $"Nothing published matches {wanted}",
-                "Check the version this workspace asks for.");
+            Post(ToastTier.Error, $"Nothing published matches {wanted}", advice);
 
-            return;
+            return null;
         }
 
         var card = _cards[tag];
@@ -248,11 +250,20 @@ public sealed partial class EnginesViewModel : ViewModelBase
                 $"Godot {EngineRowViewModel.NameOf(tag)} has no build for this machine",
                 $"Nothing published for {HostPlatformText} {EngineBuild.TextFor(HostArchitecture)}"
                 + (mono ? " with C# support." : "."));
-
-            return;
         }
 
-        if (row.IsInstalled)
+        return row;
+    }
+
+    /// <summary>
+    /// Installs the build that answers a requirement, and shows it happening.
+    /// </summary>
+    public async Task InstallForAsync(EngineVersionPattern wanted, bool mono)
+    {
+        var row = await RevealForAsync(wanted, mono, "Check the version this workspace asks for.")
+            .ConfigureAwait(true);
+
+        if (row is not { IsInstalled: false })
         {
             return;
         }

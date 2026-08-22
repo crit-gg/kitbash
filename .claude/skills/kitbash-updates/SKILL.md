@@ -237,8 +237,25 @@ or `vpk` goes through `to_native`.
 **`--icon` for macOS must be an `.icns`**, which vpk enforces. `icons/icon.icns` is committed
 the way `icon.ico` is, and `tools/icon_builder/icns.sh` regenerates it from `icon.svg` with
 `sips` and `iconutil`, both of which are part of macOS. Every size is rasterised from the
-vector rather than scaled from one bitmap. **`--bundleId` is named rather than defaulted**,
-since the default is `com.{packAuthors}.{packId}` and both of those are Kitbash.
+vector rather than scaled from one bitmap.
+
+**`build/release.sh` writes the whole `Info.plist` for macOS and passes `--plist`.** The
+bundle has to declare `CFBundleURLTypes` for the `kitbash` url scheme, and that is the only
+way to say so. Three things follow, all measured against vpk 1.2.0:
+
+- **`--plist` copies the file in verbatim.** It merges nothing and substitutes nothing, so
+  the version is substituted by the script and every key vpk used to write is written there,
+  `CFBundleIconFile` included, since vpk still puts the icns at `Contents/Resources/icon.icns`
+  and nothing else names it.
+- **`--plist` and `--bundleId` are refused together**, so `run.kitbash.launcher` moved into
+  the file. The default would have been `com.{packAuthors}.{packId}` and both of those are
+  Kitbash.
+- **`CFBundleShortVersionString` carries a fourth part where `CFBundleVersion` does not.**
+  That is vpk's own shape, copied rather than improved on. Velopack reads neither at runtime,
+  since it keeps its own `sq.version`.
+
+Verified here by cross compiling a bundle with the generated file and reading the scheme back
+out of it. `.claude/plans/deep-links.md` has the rest.
 
 **A push that touches nothing the packed app is built from does not release.** The trigger's
 `paths-ignore` holds everything outside `src/Kitbash`, `src/Kitbash.Ui`, `src/Kitbash.Core`,
@@ -304,6 +321,18 @@ connect to it, and all they can do is ask the window to come forward.
 **A copy that cannot hand over opens instead of exiting.** The first copy takes the lock
 before it starts listening, so a copy started in that gap waits two seconds and then carries
 on. Two launchers is a survivable state and an app that will not open is not.
+
+**The handoff carries a message now.** It was one byte and is the whole stream as UTF-8, so
+a second copy following a `kitbash://` link hands the link over and the running copy shows it.
+The end of the stream is the end of the message, which means **a copy running an older build,
+which sends one byte and no length, is still understood** as a plain request to come forward.
+Anything past 8 KiB is neither sent nor read.
+
+**A second copy exits cleanly, and used to dump core.** `desktop.Shutdown()` was called from
+inside `OnFrameworkInitializationCompleted`, which shuts the dispatcher down before the main
+loop starts and makes Avalonia throw on the way in. Nobody saw it, because the handover had
+already happened by then. The shutdown is posted to the dispatcher instead. Following a link
+is the common way to be the second copy, so that path had to end in an ordinary exit.
 
 **Coming forward is `Window.Activate`, and X11 rules apply.** `UsePlatformDetect` selects X11
 on Linux, so under a Wayland session the app is an XWayland client and the compositor treats
@@ -487,9 +516,10 @@ works and writes exactly what the table above says, in seven seconds, with two w
 the signing arguments that are absent. **`[osx] pack` really is registered only on a Mac**,
 confirmed by `vpk [osx] --help` listing it here.
 
-The bundle it builds is correct: `CFBundleIdentifier` is the `--bundleId` passed,
-`CFBundleExecutable` and `CFBundleName` are `Kitbash`, `icon.icns` lands in
-`Contents/Resources`, and the apphost keeps its ad hoc signature. **Velopack recognises its
+The bundle it builds is correct: `CFBundleExecutable` and `CFBundleName` are `Kitbash`,
+`icon.icns` lands in `Contents/Resources`, and the apphost keeps its ad hoc signature.
+`CFBundleIdentifier` was the `--bundleId` passed and now comes out of the plist the script
+writes, which has not been run on a Mac since that changed. **Velopack recognises its
 own install**, logging `Located valid manifest file at Contents/MacOS/sq.version`, where the
 unbundled publish says it is not in a bundle and declines to update.
 

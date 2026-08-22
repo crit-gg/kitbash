@@ -241,6 +241,9 @@ the problem:
   touching the manifest reader, either tool dialog or anything about running one.
 - `.claude/plans/external-tools.md` what the Open in button was ported from and what could
   not be tested here. Read before touching `Platform/Openers` or either opener finder.
+- `.claude/plans/deep-links.md` the `kitbash://` links, what each verb does, how each desktop
+  registers the scheme and how the link reaches the running copy. Read before touching
+  `IDesktopIntegration`, `ISingleInstance`, `DeepLink` or `LauncherWindow.FollowAsync`.
 - `.claude/plans/projects-window.md` the welcome window every app opens with, what the app
   gets to define about it and where it departs from the design. Read before touching
   `Kitbash.Ui/Projects` or `Kitbash.Core/Projects`.
@@ -325,6 +328,19 @@ the release workflow has a job on a macOS runner, since `vpk` registers `[osx] p
 only when it is itself on a Mac. **Nothing is signed or notarized on macOS**, which costs a
 person a trip through System Settings on first install. No update has been taken yet. The
 `kitbash-updates` skill has the rest.
+
+**`kitbash://` links open the launcher.** Four verbs and **none of them clones, installs or
+runs anything on its own**: `clone` fills the clone dialog, `settings/<pageId>` opens the
+settings window on a page, `engine/<version>` reveals that build on the engines page, and
+`tools/repository?add=` asks in a dialog before the global list gains anything, since that is
+how a program gets onto the machine. `tool/<id>` scrolls to a card. Windows writes a per user
+registry key, Linux puts `%u` and a `MimeType` line in the desktop entry it already wrote and
+names itself in `mimeapps.list`, and macOS declares `CFBundleURLTypes` in an `Info.plist`
+`build/release.sh` now writes whole. **Windows and Linux start a second copy with the link as
+an argument**, so `ISingleInstance` carries it to the copy that is already running, while
+macOS raises an activation instead. **A second copy also exits cleanly now**, where it used to
+dump core after handing over. Verified end to end on Linux with two real copies. **Nothing
+emits a link yet**, and `.claude/plans/deep-links.md` has the whole of it.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes each runtime, and at start the app checks its feed and replaces

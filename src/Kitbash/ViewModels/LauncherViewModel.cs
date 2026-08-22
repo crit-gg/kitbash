@@ -1182,6 +1182,61 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     public void ShowEngines() => Page = 1;
 
     /// <summary>
+    /// Opens the engines page on the version a link names, without installing it. A
+    /// download is a person's to start, so this only brings the build into view.
+    /// </summary>
+    public Task ShowEngineAsync(EngineVersionPattern wanted)
+    {
+        Page = 1;
+
+        return Engines.RevealForAsync(wanted, wanted.NeedsDotnet, "Check the version in the link.");
+    }
+
+    /// <summary>
+    /// Scrolls a tool card into view. Set by the window, since a view model has no list.
+    /// </summary>
+    public Action<ToolCardViewModel>? RevealTool { get; set; }
+
+    /// <summary>
+    /// Opens the workspace page on the tool a link names, installed or only offered. False
+    /// when nothing here has it, since the caller is the one that can say so.
+    /// </summary>
+    public async Task<bool> ShowToolAsync(string id)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+
+        Page = 0;
+
+        if (ToolGroups.Count == 0)
+        {
+            await RefreshToolsAsync().ConfigureAwait(true);
+        }
+
+        // The whole id or the name a manifest gives, since a link written by hand carries
+        // whichever of the two its author had in front of them.
+        var card = ToolGroups
+            .SelectMany(group => group.Tools)
+            .FirstOrDefault(tool => Names(tool, id));
+
+        if (card is null)
+        {
+            return false;
+        }
+
+        RevealTool?.Invoke(card);
+
+        return true;
+    }
+
+    private static bool Names(ToolCardViewModel card, string id)
+    {
+        var tool = card.Tool?.Id ?? card.Offer!.Id;
+
+        return string.Equals(tool.Value, id, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(tool.Name, id, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Installs the engine this workspace asks for, on the engines page so the install is
     /// visible while it runs.
     /// </summary>

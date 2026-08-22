@@ -46,13 +46,15 @@ internal sealed class SettingsWindows : ISettingsWindows
 
     public event EventHandler? Closed;
 
-    public void Open(Window owner)
+    public void Open(Window owner, string? page = null)
     {
         ArgumentNullException.ThrowIfNull(owner);
 
         if (_open is { } already)
         {
             already.Activate();
+            already.ShowPage(page);
+
             return;
         }
 
@@ -61,6 +63,7 @@ internal sealed class SettingsWindows : ISettingsWindows
         var window = new SettingsWindow
         {
             Chrome = _windows.Chrome,
+            StartPage = page,
             DataContext = new SettingsWindowViewModel(
                 _schema, _inspector, _writer, _converter, _shortener, _restart),
         };

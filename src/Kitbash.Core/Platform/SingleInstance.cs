@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Text;
 using Kitbash.Core.IO;
 
 namespace Kitbash.Core.Platform;
@@ -17,6 +18,12 @@ public sealed class SingleInstance : ISingleInstance
     private const string LockFileName = "instance.lock";
 
     /// <summary>
+    /// The most a second copy may send. A deep link is the only thing sent today and no
+    /// desktop hands one anywhere near this long.
+    /// </summary>
+    private const int MessageLimit = 8 * 1024;
+
+    /// <summary>
     /// How long the second copy waits for the first to answer. The first takes the lock
     /// before it starts listening, so a copy started in that window has to wait out the
     /// gap rather than conclude nobody is there.
@@ -30,6 +37,7 @@ public sealed class SingleInstance : ISingleInstance
     private readonly CancellationTokenSource _closing = new();
 
     private FileStream? _held;
+    private bool _gone;
 
     public SingleInstance(
         string application,
@@ -48,10 +56,12 @@ public sealed class SingleInstance : ISingleInstance
         _environment = environment;
     }
 
-    public event EventHandler? AskedToComeForward;
+    public event EventHandler<ComeForwardEventArgs>? AskedToComeForward;
 
-    public bool TryHold()
+    public bool TryHold(string message = "")
     {
+        ArgumentNullException.ThrowIfNull(message);
+
         if (!string.IsNullOrWhiteSpace(_environment.GetVariable(OverrideVariable)))
         {
             return true;
@@ -73,7 +83,7 @@ public sealed class SingleInstance : ISingleInstance
         }
         catch (IOException)
         {
-            return HandOver();
+            return HandOver(message);
         }
         catch (UnauthorizedAccessException)
         {
@@ -88,6 +98,15 @@ public sealed class SingleInstance : ISingleInstance
 
     public void Dispose()
     {
+        // Disposing twice is allowed, and cancelling a cancellation source that has been
+        // disposed is not, so this only ever runs once.
+        if (_gone)
+        {
+            return;
+        }
+
+        _gone = true;
+
         _closing.Cancel();
         _held?.Dispose();
         _held = null;
@@ -108,16 +127,26 @@ public sealed class SingleInstance : ISingleInstance
     }
 
     /// <summary>
-    /// Tells the copy that holds the lock to come forward. False asks this copy to exit.
+    /// Tells the copy that holds the lock to come forward, and hands it the message.
+    /// False asks this copy to exit.
     /// </summary>
-    private bool HandOver()
+    private bool HandOver(string message)
     {
         try
         {
             using var pipe = new NamedPipeClientStream(".", PipeName(), PipeDirection.Out);
 
             pipe.Connect((int)HandoverTimeout.TotalMilliseconds);
-            pipe.WriteByte(1);
+
+            var payload = Encoding.UTF8.GetBytes(message);
+
+            // The message is the whole stream rather than a framed value, so a copy running
+            // an older build, which sends one byte and no length, is still understood.
+            if (payload.Length is > 0 and <= MessageLimit)
+            {
+                pipe.Write(payload);
+            }
+
             pipe.Flush();
 
             return false;
@@ -146,10 +175,9 @@ public sealed class SingleInstance : ISingleInstance
 
                     await pipe.WaitForConnectionAsync(_closing.Token).ConfigureAwait(false);
 
-                    if (pipe.ReadByte() >= 0)
-                    {
-                        AskedToComeForward?.Invoke(this, EventArgs.Empty);
-                    }
+                    var message = await ReadAsync(pipe).ConfigureAwait(false);
+
+                    AskedToComeForward?.Invoke(this, new ComeForwardEventArgs(message));
                 }
                 catch (OperationCanceledException)
                 {
@@ -163,6 +191,33 @@ public sealed class SingleInstance : ISingleInstance
             }
         },
         _closing.Token);
+
+    /// <summary>
+    /// Everything the second copy sent, as text. It closes the pipe when it is done, so
+    /// the end of the stream is the end of the message. Anything past the limit is dropped
+    /// rather than read, so a caller that will not stop cannot fill this process.
+    /// </summary>
+    private async Task<string> ReadAsync(Stream pipe)
+    {
+        var buffer = new byte[MessageLimit];
+        var filled = 0;
+
+        while (filled < buffer.Length)
+        {
+            var read = await pipe
+                .ReadAsync(buffer.AsMemory(filled), _closing.Token)
+                .ConfigureAwait(false);
+
+            if (read == 0)
+            {
+                break;
+            }
+
+            filled += read;
+        }
+
+        return filled == 0 ? string.Empty : Encoding.UTF8.GetString(buffer, 0, filled);
+    }
 
     /// <summary>
     /// A unix domain socket path is capped at 104 bytes on macOS, and a pipe name is part
