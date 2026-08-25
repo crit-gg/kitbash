@@ -41,6 +41,7 @@ public enum IconGlyph
     Maximize,
     Message,
     Minimize,
+    Minus,
     NetworkChart,
     Package,
     Pencil,

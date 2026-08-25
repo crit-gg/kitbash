@@ -37,6 +37,7 @@ link
 maximize
 message
 minimize
+minus
 network-chart
 package
 pencil
