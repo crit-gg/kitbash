@@ -75,7 +75,7 @@ button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 <body>
 <header>
   <h1>Hex icon &amp; palette generator</h1>
-  <p>Palettes preserve the hue distances and perceived-lightness set of icon.svg&rsquo;s three lightest colours. Shading follows one consistent light direction.</p>
+  <p>Palettes keep the perceived-lightness set of icon.svg&rsquo;s three lightest colours. The hue relationship is a harmony you pick. Shading follows one consistent light direction.</p>
 </header>
 
 <div class="wrap">
@@ -83,8 +83,14 @@ button.on{background:var(--accent);border-color:var(--accent);color:#fff}
     <div class="card">
       <h2>Palette</h2>
       <div class="wheelwrap"><div class="wheel" id="wheel"></div><div class="lt" id="lightarrow"></div></div>
+      <div class="row"><label>Harmony</label><output id="o_harm"></output></div>
+      <div class="btns" id="harm"></div>
       <div class="row"><label>Hue rotation</label><output id="o_rot"></output></div>
       <input type="range" id="rot" min="0" max="359" step="1" value="45">
+      <div id="spreadwrap">
+        <div class="row"><label>Spread</label><output id="o_spread"></output></div>
+        <input type="range" id="spread" min="5" max="60" step="1" value="30">
+      </div>
       <div class="row"><label>Chroma</label><output id="o_chr"></output></div>
       <input type="range" id="chr" min="20" max="130" step="1" value="100">
       <div class="row"><label>Lightness A</label><output id="o_l0"></output></div>
@@ -99,7 +105,7 @@ button.on{background:var(--accent);border-color:var(--accent);color:#fff}
         <button data-perm="1">Rotate assignment</button>
         <button id="reset">Reset to icon.svg</button>
       </div>
-      <div class="hint">Presets</div>
+      <div class="hint">Base hue presets</div>
       <div class="btns" id="presets"></div>
       <div class="warn" id="gamut"></div>
     </div>
@@ -217,11 +223,35 @@ const REF=[{L:76.5,C:62.5,h:83.2},{L:48.2,C:64.5,h:291.4},{L:51.1,C:65.5,h:14.5}
 const PERMS=[[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
 let permIdx=0;
 
+/* ---------- hue harmonies ----------
+   Each mode returns three absolute hues before the rotation slider is added.
+   Every generated mode is anchored on icon.svg's first hue, so switching mode
+   at rotation 0 keeps the top piece where it was.                              */
+const ANCHOR=REF[0].h;
+const HARMONY=[
+  {id:'icon',      name:'icon.svg',            note:'preserved from icon.svg',
+   hues:()=>REF.map(r=>r.h)},
+  {id:'triad',     name:'Triad',               note:'an even three way split',
+   hues:()=>[0,120,240].map(d=>ANCHOR+d)},
+  {id:'analogous', name:'Analogous',           note:'three neighbours on the wheel',
+   spread:{min:5,max:60,value:30}, hues:s=>[-s,0,s].map(d=>ANCHOR+d)},
+  {id:'split',     name:'Split complementary', note:'a hue and both sides of its opposite',
+   spread:{min:10,max:80,value:30}, hues:s=>[0,180-s,180+s].map(d=>ANCHOR+d)},
+  {id:'comp',      name:'Complementary',       note:'a hue, a neighbour and the opposite',
+   spread:{min:5,max:60,value:25}, hues:s=>[0,s,180].map(d=>ANCHOR+d)},
+  {id:'mono',      name:'Monochrome',          note:'one hue at three lightnesses',
+   spread:{min:0,max:20,value:6}, hues:s=>[-s,0,s].map(d=>ANCHOR+d)}
+];
+let harmIdx=0;
+const harmony=()=>HARMONY[harmIdx];
+const harmonyHues=()=>harmony().hues(+spread.value);
+
 function palette(){
   const rot=+rot_.value, cs=+chr.value/100;
   const Ls=[+l0.value,+l1.value,+l2.value];
-  const make=p=>REF.map((r,i)=>{
-    const h=(r.h+rot)%360, L=Ls[p[i]], C=REF[p[i]].C*cs;
+  const hues=harmonyHues().map(h=>(((h+rot)%360)+360)%360);
+  const make=p=>hues.map((h,i)=>{
+    const L=Ls[p[i]], C=REF[p[i]].C*cs;
     const g=lch2hex(L,C,h);
     return{hex:g.hex,L,C,got:g.C,h};
   });
@@ -355,18 +385,28 @@ function buildSVG(pal,forExport){
 /* ---------- UI ---------- */
 const $=id=>document.getElementById(id);
 const rot_=$('rot'),chr=$('chr'),l0=$('l0'),l1=$('l1'),l2=$('l2'),auto=$('auto'),
-      light=$('light'),amb=$('amb'),amp=$('amp'),split=$('split'),
+      light=$('light'),amb=$('amb'),amp=$('amp'),split=$('split'),spread=$('spread'),
       hexs=$('hexs'),hexc=$('hexc'),showhex=$('showhex'),bgon=$('bgon'),
       txt=$('txt'),tsize=$('tsize'),trk=$('trk'),tcol=$('tcol');
 const PRESETS={0:'icon.svg',45:'Lime / Magenta / Rust',90:'Turquoise / Rose / Olive',
   135:'Cyan / Amber / Forest',180:'Steel / Olive / Aqua',225:'Violet / Jade / Sky',
   270:'Magenta / Aqua / Azure',315:'Rust / Sky / Orchid'};
-Object.entries(PRESETS).forEach(([k,v])=>{
+const presetBtns=Object.entries(PRESETS).map(([k,v])=>{
   const b=document.createElement('button');b.textContent=v;
-  b.onclick=()=>{rot_.value=k;render();};$('presets').appendChild(b);});
+  b.onclick=()=>{rot_.value=k;render();};$('presets').appendChild(b);return[b,k,v];});
+const harmBtns=HARMONY.map((m,i)=>{
+  const b=document.createElement('button');b.textContent=m.name;
+  b.onclick=()=>{setHarmony(i);render();};$('harm').appendChild(b);return b;});
+function setHarmony(i){
+  harmIdx=i;
+  const m=harmony();
+  harmBtns.forEach((b,k)=>b.classList.toggle('on',k===i));
+  $('spreadwrap').style.display=m.spread?'':'none';
+  if(m.spread){spread.min=m.spread.min;spread.max=m.spread.max;spread.value=m.spread.value;}
+}
 $('reset').onclick=()=>{rot_.value=0;chr.value=100;l0.value=76.5;l1.value=48.2;l2.value=51.1;
   light.value=180;amb.value=16;amp.value=8;split.value=38;hexs.value=100;
-  hexc.value='#272727';auto.checked=true;permIdx=0;render();};
+  hexc.value='#272727';auto.checked=true;permIdx=0;setHarmony(0);render();};
 document.querySelector('[data-perm]').onclick=()=>{
   auto.checked=false;permIdx=(permIdx+1)%6;render();};
 $('bgseg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -378,6 +418,10 @@ let cur=[];
 function render(){
   const pal=cur=palette(), hs=+hexs.value/100;
   $('o_rot').textContent='+'+rot_.value+'°';
+  $('o_harm').textContent=harmonyHues()
+    .map(h=>Math.round((((h-ANCHOR)%360)+360)%360)).join(' / ');
+  $('o_spread').textContent=(+spread.value)+'°';
+  presetBtns.forEach(([b,k,v])=>b.textContent=harmIdx?'+'+k+'°':v);
   $('o_chr').textContent=chr.value+'%';
   $('o_l0').textContent='L* '+(+l0.value).toFixed(1);
   $('o_l1').textContent='L* '+(+l1.value).toFixed(1);
@@ -429,7 +473,7 @@ function render(){
   $('gamut').textContent = worst<0.97
     ? 'Chroma clipped to '+(worst*100).toFixed(0)+'% of target on at least one hue — lower Lightness A or reduce Chroma to recover it.' : '';
   const gaps=[0,1,2].map(i=>(((pal[(i+1)%3].h-pal[i].h)%360)+360)%360);
-  $('meta').textContent='Hue distances '+gaps.map(g=>g.toFixed(1)).join('° / ')+'° — preserved from icon.svg.';
+  $('meta').textContent='Hue distances '+gaps.map(g=>g.toFixed(1)).join('° / ')+'° — '+harmony().note+'.';
 }
 ['input','change'].forEach(ev=>document.querySelectorAll('input')
   .forEach(el=>el.addEventListener(ev,render)));
@@ -449,13 +493,15 @@ $('dlpng').onclick=()=>{
     c.toBlob(b=>dl('icon-'+rot_.value+'.png',b));};
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(buildSVG(cur,true));};
 $('cpjson').onclick=()=>{
-  const o={rotation:+rot_.value,light:+light.value,pieces:{}};
+  const o={harmony:harmony().id,rotation:+rot_.value,light:+light.value,pieces:{}};
+  if(harmony().spread) o.spread=+spread.value;
   PIECES.forEach((p,i)=>{o.pieces[p.place]={face:cur[i].hex,
     wall:[shade(cur[i].hex,wallDL(p.elbow-30)),shade(cur[i].hex,wallDL(p.elbow+30))],
     Lstar:+cur[i].L.toFixed(1),Cstar:+cur[i].got.toFixed(1),hue:+cur[i].h.toFixed(1)};});
   navigator.clipboard.writeText(JSON.stringify(o,null,2));
   $('cpjson').textContent='Copied';setTimeout(()=>$('cpjson').textContent='Copy palette JSON',900);};
 
+setHarmony(0);
 render();
 </script>
 </body>
