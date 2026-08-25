@@ -1,0 +1,187 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <!-- The canvas is five layers over one ground. Only the node layer and the menu are hit
+         tested, so a real control inside a node body works and everything else lets the press
+         through to the graph, which tests the model rather than the tree. -->
+
+    <ControlTheme x:Key="{x:Type ui:NodeGraph}" TargetType="ui:NodeGraph">
+        <Setter Property="Background" Value="{DynamicResource GraphGround}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel Background="{TemplateBinding Background}">
+                    <ui:GraphBackdrop Name="PART_Backdrop" IsHitTestVisible="False" />
+                    <ui:GraphWires Name="PART_Wires" IsHitTestVisible="False" />
+                    <ui:NodeGraphPanel Name="PART_Nodes" />
+                    <ui:GraphMarquee Name="PART_Marquee" IsHitTestVisible="False" />
+                    <ContentPresenter Name="PART_Overlay"
+                                      Content="{TemplateBinding Overlay}"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch" />
+
+                    <!-- The menu and the rename field are last, so they are over the app's
+                         own overlay as well. One rename field serves every item, since only
+                         one thing is ever being renamed. -->
+                    <Canvas>
+                        <TextBox Name="PART_Rename"
+                                 IsVisible="False"
+                                 ui:ScrollLane.Kind="Dense"
+                                 VerticalContentAlignment="Center" />
+                        <ui:NodePalette Name="PART_Palette" IsVisible="False" />
+                    </Canvas>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- The map floats over the canvas, so it takes the overlay surface and the popup edge
+         rather than a place on the depth ramp. -->
+    <ControlTheme x:Key="{x:Type ui:NodeMinimap}" TargetType="ui:NodeMinimap">
+        <Setter Property="Width" Value="186" />
+        <Setter Property="Height" Value="112" />
+    </ControlTheme>
+
+    <!-- The add node menu. It is an overlay rather than a panel, so it takes the overlay
+         surface, the popup edge and the one radius everything floating takes. It is not a
+         popup: it lives in the canvas so it is clipped by it and moves with nothing. -->
+    <ControlTheme x:Key="{x:Type ui:NodePalette}" TargetType="ui:NodePalette">
+        <Setter Property="Width" Value="274" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineControl}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="ui:ScrollLane.Kind" Value="Dense" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <!-- Two borders: the outer one carries the stroke and the shadow, which a clip
+                     would cut off, and the inner one carries the radius and the clip. -->
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        BoxShadow="{DynamicResource ShadowOverlay}">
+                    <Border CornerRadius="{DynamicResource RadiusSurfaceInside}" ClipToBounds="True">
+                        <DockPanel>
+
+                            <!-- The field is the well and the strip it sits in is not, so the
+                                 menu never draws two frames around one query. The design
+                                 draws the strip as the well and the input bare, which is the
+                                 one place this departs from it. -->
+                            <Border DockPanel.Dock="Top"
+                                    Padding="6"
+                                    BorderBrush="{DynamicResource LineSeam}"
+                                    BorderThickness="0,0,0,1">
+                                <ui:SearchBox Name="PART_Search" PlaceholderText="Search nodes" />
+                            </Border>
+
+                            <Border DockPanel.Dock="Top"
+                                    Name="PART_Filter"
+                                    Padding="10,7"
+                                    BorderBrush="{DynamicResource LineSeam}"
+                                    BorderThickness="0,0,0,1"
+                                    IsVisible="{TemplateBinding IsFiltered}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ui:Icon Glyph="Filter" Size="12" Foreground="{DynamicResource AccentTintInk}" />
+                                    <TextBlock Text="{TemplateBinding FilterText}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource AccentTintInk}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- The way out, said rather than left to be guessed, and a button
+                                 for it beside the words. A menu a person cannot see how to
+                                 leave is a menu they close by picking something they did not
+                                 want. -->
+                            <Border DockPanel.Dock="Bottom"
+                                    Padding="10,0,4,0"
+                                    Height="30"
+                                    Background="{DynamicResource SurfaceRoot}"
+                                    BorderBrush="{DynamicResource LineSeam}"
+                                    BorderThickness="0,1,0,0">
+                                <DockPanel>
+                                    <Button Name="PART_Cancel"
+                                            DockPanel.Dock="Right"
+                                            Classes="ghost"
+                                            Theme="{StaticResource CompactButton}"
+                                            Content="Cancel" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                        <TextBlock Text="Enter to add"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   Foreground="{DynamicResource InkMuted}" />
+                                        <TextBlock Text="Esc to cancel"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   Foreground="{DynamicResource InkMuted}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <Panel>
+                                <ListBox Name="PART_Rows" MaxHeight="264" Padding="0,4">
+                                    <ListBox.DataTemplates>
+
+                                        <DataTemplate DataType="ui:NodeChoiceHeading">
+                                            <TextBlock Text="{Binding Text}"
+                                                       Margin="7,4,7,0"
+                                                       VerticalAlignment="Bottom"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       FontWeight="{DynamicResource FontWeightMedium}"
+                                                       Foreground="{DynamicResource InkMuted}"
+                                                       LetterSpacing="0.7" />
+                                        </DataTemplate>
+
+                                        <DataTemplate DataType="ui:NodeChoiceRow">
+                                            <DockPanel>
+                                                <ui:Icon DockPanel.Dock="Left"
+                                                         Glyph="{Binding Icon}"
+                                                         Size="14"
+                                                         Margin="0,0,8,0"
+                                                         Foreground="{Binding Ink}"
+                                                         IsVisible="{Binding HasIcon}" />
+                                                <TextBlock DockPanel.Dock="Right"
+                                                           Text="{Binding Type}"
+                                                           Margin="8,0,0,0"
+                                                           FontFamily="{DynamicResource FontFamilyMono}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           Foreground="{Binding TypeInk}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding Title}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                        </DataTemplate>
+
+                                    </ListBox.DataTemplates>
+                                </ListBox>
+
+                                <TextBlock Name="PART_Empty"
+                                           Text="Nothing matches that name"
+                                           Margin="12,18"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource InkMuted}"
+                                           IsVisible="{TemplateBinding IsEmpty}" />
+                            </Panel>
+
+                        </DockPanel>
+                    </Border>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- A heading is a row so the list can virtualise, and it is not a thing to pick, so
+             it never lights and never takes the cursor. -->
+        <Style Selector="^ /template/ ListBox#PART_Rows ListBoxItem:disabled">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

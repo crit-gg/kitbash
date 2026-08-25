@@ -215,6 +215,30 @@
     <SolidColorBrush x:Key="PinEnum" Color="#a78bfa" />
     <SolidColorBrush x:Key="PinStruct" Color="#dde3ea" />
 
+    <!-- The node graph canvas. The ground a graph is drawn on is below every surface in the
+         ramp, since a node is a card floating over nothing rather than a panel inside one.
+         It carries SurfaceWell's value and is a different role: one is a field, one is a
+         canvas. -->
+    <SolidColorBrush x:Key="GraphGround" Color="#161719" />
+
+    <!-- The dot grid. Carries SurfaceNest2's value and is a different role: one is a fill,
+         one is a mark on the ground. -->
+    <SolidColorBrush x:Key="GraphGrid" Color="#2b2d31" />
+
+    <!-- A node that is bypassed. Between the ground and SurfaceNest1, so it reads as sunk
+         rather than as a different kind of card. -->
+    <SolidColorBrush x:Key="GraphNodeOff" Color="#232428" />
+    <SolidColorBrush x:Key="GraphHeaderOff" Color="#25262a" />
+
+    <!-- A node whose input has nothing in it. Not Error, which is a flood, and not a tint. -->
+    <SolidColorBrush x:Key="GraphNodeProblemLine" Color="#5e3a3c" />
+
+    <!-- The wash inside a frame. White at two percent, so a wire under it still reads. -->
+    <SolidColorBrush x:Key="GraphFrameWash" Color="#ffffff" Opacity="0.018" />
+
+    <!-- The band a box select draws. -->
+    <SolidColorBrush x:Key="GraphMarquee" Color="#569eff" Opacity="0.1" />
+
     <!-- Shape. Every control is 5px and every pill, card, panel and window shell is 8px.
          Nothing is square cornered. The 8px name is Surface rather than Pill because a
          window shell takes it too, and a window has no business reading a pill. -->

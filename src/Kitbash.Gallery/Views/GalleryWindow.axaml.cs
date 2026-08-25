@@ -81,6 +81,8 @@ public partial class GalleryWindow : ChromelessWindow
             new(IconGlyph.Sitemap, "LISTS AND TREES", () => new ListsPage()),
             new(IconGlyph.Table, "DATA GRIDS", () => new GridsPage()),
             new(IconGlyph.Columns, "TABS AND DOCKING", () => new DockingPage()),
+            new(IconGlyph.Workflow, "THE NODE GRAPH", () => new GraphPage()),
+            new(IconGlyph.Cube, "A MATERIAL GRAPH", () => new MaterialPage()),
             new(IconGlyph.Message, "TOASTS AND ALERTS", () => new ToastsPage(_toasts, _scopes)),
             new(IconGlyph.Window, "THE WINDOW SHELL", () => new WindowsPage(_platform, _files)),
         ];

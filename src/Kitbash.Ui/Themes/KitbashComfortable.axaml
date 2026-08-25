@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
 
     <!-- The second density, in one line, for an app that browses rather than edits.
 
@@ -70,5 +71,12 @@
         <Thickness x:Key="PaddingTab">13,0</Thickness>
 
     </Styles.Resources>
+
+    <!-- The node graph's density is one object rather than a set of keys, since a node works
+         its own box out from it and a resource lookup per node would be the cost the whole
+         control exists to avoid. -->
+    <Style Selector="ui|NodeGraph">
+        <Setter Property="Metrics" Value="{x:Static ui:GraphMetrics.Comfortable}" />
+    </Style>
 
 </Styles>

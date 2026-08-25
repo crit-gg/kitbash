@@ -221,6 +221,7 @@ part of the app, and each is the only place those rules are written.
 | `kitbash-windows` | a window or dialog, or work that touches a disk on the UI thread |
 | `kitbash-settings` | a setting, a schema, the settings window, or per user storage |
 | `kitbash-platform` | the filesystem, the environment, a path or a process |
+| `kitbash-graphs` | the node graph canvas, nodes, wires or anything under `Kitbash.Ui/Graphs` |
 | `kitbash-godot` | engine matching or launching a project |
 | `kitbash-git` | anything that runs git |
 | `kitbash-updates` | `Program.cs`, the update path, `build/release.sh` or the release workflow |
@@ -250,6 +251,8 @@ the problem:
 - `.claude/plans/splash-window.md` the window an app starts behind, why it depends on no
   styles at all and what that forbids. Read before touching `SplashWindow` or
   `SplashBackdrop`.
+- `.claude/plans/node-graph.md` the node graph: what the library owns, what an app owns, the
+  performance rules and what is not built. The `kitbash-graphs` skill is the short form.
 - `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken
   from the asset tool designs. Read before building any of them.
 - `.claude/plans/` the twelve design stages and the plans not yet started
@@ -368,7 +371,7 @@ numbers are the order**, and every stage depended only on lower ones, so the pla
 straight through. Each stage file records what it built and where it departed from the
 design.
 
-**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 55
+**All thirteen stages are done.** `Kitbash.Ui` carries the Slate tokens, the type scale, the 56
 icons, the window shell, the activity rail, every overlay surface, the depth ramp, the
 settings window, and every control theme: five button kinds, the split
 button, the dropdown button, the chip, the badge, the status pill, the progress bar, the
@@ -585,6 +588,42 @@ per line, and anything that is neither is a log line. **The manifest can also de
 `inputs`**, which draws a form before the run and turns the answers into the script's
 arguments, with an input able to say it is remembered for next time. That is manifest format
 2, and `.claude/plans/tool-scripts.md` has the contract and what could not be tested here.
+
+**The node graph is built and it is the library's.** `ui:NodeGraph` is a canvas of nodes
+joined by wires, from the `Node Graph Control` design, with `Rime`'s material graph as the
+second use that decided the seam. **The library owns the canvas, the wires, the geometry and
+the gestures, and an app owns what a node is**: a kind is a name mapped to an icon and a
+colour, a port type is a name mapped to a colour, and nothing here evaluates a graph.
+**Geometry is data rather than layout**, so a node's box comes from its port count and the
+graph places, culls, fits and routes with no control realised. **Only what meets the viewport
+is realised**, containers are pooled hidden in the tree, and the pan and the zoom ride on one
+transform. **A node is drawn rather than composed**, one control instead of thirty, with every
+run of text laid out once and kept, and `NodeTemplate` is the way to a body holding real
+controls. **Zoomed far enough out nothing is realised at all** and the panel paints a box per
+node. Measured over 2,000 nodes: 72 containers, 0.27ms a pan frame. Hit testing reads the
+model rather than the tree, the way both grids do, and one hit test costs 1.9 microseconds
+over 2,000 nodes. **The add node menu is the library's too**, `ui:NodePalette` over a
+catalogue of `NodeChoice` the app supplies, opened by Tab, by a right click over nothing and
+by a wire let go over nothing, and **a node it makes lands with its wired pin at the point the
+wire was let go**. **Four ways out of it and all four are real**, since a menu a person cannot
+see how to leave is a menu they close by picking something they did not want. **Every drag can
+be taken back** with Escape or a lost capture. **A wire takes as many reroute points as a
+person adds**, added on the length of wire that was double clicked rather than at the end. **A
+node dropped across a wire goes into it and a Control drag cuts every wire it crosses**, which
+is what every node editor offers for working on a graph rather than on one node, along with
+align, spread, straighten and pick everything the selection reaches. **The arrows walk from
+node to node and the canvas has automation peers**, so it can be read without a pointer. **A frame is a group and owns nothing**: it
+resizes by any edge, renames by its tab, is made round the selection with Ctrl G, and carries
+whatever has its middle inside it, so membership is where a thing is rather than anything
+recorded and removing a frame leaves its contents. **One rename field serves a node, a frame
+and a note**, over `GraphItem.Label`. **A node takes one of two shapes**: drawn, which is the
+default and one control per node, or composed, which is `NodeTemplate` and `FooterTemplate`
+over a body the app fills, with the card still drawing the frame, the header and the pins.
+**The gallery has both**, THE NODE GRAPH over the value graph design and A MATERIAL GRAPH over
+Rime's, and the second cooks a real texture per node, so rewiring anything changes what
+everything downstream of it shows. **Three things are not built**: a tidy layout pass, a
+colour picker for a frame, and undo, which is left to a tool over `GraphModel.Changed`. Read `.claude/plans/node-graph.md`
+and the `kitbash-graphs` skill before touching any of it.
 
 **The welcome window is built and it is the library's.** `ui:ProjectsWindow` is the window
 an app opens with, from the `Projects Window` design, and it is the second whole window

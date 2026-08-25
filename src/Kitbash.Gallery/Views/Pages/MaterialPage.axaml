@@ -1,0 +1,109 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   xmlns:tex="clr-namespace:Kitbash.Gallery.Views.Textures"
+                   x:Class="Kitbash.Gallery.Views.Pages.MaterialPage">
+
+    <DockPanel Margin="20">
+
+        <Border DockPanel.Dock="Top" Classes="panel" Padding="10" Margin="0,0,0,14">
+            <StackPanel Spacing="10">
+                <TextBlock Classes="note" TextWrapping="Wrap"
+                           Text="The same canvas as a material graph, from the Rime design. A node's body is a real control rather than anything the library draws, its pins run down its outer edge, and the strip under it says what it cost. Every preview here is cooked for real, so moving a slider or rewiring anything changes what the nodes downstream of it show." />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Classes="note" VerticalAlignment="Center" Text="Node size" />
+                    <ui:Segmented Name="Sizes">
+                        <RadioButton GroupName="materialSize" Content="S" />
+                        <RadioButton GroupName="materialSize" Content="M" IsChecked="True" />
+                        <RadioButton GroupName="materialSize" Content="L" />
+                    </ui:Segmented>
+                    <Border Width="1" Background="{DynamicResource LineSeam}" Margin="4,2" />
+                    <ToggleButton Name="Timings" Content="Timings" IsChecked="True" />
+                    <ToggleButton Name="Strip" Content="Cost strip" IsChecked="True" ToolTip.Tip="The strip under a node, which is the library's footer slot" />
+                    <Border Width="1" Background="{DynamicResource LineSeam}" Margin="4,2" />
+                    <ui:StatusPill Name="State" Status="Ok" Text="up to date" />
+                    <ui:StatusPill Name="Cost" Status="Neutral" Text="0.0 ms" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Right" Classes="panel" Width="264" Margin="14,0,0,0" Padding="0">
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Padding="10,8" BorderBrush="{DynamicResource LineSeam}" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                        <TextBlock Name="Chosen" Text="Nothing picked" FontWeight="{DynamicResource FontWeightMedium}" VerticalAlignment="Center" />
+                        <TextBlock Name="ChosenKind" Classes="note" FontFamily="{DynamicResource FontFamilyMono}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="10" Spacing="12">
+                        <Border Name="PreviewFrame"
+                                Height="242"
+                                Background="{DynamicResource SurfaceWell}"
+                                BorderBrush="{DynamicResource LineSeam}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusControl}"
+                                ClipToBounds="True">
+                            <tex:TexturePane Name="Preview" />
+                        </Border>
+
+                        <HeaderedContentControl Theme="{StaticResource SectionLabel}" Header="PARAMETERS" />
+                        <StackPanel Name="Knobs" Spacing="10" />
+                        <TextBlock Name="NoKnobs"
+                                   Classes="note"
+                                   IsVisible="False"
+                                   TextWrapping="Wrap"
+                                   Text="This node takes no parameters. What it makes comes from what is wired into it." />
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <Border Classes="panel" Padding="0" ClipToBounds="True">
+            <ui:NodeGraph Name="Board">
+                <ui:NodeGraph.Overlay>
+                    <Grid>
+                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineControl}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusSurface}"
+                                BoxShadow="{DynamicResource ShadowPopup}"
+                                Padding="3">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button Name="Out" Classes="icon" ToolTip.Tip="Zoom out">
+                                    <ui:Icon Glyph="Minus" Size="14" />
+                                </Button>
+                                <Button Name="Reset" Theme="{StaticResource CompactButton}" ToolTip.Tip="Back to a hundred percent">
+                                    <TextBlock Name="Zoom" FontFamily="{DynamicResource FontFamilyMono}" Text="100%" MinWidth="42" TextAlignment="Center" />
+                                </Button>
+                                <Button Name="In" Classes="icon" ToolTip.Tip="Zoom in">
+                                    <ui:Icon Glyph="Plus" Size="14" />
+                                </Button>
+                                <Border Width="1" Background="{DynamicResource LineSeam}" Margin="3,4" />
+                                <Button Name="FitAll" Classes="icon" ToolTip.Tip="Fit the graph, F">
+                                    <ui:Icon Glyph="SelectAll" Size="14" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineControl}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusSurface}"
+                                BoxShadow="{DynamicResource ShadowPopup}"
+                                ClipToBounds="True">
+                            <ui:NodeMinimap Graph="{Binding #Board}" />
+                        </Border>
+                    </Grid>
+                </ui:NodeGraph.Overlay>
+            </ui:NodeGraph>
+        </Border>
+
+    </DockPanel>
+
+</views:GalleryPage>

@@ -481,6 +481,25 @@ on   moving left=13  knob at 16..27
 `KnobTransitions` is where the movement is timed, and it transitions `Canvas.Left`. That
 is the supported way and it avoids the transform animation trap above entirely.
 
+## Rect takes a top left and a bottom right, and does not normalise
+
+`new Rect(Point, Point)` computes the width as `bottomRight.X - topLeft.X`. Handed the two
+ends of a drag that ran right to left, or the two ends of a line that runs backwards, it
+returns a rectangle with a negative width. Such a rectangle intersects nothing and draws
+nothing, and neither the compiler nor a log says so.
+
+Measured on the node graph, where it caused two bugs at once: a box select only worked
+dragging down and to the right, and a wire whose output sat to the right of its input was
+culled from both drawing and hit testing, so it was invisible and unclickable.
+`GraphBox.Between` is the fix, and anything building a box from two loose points needs one.
+
+**`Rect.Union` treats a zero sized rectangle as empty and returns the other one**, so
+`new Rect(a, default).Union(new Rect(b, default))` is not the box between two points either.
+This one bit twice: folding `Union` over a run of points to work out a wire's box silently
+dropped every point after the first, so a wire dragged through them was culled from drawing
+and from hit testing and its handles could not be grabbed. `GraphBox.Around` is the fix for a
+run and `GraphBox.Between` for a pair.
+
 ## Border cannot draw a dashed edge
 
 `Border` has `BorderBrush` and `BorderThickness` and nothing else. There is no

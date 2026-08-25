@@ -37,6 +37,7 @@
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Tabs.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Toast.axaml" />
                 <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/Alert.axaml" />
+                <ResourceInclude Source="avares://Kitbash.Ui/Themes/Controls/NodeGraph.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>

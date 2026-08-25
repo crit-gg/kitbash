@@ -1,0 +1,82 @@
+<views:GalleryPage xmlns="https://github.com/avaloniaui"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                   xmlns:views="clr-namespace:Kitbash.Gallery.Views"
+                   x:Class="Kitbash.Gallery.Views.Pages.GraphPage">
+
+    <DockPanel Margin="20">
+
+        <Border DockPanel.Dock="Top" Classes="panel" Padding="10" Margin="0,0,0,14">
+            <StackPanel Spacing="10">
+                <TextBlock Classes="note" TextWrapping="Wrap"
+                           Text="A node's box comes from its ports rather than from a layout pass, only what meets the viewport is realised, and a pan moves one transform. Drag a pin onto another to wire it, drag one onto nothing and the add node menu opens wired to it. Alt drag pans, the wheel zooms, F fits, Tab opens the menu, Ctrl D duplicates, Ctrl G groups the selection in a frame, F2 renames, B bypasses, Del deletes and Esc steps back out of whatever is open. Drop a node across a wire and it goes into it. Ctrl drag draws a stroke that cuts every wire it crosses. The arrows walk from node to node, Q straightens the wires between what is picked, F fits it, and a right click has the rest." />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Name="Sample" Classes="secondary" Content="The sample graph" />
+                    <Button Name="Huge" Classes="secondary" Content="Two thousand nodes" />
+                    <Border Width="1" Background="{DynamicResource LineSeam}" Margin="4,2" />
+                    <Button Name="Group" Classes="secondary" Content="Group" />
+                    <Button Name="Ungroup" Classes="secondary" Content="Ungroup" />
+                    <Border Width="1" Background="{DynamicResource LineSeam}" Margin="4,2" />
+                    <ToggleButton Name="Orthogonal" Content="Square wires" />
+                    <ToggleButton Name="Snap" Content="Snap" />
+                    <ToggleButton Name="Grid" Content="Grid" IsChecked="True" />
+                    <ToggleButton Name="Map" Content="Minimap" IsChecked="True" />
+                    <Border Width="1" Background="{DynamicResource LineSeam}" Margin="4,2" />
+                    <ui:StatusPill Name="Counts" Status="Neutral" Text="0 nodes" />
+                    <ui:StatusPill Name="Realised" Status="Accent" Text="0 drawn" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Classes="panel" Padding="0" ClipToBounds="True">
+            <ui:NodeGraph Name="Board">
+
+                <!-- The zoom bar, the map and the palette are the app's own, dropped into the
+                     canvas overlay slot. The library ships a canvas, not a screen. -->
+                <ui:NodeGraph.Overlay>
+                    <Grid>
+
+                        <Border HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineControl}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusSurface}"
+                                BoxShadow="{DynamicResource ShadowPopup}"
+                                Padding="3">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button Name="Out" Classes="icon" ToolTip.Tip="Zoom out">
+                                    <ui:Icon Glyph="Minus" Size="14" />
+                                </Button>
+                                <Button Name="Reset" Theme="{StaticResource CompactButton}" ToolTip.Tip="Back to a hundred percent">
+                                    <TextBlock Name="Zoom" FontFamily="{DynamicResource FontFamilyMono}" Text="100%" MinWidth="42" TextAlignment="Center" />
+                                </Button>
+                                <Button Name="In" Classes="icon" ToolTip.Tip="Zoom in">
+                                    <ui:Icon Glyph="Plus" Size="14" />
+                                </Button>
+                                <Border Width="1" Background="{DynamicResource LineSeam}" Margin="3,4" />
+                                <Button Name="FitAll" Classes="icon" ToolTip.Tip="Fit the graph, F">
+                                    <ui:Icon Glyph="SelectAll" Size="14" />
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Name="MapFrame" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12"
+                                Background="{DynamicResource SurfaceRoot}"
+                                BorderBrush="{DynamicResource LineControl}"
+                                BorderThickness="1"
+                                CornerRadius="{DynamicResource RadiusSurface}"
+                                BoxShadow="{DynamicResource ShadowPopup}"
+                                ClipToBounds="True">
+                            <ui:NodeMinimap Name="MiniMap" Graph="{Binding #Board}" />
+                        </Border>
+
+                    </Grid>
+                </ui:NodeGraph.Overlay>
+
+            </ui:NodeGraph>
+        </Border>
+
+    </DockPanel>
+
+</views:GalleryPage>
