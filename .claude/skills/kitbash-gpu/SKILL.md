@@ -45,10 +45,15 @@ not submit it. The surface submits, hands the image over and signals the pair.
 `VulkanContext.Acquire` makes the device on the first call and shares it after. Every
 caller pairs it with `Release`, and the device goes when the last one lets go. **The first
 caller's `VulkanNeeds` are the ones used**, so two surfaces in one window get the union of
-nothing: whichever attached first decides. Ask for what the heaviest surface needs.
+nothing: whichever attached first decides. Ask for what the heaviest surface needs. A
+compute pass that draws nothing acquires the same device, so it asks for the same needs.
 
 There is one queue behind every surface. **Anything that submits takes `VulkanContext.Gate`
 first**, including a bake on a worker thread, or two surfaces race the same queue.
+
+**Wait on your own fence, never on the device.** `vkDeviceWaitIdle` takes every queue, so a
+second thread submitting while it runs is a threading error the validation layer reports.
+`Recording.Fence` says when one submission is done, which is all a readback needs.
 
 ### What the compositor will and will not do
 
