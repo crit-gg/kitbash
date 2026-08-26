@@ -50,7 +50,7 @@ public sealed class GraphMetrics
     /// How far a press has to travel before it is a drag. Under this nothing moves, so a
     /// click that wobbles picks a node rather than nudging it out of place.
     /// </summary>
-    public double DragReach { get; init; } = 4;
+    public double DragReach { get; init; } = 9;
 
     /// <summary>The node corner.</summary>
     public double NodeRadius { get; init; } = 8;
