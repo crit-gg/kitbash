@@ -222,6 +222,7 @@ part of the app, and each is the only place those rules are written.
 | `kitbash-settings` | a setting, a schema, the settings window, or per user storage |
 | `kitbash-platform` | the filesystem, the environment, a path or a process |
 | `kitbash-graphs` | the node graph canvas, nodes, wires or anything under `Kitbash.Ui/Graphs` |
+| `kitbash-gpu` | drawing with a GPU, or anything under `Kitbash.Ui/Gpu` |
 | `kitbash-godot` | engine matching or launching a project |
 | `kitbash-git` | anything that runs git |
 | `kitbash-updates` | `Program.cs`, the update path, `build/release.sh` or the release workflow |

@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <!-- The Vulkan interop under ui:GpuSurface. Every structure Vulkan is handed is a
+         pointer to a stack local, so the whole of Gpu/ is unsafe. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.1" />
 
@@ -24,6 +30,15 @@
          written as a polymorphic value, reference preservation does not apply to one, and
          the writer recurses until it gives up. -->
     <PackageReference Include="Dock.Serializer.Newtonsoft" Version="12.1.0" />
+
+    <!-- Bindings for the tool's own Vulkan device, under ui:GpuSurface. Managed only: the
+         loader finds libvulkan at run time, so no native asset is carried per runtime.
+         Avalonia only ever sees an exported handle, so its Vulkan backend and these never
+         share a type. -->
+    <PackageReference Include="Silk.NET.Vulkan" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.Maths" Version="2.23.0" />
 
     <!-- The text editor under ui:TextDiff. Read only, with its own rendering replaced, so
          what is taken is the document, the selection and the virtualised text view. -->
