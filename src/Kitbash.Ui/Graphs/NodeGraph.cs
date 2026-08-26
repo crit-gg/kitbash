@@ -1547,7 +1547,7 @@ public class NodeGraph : TemplatedControl
             return;
         }
 
-        if (!_dragged && Distance(screen, _grabScreen) > 3)
+        if (!_dragged && Distance(screen, _grabScreen) > Metrics.DragReach)
         {
             _dragged = true;
         }
@@ -1558,7 +1558,9 @@ public class NodeGraph : TemplatedControl
                 View.Offset = _grabOffset + (screen - _grabScreen);
                 break;
 
-            case Grab.Move:
+            // Nothing moves until the press has travelled. A click that wobbles by a pixel
+            // would otherwise leave every node it touched somewhere new.
+            case Grab.Move when _dragged:
                 Move(at);
                 break;
 

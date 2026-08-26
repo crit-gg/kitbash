@@ -46,6 +46,12 @@ public sealed class GraphMetrics
     /// <summary>What a node lands on when snapping is on.</summary>
     public double SnapStep { get; init; } = 12;
 
+    /// <summary>
+    /// How far a press has to travel before it is a drag. Under this nothing moves, so a
+    /// click that wobbles picks a node rather than nudging it out of place.
+    /// </summary>
+    public double DragReach { get; init; } = 4;
+
     /// <summary>The node corner.</summary>
     public double NodeRadius { get; init; } = 8;
 

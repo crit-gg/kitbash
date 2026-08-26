@@ -42,6 +42,60 @@ public class NodeGraphGestureTests
     }
 
     [AvaloniaFact]
+    public void APressThatWobblesLeavesTheNodeWhereItWas()
+    {
+        var graph = Two(out var window, out var node, out _);
+
+        try
+        {
+            var at = graph.View.ToScreen(new Point(node.X + 40, node.Y + 8));
+            var was = new Point(node.X, node.Y);
+            var nudged = new Point(at.X + 2, at.Y + 2);
+
+            window.MouseDown(at, MouseButton.Left);
+            window.MouseMove(nudged);
+            window.MouseUp(nudged, MouseButton.Left);
+            Settle(window);
+
+            Assert.Equal(was.X, node.X);
+            Assert.Equal(was.Y, node.Y);
+            Assert.True(graph.Selection.Contains(node));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void APressThatTravelsMovesTheNode()
+    {
+        var graph = Two(out var window, out var node, out _);
+
+        try
+        {
+            var at = graph.View.ToScreen(new Point(node.X + 40, node.Y + 8));
+            var was = new Point(node.X, node.Y);
+            var far = new Point(at.X + 90, at.Y + 60);
+
+            window.MouseDown(at, MouseButton.Left);
+            window.MouseMove(new Point(at.X + 30, at.Y + 20));
+            window.MouseMove(far);
+            window.MouseUp(far, MouseButton.Left);
+            Settle(window);
+
+            // The node keeps the point it was grabbed by, so it catches the pointer up
+            // rather than trailing the reach behind it.
+            Assert.Equal(was.X + 90, node.X);
+            Assert.Equal(was.Y + 60, node.Y);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void AWireLetGoOverNothingAsksForANode()
     {
         var graph = Two(out var window, out var from, out _);
