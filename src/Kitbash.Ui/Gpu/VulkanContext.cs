@@ -99,12 +99,14 @@ public sealed unsafe class VulkanContext : IDisposable
     /// The one context, made on the first call and shared after it. Every caller pairs this
     /// with <see cref="Release"/>, and the device goes when the last one lets go.
     /// </summary>
+    /// <param name="interop">
+    /// The compositor's importer, or null to make a device that hands nothing over. A
+    /// device made without one carries no external memory extensions and is not exportable.
+    /// </param>
     /// <returns>The context, or null with a sentence saying why there is none.</returns>
     public static (VulkanContext? Context, string Info) Acquire(
-        ICompositionGpuInterop interop, VulkanNeeds needs = default)
+        ICompositionGpuInterop? interop, VulkanNeeds needs = default)
     {
-        ArgumentNullException.ThrowIfNull(interop);
-
         lock (Sharing)
         {
             if (_shared != null)
@@ -164,7 +166,7 @@ public sealed unsafe class VulkanContext : IDisposable
     }
 
     private static (VulkanContext? Context, string Info) Create(
-        ICompositionGpuInterop interop, VulkanNeeds needs)
+        ICompositionGpuInterop? interop, VulkanNeeds needs)
     {
         var api = Vk.GetApi();
 
@@ -184,32 +186,13 @@ public sealed unsafe class VulkanContext : IDisposable
             layers.Add(ValidationLayer);
         }
 
-        // Interop needs a handle type both sides know. Nothing below works without one.
-        var deviceExtensions = new List<string>();
+        // Handing an image over needs a type both sides know. A device asked for without an
+        // importer exports nothing, so it needs none of these.
+        var deviceExtensions = Exporting(interop);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (interop != null && deviceExtensions.Count == 0)
         {
-            if (!interop.SupportedImageHandleTypes.Contains(
-                    KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaqueNtHandle))
-            {
-                return (null, Cannot);
-            }
-
-            deviceExtensions.Add(KhrExternalMemoryWin32.ExtensionName);
-            deviceExtensions.Add(KhrExternalSemaphoreWin32.ExtensionName);
-        }
-        else
-        {
-            if (!interop.SupportedImageHandleTypes.Contains(
-                    KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor)
-                || !interop.SupportedSemaphoreTypes.Contains(
-                    KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor))
-            {
-                return (null, Cannot);
-            }
-
-            deviceExtensions.Add(KhrExternalMemoryFd.ExtensionName);
-            deviceExtensions.Add(KhrExternalSemaphoreFd.ExtensionName);
+            return (null, Cannot);
         }
 
         Instance vkInstance = default;
@@ -304,7 +287,7 @@ public sealed unsafe class VulkanContext : IDisposable
     private static (VulkanContext? Context, string Info) Pick(
         Vk api,
         Instance instance,
-        ICompositionGpuInterop interop,
+        ICompositionGpuInterop? interop,
         List<string> deviceExtensions,
         VulkanNeeds needs,
         ExtDebugUtils? debugUtils,
@@ -348,7 +331,7 @@ public sealed unsafe class VulkanContext : IDisposable
                 continue;
             }
 
-            if (!MatchesCompositor(interop, identity))
+            if (interop != null && !MatchesCompositor(interop, identity))
             {
                 rejected.Add($"{name}: not the GPU the compositor is on");
                 continue;
@@ -388,6 +371,32 @@ public sealed unsafe class VulkanContext : IDisposable
         }
 
         return (null, $"No usable GPU. {string.Join("; ", rejected)}");
+    }
+
+    /// <summary>The extensions this OS needs to export an image, or none when nothing will be.</summary>
+    private static List<string> Exporting(ICompositionGpuInterop? interop)
+    {
+        if (interop == null)
+        {
+            return [];
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return interop.SupportedImageHandleTypes.Contains(
+                KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaqueNtHandle)
+                ? [KhrExternalMemoryWin32.ExtensionName, KhrExternalSemaphoreWin32.ExtensionName]
+                : [];
+        }
+
+        var images = interop.SupportedImageHandleTypes.Contains(
+            KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaquePosixFileDescriptor);
+        var semaphores = interop.SupportedSemaphoreTypes.Contains(
+            KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor);
+
+        return images && semaphores
+            ? [KhrExternalMemoryFd.ExtensionName, KhrExternalSemaphoreFd.ExtensionName]
+            : [];
     }
 
     private static bool MatchesCompositor(ICompositionGpuInterop interop, PhysicalDeviceIDProperties identity)

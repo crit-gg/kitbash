@@ -10,8 +10,10 @@ using Kitbash.Ui.Gpu;
 namespace Kitbash.Ui.Controls;
 
 /// <summary>
-/// A control whose pixels come from the tool's own Vulkan device. The compositor hosts the
-/// image as a child visual, so it clips and layers like any other control.
+/// A control whose pixels come from the tool's own Vulkan device. Where the compositor can
+/// import an image it hosts one as a child visual, and where it cannot the frame is read
+/// back and painted. **The app's own render backend is never changed for this**, so no
+/// window gives up its transparency to get a GPU surface.
 /// </summary>
 public abstract class GpuSurface : Control
 {
@@ -37,7 +39,7 @@ public abstract class GpuSurface : Control
     private DispatcherTimer? _resizeTimer;
     private CompositionSurfaceVisual? _visual;
     private Compositor? _compositor;
-    private CompositionSwapchain? _swapchain;
+    private IGpuPresenter? _presenter;
     private string _info = "";
     private bool _isDrawing;
     private bool _updateQueued;
@@ -104,6 +106,16 @@ public abstract class GpuSurface : Control
         }
 
         _updateQueued = true;
+
+        // A read back frame is drawn from Render, so what is asked for is a render pass.
+        // Asking the compositor instead would paint the frame before it was written.
+        if (_presenter is { IsHandedOver: false })
+        {
+            InvalidateVisual();
+
+            return;
+        }
+
         _compositor.RequestCompositionUpdate(_update);
     }
 
@@ -130,19 +142,26 @@ public abstract class GpuSurface : Control
     public Task ShutdownAsync() => _teardown ??= Teardown();
 
     /// <summary>
-    /// A composition child visual draws the pixels, so there is nothing here to paint. The
-    /// rectangle exists because a control that renders nothing is never hit tested, and
-    /// without it the surface takes no pointer input at all.
+    /// The rectangle is filled whatever the presenter does, because a control that renders
+    /// nothing is never hit tested and without it the surface takes no pointer input.
     /// </summary>
     public override void Render(DrawingContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        context.FillRectangle(Brushes.Transparent, new Rect(Bounds.Size));
+        if (_updateQueued && _presenter is { IsHandedOver: false })
+        {
+            RenderFrame();
+        }
+
+        var bounds = new Rect(Bounds.Size);
+
+        context.FillRectangle(Brushes.Transparent, bounds);
+        _presenter?.Present(context, bounds);
     }
 
     /// <summary>Records this surface's work into an open buffer, with the target ready to draw on.</summary>
-    protected abstract void Draw(VulkanContext context, CompositionSwapchain.Frame frame);
+    protected abstract void Draw(VulkanContext context, GpuFrame frame);
 
     /// <summary>Builds whatever this surface needs of the device. Runs on the UI thread, once.</summary>
     protected virtual void Opened(VulkanContext context)
@@ -209,22 +228,18 @@ public abstract class GpuSurface : Control
 
             _compositor = self.Compositor;
 
-            var surface = _compositor.CreateDrawingSurface();
-            _visual = _compositor.CreateSurfaceVisual();
-            _visual.Size = new Vector(Bounds.Width, Bounds.Height);
-            _visual.Surface = surface;
-            ElementComposition.SetElementChildVisual(this, _visual);
-
             var interop = await _compositor.TryGetCompositionGpuInterop();
 
-            if (interop == null)
-            {
-                Info = "This display backend cannot draw with the GPU.";
+            // Null when the importer takes no handle type this device can export, which is
+            // what the read back path is for.
+            var (context, info) = VulkanContext.Acquire(interop, Needs);
 
-                return;
+            if (context == null)
+            {
+                (context, info) = VulkanContext.Acquire(null, Needs);
+                interop = null;
             }
 
-            var (context, info) = VulkanContext.Acquire(interop, Needs);
             Info = info;
 
             if (context == null)
@@ -235,7 +250,10 @@ public abstract class GpuSurface : Control
             Context = context;
             Opened(context);
 
-            _swapchain = new CompositionSwapchain(context, interop, surface);
+            _presenter = interop == null
+                ? new ReadbackPresenter(context)
+                : new CompositionSwapchain(context, interop, HandOver());
+
             _running = true;
             IsDrawing = true;
 
@@ -247,6 +265,22 @@ public abstract class GpuSurface : Control
         }
     }
 
+    /// <summary>
+    /// The child visual the compositor draws into. Only made on the path that hands an
+    /// image over, since a control with one paints nothing of its own.
+    /// </summary>
+    private CompositionDrawingSurface HandOver()
+    {
+        var surface = _compositor!.CreateDrawingSurface();
+
+        _visual = _compositor.CreateSurfaceVisual();
+        _visual.Size = new Vector(Bounds.Width, Bounds.Height);
+        _visual.Surface = surface;
+        ElementComposition.SetElementChildVisual(this, _visual);
+
+        return surface;
+    }
+
     private async Task Teardown()
     {
         _running = false;
@@ -254,9 +288,9 @@ public abstract class GpuSurface : Control
         _resizeTimer?.Stop();
         _resizeTimer = null;
 
-        var swapchain = _swapchain;
+        var presenter = _presenter;
         var context = Context;
-        _swapchain = null;
+        _presenter = null;
         Context = null;
 
         if (context == null)
@@ -274,9 +308,9 @@ public abstract class GpuSurface : Control
 
         try
         {
-            if (swapchain != null)
+            if (presenter != null)
             {
-                await swapchain.DisposeAsync();
+                await presenter.DisposeAsync();
             }
         }
         finally
@@ -330,7 +364,7 @@ public abstract class GpuSurface : Control
     {
         _updateQueued = false;
 
-        if (!_running || Context is not { } context || _swapchain == null)
+        if (!_running || Context is not { } context || _presenter is not { } presenter)
         {
             return;
         }
@@ -343,7 +377,7 @@ public abstract class GpuSurface : Control
         // One queue behind every surface, and a worker thread may be submitting on it.
         lock (VulkanContext.Gate)
         {
-            if (!_swapchain.TryBeginFrame(_renderSize, out var frame))
+            if (!presenter.TryBeginFrame(_renderSize, out var frame))
             {
                 return;
             }
@@ -353,10 +387,10 @@ public abstract class GpuSurface : Control
             if (_capturePath != null)
             {
                 _capture ??= new FrameCapture(context, _capturePath);
-                _capture.Record(frame.Recording.Buffer, frame.Image.Target);
+                _capture.Record(frame.Buffer, frame.Target);
             }
 
-            _swapchain.EndFrame(frame);
+            presenter.EndFrame(frame);
             Drawn(context);
 
             if (_capture is { Done: false })

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Media;
 using Avalonia.Platform;
 using Avalonia.Rendering.Composition;
 using Silk.NET.Vulkan;
@@ -10,7 +11,7 @@ namespace Kitbash.Ui.Gpu;
 /// A ring of exported images the compositor imports once each. Not a VK_KHR_swapchain:
 /// there is no surface and no present mode, only handles the compositor reads.
 /// </summary>
-public sealed class CompositionSwapchain : IAsyncDisposable
+internal sealed class CompositionSwapchain : IGpuPresenter
 {
     private readonly VulkanContext _context;
     private readonly ICompositionGpuInterop _interop;
@@ -25,11 +26,14 @@ public sealed class CompositionSwapchain : IAsyncDisposable
         _target = target;
     }
 
+    /// <summary>The compositor draws the image, so nothing is read back and nothing is painted.</summary>
+    public bool IsHandedOver => true;
+
     /// <summary>
     /// Opens a command buffer with the target already a colour attachment. Returns false
     /// when every image of this size is still in flight, which is the frame to skip.
     /// </summary>
-    public bool TryBeginFrame(PixelSize size, out Frame frame)
+    public bool TryBeginFrame(PixelSize size, out GpuFrame frame)
     {
         frame = default;
 
@@ -54,17 +58,23 @@ public sealed class CompositionSwapchain : IAsyncDisposable
             PipelineStageFlags2.ColorAttachmentOutputBit,
             AccessFlags2.ColorAttachmentWriteBit);
 
-        frame = new Frame(image, recording);
+        frame = new GpuFrame(image.Target, recording, image);
+
         return true;
+    }
+
+    /// <summary>The compositor holds the image, so there is nothing here to paint.</summary>
+    public void Present(DrawingContext context, Rect bounds)
+    {
     }
 
     /// <summary>
     /// Closes the frame with one submission and hands the image over. The wait and signal
     /// semaphores are what keep the compositor and this device off each other's writes.
     /// </summary>
-    public void EndFrame(Frame frame)
+    public void EndFrame(GpuFrame frame)
     {
-        var image = frame.Image;
+        var image = (SwapchainImage)frame.Owner!;
 
         image.Target.Transition(
             frame.Recording.Buffer,
@@ -133,12 +143,10 @@ public sealed class CompositionSwapchain : IAsyncDisposable
 
         _pending.Clear();
     }
-
-    public readonly record struct Frame(SwapchainImage Image, VulkanCommandBufferPool.Recording Recording);
 }
 
 /// <summary>One image in the ring, with the semaphores and imports that belong to it.</summary>
-public sealed class SwapchainImage : IAsyncDisposable
+internal sealed class SwapchainImage : IAsyncDisposable
 {
     private readonly ICompositionGpuInterop _interop;
     private ICompositionImportedGpuImage? _imported;

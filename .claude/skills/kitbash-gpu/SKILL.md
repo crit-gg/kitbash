@@ -5,8 +5,22 @@ description: "Kitbash GPU surface rules. The shared Vulkan device, the exported 
 
 ### The GPU surface
 
-A control whose pixels come from the tool's own Vulkan device. The compositor hosts the
-image as a child visual, so it clips, layers and scrolls like any other control.
+A control whose pixels come from the tool's own Vulkan device.
+
+**Never change an app's render backend to get one.** The rendering mode is process wide, so
+putting an app on the Vulkan compositor takes transparency from every window it has, and a
+window that draws its own frame comes out as a black box with square corners. The surface
+works under whatever backend the app already uses.
+
+It presents two ways and picks by itself:
+
+- **Handed over.** The compositor imports an exported image and hosts it as a child visual,
+  so it clips, layers and scrolls like any other control. Nothing is copied.
+- **Read back.** Where the importer takes no handle type the device can export, the frame is
+  copied back and painted like any other bitmap. One viewport sized copy per frame, and the
+  app's windows are untouched.
+
+`IsDrawing` says a device was taken either way. Which path it took is not a tool's business.
 
 **The library owns the device and the handoff. The tool owns what is drawn.** The Vulkan
 context, the exported image ring, the composition handoff, the resize debounce and the
@@ -25,46 +39,6 @@ protected override void Closing(VulkanContext context) { }  // give up, once
 
 `Draw` records into an open command buffer whose target is already a color attachment. Do
 not submit it. The surface submits, hands the image over and signals the pair.
-
-### The app has to ask for a compositor that can hand images over
-
-Avalonia's default on Linux is OpenGL, and that backend imports nothing, so a surface under
-it draws nothing at all. **An app with a GPU surface names the rendering modes itself**, in
-its own `Program.cs`, because the options live in the desktop packages rather than here:
-
-```csharp
-AppBuilder.Configure<App>()
-    .UsePlatformDetect()
-    .With(new X11PlatformOptions
-    {
-        RenderingMode = [X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx],
-    })
-    .With(new Win32PlatformOptions
-    {
-        RenderingMode = [Win32RenderingMode.Vulkan, Win32RenderingMode.AngleEgl],
-    })
-```
-
-The fallbacks stay behind it, so a machine with no Vulkan compositor still shows a window
-and the surface says why it is empty.
-
-### A window holding a GPU surface gives up the drawn frame
-
-**The Vulkan compositor presents an opaque surface, so a window that draws its own frame
-comes out with a black gutter and square corners.** `ActualTransparencyLevel` still answers
-`Transparent`, so the window believes it has transparency and only the composited result
-says otherwise. Measured on Linux under Vulkan against the same window under EGL.
-
-An app with a GPU surface takes the desktop's frame instead, registered before the library
-because its own is a `TryAdd`:
-
-```csharp
-services.AddSingleton(new WindowChromeRule(WindowChromeKind.Desktop));
-```
-
-That leaves the setting meaning what it means everywhere else. A person who asked for the
-native frame already had it, and one who did not now gets it because the alternative is a
-black box.
 
 ### One device for the process
 
@@ -87,9 +61,10 @@ first**, including a bake on a worker thread, or two surfaces race the same queu
 - **An image and a semaphore are exported once each.** The importer owns each handle it is
   given, so a second export leaks a file descriptor per frame.
 - **A compositor may have no GPU interop at all.** Measured on Linux: the OpenGL backend
-  reports no importable image handle type, so Vulkan is the only path there. `Info` says
-  why there is nothing on screen and the surface draws nothing rather than throwing. **A
-  tool always draws something ordinary in that case.**
+  reports no importable image handle type. That is what the read back path is for, and it
+  is why nothing here asks an app to change its backend. `Info` says why there is nothing
+  on screen when even a plain device cannot be made, and the surface draws nothing rather
+  than throwing. **A tool always draws something ordinary in that case.**
 
 ### Flipping Y reverses the winding
 
@@ -115,8 +90,16 @@ XWayland. It is noise rather than a failure.
 
 ### Testing
 
-**The headless backend has no GPU interop, so nothing here draws in a test.** What a
-headless test proves is the path with no device: `IsDrawing` is false, `Presented` is zero,
-`Info` says why, and the tool's own empty state is what the window shows. A real frame is
-checked with `CaptureNextFrame`, which reads the presented image back to a PNG, and that is
-a run on a machine with a device rather than a test.
+**The headless backend imports nothing, so a test runs the read back path and a real frame
+comes out.** `Kitbash.Ui.Tests/GpuSurfaceTests` clears a surface and a `Border` to the same
+red and holds the two halves of the captured frame together, which says the colours match
+without the test knowing what byte order a captured frame is in.
+
+A test that needs a device says so and skips without one:
+
+```csharp
+Assert.SkipUnless(surface.IsDrawing, "This machine has no Vulkan device.");
+```
+
+`CaptureNextFrame` writes the presented image to a PNG. That is for a run on a real desktop,
+where the handed over path is the one that runs.
