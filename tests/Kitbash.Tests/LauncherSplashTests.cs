@@ -20,6 +20,7 @@ public class LauncherSplashTests
         Assert.Equal("Kitbash", splash.AppName);
         Assert.Equal("0.6.1", splash.AppVersion);
         Assert.False(splash.ShowMarkFrame);
+        Assert.Equal(TimeSpan.FromSeconds(1), splash.FadeIn);
 
         splash.Show();
 

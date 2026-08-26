@@ -352,6 +352,14 @@ under a host that has not loaded a theme yet:
 - **Nothing is loaded from disk.** The art is geometry in `SplashBackdrop.Render` and the
   close glyph is `IconX` transcribed, not looked up.
 
+**`FadeIn` is optional and zero is no fade at all.** Above zero it fades the whole card up,
+the shadow with it, over that long from the moment the window opens. It is set before `Show`,
+since the card is put on nothing the moment the value arrives. **There is no fade out**, since
+a splash is replaced rather than dismissed.
+
+**`ShowAsync` shows it and finishes when the fade has**, at once where there is none and where
+the window is closed part way through. `Show` is unchanged and returns straight away.
+
 **The close mark takes the pointer on press and answers on release**, only when the release
 lands back on it. It is a `Border` rather than a `Button`, so that gesture is wired by hand
 rather than inherited.

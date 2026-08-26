@@ -47,6 +47,35 @@ public class SplashWindowTests
         return splash;
     }
 
+    /// <summary>
+    /// Runs the animation clock on. An animated value lands on a dispatcher job, so the
+    /// ticks alone leave the control holding whatever it had before them.
+    /// </summary>
+    private static void Tick()
+    {
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick(2);
+
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>A splash mid fade, opened with no tick run yet.</summary>
+    private static SplashWindow Fading(TimeSpan fade)
+    {
+        var splash = new SplashWindow
+        {
+            AppName = "Workbench",
+            FadeIn = fade,
+        };
+
+        splash.Show();
+
+        Dispatcher.UIThread.RunJobs();
+        splash.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        return splash;
+    }
+
     [AvaloniaFact]
     public void ItDrawsWithNoThemeLoadedAtAll()
     {
@@ -426,5 +455,104 @@ public class SplashWindowTests
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(Part<Border>(splash, "Close").IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void NoFadeTimeOpensTheCardAtFullOpacity()
+    {
+        var splash = Open();
+
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick(5);
+
+        Assert.Equal(TimeSpan.Zero, splash.FadeIn);
+        Assert.Equal(1, Part<Border>(splash, "Card").Opacity);
+    }
+
+    [AvaloniaFact]
+    public void AFadeStartsTheCardOnNothing()
+    {
+        var splash = Fading(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(0, Part<Border>(splash, "Card").Opacity);
+    }
+
+    [AvaloniaFact]
+    public void AFadeLiftsTheCardWhileItRuns()
+    {
+        var splash = Fading(TimeSpan.FromSeconds(5));
+
+        Tick();
+
+        var opacity = Part<Border>(splash, "Card").Opacity;
+
+        Assert.True(opacity is > 0 and < 1, $"The card sat at {opacity}.");
+    }
+
+    [AvaloniaFact]
+    public void ShowAsyncFinishesAtOnceWithNoFade()
+    {
+        var splash = new SplashWindow { AppName = "Workbench" };
+
+        var showing = splash.ShowAsync();
+
+        Assert.True(showing.IsCompleted);
+    }
+
+    [AvaloniaFact]
+    public void ShowAsyncWaitsForTheFade()
+    {
+        var splash = new SplashWindow
+        {
+            AppName = "Workbench",
+            FadeIn = TimeSpan.FromMilliseconds(50),
+        };
+
+        var showing = splash.ShowAsync();
+
+        Dispatcher.UIThread.RunJobs();
+        splash.UpdateLayout();
+
+        Assert.False(showing.IsCompleted);
+
+        Thread.Sleep(200);
+
+        Tick();
+
+        Assert.True(showing.IsCompleted);
+    }
+
+    [AvaloniaFact]
+    public void ShowAsyncFinishesWhenTheSplashIsClosedMidFade()
+    {
+        var splash = new SplashWindow
+        {
+            AppName = "Workbench",
+            FadeIn = TimeSpan.FromSeconds(5),
+        };
+
+        var showing = splash.ShowAsync();
+
+        Dispatcher.UIThread.RunJobs();
+        splash.UpdateLayout();
+
+        splash.Close();
+
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(showing.IsCompletedSuccessfully);
+    }
+
+    [AvaloniaFact]
+    public void AFadeEndsAtFullOpacity()
+    {
+        var splash = Fading(TimeSpan.FromMilliseconds(50));
+
+        // The headless clock reads real time, so the fade is waited out rather than ticked
+        // through, and the tick after it is what delivers the last frame.
+        Thread.Sleep(200);
+
+        Tick();
+
+        Assert.Equal(1, Part<Border>(splash, "Card").Opacity);
     }
 }

@@ -66,7 +66,7 @@ public partial class App : Application
     /// The least time the splash is up before the launcher replaces it. A splash that
     /// flashes past reads as a fault rather than as a start.
     /// </summary>
-    private static readonly TimeSpan SplashFloor = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan SplashFloor = TimeSpan.FromSeconds(1);
 
     /// <summary>
     /// How long a full bar is held before the restart takes the bar back to indeterminate.
@@ -74,6 +74,12 @@ public partial class App : Application
     /// mean a hundred percent was never seen.
     /// </summary>
     private static readonly TimeSpan SplashSettle = TimeSpan.FromMilliseconds(600);
+
+    /// <summary>
+    /// How long the splash takes to fade up. Measured from the same moment as SplashFloor,
+    /// so the floor has to leave room for it.
+    /// </summary>
+    private static readonly TimeSpan SplashFade = TimeSpan.FromSeconds(0.5f);
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -229,7 +235,7 @@ public partial class App : Application
 
         var since = Stopwatch.StartNew();
 
-        splash.Show();
+        await splash.ShowAsync();
 
         try
         {
@@ -356,6 +362,7 @@ public partial class App : Application
             AppName = "Kitbash",
             AppVersion = version,
             Description = "Godot, without the version wrangling.",
+            FadeIn = SplashFade,
         };
 
     /// <summary>The launcher's own mark, the same file its title bar wears.</summary>

@@ -72,6 +72,13 @@ public class SplashWindow : Window
     public static readonly StyledProperty<string> StepProperty =
         AvaloniaProperty.Register<SplashWindow, string>(nameof(Step), string.Empty);
 
+    /// <summary>
+    /// How long the card takes to fade up when the window opens. Zero, the default, draws it
+    /// at full opacity from the first frame. Set it before Show. There is no fade out.
+    /// </summary>
+    public static readonly StyledProperty<TimeSpan> FadeInProperty =
+        AvaloniaProperty.Register<SplashWindow, TimeSpan>(nameof(FadeIn));
+
     private const double CardWidth = 600;
     private const double Gutter = 12;
 
@@ -213,11 +220,15 @@ public class SplashWindow : Window
     private readonly Border _close;
     private readonly Path _closeGlyph;
 
+    private Border? _card;
     private bool _closeHeld;
     private bool _dismissed;
+    private bool _opened;
     private CancellationTokenSource? _sweeping;
     private CancellationTokenSource? _shimmering;
     private CancellationTokenSource? _pulse;
+    private CancellationTokenSource? _fading;
+    private Task? _faded;
     private double _trackWidth;
 
     public SplashWindow()
@@ -533,6 +544,25 @@ public class SplashWindow : Window
         set => SetValue(StepProperty, value);
     }
 
+    /// <inheritdoc cref="FadeInProperty"/>
+    public TimeSpan FadeIn
+    {
+        get => GetValue(FadeInProperty);
+        set => SetValue(FadeInProperty, value);
+    }
+
+    /// <summary>
+    /// Shows the window and finishes once the fade in has. A window with no fade finishes at
+    /// once, and one closed part way through finishes there, so nothing is left waiting on a
+    /// splash that has gone.
+    /// </summary>
+    public Task ShowAsync()
+    {
+        Show();
+
+        return _faded ?? Task.CompletedTask;
+    }
+
     /// <summary>
     /// Says what is happening over an indeterminate bar and shows the progress row. Call it
     /// on the UI thread.
@@ -554,6 +584,24 @@ public class SplashWindow : Window
         Step = step ?? string.Empty;
         Progress = progress;
         IsProgressVisible = true;
+    }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        _card = e.NameScope.Find<Border>("Card");
+
+        ApplyFadeStart();
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        _opened = true;
+
+        StartFade();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -618,6 +666,10 @@ public class SplashWindow : Window
             _step.Text = Step;
             _step.IsVisible = !string.IsNullOrWhiteSpace(Step);
         }
+        else if (change.Property == FadeInProperty)
+        {
+            ApplyFadeStart();
+        }
     }
 
     protected override void OnClosed(EventArgs e)
@@ -625,6 +677,7 @@ public class SplashWindow : Window
         StopSweep();
         StopShimmer();
         StopPulse();
+        StopFade();
 
         base.OnClosed(e);
 
@@ -698,12 +751,17 @@ public class SplashWindow : Window
 
             card.RegisterInNameScope(scope);
 
-            return new Border
+            var shadow = new Border
             {
+                Name = "Card",
                 Margin = new Thickness(Gutter),
                 Effect = CardShadow,
                 Child = card,
             };
+
+            shadow.RegisterInNameScope(scope);
+
+            return shadow;
         });
 
     private Panel BuildBody()
@@ -878,6 +936,57 @@ public class SplashWindow : Window
         {
             StopShimmer();
         }
+    }
+
+    /// <summary>
+    /// Puts the card on nothing before the window is on screen, so no frame of a solid card
+    /// is drawn ahead of the fade.
+    /// </summary>
+    private void ApplyFadeStart()
+    {
+        if (_card is null || _opened)
+        {
+            return;
+        }
+
+        _card.Opacity = FadeIn > TimeSpan.Zero ? 0 : 1;
+    }
+
+    /// <summary>
+    /// Fades the whole card up over FadeIn, its shadow with it. Zero leaves the card alone
+    /// and runs no animation at all.
+    /// </summary>
+    private void StartFade()
+    {
+        if (_card is null || FadeIn <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        _fading = new CancellationTokenSource();
+
+        // Forward keeps the value the fade ends on. Without it the card lands back on the
+        // 0 its own opacity still holds.
+        var fade = new Animation
+        {
+            Duration = FadeIn,
+            FillMode = FillMode.Forward,
+            Easing = new SineEaseOut(),
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, 0.0) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, 1.0) } },
+            },
+        };
+
+        _faded = fade.RunAsync(_card, _fading.Token);
+    }
+
+    private void StopFade()
+    {
+        _fading?.Cancel();
+        _fading?.Dispose();
+        _fading = null;
     }
 
     private void StartPulse()

@@ -103,8 +103,12 @@ it takes.
 **A feed offering nothing takes the progress row back down**, so the card collapses to the
 mark and the name while the launcher is built. A failed download lands there too.
 
-**The splash is up for at least two seconds** before the launcher replaces it. Only the path
+**The splash is up for at least a second** before the launcher replaces it. Only the path
 that opens the launcher waits the floor out, since a download passes it many times over.
+
+**It fades up over that same second.** `SplashFade` is what `BuildSplash` hands the window
+and both are measured from `Show`, so a floor shorter than the fade would replace a card that
+never reached full opacity.
 
 ## Every path through startup ends with a window
 
@@ -135,7 +139,7 @@ progress row at all, since a row going up and straight back down is a flash on e
 launch. `App.SayIfSlow` is the rule: `Task.WhenAny` the check against the patience, and report
 only if the check is still running. **Once the row is up it is held for 600ms**, measured from
 the report, so a check that answered at 1.1 seconds does not blink and a check that ran to the
-deadline waits no further. The two second splash floor usually swallows the hold entirely.
+deadline waits no further. The one second splash floor usually swallows the hold entirely.
 
 **A cancellation token does not bound it.** `UpdateManager.CheckForUpdatesAsync` takes no
 token, so one handed to `Task.Run` only stops it starting. Measured before this was

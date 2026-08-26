@@ -64,6 +64,7 @@ not drawn.
 | `Description` | one line under the name | the line collapses |
 | `ShowBackdrop` | the lattice and the brackets | a plain slate card |
 | `ShowClose` | the close mark | no close mark |
+| `FadeIn` | how long the card fades up over when it opens | it opens at full opacity |
 
 **Give `Mark` a small bitmap.** It is drawn at 48 or at 26, so a 64 pixel icon is the right
 one to hand it and a 256 pixel one is three quarters of a megabyte decoded for nothing.
@@ -71,6 +72,41 @@ one to hand it and a 256 pixel one is three quarters of a megabyte decoded for n
 **`ShowMarkFrame` is on by default**, which is the design: a 48 tile in the accent tint with
 the mark at 26 inside it. An app whose icon is already a finished mark turns it off and gets
 the icon at 48 with no frame.
+
+## The fade in is optional and there is no fade out
+
+`FadeIn` is a `TimeSpan` and it is zero by default, which draws the card at full opacity from
+the first frame and runs no animation at all. Anything above zero fades the card up over that
+long on a sine ease out, starting the moment the window opens.
+
+**It is set before `Show`.** The card is put on nothing as soon as the value arrives, so there
+is no frame of a solid card before the fade starts. Setting it on a window that is already
+open does nothing.
+
+**The whole card fades, the shadow with it.** The animation is on the outer `Card` border, the
+one carrying the gutter and `drop-shadow`, and an effect renders what is beneath it, so a card
+at half opacity casts half a shadow. **That means the fade rides on window transparency**, the
+same bargain the gutter already makes: a compositor that refuses it draws the card arriving
+over an opaque rectangle rather than over the desktop.
+
+**The animation is `FillMode.Forward`**, since the card's own opacity is still the 0 it was put
+on and a fade with no fill would snap back to it on the last frame.
+
+**`ShowAsync` waits the fade out.** `Show` is untouched and returns as soon as the window is
+up. `ShowAsync` shows it and finishes when the fade has, at once where there is no fade, and
+where the window is closed part way through, so a host is never left waiting on a splash that
+has gone. It is a plain `Task`: nothing is cancelled through it and nothing throws out of it.
+
+```csharp
+await splash.ShowAsync();   // the card is up and fully faded in
+```
+
+**A host that reports while the fade runs does not have to wait for it.** `Show` and a report
+straight after is still the right shape for a launch that has work to get on with. `ShowAsync`
+is for a host that wants the card settled before it moves.
+
+**There is no fade out.** A splash is replaced rather than dismissed, and the host closes it
+once the real window is already up, so there is nothing to fade against.
 
 ## Progress is off until the host says otherwise
 
@@ -141,6 +177,11 @@ transition has got to rather than what it was set to. The sweep sizes its journe
 first indeterminate report: the width had only just started moving off zero, the journey came
 out as nothing and the animation never started. It looked fine after any determinate report,
 since the width had settled somewhere non zero by then.
+
+**A test cannot read a live animated value without running jobs.** An animation writes through
+a dispatcher job, so `ForceRenderTimerTick` alone leaves the control holding what it had before
+the tick. `SplashWindowTests.Tick` ticks and then runs jobs, which is what the fade tests read
+through. The clock itself reads real time, so a fade is waited out rather than ticked through.
 
 **A test cannot read the live width either.** While the transition runs, `Width` is wherever it has
 got to, and the headless clock advances on real time rather than on forced ticks, so
@@ -410,14 +451,15 @@ guessed at. **Once the row is up it is held for 600ms**, measured from the repor
 check landing at 1.1 seconds would otherwise blink. A check that ran to the three second
 deadline has paid the hold already and waits no further. Driven live on this desktop: a 300ms
 check drew nothing and a 1.1 second check put the row up at 1002ms and took it down at 1604ms,
-both still opening at the two second floor.
+both still opening at the floor, which was two seconds when that was measured.
 
 **The launcher hosts it and the update reports into it.** `Views/UpdateDialog` is deleted.
 The splash is up before the feed is asked, so the check is no longer a blank screen, and it
 carries the download as a fraction with the version and the size beside it. `UpdateStages` in
 `Kitbash/Updates` holds the wording, so it is tested without a window. Two numbers are the
-launcher's own: the splash is up for at least two seconds before the launcher replaces it, and
-a full bar is held for 600ms before the swap starts, since the fill takes 180ms to travel.
+launcher's own: the splash is up for at least a second before the launcher replaces it, fading
+up over the whole of that second, and a full bar is held for 600ms before the swap starts,
+since the fill takes 180ms to travel.
 The swap itself goes back to indeterminate under "Restarting Kitbash", because replacing the
 copy on the machine reports nothing.
 
