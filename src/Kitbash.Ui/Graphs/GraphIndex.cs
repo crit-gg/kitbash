@@ -11,6 +11,7 @@ internal sealed class GraphIndex(double cell)
 {
     private readonly Dictionary<long, List<GraphItem>> _cells = [];
 
+    private double _cell = cell;
     private int _stamp;
 
     public void Add(GraphItem item)
@@ -52,7 +53,16 @@ internal sealed class GraphIndex(double cell)
         Add(item);
     }
 
-    public void Clear() => _cells.Clear();
+    /// <summary>
+    /// Emptied, at whatever cell size is in force now. The stamp counter is kept, since an
+    /// item holds the stamp it was last returned under and starting over would make the next
+    /// query take those items for ones it had already handed back.
+    /// </summary>
+    public void Clear(double cell)
+    {
+        _cells.Clear();
+        _cell = cell;
+    }
 
     /// <summary>
     /// Everything whose box meets the rectangle, appended to the list. An item spanning
@@ -87,10 +97,10 @@ internal sealed class GraphIndex(double cell)
     }
 
     private (int X0, int Y0, int X1, int Y1) Span(Rect area) =>
-        ((int)Math.Floor(area.X / cell),
-            (int)Math.Floor(area.Y / cell),
-            (int)Math.Floor(area.Right / cell),
-            (int)Math.Floor(area.Bottom / cell));
+        ((int)Math.Floor(area.X / _cell),
+            (int)Math.Floor(area.Y / _cell),
+            (int)Math.Floor(area.Right / _cell),
+            (int)Math.Floor(area.Bottom / _cell));
 
     private IEnumerable<long> Keys(Rect area)
     {

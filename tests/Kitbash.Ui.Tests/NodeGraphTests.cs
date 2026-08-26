@@ -85,6 +85,40 @@ public class NodeGraphTests
         }
     }
 
+    /// <summary>
+    /// A density change rebuilds both indexes, and a query tells this pass from the last by a
+    /// stamp an item carries, so the counter behind it has to keep going across a rebuild.
+    /// </summary>
+    [AvaloniaFact]
+    public void RebuildingTwiceLeavesEveryCardOnTheCanvas()
+    {
+        var graph = Open(Grid(3, 3), out var window);
+        var panel = Panel(graph);
+
+        try
+        {
+            graph.View.Zoom = 1;
+            graph.View.Offset = default;
+            Settle(window);
+
+            var realised = panel.RealisedCount;
+
+            Assert.True(realised > 0);
+
+            for (var pass = 0; pass < 4; pass++)
+            {
+                graph.Model!.Rebuild();
+                Settle(window);
+
+                Assert.Equal(realised, panel.RealisedCount);
+            }
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     [AvaloniaFact]
     public void ZoomedOutFarEnoughNothingIsRealisedAtAll()
     {

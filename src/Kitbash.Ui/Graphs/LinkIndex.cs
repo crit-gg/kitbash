@@ -14,6 +14,7 @@ internal sealed class LinkIndex(double cell)
 {
     private readonly Dictionary<long, List<GraphLink>> _cells = [];
 
+    private double _cell = cell;
     private int _stamp;
 
     public void Add(GraphLink link, Rect box)
@@ -67,7 +68,16 @@ internal sealed class LinkIndex(double cell)
         Add(link, now);
     }
 
-    public void Clear() => _cells.Clear();
+    /// <summary>
+    /// Emptied, at whatever cell size is in force now. The stamp counter is kept, since a
+    /// wire holds the stamp it was last returned under and starting over would make the next
+    /// query take those wires for ones it had already handed back.
+    /// </summary>
+    public void Clear(double cell)
+    {
+        _cells.Clear();
+        _cell = cell;
+    }
 
     /// <summary>
     /// Every wire whose indexed box meets the area, appended to the list. The box is the one
@@ -103,10 +113,10 @@ internal sealed class LinkIndex(double cell)
     }
 
     private (int X0, int Y0, int X1, int Y1) Span(Rect area) =>
-        ((int)Math.Floor(area.X / cell),
-            (int)Math.Floor(area.Y / cell),
-            (int)Math.Floor(area.Right / cell),
-            (int)Math.Floor(area.Bottom / cell));
+        ((int)Math.Floor(area.X / _cell),
+            (int)Math.Floor(area.Y / _cell),
+            (int)Math.Floor(area.Right / _cell),
+            (int)Math.Floor(area.Bottom / _cell));
 
     private static long Key(int x, int y) => ((long)x << 32) ^ (uint)y;
 }

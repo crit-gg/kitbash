@@ -17,8 +17,8 @@ public sealed class GraphModel
     private readonly Dictionary<GraphNode, List<GraphLink>> _touching = [];
     private readonly Dictionary<GraphPort, GraphLink> _intoPort = [];
 
-    private GraphIndex _index;
-    private LinkIndex _wires;
+    private readonly GraphIndex _index;
+    private readonly LinkIndex _wires;
     private GraphMetrics _metrics = GraphMetrics.Dense;
     private Rect _content;
     private bool _contentKnown;
@@ -243,8 +243,12 @@ public sealed class GraphModel
     /// <summary>Says the wires and the boxes are all stale, which a density change is.</summary>
     public void Rebuild()
     {
-        _index = new GraphIndex(_metrics.IndexCell);
-        _wires = new LinkIndex(_metrics.IndexCell);
+        // Emptied rather than replaced. Both indexes tell one query's results from the last
+        // one's by a counter they hold, and a fresh index starts that counter over while
+        // every item still holds a stamp from the old one, so the next query would skip
+        // everything it had already returned.
+        _index.Clear(_metrics.IndexCell);
+        _wires.Clear(_metrics.IndexCell);
 
         foreach (var item in Items())
         {
