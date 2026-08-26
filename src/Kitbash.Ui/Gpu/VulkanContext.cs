@@ -147,12 +147,21 @@ public sealed unsafe class VulkanContext : IDisposable
         going.Dispose();
     }
 
-    /// <summary>Blocks until the device is idle, so teardown order stops mattering.</summary>
-    public void WaitIdle() => Api.DeviceWaitIdle(Device);
+    /// <summary>
+    /// Blocks until the device is idle, so teardown order stops mattering. This takes every
+    /// queue, so it holds the gate and a caller already holding it is let through.
+    /// </summary>
+    public void WaitIdle()
+    {
+        lock (Gate)
+        {
+            Api.DeviceWaitIdle(Device);
+        }
+    }
 
     public void Dispose()
     {
-        Api.DeviceWaitIdle(Device);
+        WaitIdle();
         Pool.Dispose();
         Api.DestroyDevice(Device, null);
 
