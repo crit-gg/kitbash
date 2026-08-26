@@ -124,7 +124,9 @@
                             </Border>
 
                             <Panel>
-                                <ListBox Name="PART_Rows" MaxHeight="264" Padding="0,4">
+                                <!-- The lane is overlaid, so the rows pad themselves clear of
+                                     it or the thumb sits on the type at the end of a row. -->
+                                <ListBox Name="PART_Rows" MaxHeight="264" Padding="0,4,7,4">
                                     <ListBox.DataTemplates>
 
                                         <DataTemplate DataType="ui:NodeChoiceHeading">
