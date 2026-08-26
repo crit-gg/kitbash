@@ -150,6 +150,15 @@ public abstract class GpuSurface : Control
     }
 
     /// <summary>
+    /// The frame is submitted. Anything the command buffer still reads, such as a staging
+    /// buffer, is freed here rather than during <see cref="Draw"/>, where the queue has not
+    /// been given the work yet and freeing it invalidates the recording.
+    /// </summary>
+    protected virtual void Drawn(VulkanContext context)
+    {
+    }
+
+    /// <summary>
     /// Gives up whatever <see cref="Opened"/> built. The device is already idle and is still
     /// alive, so a Vulkan object made here is destroyed here.
     /// </summary>
@@ -193,7 +202,7 @@ public abstract class GpuSurface : Control
 
             if (self == null)
             {
-                Info = "This control has no composition visual.";
+                Info = "This surface was given no place to draw.";
 
                 return;
             }
@@ -210,7 +219,7 @@ public abstract class GpuSurface : Control
 
             if (interop == null)
             {
-                Info = "This render backend has no GPU interop.";
+                Info = "This display backend cannot draw with the GPU.";
 
                 return;
             }
@@ -348,6 +357,7 @@ public abstract class GpuSurface : Control
             }
 
             _swapchain.EndFrame(frame);
+            Drawn(context);
 
             if (_capture is { Done: false })
             {

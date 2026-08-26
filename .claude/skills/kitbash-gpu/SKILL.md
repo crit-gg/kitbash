@@ -26,6 +26,46 @@ protected override void Closing(VulkanContext context) { }  // give up, once
 `Draw` records into an open command buffer whose target is already a color attachment. Do
 not submit it. The surface submits, hands the image over and signals the pair.
 
+### The app has to ask for a compositor that can hand images over
+
+Avalonia's default on Linux is OpenGL, and that backend imports nothing, so a surface under
+it draws nothing at all. **An app with a GPU surface names the rendering modes itself**, in
+its own `Program.cs`, because the options live in the desktop packages rather than here:
+
+```csharp
+AppBuilder.Configure<App>()
+    .UsePlatformDetect()
+    .With(new X11PlatformOptions
+    {
+        RenderingMode = [X11RenderingMode.Vulkan, X11RenderingMode.Egl, X11RenderingMode.Glx],
+    })
+    .With(new Win32PlatformOptions
+    {
+        RenderingMode = [Win32RenderingMode.Vulkan, Win32RenderingMode.AngleEgl],
+    })
+```
+
+The fallbacks stay behind it, so a machine with no Vulkan compositor still shows a window
+and the surface says why it is empty.
+
+### A window holding a GPU surface gives up the drawn frame
+
+**The Vulkan compositor presents an opaque surface, so a window that draws its own frame
+comes out with a black gutter and square corners.** `ActualTransparencyLevel` still answers
+`Transparent`, so the window believes it has transparency and only the composited result
+says otherwise. Measured on Linux under Vulkan against the same window under EGL.
+
+An app with a GPU surface takes the desktop's frame instead, registered before the library
+because its own is a `TryAdd`:
+
+```csharp
+services.AddSingleton(new WindowChromeRule(WindowChromeKind.Desktop));
+```
+
+That leaves the setting meaning what it means everywhere else. A person who asked for the
+native frame already had it, and one who did not now gets it because the alternative is a
+black box.
+
 ### One device for the process
 
 `VulkanContext.Acquire` makes the device on the first call and shares it after. Every

@@ -16,6 +16,9 @@ public sealed unsafe class VulkanContext : IDisposable
 {
     private const string ValidationLayer = "VK_LAYER_KHRONOS_validation";
 
+    /// <summary>Said to a person, so it names no handle type.</summary>
+    private const string Cannot = "The display system here cannot take an image from the GPU.";
+
     /// <summary>Held so the callback is not collected while the messenger is alive.</summary>
     private static PfnDebugUtilsMessengerCallbackEXT _logCallback;
 
@@ -189,7 +192,7 @@ public sealed unsafe class VulkanContext : IDisposable
             if (!interop.SupportedImageHandleTypes.Contains(
                     KnownPlatformGraphicsExternalImageHandleTypes.VulkanOpaqueNtHandle))
             {
-                return (null, "The compositor cannot import an opaque Vulkan NT handle.");
+                return (null, Cannot);
             }
 
             deviceExtensions.Add(KhrExternalMemoryWin32.ExtensionName);
@@ -202,7 +205,7 @@ public sealed unsafe class VulkanContext : IDisposable
                 || !interop.SupportedSemaphoreTypes.Contains(
                     KnownPlatformGraphicsExternalSemaphoreHandleTypes.VulkanOpaquePosixFileDescriptor))
             {
-                return (null, "The compositor cannot import an opaque POSIX file descriptor.");
+                return (null, Cannot);
             }
 
             deviceExtensions.Add(KhrExternalMemoryFd.ExtensionName);
