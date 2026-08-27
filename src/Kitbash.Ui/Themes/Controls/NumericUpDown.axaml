@@ -210,4 +210,71 @@
         </Setter>
     </ControlTheme>
 
+    <!--
+        A number with two real ends. The wash behind it says how far along the range the
+        value has come, so a bounded knob reads at a glance without a slider beside it
+        taking a second column.
+
+        The spinner over it carries no fill of its own, since the wash is what fills the
+        well and a background on top of it would hide it.
+    -->
+    <ControlTheme x:Key="RangedNumeric" TargetType="NumericUpDown"
+                  BasedOn="{StaticResource {x:Type NumericUpDown}}">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <Border Name="PART_Track"
+                            Background="{DynamicResource SurfaceWell}"
+                            CornerRadius="{DynamicResource RadiusControl}"
+                            ClipToBounds="True">
+                        <Border Name="PART_Fill"
+                                HorizontalAlignment="Left"
+                                Background="{DynamicResource RangeFill}"
+                                IsHitTestVisible="False">
+                            <Border.Width>
+                                <MultiBinding Converter="{x:Static ui:RangeFill.Instance}">
+                                    <TemplateBinding Property="Value" />
+                                    <TemplateBinding Property="Minimum" />
+                                    <TemplateBinding Property="Maximum" />
+                                    <Binding Path="#PART_Track.Bounds" />
+                                </MultiBinding>
+                            </Border.Width>
+                        </Border>
+                    </Border>
+
+                    <ButtonSpinner Name="PART_Spinner"
+                                   Background="Transparent"
+                                   AllowSpin="{TemplateBinding AllowSpin}"
+                                   ShowButtonSpinner="{TemplateBinding ShowButtonSpinner}"
+                                   ButtonSpinnerLocation="{TemplateBinding ButtonSpinnerLocation}"
+                                   HorizontalContentAlignment="Stretch"
+                                   VerticalContentAlignment="Center">
+                        <TextBox Name="PART_TextBox"
+                                 Theme="{StaticResource SpinnerField}"
+                                 Text="{TemplateBinding Text, Mode=TwoWay}"
+                                 PlaceholderText="{TemplateBinding PlaceholderText}"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}"
+                                 TextAlignment="{TemplateBinding TextAlignment}"
+                                 InnerLeftContent="{TemplateBinding InnerLeftContent}"
+                                 InnerRightContent="{TemplateBinding InnerRightContent}" />
+                    </ButtonSpinner>
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- The well the wash sits in is this one, so the spinner's own focus fill would
+             cover it. The frame it draws still carries the focus line. -->
+        <Style Selector="^:focus-within /template/ ButtonSpinner#PART_Spinner">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Track">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Fill">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ControlTheme>
+
 </ResourceDictionary>

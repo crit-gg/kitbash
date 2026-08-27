@@ -1,0 +1,34 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kitbash.Ui.Controls">
+
+    <!-- The axis letter inside a vector's field. A view names the axis and the ink is read
+         here, so the four of them cannot drift apart across the tools. -->
+
+    <Style Selector="TextBlock[(ui|Axis.Index)=0]">
+        <Setter Property="Foreground" Value="{DynamicResource AxisX}" />
+    </Style>
+
+    <Style Selector="TextBlock[(ui|Axis.Index)=1]">
+        <Setter Property="Foreground" Value="{DynamicResource AxisY}" />
+    </Style>
+
+    <Style Selector="TextBlock[(ui|Axis.Index)=2]">
+        <Setter Property="Foreground" Value="{DynamicResource AxisZ}" />
+    </Style>
+
+    <Style Selector="TextBlock[(ui|Axis.Index)=3]">
+        <Setter Property="Foreground" Value="{DynamicResource AxisW}" />
+    </Style>
+
+    <!-- The letter is a mark rather than a word, so it takes the mono face at the small
+         size the design draws it, and it never grows the field it sits in. -->
+    <Style Selector="TextBlock.axis">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyMono}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="5,0,0,0" />
+    </Style>
+
+</Styles>

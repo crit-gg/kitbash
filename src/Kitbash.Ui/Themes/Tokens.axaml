@@ -72,6 +72,18 @@
     <SolidColorBrush x:Key="AccentInkPressed" Color="#0b1622" />
     <SolidColorBrush x:Key="AccentMuted" Color="#3f5f85" />
 
+    <!-- How far a bounded number has come between its own two ends, drawn behind it. It
+         is a wash rather than a fill, because the number is what is read and the bar only
+         says roughly where in the range it sits. -->
+    <SolidColorBrush x:Key="RangeFill" Color="#569eff" Opacity="0.2" />
+
+    <!-- The axes of a vector, one ink each. A person reads the letter, and the colour is
+         what lets them find the one they want without reading any of them. -->
+    <SolidColorBrush x:Key="AxisX" Color="#d97b7b" />
+    <SolidColorBrush x:Key="AxisY" Color="#7fc08a" />
+    <SolidColorBrush x:Key="AxisZ" Color="#6ea8e8" />
+    <SolidColorBrush x:Key="AxisW" Color="#a9aeb6" />
+
     <!-- The cell the keyboard is in. Square cornered, since a cell is a coordinate rather
          than a control, and lighter on a picked row so it clears the tint. -->
     <SolidColorBrush x:Key="CellCurrent" Color="#569eff" />
