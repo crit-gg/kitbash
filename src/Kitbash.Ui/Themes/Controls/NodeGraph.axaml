@@ -113,7 +113,10 @@
                                             Theme="{StaticResource CompactButton}"
                                             Content="Cancel" />
                                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                        <!-- There is nothing to add while nothing matches, so
+                                             the hint goes rather than saying so falsely. -->
                                         <TextBlock Text="Enter to add"
+                                                   IsVisible="{TemplateBinding IsEmpty, Converter={x:Static BoolConverters.Not}}"
                                                    FontSize="{DynamicResource FontSizeSmall}"
                                                    Foreground="{DynamicResource InkMuted}" />
                                         <TextBlock Text="Esc to cancel"
@@ -164,7 +167,7 @@
                                 </ListBox>
 
                                 <TextBlock Name="PART_Empty"
-                                           Text="Nothing matches that name"
+                                           Text="{TemplateBinding EmptyText}"
                                            Margin="12,18"
                                            TextAlignment="Center"
                                            TextWrapping="Wrap"

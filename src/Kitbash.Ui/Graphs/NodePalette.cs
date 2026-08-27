@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -30,6 +31,9 @@ public class NodePalette : TemplatedControl
     public const string PartEmpty = "PART_Empty";
     public const string PartCancel = "PART_Cancel";
 
+    /// <summary>How far a page key moves the cursor. It is about what the list shows.</summary>
+    private const int Page = 8;
+
     public static readonly StyledProperty<string> FilterTextProperty =
         AvaloniaProperty.Register<NodePalette, string>(nameof(FilterText), string.Empty);
 
@@ -39,7 +43,14 @@ public class NodePalette : TemplatedControl
     public static readonly StyledProperty<bool> IsEmptyProperty =
         AvaloniaProperty.Register<NodePalette, bool>(nameof(IsEmpty));
 
-    private readonly List<object> _rows = [];
+    public static readonly StyledProperty<string> EmptyTextProperty =
+        AvaloniaProperty.Register<NodePalette, string>(nameof(EmptyText), string.Empty);
+
+    /// <summary>
+    /// The rows the list is bound to. It notifies, since a list that does not leaves the
+    /// containers it already made on screen under the line saying there are none.
+    /// </summary>
+    private readonly ObservableCollection<object> _rows = [];
     private readonly List<NodeChoiceRow> _offered = [];
 
     private TextBox? _search;
@@ -93,6 +104,13 @@ public class NodePalette : TemplatedControl
     {
         get => GetValue(IsEmptyProperty);
         private set => SetValue(IsEmptyProperty, value);
+    }
+
+    /// <summary>Why there is nothing, which is the name or the pin it was opened from.</summary>
+    public string EmptyText
+    {
+        get => GetValue(EmptyTextProperty);
+        private set => SetValue(EmptyTextProperty, value);
     }
 
     /// <summary>What the cursor is on, or none while the list is empty.</summary>
@@ -221,14 +239,12 @@ public class NodePalette : TemplatedControl
         var heading = string.Empty;
         var first = true;
 
-        foreach (var choice in Choices)
+        foreach (var choice in Ordered(query))
         {
-            if (!choice.Matches(query) || (From is { } from && !choice.Takes(from, Rules)))
-            {
-                continue;
-            }
-
-            if (first || !string.Equals(choice.Group, heading, StringComparison.Ordinal))
+            // A query orders by how well it matched rather than by group, so the headings go
+            // with it. A heading over one row would be noise, and the order would be a lie.
+            if (query.Length == 0
+                && (first || !string.Equals(choice.Group, heading, StringComparison.Ordinal)))
             {
                 heading = choice.Group;
                 first = false;
@@ -251,15 +267,47 @@ public class NodePalette : TemplatedControl
         }
 
         IsEmpty = _offered.Count == 0;
+        EmptyText = From is not { } pin
+            ? "Nothing matches that name"
+            : query.Length == 0
+                ? $"Nothing here takes {pin.Type}"
+                : $"Nothing that takes {pin.Type} matches that name";
 
         if (_rowList is null)
         {
             return;
         }
 
-        _rowList.ItemsSource = null;
-        _rowList.ItemsSource = _rows;
         _rowList.SelectedItem = _offered.Count > 0 ? _offered[0] : null;
+
+        // A narrower query starts at its own first row rather than wherever the last one
+        // was left scrolled to.
+        if (_offered.Count > 0)
+        {
+            _rowList.ScrollIntoView(_offered[0]);
+        }
+    }
+
+    /// <summary>
+    /// What the query offers, best first. With nothing typed it is the catalogue's own
+    /// order, which is what the headings are grouped by.
+    /// </summary>
+    private IEnumerable<NodeChoice> Ordered(string query)
+    {
+        var taken = Choices.Where(choice => From is not { } from || choice.Takes(from, Rules));
+
+        if (query.Length == 0)
+        {
+            return taken;
+        }
+
+        return taken
+            .Select(choice => (choice, score: choice.Score(query)))
+            .Where(found => found.score >= 0)
+            .OrderBy(found => found.score)
+            .ThenBy(found => found.choice.Title.Length)
+            .ThenBy(found => found.choice.Title, StringComparer.CurrentCultureIgnoreCase)
+            .Select(found => found.choice);
     }
 
     private void OnQueryChanged(object? sender, TextChangedEventArgs e) => Offer();
@@ -275,6 +323,16 @@ public class NodePalette : TemplatedControl
 
             case Key.Up:
                 Step(-1);
+                e.Handled = true;
+                break;
+
+            case Key.PageDown:
+                Step(Page);
+                e.Handled = true;
+                break;
+
+            case Key.PageUp:
+                Step(-Page);
                 e.Handled = true;
                 break;
 

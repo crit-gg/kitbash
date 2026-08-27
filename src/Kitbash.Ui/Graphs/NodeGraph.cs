@@ -1711,6 +1711,14 @@ public class NodeGraph : TemplatedControl
     {
         base.OnKeyDown(e);
 
+        // A field inside the graph has the keys while it is up. The add menu's query and the
+        // rename box both live here, so typing a name would otherwise reframe the view,
+        // duplicate a node or delete the selection a letter at a time.
+        if (e.Source is TextBox)
+        {
+            return;
+        }
+
         var command = e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta);
 
         switch (e.Key)

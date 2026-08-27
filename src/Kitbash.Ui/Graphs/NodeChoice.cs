@@ -107,10 +107,54 @@ public sealed class NodeChoice(string title, string kind = "", string group = ""
     }
 
     /// <summary>Whether the typed query names this entry.</summary>
-    public bool Matches(string query) =>
-        query.Length == 0 ||
-        Title.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
-        Group.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+    public bool Matches(string query) => Score(query) >= 0;
+
+    /// <summary>
+    /// How well the query names this entry, lowest first, or below nought for no match. A
+    /// name starting with what was typed beats one holding it somewhere, and both beat a
+    /// group that happens to hold it, so what a person typed is at the top of the list.
+    /// </summary>
+    /// <param name="query">What was typed, already trimmed.</param>
+    public int Score(string query)
+    {
+        if (query.Length == 0)
+        {
+            return 0;
+        }
+
+        var wanted = Tight(query);
+
+        if (wanted.Length == 0)
+        {
+            return 0;
+        }
+
+        var title = Tight(Title);
+
+        if (title.StartsWith(wanted, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return 0;
+        }
+
+        // A word inside the name, so typing gradient reaches Angular Gradient.
+        if (Title.Contains(" " + query, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (title.Contains(wanted, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return 2;
+        }
+
+        return Group.Contains(query, StringComparison.CurrentCultureIgnoreCase) ? 3 : -1;
+    }
+
+    /// <summary>
+    /// The same words with the spaces out, so a name typed as one word still finds the one
+    /// written as two.
+    /// </summary>
+    private static string Tight(string words) => words.Replace(" ", string.Empty, StringComparison.Ordinal);
 }
 
 /// <summary>A heading in the add node menu. It is a row so the list can virtualise.</summary>
