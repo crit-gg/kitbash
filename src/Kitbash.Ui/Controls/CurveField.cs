@@ -56,6 +56,10 @@ public class CurveField : Button
             FlyoutPresenterClasses = { "popover" },
         };
 
+        // The popover floats outside this control's own tree, so nothing would reach it
+        // otherwise. An editor is about what the field is editing, so it is handed the same.
+        _popover.Bind(DataContextProperty, this.GetObservable(DataContextProperty));
+
         Flyout = _flyout;
     }
 
