@@ -24,6 +24,12 @@ public class DialogWindow : ChromelessWindow
     }
 
     /// <summary>
+    /// Which button closed the dialog. It stays at cancel when the dialog was dismissed
+    /// some other way, so a caller reading it never has to guard against a third state.
+    /// </summary>
+    public DialogRole Chose { get; private set; } = DialogRole.Cancel;
+
+    /// <summary>
     /// Opens the dialog wearing the same frame as the window that owns it. Setting it here
     /// rather than reading Owner, because a window is given its owner after its first layout
     /// pass, which is already too late to change the template or the size.
@@ -65,6 +71,8 @@ public class DialogWindow : ChromelessWindow
         {
             return;
         }
+
+        Chose = role;
 
         Close(role == DialogRole.Accept);
         e.Handled = true;

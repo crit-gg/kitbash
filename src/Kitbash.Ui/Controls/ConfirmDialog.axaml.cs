@@ -14,7 +14,8 @@ public enum ConfirmWeight
 }
 
 /// <summary>
-/// One question with two answers. <c>ShowDialog</c> answers true when it was accepted.
+/// One question with two answers, or three when it is given a third. <c>ShowDialog</c>
+/// answers true when it was accepted, and <c>Chose</c> says which button closed it.
 /// </summary>
 public partial class ConfirmDialog : DialogWindow
 {
@@ -29,12 +30,17 @@ public partial class ConfirmDialog : DialogWindow
     /// is the sentence under it, which may be empty.
     /// </summary>
     /// <param name="accept">What the accepting button says, as the verb it does.</param>
+    /// <param name="otherwise">
+    /// A third answer, meaning neither yes nor no. A caller tells it from a cancel by
+    /// reading <see cref="DialogWindow.Chose"/>. No third button is drawn without one.
+    /// </param>
     public static ConfirmDialog For(
         string title,
         string heading,
         string detail = "",
         string accept = "Continue",
-        ConfirmWeight weight = ConfirmWeight.Ordinary)
+        ConfirmWeight weight = ConfirmWeight.Ordinary,
+        string otherwise = "")
     {
         var dialog = new ConfirmDialog { Title = title };
         var grave = weight == ConfirmWeight.Grave;
@@ -45,6 +51,9 @@ public partial class ConfirmDialog : DialogWindow
 
         dialog.Mark.Glyph = grave ? IconGlyph.AlertTriangle : IconGlyph.InfoCircle;
         dialog.Mark.Classes.Set("grave", grave);
+
+        dialog.Otherwise.Content = otherwise;
+        dialog.Otherwise.IsVisible = otherwise.Length > 0;
 
         dialog.Accept.Content = accept;
         dialog.Accept.Classes.Set("primary", !grave);

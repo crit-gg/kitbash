@@ -14,6 +14,12 @@ public enum DialogRole
 
     /// <summary>Closes the dialog and says no. Escape presses it.</summary>
     Cancel,
+
+    /// <summary>
+    /// Closes the dialog and means neither. A save prompt's third answer is this one, and
+    /// the caller tells it from a cancel by reading <see cref="DialogWindow.Chose"/>.
+    /// </summary>
+    Alternate,
 }
 
 /// <summary>

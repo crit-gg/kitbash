@@ -85,4 +85,38 @@ public class ConfirmDialogTests
 
         Assert.True(closed);
     }
+
+    /// <summary>
+    /// A save prompt has three answers. The third closes the dialog like a cancel and is
+    /// told apart by which button was pressed.
+    /// </summary>
+    [AvaloniaFact]
+    public void AThirdAnswerIsToldApartFromACancel()
+    {
+        var dialog = Open(ConfirmDialog.For(
+            "Unsaved changes",
+            "Save before closing?",
+            "The edits since the last save are otherwise lost.",
+            "Save",
+            otherwise: "Close without saving"));
+
+        var otherwise = Button(dialog, "Otherwise");
+
+        Assert.True(otherwise.IsVisible);
+        Assert.Equal("Close without saving", otherwise.Content);
+
+        otherwise.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Avalonia.Controls.Button.ClickEvent));
+
+        Assert.Equal(DialogRole.Alternate, dialog.Chose);
+    }
+
+    /// <summary>A dialog given no third answer draws two, the way every other one does.</summary>
+    [AvaloniaFact]
+    public void WithoutAThirdAnswerThereAreTwoButtons()
+    {
+        var dialog = Open(ConfirmDialog.For("Rename branch", "Rename this branch?"));
+
+        Assert.False(Button(dialog, "Otherwise").IsVisible);
+        Assert.Equal(DialogRole.Cancel, dialog.Chose);
+    }
 }
