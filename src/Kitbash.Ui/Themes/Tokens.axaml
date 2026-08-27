@@ -77,6 +77,11 @@
          says roughly where in the range it sits. -->
     <SolidColorBrush x:Key="RangeFill" Color="#569eff" Opacity="0.2" />
 
+    <!-- The line a ramp is drawn with. It is not the accent, since a curve sits beside
+         fields the accent is already selecting and focusing. -->
+    <SolidColorBrush x:Key="CurveLine" Color="#a78bfa" />
+    <x:Double x:Key="ThicknessCurveLine">1.5</x:Double>
+
     <!-- The axes of a vector, one ink each. A person reads the letter, and the colour is
          what lets them find the one they want without reading any of them. -->
     <SolidColorBrush x:Key="AxisX" Color="#d97b7b" />
