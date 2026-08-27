@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Platform;
 using Dock.Avalonia.Controls;
+using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 using Kitbash.Ui.Controls;
 
@@ -27,17 +28,38 @@ public class KitbashHostWindow : HostWindow
     public static readonly StyledProperty<WindowChromeKind> ChromeProperty =
         AvaloniaProperty.Register<KitbashHostWindow, WindowChromeKind>(nameof(Chrome));
 
-    public KitbashHostWindow() => Wear(Chrome);
+    private readonly WindowShadow _shadow;
 
-    public KitbashHostWindow(WindowChromeKind chrome)
-        : this() =>
+    public KitbashHostWindow()
+    {
+        _shadow = new WindowShadow(this);
+
+        Wear(Chrome);
+    }
+
+    public KitbashHostWindow(WindowChromeKind chrome, IWindowShadow? shadow = null)
+        : this()
+    {
         Chrome = chrome;
+        Shadow = shadow;
+    }
 
     /// <inheritdoc cref="ChromelessWindow.ChromeProperty"/>
     public WindowChromeKind Chrome
     {
         get => GetValue(ChromeProperty);
         set => SetValue(ChromeProperty, value);
+    }
+
+    /// <inheritdoc cref="ChromelessWindow.Shadow"/>
+    public IWindowShadow? Shadow
+    {
+        get => _shadow.Service;
+        set
+        {
+            _shadow.Service = value;
+            _shadow.Declare();
+        }
     }
 
     /// <summary>
@@ -54,6 +76,17 @@ public class KitbashHostWindow : HostWindow
         {
             Wear(change.GetNewValue<WindowChromeKind>());
         }
+        else if (change.Property == PaddingProperty)
+        {
+            _shadow.Declare();
+        }
+    }
+
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        _shadow.Declare();
     }
 
     /// <summary>

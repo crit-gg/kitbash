@@ -5,6 +5,10 @@
        since release.sh publishes both from one machine. An empty identifier is a plain
        build and takes all of them. -->
   <PropertyGroup>
+    <!-- X11WindowShadow chains the error handler that was already installed, and a raw
+         function pointer is the only way to call one that is somebody else's delegate. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
     <KitbashWindowsSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashWindowsSecrets>
     <KitbashLinuxSecrets Condition="'$(RuntimeIdentifier)' == ''">true</KitbashLinuxSecrets>
     <KitbashWindowsSecrets Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win'))">true</KitbashWindowsSecrets>

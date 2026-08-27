@@ -325,6 +325,33 @@ maximized  client=5120,1400 padding=0   frame=5120x1400
 restored   client=964,724   padding=12  frame=940x700
 ```
 
+### The gutter is part of the window as far as the desktop is concerned
+
+That matters, because the window manager snaps, tiles and maximizes against the whole
+window. A window with a 12px gutter snaps 12 away from the edge it snapped to, and half
+of a screen is 12 short on the seam.
+
+Every platform has a mechanism for saying so and Avalonia 12.1.1 reaches none of them from
+a window with `WindowDecorations.None`:
+
+- **X11** has no mechanism of Avalonia's at all. `Avalonia.X11` carries `_NET_FRAME_EXTENTS`
+  and `_NET_REQUEST_FRAME_EXTENTS`, both read side, and no GTK atom anywhere.
+  `BeginMoveDrag` sends `_NET_WM_MOVERESIZE_MOVE`, so the window manager runs the drag and
+  applies its own tiling to the geometry it can see.
+- **Wayland** does implement the right thing. `IWindowImpl.SetShadowExtents` is a default
+  interface method with an empty body that only `Avalonia.Wayland` overrides, onto
+  `xdg_surface.set_window_geometry`. `Window.ComputeDecorationParts` never yields a Shadow
+  part with `WindowDecorations.None`, so it never fires, but `Window.PlatformImpl` is public
+  and typed `IWindowImpl`, so calling it directly would work. Moot for now, since
+  `Avalonia.Desktop` does not reference `Avalonia.Wayland` and Linux runs X11 or XWayland.
+- **Win32** blocks all three halves of the native answer when decorations are `None`:
+  `WS_THICKFRAME` is skipped, `WM_NCCALCSIZE` returns immediately, and
+  `DwmExtendFrameIntoClientArea` is given zero margins. `Win32Properties` exposes hooks for
+  each, which is the Chromium recipe, and none of it is built here.
+
+So the gutter is declared by hand, and only on X11, through `_GTK_FRAME_EXTENTS`.
+`IWindowShadow` in Core is that, and the `kitbash-platform` skill has the rest.
+
 ### Roles work on macOS and not on Linux
 
 Measured on 12.1.1 on macOS 26.4, with the hint set before the window is shown:

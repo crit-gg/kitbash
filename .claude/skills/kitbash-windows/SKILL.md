@@ -280,6 +280,15 @@ because the XAML has already run by then. A window sizing to its content has `Na
 is left alone. **Keep the constant in `ChromelessWindow` and the thickness in the theme in
 step**, since they are the same 12 said twice.
 
+**The gutter is declared to the desktop, so snapping measures the frame.** Without it a
+window manager tiles and maximizes against the whole window, and a snapped window sits 12
+away from the edge it snapped to. `ChromelessWindow.Shadow` is `IWindowShadow` from Core,
+handed over where the window is built the way `Chrome` is, and a window opened over an owner
+takes its owner's. The number said is the window's own `Padding` in device pixels, so the
+maximized style that drops the padding drops the declaration with it and nothing has to say
+so twice. **X11 is the only desktop told anything**, and the `kitbash-platform` skill has
+what each one does.
+
 Anything clickable needs a `Background`, even `Transparent`. A control with no
 background is not hit tested, so a look that only appears on `:pointerover` can never
 be reached.

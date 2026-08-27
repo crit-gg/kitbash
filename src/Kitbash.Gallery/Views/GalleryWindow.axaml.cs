@@ -52,7 +52,8 @@ public partial class GalleryWindow : ChromelessWindow
         IToastServiceFactory scopes,
         IScreenColour screen,
         IPlatformServices platform,
-        IFileSystem files)
+        IFileSystem files,
+        IWindowShadow shadow)
     {
         ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(scopes);
@@ -64,6 +65,10 @@ public partial class GalleryWindow : ChromelessWindow
         _screen = screen;
         _platform = platform;
         _files = files;
+
+        // The gutter this window carries, so the desktop snaps to the frame rather than to
+        // the room the shadow falls into. Every window the gallery opens over it inherits it.
+        Shadow = shadow;
 
         InitializeComponent();
 

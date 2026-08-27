@@ -23,8 +23,9 @@ Platform/
   NoDesktopIntegration.cs             nothing to write, macOS alone
   DeepLink.cs                         a kitbash link, taken apart
   UnavailableSecretStore.cs           a machine whose keyring is not spoken to yet
+  IWindowShadow.cs, NoWindowShadow.cs the shadow gutter, and a desktop never told
   Linux/                              LinuxPlatform, launcher resolution,
-                                      user directories, path rules
+                                      user directories, path rules, the shadow gutter
   Windows/                            WindowsPlatform, user directories, path rules
   MacOS/                              MacPlatform, user directories, path rules,
                                       opener discovery by bundle
@@ -137,6 +138,44 @@ It has a real answer in `NSColorSampler`, which needs no permission, but it need
 interop and the eyedropper is drawn only where a host supplies a picker that can pick, so
 nothing on screen is wrong for its absence. Reading the screen any other way would mean the
 screen recording permission, which an eyedropper does not warrant.
+
+## The shadow gutter is told to the window manager
+
+**`IWindowShadow` says which part of a window is the shadow the app draws itself**, so
+snapping, tiling and maximizing measure the frame a person can see rather than the
+transparent room around it. It takes a native handle, what the toolkit calls that handle,
+and the extents in device pixels. A handle kind it does not recognise is ignored and nothing
+here throws. `ChromelessWindow` is the caller and the `kitbash-windows` skill has that half.
+
+| | Windows | Linux | macOS |
+|---|---|---|---|
+| Behind it | nothing | `_GTK_FRAME_EXTENTS` on the X11 window | nothing |
+| `CanDeclare` | never | when `DISPLAY` is set | never |
+
+**Linux is the only one with an answer, and it is a property write.** `_GTK_FRAME_EXTENTS`
+is what a client side decorated window sets to say part of it is not really there, and
+KWin, Mutter, Xfwm4, Muffin and Marco all subtract it. A window manager that ignores it
+is left doing what it did before. Measured on KWin under XWayland: a launcher declaring
+18 a side maximizes to the work area grown by 36 and its visible frame lands exactly on
+the work area.
+
+**Avalonia never writes it.** `Avalonia.X11` 12.1.1 has no GTK atom at all, only the read
+side `_NET_FRAME_EXTENTS`, and the shadow API version 12 appears to have grown is reachable
+on Wayland alone. `.claude/avalonia.md` has the whole of why.
+
+**It is our own Xlib connection**, since Avalonia's is not public, opened once and kept.
+`TryGetPlatformHandle` gives the XID. Three things about it are load bearing. A property
+of format 32 is an array of `long` to Xlib whatever it holds, so an `int` array writes half
+of each value. A window that has gone answers BadWindow, and the default Xlib error handler
+ends the process, so ours is installed and chains to whatever was there, which in the app is
+Avalonia's. That chain calls a raw function pointer rather than a delegate, because the
+pointer is already somebody else's reverse stub and the runtime refuses to cast one delegate
+type to another, and it is the only reason `Kitbash.Core` allows unsafe blocks.
+
+**Windows needs a different mechanism entirely.** Snapping there measures the window
+rectangle and nothing describes a shadow to it, so the answer is to carry no gutter and let
+DWM draw the shadow, which means putting `WS_THICKFRAME` back and taking `WM_NCCALCSIZE`
+through `Win32Properties`. It is not built and nothing there is measured.
 
 ## A bundle launched from Finder has almost no PATH
 

@@ -61,6 +61,10 @@ public static class KitbashCoreServices
 
             services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Drawn));
 
+            // Snapping here measures the window rectangle and nothing describes a shadow to
+            // it, so a drawn frame would have to give up its gutter rather than declare one.
+            services.TryAddSingleton<IWindowShadow, NoWindowShadow>();
+
             return services;
         }
 
@@ -78,6 +82,7 @@ public static class KitbashCoreServices
 #endif
 
             services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Drawn));
+            services.TryAddSingleton<IWindowShadow, X11WindowShadow>();
 
             return services;
         }
@@ -102,6 +107,9 @@ public static class KitbashCoreServices
             // WindowDecorations.None drops the resizable style mask, so a window Kitbash
             // framed itself could not be resized by anything.
             services.TryAddSingleton(new WindowChromeRule(WindowChromeKind.Overlay));
+
+            // No drawn frame here, so no window ever carries a gutter to describe.
+            services.TryAddSingleton<IWindowShadow, NoWindowShadow>();
 
             return services;
         }

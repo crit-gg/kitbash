@@ -326,6 +326,16 @@ is a no operation on that backend and `WindowDecorations.None` drops the resizab
 mask, so a window Kitbash framed itself could not be resized at all. A dialog now opens with
 `ShowFor` so it wears its owner's frame.
 
+**The drawn frame's shadow gutter no longer counts as the window's edge, on X11.**
+`IWindowShadow` in Core declares it through `_GTK_FRAME_EXTENTS`, which KWin, Mutter and
+the rest subtract before they snap, tile or maximize, so a snapped window sits on the edge
+it snapped to rather than 12 away from it. The number is the window's own `Padding`, so the
+maximized style that gives the gutter up gives the declaration up with it. **Windows and
+macOS declare nothing**: neither has a shadow extent to describe, and the Windows answer is
+to carry no gutter at all, which is not built. Verified end to end against KWin under
+XWayland. The `kitbash-platform` skill has it and `.claude/avalonia.md` has why Avalonia
+supplies none of it.
+
 **macOS packs too.** `build/release.sh <feed> osx` builds the bundle, the portable zip and the
 pkg, `icons/icon.icns` is committed with `tools/icon_builder/icns.sh` to regenerate it, and
 the release workflow has a job on a macOS runner, since `vpk` registers `[osx] pack`

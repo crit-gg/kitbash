@@ -530,6 +530,10 @@ public partial class App : Application
         {
             Chrome = windows.Chrome,
 
+            // Every window Kitbash frames itself takes this, and one that opens over the
+            // launcher takes it from there rather than being handed it again.
+            Shadow = services.GetRequiredService<IWindowShadow>(),
+
             // A window is built without a container, so the services it opens for
             // itself are handed over here rather than resolved inside it.
             Settings = services.GetRequiredService<ISettingsWindows>(),

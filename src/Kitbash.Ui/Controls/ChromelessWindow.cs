@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 
 namespace Kitbash.Ui.Controls;
@@ -26,6 +27,8 @@ public class ChromelessWindow : Window
     /// </summary>
     private const double ShadowGutter = 12;
 
+    private readonly WindowShadow _shadow;
+
     public ChromelessWindow()
     {
         // Avalonia moves focus to the first focusable thing above whatever was pressed and
@@ -33,6 +36,8 @@ public class ChromelessWindow : Window
         Focusable = true;
 
         WindowResize.SetGrips(this, true);
+
+        _shadow = new WindowShadow(this);
 
         Classes.Set("chromeless", true);
         Classes.Set("inactive", !IsActive);
@@ -43,6 +48,22 @@ public class ChromelessWindow : Window
     {
         get => GetValue(ChromeProperty);
         set => SetValue(ChromeProperty, value);
+    }
+
+    /// <summary>
+    /// Tells the desktop which part of the window is the shadow gutter, so snapping and
+    /// tiling measure the frame a person can see. Handed over when the window is built, the
+    /// way every other service a window uses is, and taken from an owner that has one.
+    /// Null declares nothing, which is what a headless window gets.
+    /// </summary>
+    public IWindowShadow? Shadow
+    {
+        get => _shadow.Service;
+        set
+        {
+            _shadow.Service = value;
+            _shadow.Declare();
+        }
     }
 
     /// <summary>Whether Kitbash draws the frame, which is the only mode with a gutter.</summary>
@@ -77,6 +98,28 @@ public class ChromelessWindow : Window
         {
             Classes.Set("inactive", !change.GetNewValue<bool>());
         }
+        else if (change.Property == PaddingProperty)
+        {
+            // The gutter is the padding, and the frame drops both when it is maximized, so
+            // this is the one place either of them has to be watched.
+            _shadow.Declare();
+        }
+    }
+
+    /// <summary>
+    /// A dialog is built by whoever opens it rather than by a container, so it takes this
+    /// from its owner the same way it takes the frame.
+    /// </summary>
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        if (Shadow is null && Owner is ChromelessWindow framed)
+        {
+            Shadow = framed.Shadow;
+        }
+
+        _shadow.Declare();
     }
 
     /// <summary>
