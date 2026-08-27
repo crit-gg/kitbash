@@ -67,6 +67,22 @@ public sealed class ToolScriptRunnerTests : IDisposable
             steps.Select(step => step.Detail).OfType<string>().Single());
     }
 
+    /// <summary>A script whose manifest takes no workspace is handed the form alone.</summary>
+    [Fact]
+    public async Task AScriptSayingNoWorkspaceIsHandedNone()
+    {
+        var tool = Script("""echo "@kitbash detail $*" """);
+
+        var (_, steps) = await RunAsync(
+            tool with { Manifest = tool.Manifest with { TakesWorkspace = false } },
+            "/home/a/ws",
+            ["--source", "/art"]);
+
+        Assert.Equal(
+            "--source /art",
+            steps.Select(step => step.Detail).OfType<string>().Single());
+    }
+
     /// <summary>A path with a space is one argument, since nothing here is ever a command line.</summary>
     [Fact]
     public async Task AnAnswerHoldingASpaceStaysOneArgument()

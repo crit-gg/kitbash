@@ -45,6 +45,12 @@ public sealed record ToolManifest(
     /// </summary>
     public bool IsDevelopment { get; init; }
 
+    /// <summary>
+    /// The tool is told which workspace is open. False for a tool that keeps its own list
+    /// of what it opens, and then no workspace argument is handed to it at all.
+    /// </summary>
+    public bool TakesWorkspace { get; init; } = true;
+
     /// <summary>The launcher waits for it and reports on it rather than letting it go.</summary>
     public bool IsScript => Kind == ToolKind.Script;
 }

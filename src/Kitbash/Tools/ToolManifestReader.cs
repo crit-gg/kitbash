@@ -172,6 +172,7 @@ public sealed class ToolManifestReader : IToolManifestReader
             Kind(document))
         {
             Inputs = Inputs(document),
+            TakesWorkspace = document.Workspace ?? true,
         };
     }
 
@@ -221,6 +222,7 @@ public sealed class ToolManifestReader : IToolManifestReader
             Inputs = Inputs(document),
             Command = command,
             IsDevelopment = true,
+            TakesWorkspace = document.Workspace ?? true,
         };
     }
 
@@ -560,6 +562,9 @@ public sealed class ToolManifestReader : IToolManifestReader
         public string? Version { get; init; }
 
         public bool Required { get; init; }
+
+        /// <summary>Absent is true, so a manifest written before this reads as it did.</summary>
+        public bool? Workspace { get; init; }
 
         public string? Kind { get; init; }
 

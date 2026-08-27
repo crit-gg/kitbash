@@ -9,7 +9,10 @@ public interface IToolStarter
     /// Runs the tool in its own version folder, told which workspace is open. A tool
     /// outlives the launcher, so closing the launcher leaves it running.
     /// </summary>
-    /// <param name="workspaceRoot">The open workspace, or null when there is none.</param>
+    /// <param name="workspaceRoot">
+    /// The open workspace, or null when there is none. A manifest saying the tool takes no
+    /// workspace is handed nothing either way.
+    /// </param>
     /// <exception cref="ProcessStartException">The tool could not be started.</exception>
     void Start(InstalledTool tool, string? workspaceRoot);
 }

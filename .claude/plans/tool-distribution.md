@@ -204,6 +204,9 @@ a newer tool refusable rather than mysterious. **This launcher reads up to 2**, 
 **`version` must equal the tag.** A release where they disagree is refused rather than
 guessed at, because the two would then have to be reconciled at every later comparison.
 
+`workspace` is optional and defaults to true. False means the tool is never handed
+`--workspace`, whichever workspace is open.
+
 `icon` is optional. Without one the card draws the letter mark.
 
 **It is built.** `IToolIcons` is the whole of it. The name is a plain file name beside the
@@ -458,6 +461,11 @@ helper binary beside it.
 Working directory is the version directory, so a tool finds its own files beside it. With
 no workspace open the argument is absent.
 
+**A tool can say it takes no workspace.** `"workspace": false` in the manifest, and the
+launcher hands it nothing whichever workspace is open. That is for a tool that keeps its
+own list of what it opens rather than following the launcher. Absent reads as true, so a
+manifest written before the field takes the workspace as it always did.
+
 **A script tool is started differently**, since the launcher waits for it and reads its
 output. The workspace argument is the same and the form's answers follow it. See
 `.claude/plans/tool-scripts.md`.
@@ -570,7 +578,7 @@ needs no quoting and no quoting is honoured.
 | `id` | the folder name, lower cased, with anything an id cannot hold turned into a dash |
 | `name` | the folder name as it is written |
 | `version` | `0.0.0-dev`, which is what the card then shows |
-| `kind`, `inputs`, `icon`, `summary`, `category` | the same as a manifest, and with no format to declare |
+| `kind`, `inputs`, `icon`, `summary`, `category`, `workspace` | the same as a manifest, and with no format to declare |
 | `command` | `payloads` is read instead, and a file naming neither is refused |
 
 **The loose form carries no format number.** It never leaves this machine, so there is no

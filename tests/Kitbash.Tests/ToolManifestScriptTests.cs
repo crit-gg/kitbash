@@ -133,6 +133,37 @@ public sealed class ToolManifestScriptTests
         Assert.Equal("{workspace}", manifest.Inputs[0].Default);
     }
 
+    /// <summary>A manifest written before the field existed still takes the workspace.</summary>
+    [Fact]
+    public void AManifestSayingNothingTakesTheWorkspace()
+    {
+        Assert.True(_reader.Read(Manifest(1, string.Empty)).TakesWorkspace);
+    }
+
+    [Fact]
+    public void AManifestCanSayItTakesNoWorkspace()
+    {
+        Assert.False(_reader.Read(Manifest(1, """
+        "workspace": false,
+        """)).TakesWorkspace);
+    }
+
+    /// <summary>The loose form says it the same way, since it is the same field.</summary>
+    [Fact]
+    public void TheLooseFormCanSayItTakesNoWorkspaceToo()
+    {
+        var manifest = _reader.ReadDevelopment(
+            """
+            { "id": "sprites", "workspace": false, "command": [ "dotnet", "run" ] }
+            """,
+            "Sprites");
+
+        Assert.False(manifest.TakesWorkspace);
+        Assert.True(
+            _reader.ReadDevelopment("""{ "id": "sprites", "command": [ "dotnet" ] }""", "Sprites")
+                .TakesWorkspace);
+    }
+
     private static string Manifest(int format, string body) =>
         $$"""
         {

@@ -133,6 +133,9 @@ Arguments are built in the order the manifest declares the inputs, after the wor
 <executable> --workspace <path> <every answer, in order>
 ```
 
+A manifest saying `"workspace": false` drops that argument, and the answers are the whole
+command line.
+
 | The input | The command line |
 |---|---|
 | a value behind `--source` | `--source` `/art`, two arguments |

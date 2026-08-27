@@ -32,9 +32,7 @@ public sealed class ToolScriptRunner : IToolScriptRunner
         ArgumentNullException.ThrowIfNull(arguments);
         ArgumentNullException.ThrowIfNull(progress);
 
-        string[] workspace = string.IsNullOrWhiteSpace(workspaceRoot)
-            ? []
-            : [ToolStarter.WorkspaceArgument, workspaceRoot];
+        var workspace = ToolStarter.Argument(tool, workspaceRoot);
 
         var request = new ProcessRequest(
             tool.Executable,
