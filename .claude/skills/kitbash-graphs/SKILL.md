@@ -179,6 +179,17 @@ it and a wheel would zoom the graph out from under it.
 it, so Enter always adds the row a person is looking at. There is no separate hover state to
 disagree with a separate selection.
 
+**The query orders the list and the headings go with it.** With nothing typed it is the
+catalogue's own order under its group headings. With a query it is ordered by how well each
+entry matched, best first, and the headings are dropped, because a heading over one row is
+noise and a heading over an order it did not decide is a lie. `NodeChoice.Score` is the
+whole ranking: a name starting with what was typed, then a word inside the name, then the
+name anywhere, then the group. Spaces are ignored on both sides, so one word finds two.
+
+**The rows are an `ObservableCollection`.** A list that does not notify leaves the containers
+it already made on screen, so a query matching nothing drew every node under the line saying
+there were none. Reassigning the same instance does not clear them.
+
 **A heading is a row, not a container around one**, so the list stays flat and virtualises like
 every other list here. It is disabled through `ContainerPrepared` and `ContainerIndexChanged`,
 told in one place and untold in the same one, and its own `Foreground` beats the disabled ink.
@@ -249,6 +260,11 @@ name. Prose may be emptied.
 
 **Escape and Enter are marked handled in the field**, or they would bubble to the canvas and
 clear the selection.
+
+**A field inside the graph has the keys while it is up.** `OnKeyDown` returns on any
+`TextBox` source, so typing a name reaches the field and nothing else. Without it every
+letter was also a graph shortcut: the rename box and the add menu's query both reframed the
+view, duplicated nodes and deleted the selection a keystroke at a time.
 
 ### The minimap
 
