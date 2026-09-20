@@ -21,6 +21,14 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private const int SubtitleLength = 34;
     private const int RowPathLength = 48;
 
+    /// <summary>
+    /// The pages as indices, since a ListBox selects by number. LauncherPage is the order
+    /// and the rail in LauncherWindow.axaml lists them in it.
+    /// </summary>
+    private const int WorkspacesPage = (int)LauncherPage.Workspaces;
+    private const int WorkspacePage = (int)LauncherPage.Workspace;
+    private const int EnginesPage = (int)LauncherPage.Engines;
+
     private readonly IWorkspaceRegistry _workspaces;
     private readonly IWorkspacesSettings _workspaceSettings;
     private readonly IWorkspaceLinks _links;
@@ -52,8 +60,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IPlatformServices _platform;
     private readonly IAfterLaunchSettings _afterLaunch;
     private readonly IAfterLaunchActions _actions;
+    private readonly OpenInFactory _openInFactory;
     private readonly SemaphoreSlim _loading = new(1, 1);
     private readonly SemaphoreSlim _reading = new(1, 1);
+    private readonly SemaphoreSlim _rowsReading = new(1, 1);
     private readonly GitHeadTracker _head = new();
 
     private IReadOnlyList<ToolGroupViewModel> _toolGroups = [];
@@ -62,6 +72,9 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     /// <summary>Counts the refreshes, so a draw from a superseded one is thrown away.</summary>
     private int _drawing;
+
+    /// <summary>The same for the workspaces page, which is a walk per workspace.</summary>
+    private int _filling;
 
     /// <summary>Which workspace the offers were read for, since a list is per workspace.</summary>
     private string? _offersFor;
@@ -77,6 +90,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     /// <summary>False shows the empty state instead of the whole page.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsNoWorkspaces))]
     private bool _hasWorkspaces;
 
     /// <summary>
@@ -126,7 +140,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IAfterLaunchSettings afterLaunch,
         IAfterLaunchActions actions,
         EnginesViewModel engines,
-        OpenInViewModel openIn)
+        OpenInFactory openIn)
     {
         ArgumentNullException.ThrowIfNull(workspaces);
         ArgumentNullException.ThrowIfNull(workspaceSettings);
@@ -194,8 +208,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _afterLaunch = afterLaunch;
         _actions = actions;
 
+        _openInFactory = openIn;
+
         Engines = engines;
-        OpenIn = openIn;
+        OpenIn = openIn.Create();
         ToolCheck = new ToolCheckViewModel(() => RefreshToolsAsync(refresh: true));
 
         // The monitor reads on its own threads, so what it says has to be carried over
@@ -238,9 +254,23 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// <summary>The Open in menu, beside the engine strip's own button.</summary>
     public OpenInViewModel OpenIn { get; }
 
-    public bool OnWorkspacePage => Page == 0;
+    /// <summary>
+    /// The workspaces page. One row per workspace, each carrying what it takes to open
+    /// that one without switching to it first.
+    /// </summary>
+    public ObservableCollection<WorkspaceRowViewModel> WorkspaceRows { get; } = [];
 
-    public bool OnEnginesPage => Page == 1;
+    public bool OnWorkspacesPage => Page == WorkspacesPage;
+
+    public bool OnWorkspacePage => Page == WorkspacePage;
+
+    public bool OnEnginesPage => Page == EnginesPage;
+
+    /// <summary>
+    /// The empty state stands in for both workspace pages. The engines page works without
+    /// a workspace, so it keeps its own.
+    /// </summary>
+    public bool ShowsNoWorkspaces => !HasWorkspaces && !OnEnginesPage;
 
     /// <summary>
     /// The repository the open workspace sits in, kept current by the monitor. Empty of a
@@ -609,22 +639,27 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// working, and a tool that will not start says so as a toast rather than in place.
     /// A script tool is run and watched instead, so that one does not outlive anything.
     /// </summary>
-    public async Task LaunchToolAsync(InstalledTool tool)
+    public Task LaunchToolAsync(InstalledTool tool) =>
+        LaunchToolAsync(tool, _workspaces.Current?.Root);
+
+    /// <summary>
+    /// The same, for a named workspace rather than the open one. The workspaces page opens
+    /// a tool where its row is without switching to it.
+    /// </summary>
+    public async Task LaunchToolAsync(InstalledTool tool, string? workspaceRoot)
     {
         ArgumentNullException.ThrowIfNull(tool);
 
         if (tool.Manifest.IsScript)
         {
-            await RunScriptAsync(tool).ConfigureAwait(true);
+            await RunScriptAsync(tool, workspaceRoot).ConfigureAwait(true);
 
             return;
         }
 
-        var workspace = _workspaces.Current?.Root;
-
         try
         {
-            await Task.Run(() => _starter.Start(tool, workspace)).ConfigureAwait(true);
+            await Task.Run(() => _starter.Start(tool, workspaceRoot)).ConfigureAwait(true);
 
             // Only once the tool really started, so a start that failed leaves the
             // launcher up with its toast on screen.
@@ -645,9 +680,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Runs a script tool: the form first when it asks for anything, then the script under
     /// a modal that reports what it writes. Cancelling either one stops there.
     /// </summary>
-    private async Task RunScriptAsync(InstalledTool tool)
+    private async Task RunScriptAsync(InstalledTool tool, string? workspaceRoot)
     {
-        var workspace = _workspaces.Current?.Root;
         IReadOnlyList<string> arguments = [];
 
         if (tool.Manifest.Inputs.Count > 0)
@@ -657,7 +691,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var form = new ToolInputsViewModel(tool, _memory.Read(tool.Id, tool.Manifest.Inputs), workspace);
+            var form = new ToolInputsViewModel(tool, _memory.Read(tool.Id, tool.Manifest.Inputs), workspaceRoot);
 
             if (!await ask(form).ConfigureAwait(true))
             {
@@ -677,7 +711,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
 
         Task<ToolRunOutcome> Work(IProgress<ToolProgressStep> progress, CancellationToken cancellation) =>
-            _scripts.RunAsync(tool, workspace, arguments, progress, cancellation);
+            _scripts.RunAsync(tool, workspaceRoot, arguments, progress, cancellation);
 
         try
         {
@@ -777,7 +811,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         // Back to the workspace page, since the install above may have left the engines
         // page open, and the new workspace is what there is to look at now.
-        Page = 0;
+        Page = WorkspacePage;
 
         await LoadAsync().ConfigureAwait(true);
 
@@ -845,6 +879,29 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         return workspace.CanSwitch
             ? LoadAsync(() => _workspaces.SetCurrent(workspace.Workspace.Root))
             : Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Opens a workspace from the workspaces page. It becomes the open one and the
+    /// workspace page is what is shown, so this is the one thing on that page that does
+    /// switch. The page moves after the switch has landed, so it opens on the workspace
+    /// that was picked rather than on the one that was open a moment ago.
+    /// </summary>
+    public async Task OpenWorkspaceAsync(WorkspaceViewModel workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        // There is nothing to open, and the row already says the folder has gone.
+        if (workspace.IsMissing)
+        {
+            return;
+        }
+
+        // Does nothing when this is already the open one, which is the case where only
+        // the page moves.
+        await SwitchToAsync(workspace).ConfigureAwait(true);
+
+        Page = WorkspacePage;
     }
 
     /// <summary>
@@ -916,8 +973,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
     partial void OnPageChanged(int value)
     {
+        OnPropertyChanged(nameof(OnWorkspacesPage));
         OnPropertyChanged(nameof(OnWorkspacePage));
         OnPropertyChanged(nameof(OnEnginesPage));
+        OnPropertyChanged(nameof(ShowsNoWorkspaces));
+
+        if (value == WorkspacesPage)
+        {
+            _ = RefreshRowsAsync();
+        }
     }
 
     /// <summary>
@@ -1006,6 +1070,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             Workspaces.Add(workspace);
         }
 
+        // The workspaces page. A row is built with the name and the path it already has,
+        // and RefreshRowsAsync fills in everything that costs a disk.
+        WorkspaceRows.Clear();
+
+        foreach (var workspace in loaded.Workspaces)
+        {
+            WorkspaceRows.Add(new WorkspaceRowViewModel(workspace, _openInFactory.Create()));
+        }
+
         Links.Clear();
 
         foreach (var link in loaded.Links)
@@ -1024,6 +1097,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // both, where blanking this would leave the strip empty in the second case with
         // nothing coming to fill it.
         Git.Status = _git.Status;
+
+        // The rows were replaced, so whatever the old ones had been told went with them.
+        if (OnWorkspacesPage)
+        {
+            _ = RefreshRowsAsync();
+        }
     }
 
     /// <summary>
@@ -1090,6 +1169,108 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
             _reading.Release();
         }
     }
+
+    /// <summary>
+    /// Fills every row on the workspaces page: the engine each one asks for, what it can be
+    /// opened in and the tools it provides. That is a walk per workspace, so it runs when
+    /// the page opens rather than whenever the list is read.
+    /// </summary>
+    public async Task RefreshRowsAsync()
+    {
+        if (WorkspaceRows.Count == 0)
+        {
+            return;
+        }
+
+        // Taken before the first await, since a load can replace the collection while this
+        // runs and a row that has left the page is one nobody is looking at.
+        var token = ++_filling;
+        var rows = WorkspaceRows.ToArray();
+
+        // Takes its turn rather than giving up, since giving up would leave rows that were
+        // just replaced saying they are still being read.
+        await _rowsReading.WaitAsync().ConfigureAwait(true);
+
+        try
+        {
+            if (token != _filling)
+            {
+                return;
+            }
+
+            // What every row is measured against, so it is read once for the page.
+            var engines = await _engines.ReadAsync(CancellationToken.None).ConfigureAwait(true);
+            var theDefault = await Task.Run(() => _godot.DefaultEngine).ConfigureAwait(true);
+            var installed = await Task.Run(_installed.Read).ConfigureAwait(true);
+
+            foreach (var row in rows)
+            {
+                if (token != _filling)
+                {
+                    return;
+                }
+
+                await FillAsync(row, engines, theDefault, installed).ConfigureAwait(true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or EngineStoreException or SettingsFileUnreadableException)
+        {
+            // A disk that will not answer leaves the rows saying nothing rather than taking
+            // the window down. The names and the paths are already on screen.
+        }
+        finally
+        {
+            _rowsReading.Release();
+        }
+    }
+
+    /// <summary>
+    /// Everything one row reads for itself. A folder that has gone is not read at all,
+    /// since the row already says it is missing.
+    /// </summary>
+    private async Task FillAsync(
+        WorkspaceRowViewModel row,
+        IReadOnlyList<InstalledEngine> engines,
+        EngineId? theDefault,
+        IReadOnlyList<InstalledTool> installed)
+    {
+        if (row.IsMissing)
+        {
+            row.Engine = EngineViewModel.Unread;
+
+            return;
+        }
+
+        try
+        {
+            // Gathered here rather than when the menu opens, so opening it touches no disk.
+            await row.OpenIn.RefreshAsync(row.Root).ConfigureAwait(true);
+
+            var requirement = await Task.Run(() => _requirements.Read(row.Root)).ConfigureAwait(true);
+
+            row.Engine = new EngineViewModel(
+                _resolver.Resolve(requirement, engines, theDefault), _paths, this);
+
+            row.Tools = await Task.Run(() => Provided(installed, row)).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or SettingsFileUnreadableException)
+        {
+            // One workspace that will not answer leaves its own row quiet. Every other row
+            // still fills in.
+            row.Engine = EngineViewModel.Unread;
+        }
+    }
+
+    /// <summary>
+    /// The tools this workspace offers, which is the global list plus its own rather than
+    /// whatever the open workspace happens to provide. Reads files, so call it off the UI
+    /// thread.
+    /// </summary>
+    private IReadOnlyList<InstalledTool> Provided(
+        IReadOnlyList<InstalledTool> installed, WorkspaceRowViewModel row) =>
+        [.. _provided.For(installed, row.Workspace.Workspace).Select(provided => provided.Tool)];
 
     /// <summary>
     /// Shows the progress dialog while a project opens. Set by the window, since a dialog
@@ -1178,8 +1359,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         }
     });
 
-    /// <summary>Opens the engines page, which is the rail's second item.</summary>
-    public void ShowEngines() => Page = 1;
+    /// <summary>Opens the engines page, which is the rail's last item.</summary>
+    public void ShowEngines() => Page = EnginesPage;
 
     /// <summary>
     /// Opens the engines page on the version a link names, without installing it. A
@@ -1187,7 +1368,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// </summary>
     public Task ShowEngineAsync(EngineVersionPattern wanted)
     {
-        Page = 1;
+        Page = EnginesPage;
 
         return Engines.RevealForAsync(wanted, wanted.NeedsDotnet, "Check the version in the link.");
     }
@@ -1205,7 +1386,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);
 
-        Page = 0;
+        Page = WorkspacePage;
 
         if (ToolGroups.Count == 0)
         {
@@ -1242,7 +1423,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// </summary>
     public Task InstallEngineAsync(EngineVersionPattern wanted, bool mono)
     {
-        Page = 1;
+        Page = EnginesPage;
 
         return Engines.InstallForAsync(wanted, mono);
     }

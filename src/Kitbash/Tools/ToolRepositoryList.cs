@@ -53,6 +53,21 @@ public sealed class ToolRepositoryList : IToolRepositoryList
         return sources;
     }
 
+    public IReadOnlyList<ToolRepositorySource> ReadFor(Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        List<ToolRepositorySource> sources = [.. ReadGlobal()];
+
+        // A folder that has gone has no file to read, so it offers the global list alone.
+        if (workspace.Exists)
+        {
+            sources.AddRange(Workspace(workspace));
+        }
+
+        return sources;
+    }
+
     public IReadOnlyList<ToolRepositorySource> ReadWorkspaces()
     {
         List<ToolRepositorySource> sources = [];

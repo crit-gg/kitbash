@@ -47,6 +47,30 @@
             <Setter Property="Padding" Value="14" />
         </Style>
 
+        <!-- A workspace's name on the workspaces page. It opens that workspace, so it is
+             the library's link with the card title's type and ink put back on it. The
+             underline the theme already draws on hover is the whole affordance. -->
+        <Style Selector="HyperlinkButton.workspaceName">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeTitle}" />
+            <Setter Property="FontWeight" Value="{DynamicResource FontWeightStrong}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="HyperlinkButton.workspaceName:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource InkPrimary}" />
+        </Style>
+
+        <Style Selector="HyperlinkButton.workspaceName:pressed">
+            <Setter Property="Foreground" Value="{DynamicResource InkSecondary}" />
+        </Style>
+
+        <!-- Last, so a workspace whose folder has gone reads as one that cannot be opened.
+             A class selector binds where a state does, so without this the resting ink
+             above would beat the theme's own disabled rule. -->
+        <Style Selector="HyperlinkButton.workspaceName:disabled">
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
         <!-- A workspace link. The secondary button already rests, hovers and presses on
              the values the design draws, so only the shape of the row is here. -->
         <!-- No height, so the row is the icon plus its padding and grows with the type
@@ -166,11 +190,9 @@
 
         <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
 
-            <!-- The rail. Selection, keyboard navigation and the selected state all come
-                 from ListBox. Only the workspace page exists, so the other two are here
-                 and disabled rather than absent, which is what the design shows. -->
-            <!-- The rail. Selection, keyboard navigation and the selected state all come from ListBox,
-                 so what the library supplies is a look. -->
+            <!-- The rail. Selection, keyboard navigation and the selected state all come from
+                 ListBox, so what the library supplies is a look. The order here is the order
+                 LauncherViewModel's page numbers are in. -->
             <DockPanel Grid.Column="0">
                 <!-- Settings opens a window rather than a page, since every app owns its
                      own and a tool's is not reachable from here. The rail item is a way
@@ -193,6 +215,12 @@
                          VerticalAlignment="Stretch"
                          SelectedIndex="{Binding Page, Mode=TwoWay}">
                     <ListBoxItem Theme="{StaticResource ActivityRailItem}"
+                                 ToolTip.Tip="Workspaces" ToolTip.Placement="Right"
+                                 AutomationProperties.Name="Workspaces">
+                        <ui:Icon Glyph="TableList" Size="{DynamicResource IconSizeLarge}" />
+                    </ListBoxItem>
+
+                    <ListBoxItem Theme="{StaticResource ActivityRailItem}"
                                  ToolTip.Tip="Workspace" ToolTip.Placement="Right"
                                  AutomationProperties.Name="Workspace">
                         <ui:Icon Glyph="Window" Size="{DynamicResource IconSizeLarge}" />
@@ -206,10 +234,153 @@
                 </ListBox>
             </DockPanel>
 
-            <!-- The pages the rail opens. Both are built and only one is shown, so
-                 switching costs nothing and neither page reloads on the way back. The
-                 settings page is its own piece of work and its rail item stays disabled. -->
+            <!-- The pages the rail opens. All three are built and only one is shown, so
+                 switching costs nothing and no page reloads on the way back. -->
             <Panel Grid.Column="1">
+              <!-- The workspaces page. Every workspace at once, and a row opens its own
+                   without making it the open one, so nothing else in the launcher moves. -->
+              <Panel IsVisible="{Binding OnWorkspacesPage}">
+                <Border Classes="page" BorderThickness="0"
+                        IsVisible="{Binding HasWorkspaces}">
+                  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl Name="WorkspaceCards" ItemsSource="{Binding WorkspaceRows}"
+                                  Margin="20,16,20,18">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <StackPanel Spacing="9" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WorkspaceRowViewModel">
+                          <Border Classes="toolCard">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                              <!-- Against the first line, since the block under it runs to
+                                   three and the mark belongs to the name. -->
+                              <Border Grid.Column="0" Classes="stateMark"
+                                      Classes.local="{Binding IsLocal}"
+                                      Classes.missing="{Binding IsMissing}"
+                                      VerticalAlignment="Top" Margin="0,6,0,0" />
+
+                              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <!-- A grid rather than a stack, so the name is measured
+                                     against the room there is and trims inside it. -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                                      HorizontalAlignment="Left">
+                                  <HyperlinkButton Grid.Column="0" Name="RowNameButton"
+                                                   Classes="workspaceName"
+                                                   IsEnabled="{Binding !IsMissing}"
+                                                   ToolTip.Tip="Open this workspace"
+                                                   Click="OnOpenWorkspaceClick">
+                                    <TextBlock Text="{Binding Name}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ui:TextTip.Shows="True" />
+                                  </HyperlinkButton>
+
+                                  <ui:Badge Grid.Column="1"
+                                            Content="{Binding Badge}"
+                                            IsVisible="{Binding HasBadge}"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Left" />
+                                </Grid>
+
+                                <TextBlock Classes="mono" Text="{Binding Path}"
+                                           Margin="0,4,0,0"
+                                           FontSize="{DynamicResource FontSizeBody}"
+                                           Foreground="{DynamicResource InkSecondary}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ui:TextTip.Shows="True" />
+
+                                <!-- The same readout the engine strip carries, on one line.
+                                     A folder that has gone has nothing to read, and the
+                                     badge above already says why. -->
+                                <StackPanel Name="RowEngine"
+                                            Orientation="Horizontal" Spacing="8"
+                                            Margin="0,7,0,0"
+                                            IsVisible="{Binding !IsMissing}">
+                                  <TextBlock Text="{Binding Engine.Version}"
+                                             FontSize="{DynamicResource FontSizeControl}"
+                                             Foreground="{DynamicResource InkPrimary}"
+                                             VerticalAlignment="Center" />
+
+                                  <ui:Badge Tier="{Binding Engine.ChannelTier}"
+                                            Content="{Binding Engine.Channel}"
+                                            IsVisible="{Binding Engine.HasChannel}" />
+
+                                  <ui:Badge Tier="Data" HasDot="True"
+                                            Content="{Binding Engine.Runtime}"
+                                            IsVisible="{Binding Engine.HasRuntime}" />
+
+                                  <ui:Badge Tier="{Binding Engine.StateTier}"
+                                            Content="{Binding Engine.StateLabel}"
+                                            IsVisible="{Binding Engine.HasState}" />
+                                </StackPanel>
+                              </StackPanel>
+
+                              <!-- The two marks end at the card's edge whatever the split
+                                   button beside them says, so they line up down the page. -->
+                              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7"
+                                          VerticalAlignment="Center">
+                                <SplitButton Classes.primary="{Binding Engine.IsMatched}"
+                                             Classes.warn="{Binding Engine.IsMismatch}"
+                                             Classes.danger="{Binding Engine.IsMissing}"
+                                             Content="{Binding Engine.Action}"
+                                             Command="{Binding Engine.RunCommand}"
+                                             IsVisible="{Binding Engine.HasAction}"
+                                             VerticalAlignment="Center">
+                                  <SplitButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                      <MenuItem Header="Open anyway"
+                                                Command="{Binding Engine.OpenAnywayCommand}"
+                                                IsVisible="{Binding Engine.CanOpenAnyway}" />
+                                      <MenuItem Header="Play"
+                                                Command="{Binding Engine.PlayCommand}"
+                                                IsEnabled="{Binding Engine.CanLaunch}" />
+                                      <MenuItem Header="Clean rebuild"
+                                                Command="{Binding Engine.CleanRebuildCommand}"
+                                                IsEnabled="{Binding Engine.CanLaunch}" />
+                                      <MenuItem Header="Open project folder"
+                                                Command="{Binding Engine.OpenProjectFolderCommand}"
+                                                IsEnabled="{Binding Engine.CanOpenProject}" />
+                                    </MenuFlyout>
+                                  </SplitButton.Flyout>
+                                </SplitButton>
+
+                                <!-- Square, and as tall as the split button, so the row
+                                     reads as one row rather than as a button and marks. -->
+                                <Button Classes="icon" Name="RowOpenInButton"
+                                        Width="{DynamicResource HeightControl}"
+                                        Height="{DynamicResource HeightControl}"
+                                        ui:Popups.AlignsRight="True"
+                                        IsVisible="{Binding OpenIn.HasItems}"
+                                        ToolTip.Tip="Open in external tool"
+                                        AutomationProperties.Name="Open in external tool"
+                                        Click="OnRowOpenInClick">
+                                  <ui:Icon Glyph="ArrowOutUpLeftStrokeSquare" />
+                                </Button>
+
+                                <!-- The tools this workspace provides. On every row, so
+                                     the marks line up whatever a workspace offers, and
+                                     disabled where there is nothing to open. -->
+                                <Button Classes="icon" Name="RowToolsButton"
+                                        Width="{DynamicResource HeightControl}"
+                                        Height="{DynamicResource HeightControl}"
+                                        ui:Popups.AlignsRight="True"
+                                        IsEnabled="{Binding HasTools}"
+                                        ToolTip.Tip="Tools"
+                                        AutomationProperties.Name="Tools"
+                                        Click="OnRowToolsClick">
+                                  <ui:Icon Glyph="CompassTool" />
+                                </Button>
+                              </StackPanel>
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Border>
+              </Panel>
+
               <Panel IsVisible="{Binding OnWorkspacePage}">
                 <Grid IsVisible="{Binding HasWorkspaces}" RowDefinitions="Auto,Auto,*,Auto">
 
@@ -1070,75 +1241,76 @@
                     </Border>
                 </Grid>
 
-                <!-- Nothing above makes sense without a workspace, so the whole page is
-                     replaced rather than emptied. Derived rather than designed: the
-                     design shows a launcher that always has one. -->
-                <Border Classes="page" BorderThickness="0"
-                        IsVisible="{Binding !HasWorkspaces}">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                MaxWidth="400">
-                        <Border Classes="toolMark" Width="52" Height="52"
-                                HorizontalAlignment="Center">
-                            <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeLarge}"
-                                     Foreground="{DynamicResource Accent}" />
-                        </Border>
-
-                        <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
-                                   FontSize="{DynamicResource FontSizeDialogTitle}"
-                                   FontWeight="{DynamicResource FontWeightStrong}"
-                                   Foreground="{DynamicResource InkPrimary}"
-                                   HorizontalAlignment="Center" />
-
-                        <TextBlock Margin="0,8,0,0"
-                                   FontSize="{DynamicResource FontSizeControl}"
-                                   LineHeight="18"
-                                   TextWrapping="Wrap" TextAlignment="Center"
-                                   Foreground="{DynamicResource InkSecondary}"
-                                   Text="A workspace is a project folder. Tools and settings follow the one you have open." />
-
-                        <!-- The same three ways in as the workspace dropdown's footer,
-                             in the same order and with the same words. -->
-                        <StackPanel Name="NoWorkspacesActions"
-                                    Spacing="8" Margin="0,22,0,0" Width="260"
-                                    HorizontalAlignment="Center">
-                            <Button Classes="primary"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Click="OnNewWorkspaceClick">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
-                                    <TextBlock Text="Create new workspace"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-
-                            <Button HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Click="OnAddWorkspaceClick">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
-                                    <TextBlock Text="Add workspace from folder"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-
-                            <Button HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Left"
-                                    Click="OnCloneWorkspaceClick">
-                                <StackPanel Orientation="Horizontal" Spacing="9">
-                                    <ui:Icon Glyph="GitBranch" VerticalAlignment="Center" />
-                                    <TextBlock Text="Clone workspace from git"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
               </Panel>
 
               <Panel IsVisible="{Binding OnEnginesPage}">
                 <views:EnginesPage DataContext="{Binding Engines}" />
               </Panel>
+
+              <!-- Neither workspace page makes sense without a workspace, so both are
+                   replaced rather than emptied. Derived rather than designed: the
+                   design shows a launcher that always has one. -->
+              <Border Classes="page" BorderThickness="0"
+                      IsVisible="{Binding ShowsNoWorkspaces}">
+                  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                              MaxWidth="400">
+                      <Border Classes="toolMark" Width="52" Height="52"
+                              HorizontalAlignment="Center">
+                          <ui:Icon Glyph="FolderOpen" Size="{DynamicResource IconSizeLarge}"
+                                   Foreground="{DynamicResource Accent}" />
+                      </Border>
+
+                      <TextBlock Text="No workspaces yet" Margin="0,18,0,0"
+                                 FontSize="{DynamicResource FontSizeDialogTitle}"
+                                 FontWeight="{DynamicResource FontWeightStrong}"
+                                 Foreground="{DynamicResource InkPrimary}"
+                                 HorizontalAlignment="Center" />
+
+                      <TextBlock Margin="0,8,0,0"
+                                 FontSize="{DynamicResource FontSizeControl}"
+                                 LineHeight="18"
+                                 TextWrapping="Wrap" TextAlignment="Center"
+                                 Foreground="{DynamicResource InkSecondary}"
+                                 Text="A workspace is a project folder. Tools and settings follow the one you have open." />
+
+                      <!-- The same three ways in as the workspace dropdown's footer,
+                           in the same order and with the same words. -->
+                      <StackPanel Name="NoWorkspacesActions"
+                                  Spacing="8" Margin="0,22,0,0" Width="260"
+                                  HorizontalAlignment="Center">
+                          <Button Classes="primary"
+                                  HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Click="OnNewWorkspaceClick">
+                              <StackPanel Orientation="Horizontal" Spacing="9">
+                                  <ui:Icon Glyph="Plus" VerticalAlignment="Center" />
+                                  <TextBlock Text="Create new workspace"
+                                             VerticalAlignment="Center" />
+                              </StackPanel>
+                          </Button>
+
+                          <Button HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Click="OnAddWorkspaceClick">
+                              <StackPanel Orientation="Horizontal" Spacing="9">
+                                  <ui:Icon Glyph="FolderOpen" VerticalAlignment="Center" />
+                                  <TextBlock Text="Add workspace from folder"
+                                             VerticalAlignment="Center" />
+                              </StackPanel>
+                          </Button>
+
+                          <Button HorizontalAlignment="Stretch"
+                                  HorizontalContentAlignment="Left"
+                                  Click="OnCloneWorkspaceClick">
+                              <StackPanel Orientation="Horizontal" Spacing="9">
+                                  <ui:Icon Glyph="GitBranch" VerticalAlignment="Center" />
+                                  <TextBlock Text="Clone workspace from git"
+                                             VerticalAlignment="Center" />
+                              </StackPanel>
+                          </Button>
+                      </StackPanel>
+                  </StackPanel>
+              </Border>
 
               <!-- The launcher's first toast host. It held none until now, because it had nothing
                    transient to report. -->

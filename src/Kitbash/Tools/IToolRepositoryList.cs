@@ -1,4 +1,5 @@
 using Kitbash.Core.Settings;
+using Kitbash.Core.Workspaces;
 
 namespace Kitbash.Tools;
 
@@ -15,6 +16,13 @@ public interface IToolRepositoryList
     /// Touches a disk, so call it off the UI thread.
     /// </summary>
     IReadOnlyList<ToolRepositorySource> Read();
+
+    /// <summary>
+    /// The global list first, then this workspace's own, whichever workspace is open. That
+    /// is what says which tools a workspace offers from a page listing every workspace.
+    /// Touches a disk, so call it off the UI thread.
+    /// </summary>
+    IReadOnlyList<ToolRepositorySource> ReadFor(Workspace workspace);
 
     /// <summary>
     /// The global list alone, which is the half a person edits here. Touches a disk.

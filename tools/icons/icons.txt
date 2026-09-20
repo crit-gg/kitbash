@@ -15,8 +15,10 @@ check-shield
 chevron-down
 chevron-right
 chevron-up
+code-alt
 cog
 columns
+compass-tool
 copy
 crosshair
 cube
@@ -51,6 +53,7 @@ select-all
 shapes
 sitemap
 table
+table-list
 tag
 thermometer
 timer

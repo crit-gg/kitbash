@@ -282,6 +282,60 @@ public partial class LauncherWindow : ChromelessWindow
         menu.ShowAt(button);
     }
 
+    /// <summary>
+    /// The name opens its workspace, which is the one thing on the workspaces page that
+    /// switches. A folder that has gone has a disabled name and never reaches this.
+    /// </summary>
+    private void OnOpenWorkspaceClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: WorkspaceRowViewModel row })
+        {
+            _ = Model?.OpenWorkspaceAsync(row.Workspace);
+        }
+    }
+
+    /// <summary>
+    /// Everything this workspace can be opened in, which was gathered when its row was
+    /// read. A menu is built per press rather than kept, since a presenter already built
+    /// does not pick up items added later.
+    /// </summary>
+    private void OnRowOpenInClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: WorkspaceRowViewModel row } button)
+        {
+            return;
+        }
+
+        var menu = new MenuFlyout();
+
+        OpenIn?.Fill(menu, row.OpenIn.Rows);
+        menu.ShowAt(button);
+    }
+
+    /// <summary>
+    /// The tools this workspace provides. Each one opens against this workspace rather
+    /// than against whichever one is open.
+    /// </summary>
+    private void OnRowToolsClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: WorkspaceRowViewModel row } button)
+        {
+            return;
+        }
+
+        var menu = new MenuFlyout();
+
+        foreach (var tool in row.Tools)
+        {
+            menu.Items.Add(Item(
+                tool.Name,
+                enabled: true,
+                () => _ = Model?.LaunchToolAsync(tool, row.Root)));
+        }
+
+        menu.ShowAt(button);
+    }
+
     private static MenuItem Item(string header, bool enabled, Action run, bool danger = false)
     {
         var item = new MenuItem { Header = header, IsEnabled = enabled };

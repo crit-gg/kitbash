@@ -448,8 +448,25 @@ column title does not trim, since it is measured with infinite width and fixing 
 sort caret, and the grid automation pattern itself, since Avalonia ships no `IGridProvider`.
 
 The launcher is Slate throughout and holds no brush, hex, font size or radius of its own.
-It is a shell now, a title bar over a rail and a page, carrying the workspace page, the
-Godot engines page and a settings window.
+It is a shell now, a title bar over a rail and a page, carrying the workspaces page, the
+workspace page, the Godot engines page and a settings window.
+
+**There is a workspaces page and it is where the launcher lands.** Every workspace at once,
+one card each, carrying the name, the path, the LOCAL or MISSING badge, the engine that
+workspace asks for, the Open Project split button, the Open in button and a tools menu.
+**Every button on a row acts on its own workspace and none of them switches**, so the git
+strip, the engine strip and the tools page all stay where they were. **The name is the one
+exception**: it is a `HyperlinkButton` in the card title's own type and ink, and clicking it
+makes that workspace the open one and shows the workspace page. A folder that has gone has a
+disabled name, since there is nothing to open. **Everything a row reports is gathered
+when the page opens**, which is a walk per workspace, and a missing folder is not read at
+all. **The tools button is on every row and greys where there is nothing to open**, since
+the marks have to line up down the page, and it is the one button here that does not hide
+itself. `LauncherPage` is the rail order and the page numbers in one place. **Two contracts
+grew a per workspace half for it**, `IToolRepositoryList.ReadFor` and `IProvidedTools.For`,
+since the old ones answered for the open workspace alone. **A card carries no menu of its
+own**: open folder, copy path, rename and remove stay in the switcher popover, and nothing
+on this page marks which workspace is open, creates one, adds one or clones one.
 
 **The launcher holds a `ToastHost`**, wired in `LauncherWindow` to the engines page's
 `IToastService`, since installing an engine is the first thing it had worth reporting.

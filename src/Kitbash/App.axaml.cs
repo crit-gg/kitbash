@@ -615,7 +615,7 @@ public partial class App : Application
             .AddSingleton<CustomToolsSettingsSchema>()
             .AddSingleton<ExternalToolIcons>()
             .AddSingleton<OpenInMenu>()
-            .AddSingleton<OpenInViewModel>()
+            .AddSingleton<OpenInFactory>()
             .AddSingleton(provider => new EnginesViewModel(
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineStore>(),
@@ -661,6 +661,6 @@ public partial class App : Application
                 provider.GetRequiredService<IAfterLaunchSettings>(),
                 provider.GetRequiredService<IAfterLaunchActions>(),
                 provider.GetRequiredService<EnginesViewModel>(),
-                provider.GetRequiredService<OpenInViewModel>()))
+                provider.GetRequiredService<OpenInFactory>()))
             .BuildServiceProvider();
 }

@@ -1,4 +1,5 @@
 using Kitbash.Core.Platform;
+using Kitbash.Core.Workspaces;
 using Kitbash.Tools;
 
 namespace Kitbash.Tests;
@@ -181,6 +182,50 @@ public sealed class ProvidedToolsTests
         Assert.Equal(1, list.WorkspaceReads);
     }
 
+    /// <summary>
+    /// The workspaces page asks about a workspace that is not open, so the answer comes
+    /// from that workspace's own list rather than from whatever is in force.
+    /// </summary>
+    [Fact]
+    public void AWorkspaceProvidesItsToolToItsOwnRow()
+    {
+        var list = new FakeToolRepositoryList
+        {
+            InForce = [],
+            ForWorkspace = { ["Docs"] = [In("Docs", Foundry)] },
+            Workspaces = [In("Docs", Foundry)],
+        };
+
+        var tools = new ProvidedTools(list);
+        var docs = new Workspace("/work/docs", "Docs", Exists: true, HasRepository: false);
+
+        var provided = Assert.Single(tools.For([Installed(Foundry, global: false)], docs));
+
+        Assert.Equal(["Docs"], provided.Workspaces);
+
+        // The open workspace was never asked, which is the whole difference from Here.
+        Assert.Equal(0, list.Reads);
+        Assert.Equal(1, list.ReadForCount);
+    }
+
+    /// <summary>
+    /// A workspace listing nothing gets the global list alone, so a tool another workspace
+    /// provides is not on its row.
+    /// </summary>
+    [Fact]
+    public void AWorkspaceThatListsNothingGetsTheGlobalListAlone()
+    {
+        var list = new FakeToolRepositoryList
+        {
+            ForWorkspace = { ["Art"] = [Global(Splice)] },
+            Workspaces = [In("Docs", Foundry)],
+        };
+
+        var art = new Workspace("/work/art", "Art", Exists: true, HasRepository: false);
+
+        Assert.Empty(new ProvidedTools(list).For([Installed(Foundry, global: false)], art));
+    }
+
     private static ToolRepositorySource Global(string url) =>
         new(ToolRepositorySource.GitHub, WebAddress.Parse(url), "the global config");
 
@@ -230,7 +275,13 @@ public sealed class ProvidedToolsTests
 
         public IReadOnlyList<ToolRepositorySource> Workspaces { get; init; } = [];
 
+        /// <summary>What is in force in one named workspace, whichever one is open.</summary>
+        public Dictionary<string, IReadOnlyList<ToolRepositorySource>> ForWorkspace { get; }
+            = new(StringComparer.Ordinal);
+
         public int Reads { get; private set; }
+
+        public int ReadForCount { get; private set; }
 
         public int WorkspaceReads { get; private set; }
 
@@ -238,6 +289,13 @@ public sealed class ProvidedToolsTests
         {
             Reads++;
             return InForce;
+        }
+
+        public IReadOnlyList<ToolRepositorySource> ReadFor(Workspace workspace)
+        {
+            ReadForCount++;
+
+            return ForWorkspace.TryGetValue(workspace.Name, out var sources) ? sources : ReadGlobal();
         }
 
         public IReadOnlyList<ToolRepositorySource> ReadGlobal() =>

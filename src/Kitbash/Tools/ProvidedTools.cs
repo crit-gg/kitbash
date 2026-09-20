@@ -1,3 +1,5 @@
+using Kitbash.Core.Workspaces;
+
 namespace Kitbash.Tools;
 
 /// <summary>
@@ -19,12 +21,31 @@ public sealed class ProvidedTools : IProvidedTools
     {
         ArgumentNullException.ThrowIfNull(installed);
 
+        return Matched(installed, _list.Read);
+    }
+
+    public IReadOnlyList<ProvidedTool> For(IReadOnlyList<InstalledTool> installed, Workspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        return Matched(installed, () => _list.ReadFor(workspace));
+    }
+
+    /// <summary>
+    /// <paramref name="lists"/> is the lists in force where the answer is wanted, and it is
+    /// a function so nothing installed reads no file at all.
+    /// </summary>
+    private IReadOnlyList<ProvidedTool> Matched(
+        IReadOnlyList<InstalledTool> installed,
+        Func<IReadOnlyList<ToolRepositorySource>> lists)
+    {
         if (installed.Count == 0)
         {
             return [];
         }
 
-        var inForce = _list.Read();
+        var inForce = lists();
 
         // Every registered workspace's list, read at most once and only when a tool needs
         // it, since it is a file read per workspace.

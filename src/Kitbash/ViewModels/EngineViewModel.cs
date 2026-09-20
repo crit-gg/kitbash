@@ -130,6 +130,9 @@ public sealed partial class EngineViewModel : ViewModelBase
         Note = "Add a workspace to see the engine it needs.",
     };
 
+    /// <summary>Nothing was read, because there was no folder to read it from.</summary>
+    public static EngineViewModel Unread { get; } = new();
+
     public EngineResolution? Resolution { get; }
 
     /// <summary>The project the strip is about, when there is one.</summary>
