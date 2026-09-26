@@ -6,7 +6,7 @@ namespace Kitbash.ViewModels;
 /// </summary>
 public enum LauncherPage
 {
-    /// <summary>Every workspace at once, which is where the launcher lands.</summary>
+    /// <summary>Every workspace at once.</summary>
     Workspaces,
 
     /// <summary>The open workspace, its engine, its links and its tools.</summary>

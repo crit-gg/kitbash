@@ -454,7 +454,7 @@ The launcher is Slate throughout and holds no brush, hex, font size or radius of
 It is a shell now, a title bar over a rail and a page, carrying the workspaces page, the
 workspace page, the Godot engines page and a settings window.
 
-**There is a workspaces page and it is where the launcher lands.** Every workspace at once,
+**There is a workspaces page.** Every workspace at once,
 one card each, carrying the name, the path, the LOCAL or MISSING badge, the engine that
 workspace asks for, the Open Project split button, the Open in button and a tools menu.
 **Every button on a row acts on its own workspace and none of them switches**, so the git
@@ -467,7 +467,9 @@ all. **The tools button is on every row and greys where there is nothing to open
 the marks have to line up down the page, and it is the one button here that does not hide
 itself. `LauncherPage` is the rail order and the page numbers in one place. **Two contracts
 grew a per workspace half for it**, `IToolRepositoryList.ReadFor` and `IProvidedTools.For`,
-since the old ones answered for the open workspace alone. **A card carries no menu of its
+since the old ones answered for the open workspace alone. **The launcher opens on the open workspace by default**, and `launcher.startPage` on the
+Launcher settings page can make it open on this list instead. With no workspace open, or one
+whose folder has gone, it opens here whatever the setting says. **A card carries no menu of its
 own**: open folder, copy path, rename and remove stay in the switcher popover, and nothing
 on this page marks which workspace is open, creates one, adds one or clones one.
 

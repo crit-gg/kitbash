@@ -582,6 +582,8 @@ public partial class App : Application
             .AddSingleton<IApplicationUpdates, VelopackUpdates>()
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
+            .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<IStartupSettings, StartupSettings>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
             .AddSingleton<LauncherSettingsSchema>()
@@ -668,6 +670,7 @@ public partial class App : Application
                 provider.GetRequiredService<IPlatformServices>(),
                 provider.GetRequiredService<IAfterLaunchSettings>(),
                 provider.GetRequiredService<IAfterLaunchActions>(),
+                provider.GetRequiredService<IStartupSettings>(),
                 provider.GetRequiredService<EnginesViewModel>(),
                 provider.GetRequiredService<OpenInFactory>()))
             .BuildServiceProvider();

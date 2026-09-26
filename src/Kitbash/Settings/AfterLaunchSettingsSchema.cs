@@ -9,9 +9,10 @@ namespace Kitbash.Settings;
 /// </summary>
 public sealed class AfterLaunchSettingsSchema
 {
-    public AfterLaunchSettingsSchema(ToolActionsEditor tools)
+    public AfterLaunchSettingsSchema(ToolActionsEditor tools, StartupSettingsSchema startup)
     {
         ArgumentNullException.ThrowIfNull(tools);
+        ArgumentNullException.ThrowIfNull(startup);
 
         AfterProjectManager = Action(
             "launcher.after.projectManager",
@@ -57,6 +58,7 @@ public sealed class AfterLaunchSettingsSchema
             Home = SettingsHome.Application,
             Sections =
             [
+                startup.Section,
                 new SettingsSection(
                     "When starting Godot",
                     [AfterProjectManager, AfterEditor, AfterPlay]),

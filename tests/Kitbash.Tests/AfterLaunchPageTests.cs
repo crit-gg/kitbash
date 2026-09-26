@@ -40,6 +40,7 @@ public sealed class AfterLaunchPageTests : IDisposable
             .AddSingleton<IInstalledTools>(new FakeInstalledTools(InstalledIds))
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<ToolActionsEditor>()
+            .AddSingleton<StartupSettingsSchema>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IApplicationRestart>(new FakeRestart())
             .BuildServiceProvider();
@@ -65,7 +66,9 @@ public sealed class AfterLaunchPageTests : IDisposable
 
         try
         {
-            var rows = Rows(model);
+            var rows = Rows(model)
+                .Where(row => row.Key.StartsWith("launcher.after.", StringComparison.Ordinal))
+                .ToList();
 
             Assert.Equal(5, rows.Count);
 
@@ -75,6 +78,27 @@ public sealed class AfterLaunchPageTests : IDisposable
                 Assert.Equal(["Do nothing", "Minimize", "Close"], row.Options.Select(option => option.Label));
                 Assert.Equal("Do nothing", row.ChosenOption?.Label);
             }
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    /// <summary>The start page leads the page, as two segments, and opens on the workspace.</summary>
+    [AvaloniaFact]
+    public async Task TheStartPageIsASegmentDefaultingToTheWorkspace()
+    {
+        var (window, model) = await Shown();
+
+        try
+        {
+            var row = Rows(model)[0];
+
+            Assert.Equal("launcher.startPage", row.Key);
+            Assert.True(row.IsSegment);
+            Assert.Equal(["All workspaces", "Open workspace"], row.Options.Select(option => option.Label));
+            Assert.Equal("Open workspace", row.ChosenOption?.Label);
         }
         finally
         {

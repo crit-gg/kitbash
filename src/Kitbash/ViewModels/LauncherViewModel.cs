@@ -147,6 +147,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IPlatformServices platform,
         IAfterLaunchSettings afterLaunch,
         IAfterLaunchActions actions,
+        IStartupSettings startup,
         EnginesViewModel engines,
         OpenInFactory openIn)
     {
@@ -182,6 +183,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(platform);
         ArgumentNullException.ThrowIfNull(afterLaunch);
         ArgumentNullException.ThrowIfNull(actions);
+        ArgumentNullException.ThrowIfNull(startup);
         ArgumentNullException.ThrowIfNull(engines);
         ArgumentNullException.ThrowIfNull(openIn);
 
@@ -237,6 +239,11 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // frame to drop and nothing to feel, and doing it now means the launcher opens
         // filled in rather than opening empty and filling in a moment later.
         Apply(Read());
+
+        if (startup.StartPage is StartPage.OpenWorkspace && _workspaces.Current is { IsMissing: false })
+        {
+            Page = WorkspacePage;
+        }
 
         // Not part of the read above, which runs before the window exists and has to stay
         // quick. This one probes every install and can run a process.
