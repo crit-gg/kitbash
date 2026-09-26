@@ -15,6 +15,12 @@ public sealed record EngineReleases(
     bool IsStale)
 {
     /// <summary>
+    /// Releases a repository published whose tag could not be read, so they are not
+    /// listed. Always zero for the official list.
+    /// </summary>
+    public int Skipped { get; init; }
+
+    /// <summary>
     /// The highest stable version, or null when the list holds none.
     /// </summary>
     public EngineRelease? NewestStable =>

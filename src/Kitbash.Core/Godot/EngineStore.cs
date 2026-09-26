@@ -54,6 +54,12 @@ internal sealed class EngineStore : IEngineStore
 
         foreach (var directory in _files.EnumerateDirectories(root))
         {
+            // A repository's installs are nested under its address and read below.
+            if (EngineLayout.Kinds.Contains(Path.GetFileName(directory)))
+            {
+                continue;
+            }
+
             var engine = await ReadInstalledAsync(directory, cancellationToken).ConfigureAwait(false);
 
             if (engine is not null)
@@ -61,6 +67,8 @@ internal sealed class EngineStore : IEngineStore
                 found.Add(engine);
             }
         }
+
+        found.AddRange(ReadRepositoryInstalls(root));
 
         foreach (var directory in ReadImported())
         {
@@ -125,6 +133,8 @@ internal sealed class EngineStore : IEngineStore
         string directory,
         EngineBuild build,
         string checksum,
+        EngineChecksumKind checksumKind,
+        string slot,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
@@ -146,11 +156,73 @@ internal sealed class EngineStore : IEngineStore
             Path.GetRelativePath(directory, editor),
             build.FileName,
             checksum ?? string.Empty,
-            _time.GetUtcNow());
+            _time.GetUtcNow())
+        {
+            ChecksumKind = checksumKind,
+            Slot = slot ?? string.Empty,
+            Release = build.Release,
+        };
 
         Write(directory, record);
 
         return Describe(record, directory, imported: false);
+    }
+
+    public InstalledEngine? ReadAt(string directory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+
+        var record = Read(directory);
+
+        return record is not null && _files.FileExists(Path.Combine(directory, record.Executable))
+            ? Describe(record, directory, imported: false)
+            : null;
+    }
+
+    public InstalledEngine RecordTemplates(InstalledEngine engine, string folder)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        var record = engine.Record with { Templates = folder ?? string.Empty };
+
+        Write(engine.Directory, record);
+
+        return engine with { Record = record };
+    }
+
+    /// <summary>
+    /// Every install under a repository's address, exact pins and slots alike. A folder
+    /// here has to carry its record, since probing a custom build cannot say which
+    /// repository it came from.
+    /// </summary>
+    private List<InstalledEngine> ReadRepositoryInstalls(string root)
+    {
+        var found = new List<InstalledEngine>();
+
+        foreach (var kind in EngineLayout.Kinds)
+        {
+            foreach (var owner in _files.EnumerateDirectories(Path.Combine(root, kind)))
+            {
+                foreach (var repository in _files.EnumerateDirectories(owner))
+                {
+                    foreach (var directory in _files.EnumerateDirectories(repository))
+                    {
+                        var name = Path.GetFileName(directory);
+
+                        if (name == EngineLayout.Newest)
+                        {
+                            found.AddRange(_files.EnumerateDirectories(directory).Select(ReadAt).OfType<InstalledEngine>());
+                        }
+                        else if (!EngineLayout.IsReserved(name) && ReadAt(directory) is { } engine)
+                        {
+                            found.Add(engine);
+                        }
+                    }
+                }
+            }
+        }
+
+        return found;
     }
 
     /// <summary>
@@ -319,7 +391,16 @@ internal sealed class EngineStore : IEngineStore
                 TryText(document, "engine.installed", out var installed)
                     && DateTimeOffset.TryParse(installed, CultureInfo.InvariantCulture, out var at)
                         ? at
-                        : default);
+                        : default)
+            {
+                ChecksumKind = TryText(document, "engine.hash", out var hash)
+                    && Enum.TryParse<EngineChecksumKind>(hash, ignoreCase: true, out var kind)
+                        ? kind
+                        : EngineChecksumKind.Sha512,
+                Slot = TryText(document, "engine.slot", out var slot) ? slot : string.Empty,
+                Templates = TryText(document, "engine.templates", out var templates) ? templates : string.Empty,
+                Release = TryText(document, "engine.release", out var release) ? release : string.Empty,
+            };
         }
         catch (Exception error) when (error is SettingsFileUnreadableException or IOException)
         {
@@ -341,6 +422,22 @@ internal sealed class EngineStore : IEngineStore
         document.SetValue("engine.source", record.SourceFileName);
         document.SetValue("engine.checksum", record.Checksum);
         document.SetValue("engine.installed", record.InstalledAt.ToString("O", CultureInfo.InvariantCulture));
+        document.SetValue("engine.hash", record.ChecksumKind.ToString().ToLowerInvariant());
+
+        if (record.Slot.Length > 0)
+        {
+            document.SetValue("engine.slot", record.Slot);
+        }
+
+        if (record.Release.Length > 0)
+        {
+            document.SetValue("engine.release", record.Release);
+        }
+
+        if (record.Templates.Length > 0)
+        {
+            document.SetValue("engine.templates", record.Templates);
+        }
 
         try
         {

@@ -1,16 +1,11 @@
 using System.IO.Compression;
-using System.Security.Cryptography;
 using Kitbash.Core.IO;
-using Kitbash.Core.Platform;
 using Kitbash.Core.Settings;
 
 namespace Kitbash.Core.Godot;
 
 internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 {
-    private const string DoneSuffix = ".done";
-    private const string PartSuffix = ".part";
-
     /// <summary>
     /// How many run at once. A judgment rather than a measurement: enough that a person
     /// clicking down a card is not waiting on one at a time, few enough that twenty
@@ -27,51 +22,138 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
     /// </summary>
     private const long MostUnpacked = 2L * 1024 * 1024 * 1024;
 
-    private readonly IEngineCatalogue _catalogue;
+    private readonly IEngineRepositories _repositories;
     private readonly IEngineStore _store;
-    private readonly IWebContent _web;
+    private readonly EngineDownloads _downloads;
     private readonly IFileSystem _files;
     private readonly IGodotSettings _settings;
-    private readonly ApplicationPaths _paths;
     private readonly SemaphoreSlim _slots = new(AtOnce, AtOnce);
 
     public EngineInstaller(
-        IEngineCatalogue catalogue,
+        IEngineRepositories repositories,
         IEngineStore store,
-        IWebContent web,
+        EngineDownloads downloads,
         IFileSystem files,
-        IGodotSettings settings,
-        ApplicationPaths paths)
+        IGodotSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(catalogue);
+        ArgumentNullException.ThrowIfNull(repositories);
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(web);
+        ArgumentNullException.ThrowIfNull(downloads);
         ArgumentNullException.ThrowIfNull(files);
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(paths);
 
-        _catalogue = catalogue;
+        _repositories = repositories;
         _store = store;
-        _web = web;
+        _downloads = downloads;
         _files = files;
         _settings = settings;
-        _paths = paths;
     }
 
-    public async Task<InstalledEngine> InstallAsync(
+    private EngineLayout Layout => new(_settings.EngineDirectory);
+
+    public Task<InstalledEngine> InstallAsync(
         EngineBuild build,
         IProgress<EngineInstallProgress>? progress,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(build);
 
+        return QueueAsync(build, Layout.DirectoryFor(build), string.Empty, progress, cancellationToken);
+    }
+
+    public Task<InstalledEngine> StageAsync(
+        EngineBuild build,
+        string slot,
+        IProgress<EngineInstallProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(build);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slot);
+
+        var address = build.Id.Repository
+            ?? throw new ArgumentException("Only a repository build has a slot.", nameof(build));
+
+        return QueueAsync(build, Layout.StagingDirectory(address, slot), slot, progress, cancellationToken);
+    }
+
+    public InstalledEngine? Staged(EngineRepositoryAddress address, string slot)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slot);
+
+        return _store.ReadAt(Layout.StagingDirectory(address, slot));
+    }
+
+    public InstalledEngine? Place(EngineRepositoryAddress address, string slot)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentException.ThrowIfNullOrWhiteSpace(slot);
+
+        var layout = Layout;
+        var staged = layout.StagingDirectory(address, slot);
+
+        if (_store.ReadAt(staged) is null)
+        {
+            return null;
+        }
+
+        var target = layout.SlotDirectory(address, slot);
+        var retired = layout.RetiredDirectory(address, slot);
+
+        _files.DeleteDirectory(retired);
+
+        // Two renames, so a failure part way leaves one whole build in the slot. A rename
+        // of a folder whose editor is running fails on Windows, which is what the caller
+        // is told and why nothing is deleted before both have happened.
+        if (_files.DirectoryExists(target))
+        {
+            _files.CreateDirectory(Path.GetDirectoryName(retired)!);
+            _files.MoveDirectory(target, retired);
+        }
+
+        try
+        {
+            _files.CreateDirectory(Path.GetDirectoryName(target)!);
+            _files.MoveDirectory(staged, target);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            if (_files.DirectoryExists(retired) && !_files.DirectoryExists(target))
+            {
+                _files.MoveDirectory(retired, target);
+            }
+
+            throw;
+        }
+
+        try
+        {
+            _files.DeleteDirectory(retired);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            // The next placing clears it. The slot already holds the new build.
+        }
+
+        return _store.ReadAt(target);
+    }
+
+    public void Dispose() => _slots.Dispose();
+
+    private async Task<InstalledEngine> QueueAsync(
+        EngineBuild build,
+        string directory,
+        string slot,
+        IProgress<EngineInstallProgress>? progress,
+        CancellationToken cancellationToken)
+    {
         progress?.Report(new EngineInstallProgress(EngineInstallStage.Queued));
 
         await _slots.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            return await RunAsync(build, progress, cancellationToken).ConfigureAwait(false);
+            return await RunAsync(build, directory, slot, progress, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -79,14 +161,18 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
         }
     }
 
-    public void Dispose() => _slots.Dispose();
-
     private async Task<InstalledEngine> RunAsync(
         EngineBuild build,
+        string directory,
+        string slot,
         IProgress<EngineInstallProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var manifest = await _catalogue.ReadManifestAsync(build.Tag, cancellationToken).ConfigureAwait(false);
+        var manifest = await _repositories
+            .For(build.Id.Repository)
+            .ReadManifestAsync(build.Release, cancellationToken)
+            .ConfigureAwait(false);
+
         var checksum = manifest.ChecksumFor(build);
 
         // GodotEnv's posture, and the right one. A missing checksum is a refusal rather
@@ -94,15 +180,23 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
         if (string.IsNullOrWhiteSpace(checksum))
         {
             throw new EngineInstallException(
-                $"Godot {build.Tag} published no checksum for {build.FileName}, so it was not installed.");
+                $"{build.Release} published no checksum for {build.FileName}, so it was not installed.");
         }
 
-        var archive = await FetchAsync(build, checksum, progress, cancellationToken).ConfigureAwait(false);
-        var directory = Path.Combine(_settings.EngineDirectory, build.Id.DirectoryName);
+        var archive = await _downloads
+            .FetchAsync(
+                build.FileName,
+                build.Address,
+                checksum,
+                manifest.ChecksumKind,
+                (bytes, total) => progress?.Report(new EngineInstallProgress(EngineInstallStage.Downloading, bytes, total)),
+                () => progress?.Report(new EngineInstallProgress(EngineInstallStage.Verifying)),
+                cancellationToken)
+            .ConfigureAwait(false);
 
         progress?.Report(new EngineInstallProgress(EngineInstallStage.Extracting));
 
-        // One install per version, so an install of this id already here is replaced.
+        // One install per folder, so whatever is already in this one is replaced.
         _files.DeleteDirectory(directory);
         _files.CreateDirectory(directory);
 
@@ -128,7 +222,7 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
         try
         {
             var engine = await _store
-                .RegisterAsync(directory, build, checksum, cancellationToken)
+                .RegisterAsync(directory, build, checksum, manifest.ChecksumKind, slot, cancellationToken)
                 .ConfigureAwait(false);
 
             progress?.Report(new EngineInstallProgress(EngineInstallStage.Done));
@@ -141,78 +235,6 @@ internal sealed class EngineInstaller : IEngineInstaller, IDisposable
 
             throw new EngineInstallException($"{build.FileName} did not contain a Godot editor.", error);
         }
-    }
-
-    /// <summary>
-    /// The archive, from the cache when it is there and complete, otherwise fetched and
-    /// verified.
-    /// </summary>
-    private async Task<string> FetchAsync(
-        EngineBuild build,
-        string checksum,
-        IProgress<EngineInstallProgress>? progress,
-        CancellationToken cancellationToken)
-    {
-        var archive = _paths.CacheFileFor(build.FileName);
-        var done = archive + DoneSuffix;
-
-        if (_files.FileExists(archive) && _files.FileExists(done))
-        {
-            return archive;
-        }
-
-        var part = archive + PartSuffix;
-
-        _files.CreateDirectory(_paths.Cache);
-        _files.DeleteFile(part);
-
-        var total = await _web.MeasureAsync(build.Address, cancellationToken).ConfigureAwait(false) ?? 0;
-
-        progress?.Report(new EngineInstallProgress(EngineInstallStage.Downloading, 0, total));
-
-        try
-        {
-            await _web
-                .DownloadAsync(
-                    build.Address,
-                    part,
-                    new Progress<long>(bytes =>
-                        progress?.Report(new EngineInstallProgress(EngineInstallStage.Downloading, bytes, total))),
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            progress?.Report(new EngineInstallProgress(EngineInstallStage.Verifying));
-
-            var actual = await HashAsync(part, cancellationToken).ConfigureAwait(false);
-
-            if (!string.Equals(actual, checksum, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new EngineInstallException(
-                    $"{build.FileName} did not match the checksum Godot published, so it was not installed.");
-            }
-
-            _files.MoveFile(part, archive, overwrite: true);
-            _files.WriteAllText(done, actual);
-
-            return archive;
-        }
-        catch
-        {
-            // Nothing half written survives, so the next attempt starts clean rather than
-            // finding a part file it cannot tell apart from a good one.
-            _files.DeleteFile(part);
-
-            throw;
-        }
-    }
-
-    private async Task<string> HashAsync(string path, CancellationToken cancellationToken)
-    {
-        await using var stream = _files.OpenRead(path);
-
-        var hash = await SHA512.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
-
-        return Convert.ToHexStringLower(hash);
     }
 
     /// <summary>

@@ -110,6 +110,9 @@ public partial class LauncherWindow : ChromelessWindow
     /// </summary>
     public IToolRepositoryList? Repositories { get; init; }
 
+    /// <summary>The engine repository list a link may add to, handed over the same way.</summary>
+    public IEngineRepositoryList? EngineRepositories { get; init; }
+
     /// <summary>
     /// What the title bar reads out beside the name. Set here rather than bound, since a
     /// version does not change while the window is open: an update restarts the app.
@@ -524,6 +527,10 @@ public partial class LauncherWindow : ChromelessWindow
                 await AddRepositoryFromLinkAsync(link.Value("add"));
                 break;
 
+            case "engines" when Names(link.First, "repository"):
+                await AddEngineRepositoryFromLinkAsync(link.Value("add"), link.Value("name"));
+                break;
+
             default:
                 // The link itself is not read back out, since it came from a web page and
                 // a toast is not the place to put whatever it says.
@@ -659,6 +666,72 @@ public partial class LauncherWindow : ChromelessWindow
         await model.RefreshToolsAsync(refresh: true);
 
         Say(ToastTier.Ok, $"Added {url.Value.Host}", "Whatever it offers is on the page now.");
+    }
+
+    /// <summary>
+    /// Adds an engine repository a link named, once a person has said so. A workspace names
+    /// it by <paramref name="name"/>, which defaults to the repository's own name.
+    /// </summary>
+    private async Task AddEngineRepositoryFromLinkAsync(string? address, string? name)
+    {
+        if (Model is not { } model || EngineRepositories is not { } repositories)
+        {
+            return;
+        }
+
+        if (Address(address) is not { } url || EngineRepositoryAddress.ForGitHub(url) is not { } where)
+        {
+            Say(
+                ToastTier.Warn,
+                "That link did not name an engine repository",
+                "It has to be a repository on github.com.");
+
+            return;
+        }
+
+        var called = string.IsNullOrWhiteSpace(name) ? where.Name : name.Trim();
+        var listed = await Task.Run(repositories.ReadGlobal);
+
+        if (listed.Any(source => source.Address == where))
+        {
+            Say(ToastTier.Info, "That engine repository is already on the list");
+
+            return;
+        }
+
+        if (listed.Any(source => string.Equals(source.Name, called, StringComparison.OrdinalIgnoreCase)))
+        {
+            Say(
+                ToastTier.Warn,
+                $"An engine repository is already called {Short(called)}",
+                "Rename one in the settings window and follow the link again.");
+
+            return;
+        }
+
+        if (!await AddRepositoryDialog.ForEngines(url, called).ShowFor<bool>(this))
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() => repositories.WriteGlobal(
+                [.. listed, new EngineRepositorySource(called, where, url, string.Empty)]));
+        }
+        catch (SettingsFileUnreadableException)
+        {
+            Say(
+                ToastTier.Error,
+                "The global config would not parse, so nothing was added",
+                "Fix it by hand and follow the link again.");
+
+            return;
+        }
+
+        await model.Engines.LoadAsync();
+
+        Say(ToastTier.Ok, $"Added {called}", "Its builds are on the engines page now.");
     }
 
     /// <summary>

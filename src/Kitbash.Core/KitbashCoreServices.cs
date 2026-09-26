@@ -216,9 +216,15 @@ public static class KitbashCoreServices
 
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IWebContent, WebContent>();
-        services.TryAddSingleton<IEngineCatalogue, EngineCatalogue>();
+        services.TryAddSingleton<EngineCatalogue>();
+        services.TryAddSingleton<IEngineCatalogue>(provider => provider.GetRequiredService<EngineCatalogue>());
+        services.TryAddSingleton<IEngineRepositories, EngineRepositories>();
         services.TryAddSingleton<IEngineStore, EngineStore>();
+        services.TryAddSingleton<EngineDownloads>();
         services.TryAddSingleton<IEngineInstaller, EngineInstaller>();
+        services.TryAddSingleton<IEngineTemplates, EngineTemplates>();
+        services.TryAddSingleton<IRunningPrograms, RunningPrograms>();
+        services.TryAddSingleton<IEngineUpdater, EngineUpdater>();
         services.AddKitbashExternalTools();
         services.TryAddSingleton<IGodotLauncher, GodotLauncher>();
         services.AddKitbashGodotProjects();
@@ -235,10 +241,9 @@ public static class KitbashCoreServices
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddKitbashIO();
-        services.TryAddSingleton<ISettingsValueConverter, SettingsValueConverter>();
-        services.TryAddSingleton<ISettingsDocumentStore, TomlSettingsDocumentStore>();
+        services.AddKitbashApplicationStorage();
         services.TryAddSingleton<WorkspaceGodotSettingsSchema>();
+        services.TryAddSingleton<IEngineRepositoryList, EngineRepositoryList>();
         services.TryAddSingleton<IGodotProjectReader, GodotProjectReader>();
         services.TryAddSingleton<IGodotImports, GodotImports>();
         services.TryAddSingleton<IEngineRequirementReader, EngineRequirementReader>();

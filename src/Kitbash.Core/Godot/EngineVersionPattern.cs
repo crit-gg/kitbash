@@ -10,7 +10,7 @@ namespace Kitbash.Core.Godot;
 public readonly partial record struct EngineVersionPattern
 {
     private EngineVersionPattern(
-        int major, int? minor, int? patch, EngineChannel? channel, int? number, bool needsDotnet)
+        int major, int? minor, int? patch, EngineChannel? channel, int? number, bool needsDotnet, string? build)
     {
         Major = major;
         Minor = minor;
@@ -18,6 +18,7 @@ public readonly partial record struct EngineVersionPattern
         Channel = channel;
         Number = number;
         NeedsDotnet = needsDotnet;
+        Build = build;
     }
 
     public int Major { get; }
@@ -35,6 +36,15 @@ public readonly partial record struct EngineVersionPattern
     /// True when the pattern ended in <c>-mono</c>, which asks for the .NET build.
     /// </summary>
     public bool NeedsDotnet { get; }
+
+    /// <summary>
+    /// The build a repository pin names after a plus, such as <c>18d5d19</c>. Null for a
+    /// newest pin, which follows whatever the repository publishes next.
+    /// </summary>
+    public string? Build { get; }
+
+    /// <summary>True for a repository pin that names one build, which is never replaced.</summary>
+    public bool IsExact => Build is not null;
 
     /// <summary>The same scope rule <see cref="EngineTag.IsSupported"/> states.</summary>
     public bool IsSupported => Major >= 4;
@@ -62,6 +72,12 @@ public readonly partial record struct EngineVersionPattern
 
         var match = Grammar().Match(text.Trim());
 
+        // A build belongs to a repository pin, which is read by TryParseForRepository.
+        if (match.Success && match.Groups[6].Success)
+        {
+            return false;
+        }
+
         if (!match.Success)
         {
             return false;
@@ -79,7 +95,7 @@ public readonly partial record struct EngineVersionPattern
             : null;
 
         int? number = match.Groups[5].Success ? int.Parse(match.Groups[5].ValueSpan) : null;
-        var needsDotnet = match.Groups[6].Success;
+        var needsDotnet = match.Groups[7].Success;
 
         // A .NET build is named by its channel, so there is no such thing as 4.7-mono.
         if (needsDotnet && channel is null)
@@ -99,7 +115,49 @@ public readonly partial record struct EngineVersionPattern
             match.Groups[3].Success ? int.Parse(match.Groups[3].ValueSpan) : null,
             channel,
             number,
-            needsDotnet);
+            needsDotnet,
+            null);
+
+        return true;
+    }
+
+    /// <summary>
+    /// A pin for a workspace that names a repository: <c>4.7.2</c> follows the newest
+    /// build and <c>4.7.2+18d5d19</c> names one. Every repository build is custom, so a
+    /// channel is refused, and <c>-mono</c> may end either form.
+    /// </summary>
+    public static bool TryParseForRepository([NotNullWhen(true)] string? text, out EngineVersionPattern pattern)
+    {
+        pattern = default;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        var match = Grammar().Match(text.Trim());
+
+        if (!match.Success || match.Groups[4].Success)
+        {
+            return false;
+        }
+
+        var build = match.Groups[6].Success ? match.Groups[6].Value : null;
+
+        // A build pins one release, so the version beside it has to be as exact as a tag.
+        if (build is not null && !match.Groups[2].Success)
+        {
+            return false;
+        }
+
+        pattern = new EngineVersionPattern(
+            int.Parse(match.Groups[1].ValueSpan),
+            match.Groups[2].Success ? int.Parse(match.Groups[2].ValueSpan) : null,
+            match.Groups[3].Success ? int.Parse(match.Groups[3].ValueSpan) : null,
+            EngineChannel.Custom,
+            null,
+            match.Groups[7].Success,
+            build);
 
         return true;
     }
@@ -111,6 +169,13 @@ public readonly partial record struct EngineVersionPattern
         && (Patch is not { } patch || patch == tag.Patch)
         && (Channel is not { } channel || channel == tag.Channel)
         && (Number is not { } number || number == tag.Number);
+
+    /// <summary>
+    /// Whether an install answers this, repository and build included. The runtime is the
+    /// caller's to check, since a project can ask for .NET when the pin does not.
+    /// </summary>
+    public bool Matches(EngineId id) =>
+        Matches(id.Tag) && (Build is null || string.Equals(Build, id.Build, StringComparison.Ordinal));
 
     /// <summary>
     /// The best release in a list for this pattern, or null when none answers it.
@@ -161,9 +226,14 @@ public readonly partial record struct EngineVersionPattern
             text += $".{patch}";
         }
 
-        if (Channel is { } channel)
+        if (Channel is { } channel && channel != EngineChannel.Custom)
         {
             text += $"-{ChannelText(channel)}{Number}";
+        }
+
+        if (Build is { } build)
+        {
+            text += $"+{build}";
         }
 
         return NeedsDotnet ? text + "-mono" : text;
@@ -181,6 +251,6 @@ public readonly partial record struct EngineVersionPattern
     // A patch cannot appear without a minor, which the nesting enforces. Unlike the tag
     // grammar a zero patch is allowed here, since a person writes this. The -mono tail
     // makes it the same grammar an install is named by.
-    [GeneratedRegex(@"^(\d+)(?:\.(\d+)(?:\.(\d+))?)?(?:-(stable|dev|alpha|beta|rc)(\d+)?)?(-mono)?$")]
+    [GeneratedRegex(@"^(\d+)(?:\.(\d+)(?:\.(\d+))?)?(?:-(stable|dev|alpha|beta|rc)(\d+)?)?(?:\+([0-9A-Za-z_.]+))?(-mono)?$")]
     private static partial Regex Grammar();
 }

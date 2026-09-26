@@ -6,6 +6,12 @@ public enum GodotLaunchStage
     /// <summary>Working out what has to happen before the editor can open.</summary>
     Checking,
 
+    /// <summary>
+    /// Fetching and placing a newer build of the engine a newest pin follows, before
+    /// anything else runs, so the project opens in the build it will keep.
+    /// </summary>
+    Updating,
+
     /// <summary>Deleting the import cache, which only a rebuild does.</summary>
     Cleaning,
 

@@ -466,10 +466,11 @@ other**, so none of those can be shared through a workspace's team config by acc
 | `ExternalToolsSettingsSchema` | `tools.git.path`, `tools.dotnet.path` |
 | `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
-| `WorkspaceGodotSettingsSchema` | `godot.engine`, and the only one in the `Workspace` home |
+| `WorkspaceGodotSettingsSchema` | `godot.engine` and `godot.repository`, the only ones in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |
 | `AfterLaunchSettingsSchema` | `launcher.after.projectManager`, `launcher.after.editor`, `launcher.after.play`, `launcher.after.tool`, `launcher.after.externalTool`, the launcher's, and `launcher.after.tools` **through an editor rather than a descriptor** |
 | `ToolRepositoriesSettingsSchema` | `tools.repositories`, the launcher's, and **through an editor rather than a descriptor** |
+| `EngineRepositoriesSettingsSchema` | `godot.repositories`, the global half, the launcher's, **through an editor**. A workspace's own list is read by `IEngineRepositoryList` and never written |
 | `CustomToolsSettingsSchema` | `tools.custom` and `tools.hidden`, the launcher's, and both through an editor too |
 | `WorkspaceLinksSettingsSchema` | `workspace.links`, the launcher's, in the `Workspace` home and **through an editor rather than a descriptor** |
 

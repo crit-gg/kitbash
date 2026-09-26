@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Kitbash.ViewModels"
+             xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+             x:Class="Kitbash.Views.EngineRepositoriesEditorView"
+             x:DataType="vm:EngineRepositoriesEditor"
+             x:CompileBindings="True">
+
+    <!-- A list already on a page, so the grid drops the rule, the stripe and the header
+         fill. Double click a cell to change it, Escape puts the row back. -->
+    <ui:DataGrid Classes="plain"
+                 MaxHeight="220"
+                 ItemsSource="{Binding Grid}"
+                 SelectedValue="{Binding Selected, Mode=TwoWay}">
+        <ui:DataGrid.Toolbar>
+            <StackPanel Orientation="Horizontal" Spacing="7">
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding AddCommand}"
+                        IsEnabled="{Binding IsPageWritable}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Plus" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Add repository" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Button Theme="{StaticResource CompactButton}"
+                        Command="{Binding RemoveCommand}"
+                        IsEnabled="{Binding CanRemove}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ui:Icon Glyph="Trash" Size="{DynamicResource IconSizeStatus}"
+                                 VerticalAlignment="Center" />
+                        <TextBlock Text="Remove" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </ui:DataGrid.Toolbar>
+
+        <ui:DataGrid.Columns>
+            <ui:GridColumn Header="Name" Width="140" IsStrong="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:EngineRepositoryRowViewModel">
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:EngineRepositoryRowViewModel">
+                        <TextBox Text="{Binding Name, Mode=TwoWay}"
+                                 PlaceholderText="name"
+                                 AutomationProperties.Name="Repository name" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
+
+            <ui:GridColumn Header="Address" Width="*" IsMono="True">
+                <ui:GridColumn.CellTemplate>
+                    <DataTemplate x:DataType="vm:EngineRepositoryRowViewModel">
+                        <TextBlock Text="{Binding Address}" VerticalAlignment="Center"
+                                   Classes.error="{Binding !IsValid}"
+                                   ToolTip.Tip="{Binding Problem}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DataTemplate>
+                </ui:GridColumn.CellTemplate>
+                <ui:GridColumn.EditTemplate>
+                    <DataTemplate x:DataType="vm:EngineRepositoryRowViewModel">
+                        <TextBox Text="{Binding Address, Mode=TwoWay}"
+                                 Classes.error="{Binding !IsValid}"
+                                 PlaceholderText="https://github.com/owner/repository"
+                                 AutomationProperties.Name="Repository address" />
+                    </DataTemplate>
+                </ui:GridColumn.EditTemplate>
+            </ui:GridColumn>
+        </ui:DataGrid.Columns>
+    </ui:DataGrid>
+</UserControl>

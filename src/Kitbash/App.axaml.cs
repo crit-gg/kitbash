@@ -539,6 +539,7 @@ public partial class App : Application
             Settings = services.GetRequiredService<ISettingsWindows>(),
             OpenIn = services.GetRequiredService<OpenInMenu>(),
             Repositories = services.GetRequiredService<IToolRepositoryList>(),
+            EngineRepositories = services.GetRequiredService<IEngineRepositoryList>(),
             Version = services.GetRequiredService<IApplicationVersion>(),
             DataContext = services.GetRequiredService<LauncherViewModel>(),
         };
@@ -608,6 +609,8 @@ public partial class App : Application
             .AddSingleton<ToolIconImages>()
             .AddSingleton<IToolInstaller, ToolInstaller>()
             .AddSingleton<IToolFolderInstaller, ToolFolderInstaller>()
+            .AddSingleton<EngineRepositoriesEditor>()
+            .AddSingleton<EngineRepositoriesSettingsSchema>()
             .AddSingleton<ToolRepositoriesEditor>()
             .AddSingleton<ToolRepositoriesSettingsSchema>()
             .AddSingleton<CustomToolsEditor>()
@@ -618,6 +621,10 @@ public partial class App : Application
             .AddSingleton<OpenInFactory>()
             .AddSingleton(provider => new EnginesViewModel(
                 provider.GetRequiredService<IEngineCatalogue>(),
+                provider.GetRequiredService<IEngineRepositories>(),
+                provider.GetRequiredService<IEngineRepositoryList>(),
+                provider.GetRequiredService<IEngineUpdater>(),
+                provider.GetRequiredService<IEngineTemplates>(),
                 provider.GetRequiredService<IEngineStore>(),
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IPathShortener>(),
@@ -652,6 +659,7 @@ public partial class App : Application
                 provider.GetRequiredService<IEngineStore>(),
                 provider.GetRequiredService<IEngineCatalogue>(),
                 provider.GetRequiredService<IEngineResolver>(),
+                provider.GetRequiredService<IEngineUpdater>(),
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IGodotLauncher>(),
                 provider.GetRequiredService<IGodotProjectReader>(),

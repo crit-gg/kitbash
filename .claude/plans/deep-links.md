@@ -21,13 +21,14 @@ segment is not, because a page id is camel case and a version has dots in it.
 | `kitbash://engine/<version>` | the engines page opens with that build revealed |
 | `kitbash://tool/<id>` | the workspace page opens with that tool's card scrolled to |
 | `kitbash://tools/repository?add=<address>` | a dialog asks, and only then does the list gain it |
+| `kitbash://engines/repository?add=<address>&name=<name>` | the same for an engine repository, which a workspace names by `<name>` |
 
 Anything else raises a toast saying Kitbash does not know the link. **The link is never read
 back out into the toast**, since it came from a web page.
 
 `<pageId>` is a `SettingsPage.Id`. The launcher's are `window`, `externalTools`,
-`customTools`, `godotEngines`, `launcher`, `workspaces`, `workspaceGodot`, `workspaceLinks`,
-`toolRepositories`, `updates` and `workspaceState`. An id the schema does not hold opens the
+`customTools`, `godotEngines`, `engineRepositories`, `launcher`, `workspaces`,
+`workspaceGodot`, `workspaceLinks`, `toolRepositories`, `updates` and `workspaceState`. An id the schema does not hold opens the
 first page rather than nothing, since a link outlives the version somebody wrote it against.
 
 `<version>` is an `EngineVersionPattern`, so `4`, `4.7`, `4.7.1` and `4.7.1-mono` all work
@@ -56,6 +57,12 @@ it has to be on the list first.
 its own. `AddRepositoryDialog` names the host and says plainly that installing a tool runs a
 program from it. An address already on either list is said to be there and nothing is
 written. The address goes through `WebAddress.Parse`, so http and https only.
+
+**Engine repository.** The same dialog, `AddRepositoryDialog.ForEngines`, saying that a
+workspace naming it installs its builds. Only a repository on github.com is taken. `name`
+defaults to the repository's own name, and a name the global list already holds is refused
+with a toast, since a workspace could not then say which it means. Written to the global
+list alone. `.claude/plans/engine-repositories.md` has the rest.
 
 ## Registration
 

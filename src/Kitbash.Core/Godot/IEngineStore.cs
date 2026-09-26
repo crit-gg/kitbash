@@ -28,9 +28,24 @@ public interface IEngineStore
     /// Writes the record for an engine that has just been unpacked, which is how the
     /// installer registers one.
     /// </summary>
+    /// <param name="slot">The newest pin this install answers, or empty for one that never moves.</param>
     Task<InstalledEngine> RegisterAsync(
         string directory,
         EngineBuild build,
         string checksum,
+        EngineChecksumKind checksumKind,
+        string slot,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The install Kitbash recorded in one folder, or null when it holds none. For a folder
+    /// just moved into place, whose record still says where it was unpacked.
+    /// </summary>
+    InstalledEngine? ReadAt(string directory);
+
+    /// <summary>
+    /// Records the export templates folder installed for an engine, or clears it with
+    /// empty, and returns the engine as it now reads.
+    /// </summary>
+    InstalledEngine RecordTemplates(InstalledEngine engine, string folder);
 }

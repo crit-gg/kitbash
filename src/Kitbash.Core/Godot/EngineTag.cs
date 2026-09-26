@@ -61,6 +61,7 @@ public readonly partial record struct EngineTag : IComparable<EngineTag>
         var channel = match.Groups[4].Value switch
         {
             "stable" => EngineChannel.Stable,
+            "custom" => EngineChannel.Custom,
             "rc" => EngineChannel.Rc,
             "beta" => EngineChannel.Beta,
             "alpha" => EngineChannel.Alpha,
@@ -69,9 +70,9 @@ public readonly partial record struct EngineTag : IComparable<EngineTag>
 
         var hasNumber = match.Groups[5].Success;
 
-        // Stable never carries a number and everything else always does. A tag breaking
-        // that is not one Godot published.
-        if (hasNumber == (channel == EngineChannel.Stable))
+        // Stable and custom never carry a number and everything else always does. A tag
+        // breaking that is not one Godot published.
+        if (hasNumber == (channel is EngineChannel.Stable or EngineChannel.Custom))
         {
             return false;
         }
@@ -94,10 +95,45 @@ public readonly partial record struct EngineTag : IComparable<EngineTag>
     /// </summary>
     public bool IsSupported => Major >= 4;
 
+    /// <summary>
+    /// The base version of a repository build, such as <c>4.7.2</c> read out of the release
+    /// tag <c>4.7.2-slopworks-18d5d19</c>. The tag's own name and build are not part of it.
+    /// </summary>
+    public static bool TryParseNumber([NotNullWhen(true)] string? text, out EngineTag tag)
+    {
+        tag = default;
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        // A zero patch is allowed here, since a fork's workflow may print 4.7.0 where Godot
+        // itself would print 4.7.
+        var match = NumberGrammar().Match(text);
+
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var patch = match.Groups[3].Success ? int.Parse(match.Groups[3].ValueSpan) : 0;
+
+        tag = new EngineTag(
+            int.Parse(match.Groups[1].ValueSpan),
+            int.Parse(match.Groups[2].ValueSpan),
+            patch,
+            EngineChannel.Custom,
+            0);
+
+        return true;
+    }
+
     /// <summary>The channel as Godot spells it, such as <c>rc</c>.</summary>
     public string ChannelText => Channel switch
     {
         EngineChannel.Stable => "stable",
+        EngineChannel.Custom => "custom",
         EngineChannel.Rc => "rc",
         EngineChannel.Beta => "beta",
         EngineChannel.Alpha => "alpha",
@@ -136,8 +172,8 @@ public readonly partial record struct EngineTag : IComparable<EngineTag>
     {
         var number = Patch > 0 ? $"{Major}.{Minor}.{Patch}" : $"{Major}.{Minor}";
 
-        return Channel == EngineChannel.Stable
-            ? $"{number}-stable"
+        return Channel is EngineChannel.Stable or EngineChannel.Custom
+            ? $"{number}-{ChannelText}"
             : $"{number}-{ChannelText}{Number}";
     }
 
@@ -149,8 +185,11 @@ public readonly partial record struct EngineTag : IComparable<EngineTag>
 
     public static bool operator >=(EngineTag left, EngineTag right) => left.CompareTo(right) >= 0;
 
+    [GeneratedRegex(@"^(\d+)\.(\d+)(?:\.(\d+))?$")]
+    private static partial Regex NumberGrammar();
+
     // The channel list is spelled out rather than left as letters, so an unknown label is
     // refused here instead of arriving at EngineChannel with no rank.
-    [GeneratedRegex(@"^(\d+)\.(\d+)(?:\.([1-9]\d*))?-(stable|dev|alpha|beta|rc)(\d+)?$")]
+    [GeneratedRegex(@"^(\d+)\.(\d+)(?:\.([1-9]\d*))?-(stable|custom|dev|alpha|beta|rc)(\d+)?$")]
     private static partial Regex Grammar();
 }

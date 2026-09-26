@@ -9,13 +9,20 @@ internal sealed class WindowsEngineFiles : IEngineFiles
     private const string ConsoleSuffix = "_console.exe";
 
     private readonly IFileSystem _files;
+    private readonly IUserDirectories _directories;
 
-    public WindowsEngineFiles(IFileSystem files)
+    public WindowsEngineFiles(IFileSystem files, IUserDirectories directories)
     {
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(directories);
 
         _files = files;
+        _directories = directories;
     }
+
+    // Godot's data directory is %APPDATA%\Godot, the roaming folder our configuration uses.
+    public string ExportTemplatesDirectory =>
+        Path.Combine(_directories.ConfigurationFor("Godot"), "export_templates");
 
     public EnginePlatform Platform => EnginePlatform.Windows;
 

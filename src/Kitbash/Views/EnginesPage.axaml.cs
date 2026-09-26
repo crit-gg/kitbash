@@ -66,13 +66,13 @@ public partial class EnginesPage : UserControl
         return picked.Count == 0 ? null : picked[0].Path.LocalPath;
     }
 
-    private async Task<bool> ConfirmAsync(InstalledEngine engine)
+    private async Task<bool> ConfirmAsync(InstalledEngine engine, string? templates)
     {
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
             return false;
         }
 
-        return await UninstallDialog.For(engine).ShowFor<bool>(owner);
+        return await UninstallDialog.For(engine, templates).ShowFor<bool>(owner);
     }
 }

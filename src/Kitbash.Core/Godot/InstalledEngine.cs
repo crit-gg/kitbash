@@ -30,6 +30,12 @@ public sealed record InstalledEngine(
 
     public EngineArchitecture Architecture => Record.Architecture;
 
+    /// <summary>Null for a build the Godot project published.</summary>
+    public EngineRepositoryAddress? Repository => Record.Id.Repository;
+
+    /// <summary>True for an install a newest pin owns and replaces.</summary>
+    public bool IsSlot => Record.Slot.Length > 0;
+
     /// <summary>How Godot writes this processor, such as <c>x86_64</c>.</summary>
     public string ArchitectureText => EngineBuild.TextFor(Record.Architecture);
 

@@ -21,12 +21,13 @@ public partial class UninstallDialog : DialogWindow
     /// The consequence line, which differs by kind. An engine Kitbash installed is
     /// deleted. An imported one is forgotten and its files are left alone.
     /// </summary>
-    public static UninstallDialog For(InstalledEngine engine)
+    /// <param name="templates">A sentence saying its export templates go too, or null when they stay.</param>
+    public static UninstallDialog For(InstalledEngine engine, string? templates = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
 
         var dialog = new UninstallDialog();
-        var name = EngineRowViewModel.NameOf(engine.Tag);
+        var name = EngineRowViewModel.DisplayName(engine.Id);
 
         dialog.Titled("Uninstall engine");
 
@@ -38,6 +39,11 @@ public partial class UninstallDialog : DialogWindow
             ? "The files stay where they are, since Kitbash did not put them there. "
               + "You can add the folder again at any time."
             : "The files are deleted from disk. You can install this build again at any time.";
+
+        if (templates is not null)
+        {
+            dialog.Body.Text += " " + templates;
+        }
 
         dialog.Confirm.Content = engine.IsImported ? "Remove" : "Uninstall";
         dialog.Path.Text = engine.Directory;

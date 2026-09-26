@@ -118,6 +118,34 @@ so it has its own async refresh and the strip says it is reading until that land
 runs one at a time and **waits its turn rather than giving up**, since dropping the
 second would leave the strip describing the workspace that was open a moment ago.
 
+### Engine repositories
+
+**A build can come from somewhere other than the Godot project.** `godot.repositories` names
+them, globally and in a workspace's own config, and `godot.repository` picks one for a
+workspace. No repository means official builds, which is every workspace made before this.
+`.claude/plans/engine-repositories.md` is the whole of it, and it records what could not be
+tested here.
+
+- **The repository is part of `EngineId`**, with the build, so a repository install reads
+  `github/crit-gg/godot-slopworks/4.7.2+18d5d19-mono`. Its channel is `EngineChannel.Custom`.
+- **The repository filters before anything ranks.** An official pin never matches a custom
+  build and a repository pin never matches an official one. `EngineResolver` does this in
+  both directions and a test holds the first.
+- **A pin without a build is a newest pin and owns a slot**, keyed by what was pinned with
+  `-mono` added when the project needs it, so `4.7` and `4.7.2` are two slots. A newer build
+  replaces the slot and the old one goes. A pin with `+build` is exact and never moves.
+- **`IEngineUpdater` is the one place a slot changes.** A newer build is unpacked under
+  `.staging` and moved in with two renames, only once `IRunningPrograms` says the old editor
+  has stopped. The launcher checks at start, on switching workspace, on Open in Godot and
+  after a pull, and only the pull and the page's Refresh skip the ten minute list cache.
+- **A repository install has to carry its record.** Probing one says `slopworks` where a
+  channel goes and nothing about where it came from, so a folder without a record is not
+  listed, and importing a custom build by hand still fails.
+- **Export templates are `IEngineTemplates`**, for official and custom engines alike, and
+  never installed unasked. They go into Godot's own `export_templates/<version.txt>`, which
+  `IEngineFiles.ExportTemplatesDirectory` names per OS. Every build of one version shares
+  that folder.
+
 ### Making a project
 
 `IGodotProjectWriter` writes what Godot's own project dialog writes, and the reference is

@@ -29,4 +29,26 @@ public sealed record EngineRecord(
 
     /// <summary>True when this describes a build Kitbash fetched rather than one found.</summary>
     public bool IsInstalled => SourceFileName.Length > 0;
+
+    /// <summary>Which hash <see cref="Checksum"/> is. Official builds publish SHA 512.</summary>
+    public EngineChecksumKind ChecksumKind { get; init; } = EngineChecksumKind.Sha512;
+
+    /// <summary>
+    /// The newest pin this install answers, such as <c>4.7.2-mono</c>, or empty for an
+    /// install that never moves. A slot is replaced whole when its repository publishes a
+    /// newer build.
+    /// </summary>
+    public string Slot { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The export templates folder Kitbash installed for this engine, such as
+    /// <c>4.7.2.slopworks.mono</c>, or empty when it installed none.
+    /// </summary>
+    public string Templates { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The release this was installed from, as its source names it, such as
+    /// <c>4.7.2-slopworks-18d5d19</c>. Empty for an engine that was found, not installed.
+    /// </summary>
+    public string Release { get; init; } = string.Empty;
 }

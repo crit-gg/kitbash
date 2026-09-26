@@ -7,13 +7,21 @@ internal sealed class MacEngineFiles : IEngineFiles
     private const string BundleSuffix = ".app";
 
     private readonly IFileSystem _files;
+    private readonly IEnvironment _environment;
 
-    public MacEngineFiles(IFileSystem files)
+    public MacEngineFiles(IFileSystem files, IEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(environment);
 
         _files = files;
+        _environment = environment;
     }
+
+    // Godot's data directory is ~/Library/Application Support/Godot. Our own user
+    // directories put a subfolder under it, so the path is built here.
+    public string ExportTemplatesDirectory =>
+        Path.Combine(_environment.GetHomeDirectory(), "Library", "Application Support", "Godot", "export_templates");
 
     public EnginePlatform Platform => EnginePlatform.MacOS;
 

@@ -24,4 +24,11 @@ public interface IEngineFiles
     /// Hides a file from a person browsing the folder.
     /// </summary>
     void Hide(string path);
+
+    /// <summary>
+    /// Where Godot looks for export templates, one folder per version under it. Godot's own
+    /// data directory, which is not Kitbash's, and which an engine in self contained mode
+    /// would not read.
+    /// </summary>
+    string ExportTemplatesDirectory { get; }
 }

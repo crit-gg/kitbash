@@ -25,6 +25,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
 
     private readonly IEngineCatalogue _catalogue;
+    private readonly IEngineRepositories _repositories;
+    private readonly IEngineRepositoryList _repositoryList;
+    private readonly IEngineUpdater _updater;
+    private readonly IEngineTemplates _templates;
     private readonly IEngineStore _store;
     private readonly IGodotSettings _settings;
     private readonly IPathShortener _paths;
@@ -40,10 +44,16 @@ public sealed partial class EnginesViewModel : ViewModelBase
     private readonly Dictionary<EngineId, CancellationTokenSource> _running = [];
     private readonly SemaphoreSlim _loading = new(1, 1);
 
-    private readonly Dictionary<EngineTag, ReleaseCardViewModel> _cards = [];
+    /// <summary>Every card by <see cref="EngineRelease.Key"/>, official and repository alike.</summary>
+    private readonly Dictionary<string, ReleaseCardViewModel> _cards = new(StringComparer.Ordinal);
+
+    /// <summary>Engines whose export templates are downloading, by install folder.</summary>
+    private readonly HashSet<string> _addingTemplates = new(StringComparer.Ordinal);
 
     private IReadOnlyList<EngineRelease> _releases = [];
-    private IReadOnlyDictionary<EngineTag, EngineManifest> _manifests = new Dictionary<EngineTag, EngineManifest>();
+    private IReadOnlyList<EngineRelease> _repositoryReleases = [];
+    private IReadOnlyDictionary<string, EngineManifest> _manifests = new Dictionary<string, EngineManifest>();
+    private IReadOnlyList<EngineRepositorySource> _sources = [];
     private IReadOnlyList<InstalledEngine> _installed = [];
     private EngineChannel? _channel = EngineChannel.Stable;
 
@@ -87,8 +97,25 @@ public sealed partial class EnginesViewModel : ViewModelBase
     [ObservableProperty]
     private string _emptyNote = string.Empty;
 
+    /// <summary>
+    /// What went wrong reading engine repositories: one that could not be reached, or
+    /// releases whose tag could not be read. Empty when nothing did.
+    /// </summary>
+    [ObservableProperty]
+    private string _repositoryNote = string.Empty;
+
+    /// <summary>
+    /// The open workspace's folder, so its own repositories are listed beside the global
+    /// ones. Set by the launcher, which knows which workspace is open.
+    /// </summary>
+    public string? WorkspaceRoot { get; set; }
+
     public EnginesViewModel(
         IEngineCatalogue catalogue,
+        IEngineRepositories repositories,
+        IEngineRepositoryList repositoryList,
+        IEngineUpdater updater,
+        IEngineTemplates templates,
         IEngineStore store,
         IGodotSettings settings,
         IPathShortener paths,
@@ -101,6 +128,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
         IAfterLaunchActions actions)
     {
         ArgumentNullException.ThrowIfNull(catalogue);
+        ArgumentNullException.ThrowIfNull(repositories);
+        ArgumentNullException.ThrowIfNull(repositoryList);
+        ArgumentNullException.ThrowIfNull(updater);
+        ArgumentNullException.ThrowIfNull(templates);
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(paths);
@@ -113,6 +144,10 @@ public sealed partial class EnginesViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(actions);
 
         _catalogue = catalogue;
+        _repositories = repositories;
+        _repositoryList = repositoryList;
+        _updater = updater;
+        _templates = templates;
         _store = store;
         _settings = settings;
         _paths = paths;
@@ -168,6 +203,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
     public bool HasInstalled => InstalledCount > 0;
 
     public bool HasFailed => Failure.Length > 0;
+
+    public bool HasRepositoryNote => RepositoryNote.Length > 0;
 
     public bool IsEmpty => (OnAvailable ? Cards.Count : Rows.Count) == 0 && !HasFailed;
 
@@ -227,14 +264,16 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         OnAvailable = true;
 
-        if (wanted.BestMatch(_cards.Keys) is not { } tag)
+        var official = _cards.Values.Where(candidate => candidate.Release.Repository is null).ToList();
+
+        if (wanted.BestMatch(official.Select(candidate => candidate.Tag)) is not { } tag)
         {
             Post(ToastTier.Error, $"Nothing published matches {wanted}", advice);
 
             return null;
         }
 
-        var card = _cards[tag];
+        var card = official.First(candidate => candidate.Tag == tag);
 
         card.IsOpen = true;
         Reveal?.Invoke(card);
@@ -272,6 +311,88 @@ public sealed partial class EnginesViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Installs what a workspace naming a repository asks for, into its slot for a newest
+    /// pin, and shows it happening on the build's own card.
+    /// </summary>
+    public async Task InstallForAsync(EngineRequirement requirement)
+    {
+        ArgumentNullException.ThrowIfNull(requirement);
+
+        var name = requirement.RepositoryName ?? string.Empty;
+
+        if (requirement.Repository is null || requirement.Version is not { } wanted)
+        {
+            Post(ToastTier.Error, $"No engine repository is named {name}", "Check the repository this workspace names.");
+
+            return;
+        }
+
+        EngineBuild? build;
+
+        try
+        {
+            build = await Task.Run(() => _updater.FindAsync(requirement, refresh: false, CancellationToken.None))
+                .ConfigureAwait(true);
+        }
+        catch (EngineCatalogueException error)
+        {
+            Post(ToastTier.Error, $"Could not read {name}", error.Message);
+
+            return;
+        }
+
+        if (build is null)
+        {
+            Post(
+                ToastTier.Error,
+                $"Nothing from {name} matches {wanted}",
+                $"Nothing published for {HostPlatformText} {EngineBuild.TextFor(HostArchitecture)}"
+                + (requirement.NeedsDotnet ? " with C# support." : "."));
+
+            return;
+        }
+
+        var key = $"{build.Id.Repository}/{build.Release}";
+
+        if (!_cards.ContainsKey(key))
+        {
+            await LoadAsync().ConfigureAwait(true);
+        }
+
+        OnAvailable = true;
+
+        // A repository build is custom, so a filter on an official channel would hide the
+        // card the install is about to draw on.
+        if (_channel is { } shown && shown != EngineChannel.Custom)
+        {
+            ShowChannel(EngineChannel.Custom);
+        }
+
+        EngineBuildViewModel row;
+
+        if (_cards.TryGetValue(key, out var card))
+        {
+            card.IsOpen = true;
+            Reveal?.Invoke(card);
+            row = card.Rows.FirstOrDefault(candidate => candidate.Build.FileName == build.FileName) ?? BuildFor(build);
+        }
+        else
+        {
+            // Not listed, which a repository in no list here would be, so it installs unseen.
+            row = BuildFor(build);
+        }
+
+        if (!row.IsInstalled || requirement.Slot is not null)
+        {
+            await InstallAsync(row, requirement).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>The name a repository goes by here, or its own name when no list gives one.</summary>
+    public string RepositoryLabel(EngineRepositoryAddress address) =>
+        _sources.FirstOrDefault(source => source.Address == address)?.Name ?? address.Name;
+
+    /// <summary>
     /// Shows the engine directory in whatever file browser this desktop has.
     /// </summary>
     [RelayCommand]
@@ -304,17 +425,38 @@ public sealed partial class EnginesViewModel : ViewModelBase
         OnAvailable = tab == "available";
     }
 
-    [RelayCommand]
-    private void PickChannel(string channel)
+    // One flag per choice in the segmented row, bound both ways, so a filter this page
+    // moves by itself shows as chosen there.
+    public bool ShowsAll { get => _channel is null; set => Choose(value, null); }
+
+    public bool ShowsStable { get => _channel == EngineChannel.Stable; set => Choose(value, EngineChannel.Stable); }
+
+    public bool ShowsRc { get => _channel == EngineChannel.Rc; set => Choose(value, EngineChannel.Rc); }
+
+    public bool ShowsBeta { get => _channel == EngineChannel.Beta; set => Choose(value, EngineChannel.Beta); }
+
+    public bool ShowsDev { get => _channel == EngineChannel.Dev; set => Choose(value, EngineChannel.Dev); }
+
+    public bool ShowsCustom { get => _channel == EngineChannel.Custom; set => Choose(value, EngineChannel.Custom); }
+
+    private void Choose(bool chosen, EngineChannel? channel)
     {
-        _channel = channel switch
+        if (chosen && _channel != channel)
         {
-            "stable" => EngineChannel.Stable,
-            "rc" => EngineChannel.Rc,
-            "beta" => EngineChannel.Beta,
-            "dev" => EngineChannel.Dev,
-            _ => null,
-        };
+            ShowChannel(channel);
+        }
+    }
+
+    private void ShowChannel(EngineChannel? channel)
+    {
+        _channel = channel;
+
+        OnPropertyChanged(nameof(ShowsAll));
+        OnPropertyChanged(nameof(ShowsStable));
+        OnPropertyChanged(nameof(ShowsRc));
+        OnPropertyChanged(nameof(ShowsBeta));
+        OnPropertyChanged(nameof(ShowsDev));
+        OnPropertyChanged(nameof(ShowsCustom));
 
         Rebuild();
     }
@@ -340,6 +482,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
     partial void OnInstalledCountChanged(int value) => OnPropertyChanged(nameof(HasInstalled));
 
+    partial void OnRepositoryNoteChanged(string value) => OnPropertyChanged(nameof(HasRepositoryNote));
+
     partial void OnFailureChanged(string value)
     {
         OnPropertyChanged(nameof(HasFailed));
@@ -361,6 +505,8 @@ public sealed partial class EnginesViewModel : ViewModelBase
             installed = [];
         }
 
+        var repositories = await ReadRepositoriesAsync(refresh).ConfigureAwait(false);
+
         try
         {
             var releases = await _catalogue.ReadReleasesAsync(refresh, CancellationToken.None).ConfigureAwait(false);
@@ -381,25 +527,105 @@ public sealed partial class EnginesViewModel : ViewModelBase
                 }
             })).ConfigureAwait(false);
 
+            var all = new Dictionary<string, EngineManifest>(repositories.Manifests, StringComparer.Ordinal);
+
+            foreach (var manifest in manifests.OfType<EngineManifest>())
+            {
+                all[manifest.Tag.ToString()] = manifest;
+            }
+
             return new Loaded(
                 releases.Releases,
-                manifests.Where(manifest => manifest is not null).ToDictionary(m => m!.Tag, m => m!),
+                all,
                 installed,
                 releases.IsStale,
                 releases.ReadAt,
-                string.Empty);
+                string.Empty,
+                repositories);
         }
         catch (EngineCatalogueException error)
         {
-            return new Loaded([], new Dictionary<EngineTag, EngineManifest>(), installed, false, default, error.Message);
+            return new Loaded([], repositories.Manifests, installed, false, default, error.Message, repositories);
         }
+    }
+
+    /// <summary>
+    /// Every repository the global list and the open workspace name, once each by address,
+    /// with every release and what it holds. A repository that cannot be read is said in
+    /// the note and leaves the rest of the page alone.
+    /// </summary>
+    private async Task<RepositoriesRead> ReadRepositoriesAsync(bool refresh)
+    {
+        IReadOnlyList<EngineRepositorySource> sources;
+
+        try
+        {
+            sources = WorkspaceRoot is { } root ? _repositoryList.ReadFor(root) : _repositoryList.ReadGlobal();
+        }
+        catch (Exception error) when (error is SettingsFileUnreadableException or IOException or UnauthorizedAccessException)
+        {
+            sources = [];
+        }
+
+        sources = [.. sources.DistinctBy(source => source.Address)];
+
+        var releases = new List<EngineRelease>();
+        var manifests = new Dictionary<string, EngineManifest>(StringComparer.Ordinal);
+        var notes = new List<string>();
+
+        foreach (var source in sources)
+        {
+            var repository = _repositories.For(source.Address);
+
+            try
+            {
+                var read = await repository.ReadReleasesAsync(refresh, CancellationToken.None).ConfigureAwait(false);
+
+                foreach (var release in read.Releases)
+                {
+                    try
+                    {
+                        manifests[release.Key] = await repository
+                            .ReadManifestAsync(release.Name, CancellationToken.None)
+                            .ConfigureAwait(false);
+                    }
+                    catch (EngineCatalogueException)
+                    {
+                        // The card says it could not be read.
+                    }
+                }
+
+                releases.AddRange(read.Releases);
+
+                if (read.Skipped > 0)
+                {
+                    notes.Add(read.Skipped == 1
+                        ? $"1 release from {source.Name} has a tag that could not be read."
+                        : $"{read.Skipped} releases from {source.Name} have a tag that could not be read.");
+                }
+
+                if (read.IsStale)
+                {
+                    notes.Add($"{source.Name} could not be checked just now.");
+                }
+            }
+            catch (EngineCatalogueException)
+            {
+                notes.Add($"{source.Name} could not be reached.");
+            }
+        }
+
+        return new RepositoriesRead(sources, releases, manifests, string.Join(" ", notes));
     }
 
     private void Apply(Loaded loaded)
     {
         _releases = loaded.Releases;
+        _repositoryReleases = loaded.Repositories.Releases;
+        _sources = loaded.Repositories.Sources;
         _manifests = loaded.Manifests;
         _installed = loaded.Installed;
+        RepositoryNote = loaded.Repositories.Note;
 
         Failure = loaded.Failure;
         IsStale = loaded.IsStale;
@@ -409,22 +635,20 @@ public sealed partial class EnginesViewModel : ViewModelBase
 
         // A card per release, whatever the tab and filter are. Filtering only decides
         // which of them are listed.
-        foreach (var release in _releases)
+        foreach (var release in _releases.Concat(_repositoryReleases))
         {
-            if (!_cards.ContainsKey(release.Tag))
+            if (!_cards.TryGetValue(release.Key, out var card))
             {
-                _cards[release.Tag] = new ReleaseCardViewModel(
-                    release,
-                    _manifests.GetValueOrDefault(release.Tag),
-                    this);
+                card = new ReleaseCardViewModel(release, _manifests.GetValueOrDefault(release.Key), this);
+                _cards[release.Key] = card;
             }
 
-            _cards[release.Tag].CountInstalled(_installed);
+            card.CountInstalled(_installed);
         }
 
         InstallRoot = _paths.Shorten(_settings.EngineDirectory, RootLength);
         InstalledCount = _installed.Count;
-        ReleaseCount = _releases.Count;
+        ReleaseCount = _releases.Count + _repositoryReleases.Count;
         OnDisk = Size(_installed.Sum(engine => engine.SizeOnDisk));
         UpdateVersion = Update();
 
@@ -445,23 +669,30 @@ public sealed partial class EnginesViewModel : ViewModelBase
             // Cards are kept across a filter, since each holds what it read when it opened.
             var cards = new List<ReleaseCardViewModel>();
 
-            foreach (var release in _releases)
+            // Newest first across every source, so a repository build sits among the
+            // official releases of its time.
+            foreach (var release in _releases
+                         .Concat(_repositoryReleases)
+                         .OrderByDescending(release => release.PublishedAt))
             {
                 if (_channel is { } channel && release.Channel != channel)
                 {
                     continue;
                 }
 
-                if (query.Length > 0
-                    && !EngineRowViewModel.NameOf(release.Tag).Contains(query, StringComparison.OrdinalIgnoreCase))
+                if (!_cards.TryGetValue(release.Key, out var card))
                 {
                     continue;
                 }
 
-                if (_cards.TryGetValue(release.Tag, out var card))
+                if (query.Length > 0
+                    && !card.Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+                    && !card.Channel.Contains(query, StringComparison.OrdinalIgnoreCase))
                 {
-                    cards.Add(card);
+                    continue;
                 }
+
+                cards.Add(card);
             }
 
             Cards.Clear();
@@ -501,6 +732,101 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _releases.FirstOrDefault(release => release.Tag == tag)?.Notes;
 
     /// <summary>
+    /// The notes for the release an install came from. A repository release's page on its
+    /// forge, since that is where a fork writes what changed.
+    /// </summary>
+    public WebAddress? NotesFor(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        return engine.Repository is { } address
+            ? _repositoryReleases.FirstOrDefault(release =>
+                release.Repository == address && release.Build == engine.Id.Build)?.Notes
+            : NotesFor(engine.Tag);
+    }
+
+    /// <summary>True while an engine's export templates are downloading.</summary>
+    public bool IsAddingTemplates(InstalledEngine engine) => _addingTemplates.Contains(engine.Directory);
+
+    /// <summary>
+    /// Downloads the export templates an engine's release published, into the folder Godot
+    /// reads them from. Never done without being asked.
+    /// </summary>
+    public async Task AddTemplatesAsync(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        if (!_addingTemplates.Add(engine.Directory))
+        {
+            return;
+        }
+
+        var name = EngineRowViewModel.DisplayName(engine.Id);
+
+        Rebuild();
+
+        try
+        {
+            var done = await Task.Run(() => _templates.InstallAsync(engine, progress: null, CancellationToken.None))
+                .ConfigureAwait(true);
+
+            Post(ToastTier.Ok, $"Export templates added for Godot {name}", $"Godot finds them as {done.Record.Templates}.");
+        }
+        catch (Exception error) when (error is EngineInstallException or EngineCatalogueException
+            or IOException or UnauthorizedAccessException)
+        {
+            Post(
+                ToastTier.Error,
+                $"Could not add export templates for Godot {name}",
+                error.Message,
+                new ToastAction("Retry", () => _ = AddTemplatesAsync(engine)));
+        }
+        finally
+        {
+            _addingTemplates.Remove(engine.Directory);
+        }
+
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Deletes the export templates Kitbash installed for an engine. Every build of the
+    /// version reads the same folder, so each install that recorded it forgets it.
+    /// </summary>
+    public async Task RemoveTemplatesAsync(InstalledEngine engine)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+
+        var folder = engine.Record.Templates;
+
+        if (folder.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                _templates.Remove(folder);
+
+                foreach (var holder in _installed.Where(other => other.Record.Templates == folder))
+                {
+                    _store.RecordTemplates(holder, string.Empty);
+                }
+            }).ConfigureAwait(true);
+
+            Post(ToastTier.Ok, "Export templates removed", $"{folder} was deleted.");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            Post(ToastTier.Error, "Could not remove export templates", error.Message);
+        }
+
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>
     /// Starts this engine's project manager, which is the window Godot opens when it is
     /// run outside a project.
     /// </summary>
@@ -523,7 +849,7 @@ public sealed partial class EnginesViewModel : ViewModelBase
             {
                 Post(
                     ToastTier.Error,
-                    $"Could not start Godot {EngineRowViewModel.NameOf(engine.Tag)}",
+                    $"Could not start Godot {EngineRowViewModel.DisplayName(engine.Id)}",
                     Shorten(engine.Executable, ToastPathLength));
             }
         });
@@ -589,14 +915,28 @@ public sealed partial class EnginesViewModel : ViewModelBase
     {
         ArgumentNullException.ThrowIfNull(engine);
 
-        if (Confirm is null || !await Confirm(engine).ConfigureAwait(true))
+        var installed = _installed;
+        var owned = engine.IsImported ? null : _templates.OwnedBy(engine, installed);
+        var templatesNote = owned is null
+            ? null
+            : $"Its export templates go too, {Size(await Task.Run(() => _templates.SizeOf(owned)).ConfigureAwait(true))}.";
+
+        if (Confirm is null || !await Confirm(engine, templatesNote).ConfigureAwait(true))
         {
             return;
         }
 
         try
         {
-            await Task.Run(() => _store.RemoveAsync(engine, CancellationToken.None)).ConfigureAwait(true);
+            await Task.Run(async () =>
+            {
+                await _store.RemoveAsync(engine, CancellationToken.None).ConfigureAwait(false);
+
+                if (owned is not null)
+                {
+                    _templates.Remove(owned);
+                }
+            }).ConfigureAwait(true);
 
             // Uninstalling the default leaves the machine without one. Nothing is promoted.
             if (_settings.DefaultEngine == engine.Id)
@@ -608,15 +948,18 @@ public sealed partial class EnginesViewModel : ViewModelBase
         {
             Post(
                 ToastTier.Error,
-                $"Could not remove Godot {EngineRowViewModel.NameOf(engine.Tag)}",
+                $"Could not remove Godot {EngineRowViewModel.DisplayName(engine.Id)}",
                 $"{Shorten(engine.Directory, ToastPathLength)} could not be deleted.");
         }
 
         await LoadAsync().ConfigureAwait(true);
     }
 
-    /// <summary>Asks the person before an engine is removed. The view supplies the dialog.</summary>
-    public Func<InstalledEngine, Task<bool>>? Confirm { get; set; }
+    /// <summary>
+    /// Asks the person before an engine is removed, with a line about its export templates
+    /// when they go too. The view supplies the dialog.
+    /// </summary>
+    public Func<InstalledEngine, string?, Task<bool>>? Confirm { get; set; }
 
     /// <summary>Adds an engine already on this machine. The view supplies the folder picker.</summary>
     public Func<Task<string?>>? Picker { get; set; }
@@ -672,7 +1015,13 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// Installs one build. Several run at once behind the installer's own cap, and each
     /// carries its own token, so cancelling one leaves the others alone.
     /// </summary>
-    private async Task InstallAsync(EngineBuildViewModel row)
+    private Task InstallAsync(EngineBuildViewModel row) => InstallAsync(row, requirement: null);
+
+    /// <summary>
+    /// Installs one build. With a requirement naming a repository it goes where that
+    /// requirement says, which for a newest pin is its slot.
+    /// </summary>
+    private async Task InstallAsync(EngineBuildViewModel row, EngineRequirement? requirement)
     {
         if (_running.ContainsKey(row.Build.Id))
         {
@@ -684,19 +1033,23 @@ public sealed partial class EnginesViewModel : ViewModelBase
         _running[row.Build.Id] = stopping;
         row.Started();
 
+        var name = EngineRowViewModel.DisplayName(row.Build.Id);
+
         try
         {
-            await _installer.InstallAsync(
-                row.Build,
-                new Progress<EngineInstallProgress>(row.Report),
-                stopping.Token).ConfigureAwait(true);
+            var progress = new Progress<EngineInstallProgress>(row.Report);
+
+            var engine = requirement?.RepositoryName is not null
+                ? await Task.Run(() => _updater.InstallAsync(requirement, row.Build, progress, stopping.Token))
+                    .ConfigureAwait(true)
+                : await _installer.InstallAsync(row.Build, progress, stopping.Token).ConfigureAwait(true);
 
             row.Stopped(installed: true);
 
             Post(
                 ToastTier.Ok,
-                $"Godot {EngineRowViewModel.NameOf(row.Build.Tag)} installed",
-                $"Unpacked to {Shorten(Path.Combine(_settings.EngineDirectory, row.Build.Id.DirectoryName), ToastPathLength)}.",
+                $"Godot {name} installed",
+                $"Unpacked to {Shorten(engine.Directory, ToastPathLength)}.",
                 new ToastAction("Show in Installed", () => OnAvailable = false) { IsPrimary = true });
 
             await LoadAsync().ConfigureAwait(true);
@@ -706,15 +1059,16 @@ public sealed partial class EnginesViewModel : ViewModelBase
             // Cancelling reports nothing. It is already visible in place.
             row.Stopped(installed: false);
         }
-        catch (Exception error) when (error is EngineInstallException or EngineCatalogueException)
+        catch (Exception error) when (error is EngineInstallException or EngineCatalogueException
+            or IOException or UnauthorizedAccessException)
         {
             row.Stopped(installed: false);
 
             Post(
                 ToastTier.Error,
-                $"Could not install Godot {EngineRowViewModel.NameOf(row.Build.Tag)}",
+                $"Could not install Godot {name}",
                 error.Message,
-                new ToastAction("Retry", () => _ = InstallAsync(row)));
+                new ToastAction("Retry", () => _ = InstallAsync(row, requirement)));
         }
         finally
         {
@@ -785,9 +1139,17 @@ public sealed partial class EnginesViewModel : ViewModelBase
     /// <summary>Everything one load read, ready to be put on screen.</summary>
     private sealed record Loaded(
         IReadOnlyList<EngineRelease> Releases,
-        IReadOnlyDictionary<EngineTag, EngineManifest> Manifests,
+        IReadOnlyDictionary<string, EngineManifest> Manifests,
         IReadOnlyList<InstalledEngine> Installed,
         bool IsStale,
         DateTimeOffset ReadAt,
-        string Failure);
+        string Failure,
+        RepositoriesRead Repositories);
+
+    /// <summary>What the engine repositories said, and what went wrong asking them.</summary>
+    private sealed record RepositoriesRead(
+        IReadOnlyList<EngineRepositorySource> Sources,
+        IReadOnlyList<EngineRelease> Releases,
+        IReadOnlyDictionary<string, EngineManifest> Manifests,
+        string Note);
 }

@@ -56,6 +56,88 @@ public sealed record EngineBuild(
     public bool IsMono => Id.IsMono;
 
     /// <summary>
+    /// The release this came from, as its source names it, so the installer can read that
+    /// release's checksums again. The tag text for an official build.
+    /// </summary>
+    public string Release { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Every desktop editor among a repository release's assets. Only names that start
+    /// with <c>Godot_v</c> and the release's own tag and end in a known shape count.
+    /// </summary>
+    public static IReadOnlyList<EngineBuild> ReadAll(
+        EngineRelease release,
+        IReadOnlyDictionary<string, WebAddress> assets)
+    {
+        ArgumentNullException.ThrowIfNull(release);
+        ArgumentNullException.ThrowIfNull(assets);
+
+        var prefix = $"Godot_v{release.FileTag}";
+        var builds = new List<EngineBuild>();
+
+        foreach (var (name, address) in assets)
+        {
+            if (name.StartsWith(prefix, StringComparison.Ordinal)
+                && Shapes.TryGetValue(name[prefix.Length..], out var shape))
+            {
+                builds.Add(new EngineBuild(
+                    release.IdFor(shape.Mono),
+                    shape.Platform,
+                    shape.Architecture,
+                    name,
+                    address)
+                {
+                    Release = release.Name,
+                });
+            }
+        }
+
+        builds.Sort(Sort);
+
+        return builds;
+    }
+
+    /// <summary>
+    /// The export templates among a release's file names, at most one per runtime. Godot
+    /// names them <c>_export_templates.tpz</c> and <c>_mono_export_templates.tpz</c>.
+    /// </summary>
+    public static IReadOnlyList<EngineTemplatesFile> ReadTemplates(
+        string fileTag,
+        IEnumerable<(string Name, WebAddress Address)> files)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+
+        var prefix = $"Godot_v{fileTag}";
+        var found = new List<EngineTemplatesFile>();
+
+        foreach (var (name, address) in files)
+        {
+            if (!name.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var suffix = name[prefix.Length..];
+
+            if (suffix == "_export_templates.tpz" || suffix == "_mono_export_templates.tpz")
+            {
+                var mono = suffix.StartsWith("_mono", StringComparison.Ordinal);
+
+                if (found.All(file => file.IsMono != mono))
+                {
+                    found.Add(new EngineTemplatesFile(mono, name, address));
+                }
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>Where an official release's file downloads from.</summary>
+    public static WebAddress OfficialAddress(EngineTag tag, string fileName) =>
+        WebAddress.Parse($"{Downloads}/{tag}/{fileName}");
+
+    /// <summary>
     /// One build from a name a release manifest published. False when the name belongs to
     /// that release but is not a desktop editor, and false when it belongs to another
     /// release entirely.
@@ -83,7 +165,10 @@ public sealed record EngineBuild(
             shape.Platform,
             shape.Architecture,
             fileName,
-            WebAddress.Parse($"{Downloads}/{tag}/{fileName}"));
+            OfficialAddress(tag, fileName))
+        {
+            Release = tag.ToString(),
+        };
 
         return true;
     }
@@ -92,11 +177,15 @@ public sealed record EngineBuild(
     /// Every target a release published for, named for display, in a fixed order. Includes
     /// targets Kitbash cannot install, since the caller reports where a release shipped.
     /// </summary>
-    public static IReadOnlyList<string> PublishedTargets(EngineTag tag, IEnumerable<string> fileNames)
+    public static IReadOnlyList<string> PublishedTargets(EngineTag tag, IEnumerable<string> fileNames) =>
+        PublishedTargets(tag.ToString(), fileNames);
+
+    /// <summary>As the other overload, for a release whose files start with any tag text.</summary>
+    public static IReadOnlyList<string> PublishedTargets(string fileTag, IEnumerable<string> fileNames)
     {
         ArgumentNullException.ThrowIfNull(fileNames);
 
-        var prefix = $"Godot_v{tag}";
+        var prefix = $"Godot_v{fileTag}";
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var name in fileNames)

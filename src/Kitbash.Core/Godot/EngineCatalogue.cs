@@ -6,7 +6,7 @@ using Kitbash.Core.Settings;
 
 namespace Kitbash.Core.Godot;
 
-internal sealed class EngineCatalogue : IEngineCatalogue
+internal sealed class EngineCatalogue : IEngineCatalogue, IEngineRepository
 {
     private const string Feed = "https://godotengine.org/versions.json";
     private const string Manifests = "https://raw.githubusercontent.com/godotengine/godot-builds/main/releases";
@@ -35,6 +35,13 @@ internal sealed class EngineCatalogue : IEngineCatalogue
         _paths = paths;
         _time = time;
     }
+
+    public EngineRepositoryAddress? Address => null;
+
+    public Task<EngineManifest> ReadManifestAsync(string release, CancellationToken cancellationToken) =>
+        EngineTag.TryParse(release, out var tag)
+            ? ReadManifestAsync(tag, cancellationToken)
+            : throw new EngineCatalogueException($"{release} is not a Godot release.");
 
     public async Task<EngineReleases> ReadReleasesAsync(bool refresh, CancellationToken cancellationToken)
     {
@@ -183,7 +190,11 @@ internal sealed class EngineCatalogue : IEngineCatalogue
             }
         }
 
-        return new EngineRelease(tag, released, notes);
+        return new EngineRelease(tag, released, notes)
+        {
+            Name = tag.ToString(),
+            PublishedAt = new DateTimeOffset(released.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
+        };
     }
 
     private static EngineManifest ReadManifest(EngineTag tag, string text)
@@ -215,7 +226,13 @@ internal sealed class EngineCatalogue : IEngineCatalogue
             tag,
             EngineBuild.ReadAll(tag, names),
             checksums,
-            EngineBuild.PublishedTargets(tag, names));
+            EngineBuild.PublishedTargets(tag, names))
+        {
+            ChecksumKind = EngineChecksumKind.Sha512,
+            Templates = EngineBuild.ReadTemplates(
+                tag.ToString(),
+                names.Select(name => (name, EngineBuild.OfficialAddress(tag, name)))),
+        };
     }
 
     /// <summary>

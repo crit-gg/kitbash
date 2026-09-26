@@ -432,24 +432,28 @@
                 <ui:Segmented Grid.Column="1" VerticalAlignment="Center"
                               IsVisible="{Binding OnAvailable}">
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="all"
+                                 IsChecked="{Binding ShowsAll, Mode=TwoWay}"
                                  Content="all" />
 
-                    <RadioButton GroupName="engineChannel" IsChecked="True"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="stable"
+                    <RadioButton GroupName="engineChannel"
+                                 IsChecked="{Binding ShowsStable, Mode=TwoWay}"
                                  Content="stable" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="rc"
+                                 IsChecked="{Binding ShowsRc, Mode=TwoWay}"
                                  Content="rc" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="beta"
+                                 IsChecked="{Binding ShowsBeta, Mode=TwoWay}"
                                  Content="beta" />
 
                     <RadioButton GroupName="engineChannel"
-                                 Command="{Binding PickChannelCommand}" CommandParameter="dev"
+                                 IsChecked="{Binding ShowsDev, Mode=TwoWay}"
                                  Content="dev" />
+
+                    <RadioButton GroupName="engineChannel"
+                                 IsChecked="{Binding ShowsCustom, Mode=TwoWay}"
+                                 Content="custom" />
                 </ui:Segmented>
 
                 <TextBlock Grid.Column="2" Classes="mono"
@@ -463,9 +467,17 @@
 
         <!-- The list is from a cache and the network could not be reached. It describes
              the state of what is on screen, so it is an alert and not a toast. -->
-        <ui:Alert Grid.Row="2" Form="Strip" Tier="Warn"
-                  Title="{Binding StaleNote}"
-                  IsOpen="{Binding IsStale}" />
+        <StackPanel Grid.Row="2">
+            <ui:Alert Form="Strip" Tier="Warn"
+                      Title="{Binding StaleNote}"
+                      IsOpen="{Binding IsStale}" />
+
+            <!-- An engine repository that could not be read, or releases in it whose tag
+                 is not a build, so whoever publishes it can see why one is missing. -->
+            <ui:Alert Form="Strip" Tier="Warn"
+                      Title="{Binding RepositoryNote}"
+                      IsOpen="{Binding HasRepositoryNote}" />
+        </StackPanel>
 
         <Border Grid.Row="3" Classes="page" BorderThickness="0">
             <Panel>
@@ -539,6 +551,12 @@
                                                         <MenuItem Header="Release notes"
                                                                   Command="{Binding ReleaseNotesCommand}"
                                                                   IsVisible="{Binding HasNotes}" />
+                                                        <MenuItem Header="Add export templates"
+                                                                  Command="{Binding AddTemplatesCommand}"
+                                                                  IsVisible="{Binding CanAddTemplates}" />
+                                                        <MenuItem Header="Remove export templates"
+                                                                  Command="{Binding RemoveTemplatesCommand}"
+                                                                  IsVisible="{Binding HasTemplates}" />
 
                                                         <!-- Last and set apart, and it says which of the two it will do before it is pressed. -->
                                                         <Separator />
@@ -597,6 +615,8 @@
                                                               Tier="{Binding ChannelTier}"
                                                               HasDot="True"
                                                               IsVisible="{Binding HasChannel}" />
+                                                    <ui:Badge Content="PRERELEASE" Tier="Modified"
+                                                              IsVisible="{Binding IsPrerelease}" />
                                                 </StackPanel>
 
                                                 <StackPanel Classes="cardSub">

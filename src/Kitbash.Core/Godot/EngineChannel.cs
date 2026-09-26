@@ -11,4 +11,10 @@ public enum EngineChannel
     Beta,
     Rc,
     Stable,
+
+    /// <summary>
+    /// Every build an engine repository publishes. Never compared with the others, since
+    /// the repository is matched before any rank is.
+    /// </summary>
+    Custom,
 }

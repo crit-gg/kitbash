@@ -70,8 +70,10 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
         _release = release;
         _page = page;
 
-        Title = EngineRowViewModel.NameOf(release.Tag);
-        Channel = EngineRowViewModel.ChannelOf(release.Tag);
+        Title = EngineRowViewModel.DisplayName(release.IdFor(mono: false));
+        Channel = release.Repository is { } address
+            ? page.RepositoryLabel(address).ToUpperInvariant()
+            : EngineRowViewModel.ChannelOf(release.Tag);
         Released = $"released {release.Released.ToString("d", CultureInfo.CurrentCulture)}";
 
         // Everything the card will show is worked out here, so opening it reads nothing.
@@ -80,6 +82,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
             : [.. manifest.Builds.Where(build => build.Platform == page.HostPlatform)];
 
         Failure = manifest is null ? "This release could not be read." : string.Empty;
+        IsPrerelease = release.IsPrerelease;
         IsUnavailable = manifest is not null && _forHost.Count == 0;
         UnavailableNote = $"No {page.HostPlatformText} builds in this release";
 
@@ -95,6 +98,11 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     }
 
     public EngineTag Tag => _release.Tag;
+
+    public EngineRelease Release => _release;
+
+    /// <summary>Marked prerelease where it was published, so a newest pin never moves to it.</summary>
+    public bool IsPrerelease { get; }
 
     public string Title { get; }
 
@@ -206,7 +214,7 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
     {
         ArgumentNullException.ThrowIfNull(installed);
 
-        var here = installed.Count(engine => engine.Tag == Tag);
+        var here = installed.Count(Holds);
 
         // A row that already exists is told, rather than being made again to find out.
         foreach (var row in _rows.Values)
@@ -223,6 +231,15 @@ public sealed partial class ReleaseCardViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(HasInstalled));
     }
+
+    /// <summary>
+    /// Whether an install came from this release. Builds of one version from a repository
+    /// share a tag, so the build tells them apart.
+    /// </summary>
+    private bool Holds(InstalledEngine engine) =>
+        engine.Tag == Tag
+        && engine.Repository == _release.Repository
+        && engine.Id.Build == _release.Build;
 
     partial void OnInstalledNoteChanged(string value) => OnPropertyChanged(nameof(HasInstalled));
 

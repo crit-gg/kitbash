@@ -218,9 +218,10 @@ public sealed partial class NewWorkspaceViewModel : ObservableObject
     {
         // A version installed both ways is two rows, so picking the .NET one pins the .NET
         // one. A release nothing published for is offered as a plain build alone, since a
-        // manifest per release is a request per release and this dialog reads none.
+        // manifest per release is a request per release and this dialog reads none. A
+        // repository build is left out, since the pin this writes cannot name a repository.
         var here = installed
-            .Where(engine => !engine.IsMissing)
+            .Where(engine => !engine.IsMissing && engine.Id.IsOfficial)
             .Select(engine => engine.Id)
             .Distinct()
             .OrderByDescending(id => id.Tag)

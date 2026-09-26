@@ -6,13 +6,21 @@ namespace Kitbash.Core.Godot;
 internal sealed class UnixEngineFiles : IEngineFiles
 {
     private readonly IFileSystem _files;
+    private readonly IUserDirectories _directories;
 
-    public UnixEngineFiles(IFileSystem files)
+    public UnixEngineFiles(IFileSystem files, IUserDirectories directories)
     {
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(directories);
 
         _files = files;
+        _directories = directories;
     }
+
+    // Godot's data directory is XDG_DATA_HOME/godot, with the same rule for a relative
+    // value that ours follows, which is where state already lives here.
+    public string ExportTemplatesDirectory =>
+        Path.Combine(_directories.StateFor("godot"), "export_templates");
 
     public EnginePlatform Platform => EnginePlatform.Linux;
 

@@ -58,12 +58,15 @@ public sealed partial class EngineViewModel : ViewModelBase
         Runtime = (resolution.Engine?.IsMono ?? requirement.NeedsDotnet) ? ".NET" : string.Empty;
         Project = requirement.Project;
 
+        // A repository build has no channel worth a pill, so the pill names where it came from.
+        var from = requirement.RepositoryName?.ToUpperInvariant() ?? string.Empty;
+
         switch (resolution.Match)
         {
             case EngineMatch.Matched when resolution.Engine is { } engine:
                 State = EngineState.Matched;
                 Version = $"Godot {EngineRowViewModel.VersionOf(engine.Tag)}";
-                Channel = ChannelOf(engine.Tag.Channel);
+                Channel = engine.Tag.Channel == EngineChannel.Custom ? from : ChannelOf(engine.Tag.Channel);
                 ChannelTier = TierOf(engine.Tag.Channel);
                 Note = paths.Shorten(engine.Directory, NoteLength);
                 Action = "Open Project";
@@ -73,14 +76,22 @@ public sealed partial class EngineViewModel : ViewModelBase
             case EngineMatch.Mismatch when resolution.Engine is { } engine:
                 State = EngineState.Mismatch;
                 Version = $"Godot {EngineRowViewModel.VersionOf(engine.Tag)}";
-                Channel = ChannelOf(engine.Tag.Channel);
+                Channel = engine.Tag.Channel == EngineChannel.Custom ? from : ChannelOf(engine.Tag.Channel);
                 ChannelTier = TierOf(engine.Tag.Channel);
                 StateLabel = "mismatch";
                 Note = MismatchNote(requirement, engine, resolution.IsDefault, asked);
 
                 // The button installs what was asked for. Opening what is here is the
-                // workaround, so it lives in the menu.
-                Action = requirement.Version is { } fix ? $"Install {NumberOf(fix)}" : "Install";
+                // workaround, so it lives in the menu. Nothing can be installed from a
+                // repository no list names.
+                Action = requirement.IsRepositoryUnknown
+                    ? string.Empty
+                    : requirement.Version is { } fix ? $"Install {NumberOf(fix)}" : "Install";
+
+                if (requirement.IsRepositoryUnknown)
+                {
+                    Note = $"No engine repository is named {requirement.RepositoryName}.";
+                }
 
                 break;
 
@@ -90,10 +101,18 @@ public sealed partial class EngineViewModel : ViewModelBase
 
                 // What was asked for is all there is to show, so it is shown the way an
                 // engine is: the number, then what it says about itself in pills.
-                if (requirement.Version is { } wanted)
+                if (requirement.IsRepositoryUnknown)
+                {
+                    Version = requirement.Version is { } named ? $"Godot {NumberOf(named)}" : "Godot";
+                    Channel = from;
+                    Note = $"No engine repository is named {requirement.RepositoryName}.";
+                }
+                else if (requirement.Version is { } wanted)
                 {
                     Version = $"Godot {NumberOf(wanted)}";
-                    Channel = wanted.Channel is { } named ? ChannelOf(named) : string.Empty;
+                    Channel = wanted.Channel == EngineChannel.Custom
+                        ? from
+                        : wanted.Channel is { } named ? ChannelOf(named) : string.Empty;
                     ChannelTier = wanted.Channel is { } tiered ? TierOf(tiered) : BadgeTier.Neutral;
                     Note = $"No install matches {wanted}.";
                     Action = $"Install {NumberOf(wanted)}";
@@ -206,14 +225,14 @@ public sealed partial class EngineViewModel : ViewModelBase
             && Resolution is { Engine: { } engine }
             && Project is { } project)
         {
-            return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor);
+            return _launcher.OpenInGodot(engine, project, GodotLaunchMode.Editor, Resolution.Requirement);
         }
 
         // Installs what was asked for in one press, since the workspace has already
         // named the version it wants.
-        if (Resolution?.Requirement is { Version: { } wanted } requirement)
+        if (Resolution?.Requirement is { Version: not null } requirement)
         {
-            return _launcher.InstallEngineAsync(wanted, requirement.NeedsDotnet);
+            return _launcher.InstallEngineAsync(requirement);
         }
 
         ShowEngines();
@@ -249,7 +268,7 @@ public sealed partial class EngineViewModel : ViewModelBase
 
     private Task Launch(GodotLaunchMode mode) =>
         Resolution is { Engine: { } engine } && Project is { } project && _launcher is not null
-            ? _launcher.OpenInGodot(engine, project, mode)
+            ? _launcher.OpenInGodot(engine, project, mode, Resolution.Requirement)
             : Task.CompletedTask;
 
     [RelayCommand]

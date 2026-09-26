@@ -142,7 +142,14 @@ public sealed class NewWorkspaceEngineTests
             string directory,
             EngineBuild build,
             string checksum,
+            EngineChecksumKind checksumKind,
+            string slot,
             CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public InstalledEngine? ReadAt(string directory) => null;
+
+        public InstalledEngine RecordTemplates(InstalledEngine engine, string folder) =>
+            throw new NotSupportedException();
     }
 
     private sealed class FakeCatalogue(IReadOnlyList<EngineRelease> releases) : IEngineCatalogue

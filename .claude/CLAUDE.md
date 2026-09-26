@@ -241,6 +241,9 @@ the problem:
 - `.claude/plans/tool-scripts.md` a tool that is a script: how it reports progress, what a
   form asks for before it runs, and how the answers become its arguments. Read before
   touching the manifest reader, either tool dialog or anything about running one.
+- `.claude/plans/engine-repositories.md` Godot builds from somewhere other than the Godot
+  project, such as a team's fork on GitHub releases, and what could not be tested here. Read
+  before changing engine identity, pins or the engine catalogue.
 - `.claude/plans/external-tools.md` what the Open in button was ported from and what could
   not be tested here. Read before touching `Platform/Openers` or either opener finder.
 - `.claude/plans/deep-links.md` the `kitbash://` links, what each verb does, how each desktop
@@ -607,6 +610,12 @@ read and checking costs the unauthenticated allowance. `ITool`, `IToolActivation
 `IToolRegistry` and the mock catalogue are gone, and Core keeps only
 `SettingsScope.ForTool`. **No tool is published anywhere**, so nothing was measured
 against a real Kitbash release. Read the plan before touching any of it.
+
+**A workspace can take its engine from an engine repository**, such as a team's fork on
+GitHub releases. `godot.repository` names one from `godot.repositories`, a pin without a
+build owns a slot that replaces itself when a newer build lands, and export templates install
+when asked. Measured against the live fork on Linux only. Read
+`.claude/plans/engine-repositories.md` and the `kitbash-godot` skill before touching it.
 
 **A tool can be a script, and the launcher waits for one.** `"kind": "script"` in the
 manifest means the card says Run rather than Launch, the launcher runs the program in its

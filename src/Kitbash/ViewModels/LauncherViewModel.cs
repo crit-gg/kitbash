@@ -41,6 +41,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IEngineStore _engines;
     private readonly IEngineCatalogue _catalogue;
     private readonly IEngineResolver _resolver;
+    private readonly IEngineUpdater _engineUpdater;
+
+    /// <summary>
+    /// Builds already reported as waiting for Godot to close, so a check that finds the
+    /// same one again says nothing.
+    /// </summary>
+    private readonly HashSet<string> _waiting = new(StringComparer.Ordinal);
     private readonly IGodotSettings _godot;
     private readonly IGodotLauncher _godotLauncher;
     private readonly IGodotProjectReader _projects;
@@ -131,6 +138,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IEngineStore engineStore,
         IEngineCatalogue engineCatalogue,
         IEngineResolver resolver,
+        IEngineUpdater engineUpdater,
         IGodotSettings godot,
         IGodotLauncher godotLauncher,
         IGodotProjectReader projects,
@@ -165,6 +173,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(engineStore);
         ArgumentNullException.ThrowIfNull(engineCatalogue);
         ArgumentNullException.ThrowIfNull(resolver);
+        ArgumentNullException.ThrowIfNull(engineUpdater);
         ArgumentNullException.ThrowIfNull(godot);
         ArgumentNullException.ThrowIfNull(godotLauncher);
         ArgumentNullException.ThrowIfNull(projects);
@@ -188,6 +197,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _engines = engineStore;
         _catalogue = engineCatalogue;
         _resolver = resolver;
+        _engineUpdater = engineUpdater;
         _godot = godot;
         _godotLauncher = godotLauncher;
         _projects = projects;
@@ -235,6 +245,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // Scans the tools directory, which is a disk read, so it happens off this thread
         // and the page fills in a moment after it opens.
         _ = RefreshToolsAsync();
+
+        // Every workspace's newest pin, once per start, since a build may have been
+        // published while the launcher was closed.
+        _ = CheckEnginesAsync();
     }
 
     public ObservableCollection<WorkspaceViewModel> Workspaces { get; } = [];
@@ -840,7 +854,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         if (_resolver.Resolve(requirement, installed, theDefault).Engine is { } engine)
         {
-            await OpenInGodot(engine, project, GodotLaunchMode.Editor).ConfigureAwait(true);
+            await OpenInGodot(engine, project, GodotLaunchMode.Editor, requirement).ConfigureAwait(true);
         }
     }
 
@@ -876,9 +890,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     {
         ArgumentNullException.ThrowIfNull(workspace);
 
-        return workspace.CanSwitch
-            ? LoadAsync(() => _workspaces.SetCurrent(workspace.Workspace.Root))
-            : Task.CompletedTask;
+        return workspace.CanSwitch ? SwitchAsync(workspace) : Task.CompletedTask;
+    }
+
+    private async Task SwitchAsync(WorkspaceViewModel workspace)
+    {
+        await LoadAsync(() => _workspaces.SetCurrent(workspace.Workspace.Root)).ConfigureAwait(true);
+
+        // A workspace just opened may follow a build that moved since it was last open.
+        _ = CheckEngineAsync(refresh: false);
     }
 
     /// <summary>
@@ -960,15 +980,170 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
         Git.IsUpdating = true;
 
+        GitUpdateResult result;
+
         try
         {
-            await _updater.UpdateAsync(current.Root);
+            result = await _updater.UpdateAsync(current.Root);
             await _git.RefreshAsync();
         }
         finally
         {
             Git.IsUpdating = false;
         }
+
+        // A pull may bring a new pin, and a person who just pulled wants the newest build,
+        // so the repository is asked now and its cached list is skipped.
+        if (result.Outcome == GitUpdateOutcome.Pulled)
+        {
+            _ = CheckEngineAsync(refresh: true);
+        }
+    }
+
+    /// <summary>
+    /// Brings the open workspace's newest pin up to date, when it has one. Quiet about a
+    /// repository that cannot be reached, since this runs without anybody asking.
+    /// </summary>
+    private async Task CheckEngineAsync(bool refresh)
+    {
+        if (_workspaces.Current is not { IsMissing: false } current)
+        {
+            return;
+        }
+
+        var root = current.Root;
+
+        try
+        {
+            var requirement = await Task.Run(() => _requirements.Read(root)).ConfigureAwait(true);
+
+            await CheckAsync(requirement, refresh).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or SettingsFileUnreadableException)
+        {
+            // Nothing to report. The strip already says what it can read.
+        }
+    }
+
+    /// <summary>Every registered workspace's newest pin, one slot at a time.</summary>
+    private async Task CheckEnginesAsync()
+    {
+        try
+        {
+            var requirements = await Task.Run(() => _workspaces.All
+                .Where(workspace => workspace.Exists)
+                .Select(workspace => _requirements.Read(workspace.Root))
+                .Where(requirement => requirement.Slot is not null)
+                .DistinctBy(requirement => (requirement.Repository!.Address, requirement.Slot))
+                .ToList()).ConfigureAwait(true);
+
+            foreach (var requirement in requirements)
+            {
+                await CheckAsync(requirement, refresh: false).ConfigureAwait(true);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or SettingsFileUnreadableException)
+        {
+        }
+    }
+
+    private async Task CheckAsync(EngineRequirement requirement, bool refresh)
+    {
+        if (requirement.Slot is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var update = await Task.Run(() => _engineUpdater.UpdateAsync(
+                requirement, refresh, progress: null, CancellationToken.None)).ConfigureAwait(true);
+
+            await ReportAsync(requirement, update).ConfigureAwait(true);
+        }
+        catch (EngineCatalogueException)
+        {
+            // Offline or over the hourly allowance. The next check tries again.
+        }
+        catch (Exception exception) when (exception is EngineInstallException or IOException
+            or UnauthorizedAccessException)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = $"Could not update Godot {NumberOf(requirement)}",
+                Body = exception.Message,
+            });
+        }
+    }
+
+    /// <summary>Says what a check did, and reads the installs again when it changed one.</summary>
+    private async Task ReportAsync(EngineRequirement requirement, EngineUpdate update)
+    {
+        var name = NumberOf(requirement);
+        var from = requirement.RepositoryName;
+
+        if (update.Outcome == EngineUpdateOutcome.Waiting)
+        {
+            if (_waiting.Add($"{requirement.Repository?.Address}/{requirement.Slot}"))
+            {
+                _toasts.Post(new ToastRequest
+                {
+                    Tier = ToastTier.Info,
+                    Title = $"A newer Godot {name} is ready",
+                    Body = "It replaces the one in use once Godot is closed.",
+                });
+            }
+
+            return;
+        }
+
+        if (update.Outcome != EngineUpdateOutcome.Updated)
+        {
+            return;
+        }
+
+        _waiting.Remove($"{requirement.Repository?.Address}/{requirement.Slot}");
+
+        _toasts.Post(new ToastRequest
+        {
+            Tier = ToastTier.Ok,
+            Title = $"Godot {name} updated",
+            Body = $"Now on build {update.Engine?.Id.Build} from {from}.",
+        });
+
+        if (update.TemplatesFailure is { } failure)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Error,
+                Title = "Export templates were not updated",
+                Body = failure,
+            });
+        }
+
+        // The page reads again and the strip follows it through InstallsChanged.
+        await Engines.LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>The numbers a pin names, such as <c>4.7.2</c>, for a title.</summary>
+    private static string NumberOf(EngineRequirement requirement)
+    {
+        if (requirement.Version is not { } version)
+        {
+            return "engine";
+        }
+
+        var text = version.Major.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+        if (version.Minor is { } minor)
+        {
+            text += $".{minor}";
+        }
+
+        return version.Patch is { } patch ? $"{text}.{patch}" : text;
     }
 
     partial void OnPageChanged(int value)
@@ -1145,6 +1320,9 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
             var root = current.Root;
 
+            // The engines page lists this workspace's own repositories beside the global ones.
+            Engines.WorkspaceRoot = root;
+
             // Gathered here rather than when the menu opens, so opening it touches no disk.
             await OpenIn.RefreshAsync(root).ConfigureAwait(true);
 
@@ -1285,15 +1463,56 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// Opens a project in an engine, building its C# and importing its assets first when
     /// either is needed.
     /// </summary>
-    public async Task OpenInGodot(InstalledEngine engine, GodotProject project, GodotLaunchMode mode)
+    /// <param name="requirement">
+    /// What the workspace asked for. A newest pin is brought up to date before anything
+    /// else runs, so the project opens in the build it will keep.
+    /// </param>
+    public async Task OpenInGodot(
+        InstalledEngine engine,
+        GodotProject project,
+        GodotLaunchMode mode,
+        EngineRequirement? requirement = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(project);
 
+        EngineUpdate? update = null;
+        Exception? updateFailure = null;
+
         Task Work(IProgress<GodotLaunchStep> progress, CancellationToken cancellation) =>
             Task.Run(
-                () => _godotLauncher.OpenAsync(
-                    engine, project, mode, new ShortenedDetail(progress, _paths), cancellation),
+                async () =>
+                {
+                    var opening = engine;
+
+                    if (requirement?.Slot is not null && engine.IsSlot)
+                    {
+                        progress.Report(new GodotLaunchStep(GodotLaunchStage.Updating));
+
+                        try
+                        {
+                            update = await _engineUpdater.UpdateAsync(
+                                requirement,
+                                refresh: false,
+                                new Progress<EngineInstallProgress>(step => progress.Report(new GodotLaunchStep(
+                                    GodotLaunchStage.Updating,
+                                    step.Stage == EngineInstallStage.Downloading ? "Downloading a newer build" : string.Empty,
+                                    step.Fraction))),
+                                cancellation);
+
+                            opening = update.Engine ?? engine;
+                        }
+                        catch (Exception exception) when (exception is EngineCatalogueException
+                            or EngineInstallException or IOException or UnauthorizedAccessException)
+                        {
+                            // Opening the build that is here beats not opening at all.
+                            updateFailure = exception;
+                        }
+                    }
+
+                    await _godotLauncher.OpenAsync(
+                        opening, project, mode, new ShortenedDetail(progress, _paths), cancellation);
+                },
                 cancellation);
 
         var outcome = GodotLaunchOutcome.Finished;
@@ -1318,6 +1537,23 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
 
             return;
         }
+        finally
+        {
+            if (requirement is not null && update is not null)
+            {
+                await ReportAsync(requirement, update);
+            }
+
+            if (updateFailure is EngineInstallException or IOException or UnauthorizedAccessException)
+            {
+                _toasts.Post(new ToastRequest
+                {
+                    Tier = ToastTier.Error,
+                    Title = $"Could not update Godot {(requirement is null ? "engine" : NumberOf(requirement))}",
+                    Body = updateFailure.Message,
+                });
+            }
+        }
 
         // A rebuild that ended with Open in Editor pressed. It goes the ordinary way
         // rather than starting the editor here, so the build is confirmed to still be
@@ -1325,7 +1561,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         // it cannot go round again, and the close below is left to the second pass.
         if (outcome == GodotLaunchOutcome.OpenEditor)
         {
-            await OpenInGodot(engine, project, GodotLaunchMode.Editor);
+            await OpenInGodot(update?.Engine ?? engine, project, GodotLaunchMode.Editor, requirement);
 
             return;
         }
@@ -1426,6 +1662,26 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         Page = EnginesPage;
 
         return Engines.InstallForAsync(wanted, mono);
+    }
+
+    /// <summary>
+    /// Installs what a workspace asks for. A repository build goes to its slot or its own
+    /// folder, and an official one the way <see cref="InstallEngineAsync(EngineVersionPattern, bool)"/> does.
+    /// </summary>
+    public Task InstallEngineAsync(EngineRequirement requirement)
+    {
+        ArgumentNullException.ThrowIfNull(requirement);
+
+        if (requirement.RepositoryName is null)
+        {
+            return requirement.Version is { } wanted
+                ? InstallEngineAsync(wanted, requirement.NeedsDotnet)
+                : Task.CompletedTask;
+        }
+
+        Page = EnginesPage;
+
+        return Engines.InstallForAsync(requirement);
     }
 
     private void OnInstallsChanged(object? sender, EventArgs e) => _ = RefreshEngineAsync();

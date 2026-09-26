@@ -157,6 +157,7 @@ public partial class LaunchDialog : DialogWindow
 
         Stage.Text = step.Stage switch
         {
+            GodotLaunchStage.Updating => "Updating the engine",
             GodotLaunchStage.Cleaning => "Deleting the import cache",
             GodotLaunchStage.Building => "Building C#",
             GodotLaunchStage.Scanning => "Scanning assets",
