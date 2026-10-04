@@ -167,6 +167,8 @@ public sealed class NewWorkspaceEngineTests
 
         public EngineId? DefaultEngine => theDefault;
 
+        public bool DefaultOnPath => false;
+
         public GodotBuildTool BuildTool => GodotBuildTool.Auto;
 
         public void SetEngineDirectory(string value) => throw new NotSupportedException();

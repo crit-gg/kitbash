@@ -53,6 +53,8 @@ internal sealed class UnixEngineFiles : IEngineFiles
         return candidates.FirstOrDefault();
     }
 
+    public string CommandFor(string editor) => editor;
+
     /// <summary>A leading dot already hides it here, so there is nothing to set.</summary>
     public void Hide(string path)
     {

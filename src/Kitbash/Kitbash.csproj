@@ -38,6 +38,15 @@
     <AvaloniaResource Include="Assets/ExternalTools/**/*.png" />
   </ItemGroup>
 
+  <!-- What puts the default engine on PATH as godot.exe. A Windows program, so other
+       runtimes leave it out. The release pack signs it with the rest of the package. -->
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == '' or $(RuntimeIdentifier.StartsWith('win'))">
+    <None Include="../../vendor/scoop-better-shimexe/shim.exe"
+          Link="shims/shim.exe"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Kitbash.Core\Kitbash.Core.csproj" />
     <ProjectReference Include="..\Kitbash.Ui\Kitbash.Ui.csproj" />

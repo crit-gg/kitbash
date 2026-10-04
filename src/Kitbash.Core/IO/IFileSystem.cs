@@ -58,8 +58,20 @@ public interface IFileSystem
     /// </summary>
     void DeleteDirectory(string path);
 
-    /// <summary>Removes a file, doing nothing when it is already gone.</summary>
+    /// <summary>
+    /// Removes a file, doing nothing when it is already gone. A symbolic link is removed
+    /// itself, including one whose target has gone.
+    /// </summary>
     void DeleteFile(string path);
+
+    /// <summary>Makes a symbolic link at a path that must not exist yet.</summary>
+    void CreateSymbolicLink(string path, string target);
+
+    /// <summary>
+    /// Where a symbolic link points, as it was written, or null when the path is not a link.
+    /// Answers for a link whose target has gone too.
+    /// </summary>
+    string? ReadLinkTarget(string path);
 
     /// <summary>
     /// Opens a file to read. For content too large to hold as text, such as hashing an

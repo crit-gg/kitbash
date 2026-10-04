@@ -29,7 +29,8 @@ public sealed class LauncherSettingsSchema
         UpdateSettingsSchema updates,
         IWorkspaceRegistry registry,
         IPathShortener shortener,
-        IPathRules paths)
+        IPathRules paths,
+        EngineCommandReadout engineCommand)
     {
         ArgumentNullException.ThrowIfNull(window);
         ArgumentNullException.ThrowIfNull(tools);
@@ -45,6 +46,7 @@ public sealed class LauncherSettingsSchema
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(shortener);
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(engineCommand);
 
         // The registry is what the app remembers rather than what a person chose, so it
         // has no descriptor and arrives as rows the launcher supplies for itself.
@@ -92,7 +94,7 @@ public sealed class LauncherSettingsSchema
                 window.Page,
                 tools.Page,
                 customTools.Page,
-                godot.Page,
+                godot.PageWith(engineCommand.Row),
                 engineRepositories.Page,
                 afterLaunch.Page,
                 workspaces.Page,

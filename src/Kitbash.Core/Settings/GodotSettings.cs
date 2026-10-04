@@ -41,6 +41,8 @@ internal sealed class GodotSettings : IGodotSettings
     public void SetDefaultEngine(Kitbash.Core.Godot.EngineId? value) =>
         _settings.Set(SettingsScope.Global, _schema.DefaultEngine.Key, value?.ToString() ?? string.Empty);
 
+    public bool DefaultOnPath => _schema.OnPath.Read(_settings.Global);
+
     public Kitbash.Core.Godot.GodotBuildTool BuildTool =>
         _schema.BuildTool.Read(_settings.Global) switch
         {

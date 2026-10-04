@@ -254,10 +254,10 @@ a `dotnet run` copy takes over no scheme on the machine somebody is working on.
 **`StartupWMClass` is deliberately absent** from the entry. A wrong one is worse than none,
 and the value Avalonia actually sets has not been checked with `xprop WM_CLASS`.
 
-`AddPlatformIO`, `AddEngineFiles`, `CreateOpenerFinder`, `CreatePlatform` and
-`CreateSecretStore`, all in `KitbashCoreServices`, are the only places that test the running
-OS. All five say the same sentence when they do not recognise it, from one `Unsupported`
-constant, so they cannot drift apart.
+`AddPlatformIO`, `AddEngineFiles`, `CreateOpenerFinder`, `CreateCommandFolder`,
+`CreatePlatform` and `CreateSecretStore`, all in `KitbashCoreServices`, are the only places
+that test the running OS. All six say the same sentence when they do not recognise it, from
+one `Unsupported` constant, so they cannot drift apart.
 
 Targets are value objects. `WebAddress` accepts absolute http and https only, and
 `DirectoryLocation` requires a rooted path. Parsing is the only way to make either,
@@ -272,6 +272,64 @@ Linux assumes no particular distribution. `DesktopLauncherResolver` uses the fir
 launcher present on PATH, trying `xdg-open`, then `gio open`, then the KDE, XFCE,
 MATE, and GNOME openers, then `wslview`. When none are installed it says so and lists
 what it looked for. Add candidates there rather than in `LinuxPlatform`.
+
+## The default engine on PATH
+
+**`godot.engines.onPath` puts the default engine on PATH as `godot`, and it is off until a
+person turns it on.** `IEngineCommand` in `Kitbash.Core/Godot` decides what the command should
+run, and `ICommandFolder` in `Platform` is the per OS half: where the folder is, how a command
+is written, and whether a terminal opened now finds it. The engine binary keeps its own name
+throughout.
+
+| | Linux | macOS | Windows |
+|---|---|---|---|
+| Folder | `$XDG_BIN_HOME` when absolute, else `~/.local/bin` | the same | `%LOCALAPPDATA%\KitbashData\bin` |
+| Command | a symlink to the editor | a symlink to `Contents/MacOS/Godot` | the vendored shim as `godot.exe`, beside `godot.shim` |
+| Not on PATH | reported, nothing edited | `/etc/paths.d/kitbash` behind an administrator prompt, asked once | appended to the user `Path` in `HKCU\Environment` |
+| Turned off | the link goes | the link goes, `paths.d` stays | the shim and the `Path` entry go |
+
+**Why a link works on Unix and not on Windows.** Every place Godot looks for `GodotSharp` and
+`_sc_` takes the folder of its own executable path. Linux reads that from `/proc/self/exe` and
+macOS from `proc_pidpath`, and both follow a symlink, so the real install folder is found.
+Windows reads `GetModuleFileNameW`, which reports the link's own folder, so a .NET build started
+through any link or hard link cannot find its assemblies. Measured here on 4.7.1 .NET: through a
+symlink the editor loads GodotPlugins, and a copy away from `GodotSharp` stops at `.NET:
+Initializing module` and hangs. That is why Windows copies a shim instead.
+
+**The shim is `kiennq/scoop-better-shimexe` v3.2.2, committed unchanged** under
+`vendor/scoop-better-shimexe/` with both licences and its checksum. `Kitbash.csproj` ships it as
+`shims/shim.exe` for Windows and plain builds alone, and the release pack signs it with the rest
+of the package, which is the defence against Defender's habit of flagging small unsigned
+launchers. `godot.shim` holds one line, `path = <program>`. **Windows points at the
+`_console.exe`**, which `IEngineFiles.CommandFor` finds beside the editor, so output reaches the
+terminal. Rewriting the default changes only the `.shim` file, since a running `godot.exe`
+cannot be replaced.
+
+**An entry is Kitbash's only while it still points where Kitbash last pointed it.**
+`godot.command.program` in application state records that. A file or link somebody else put
+there, or one of ours a person pointed elsewhere, is a conflict and is never touched, the rule
+`X-Kitbash-Entry` already follows for the desktop entry.
+
+**Whether a terminal finds the folder is asked of the person's login shell**, as
+`$SHELL -l -i -c` printing PATH after a marker, with a five second limit. Interactive matters,
+since zsh reads `.zshrc` only then. A shell that will not answer falls back to the inherited
+PATH plus `/etc/paths` and `/etc/paths.d`. The same search names any other `godot` a terminal
+would reach first.
+
+**The Windows `Path` is edited through the registry, never `Environment.SetEnvironmentVariable`**,
+which writes `REG_SZ` and so breaks every `%VARIABLE%` entry. The value is read unexpanded, its
+kind is kept, and `WM_SETTINGCHANGE` is broadcast so Explorer passes the new PATH to the next
+terminal it starts. The uninstall hook takes the shim and the entry back, since the folder sits
+outside the one Velopack deletes.
+
+**It syncs at start, after every read of the engines page, and whenever the settings page
+loads.** The readout under the toggle is what syncs on load, so Save describes what it just did.
+That row sets `HiddenWhenEmpty`, so it is not drawn while the setting is off.
+
+**What could not be tested here:** the whole Windows half, meaning the registry edit, the
+broadcast, the shim itself and whether Defender lets it be, and the macOS half, meaning the
+osascript prompt and whether a symlinked .NET `.app` finds `GodotSharp` through `NSBundle`.
+Homebrew's godot casks link the same binary, which suggests the second works.
 
 ## Opening a workspace elsewhere
 

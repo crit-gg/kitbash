@@ -57,6 +57,14 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
+## scoop-better-shimexe
+
+MIT or Unlicense. <https://github.com/kiennq/scoop-better-shimexe>
+
+`vendor/scoop-better-shimexe/shim.exe` is its release binary, committed unchanged, and the
+Windows launcher ships it so the default engine can be run as `godot`. Both license texts
+are committed beside it, and that folder's README names the release and its checksum.
+
 ## Brand marks
 
 `src/Kitbash/Assets/ExternalTools/` holds one PNG per external tool the Open in menu

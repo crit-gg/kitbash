@@ -118,6 +118,13 @@ so it has its own async refresh and the strip says it is reading until that land
 runs one at a time and **waits its turn rather than giving up**, since dropping the
 second would leave the strip describing the workspace that was open a moment ago.
 
+### The default on PATH
+
+**The default engine can be run from a terminal as `godot`**, when `godot.engines.onPath` is on.
+Only an official build can be the default, so a slot never is, and the command follows the
+default through the engines page's own reads. The `kitbash-platform` skill has how each OS
+writes it and why Windows needs a shim.
+
 ### Engine repositories
 
 **A build can come from somewhere other than the Godot project.** `godot.repositories` names

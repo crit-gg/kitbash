@@ -64,6 +64,10 @@ internal sealed class MacEngineFiles : IEngineFiles
             .FirstOrDefault();
     }
 
+    // The program inside the bundle. Godot takes its own path from proc_pidpath, which
+    // follows a link, so a link to it still finds the bundle.
+    public string CommandFor(string editor) => editor;
+
     /// <summary>A leading dot already hides it here, so there is nothing to set.</summary>
     public void Hide(string path)
     {

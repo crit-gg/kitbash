@@ -57,6 +57,24 @@ internal sealed class WindowsEngineFiles : IEngineFiles
         return candidates.FirstOrDefault();
     }
 
+    // The editor detaches from a console, so a terminal would see none of its output. The
+    // console program beside it keeps the console and starts the editor itself.
+    public string CommandFor(string editor)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(editor);
+
+        var directory = Path.GetDirectoryName(editor);
+
+        if (directory is null)
+        {
+            return editor;
+        }
+
+        var console = Path.Combine(directory, Path.GetFileNameWithoutExtension(editor) + ConsoleSuffix);
+
+        return _files.FileExists(console) ? console : editor;
+    }
+
     [SupportedOSPlatform("windows")]
     public void Hide(string path)
     {

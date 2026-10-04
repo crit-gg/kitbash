@@ -34,6 +34,14 @@ public sealed class GodotSettingsSchema
             ],
         };
 
+        OnPath = new SettingDescriptor<bool>
+        {
+            Key = "godot.engines.onPath",
+            Name = "Default engine on PATH",
+            Description = "Lets a terminal run the default engine as godot.",
+            Default = false,
+        };
+
         BuildTool = new SettingDescriptor<string>
         {
             Key = "godot.build",
@@ -53,17 +61,7 @@ public sealed class GodotSettingsSchema
             ],
         };
 
-        Page = new SettingsPage
-        {
-            Id = "godotEngines",
-            Title = "Godot engines",
-            Home = SettingsHome.Application,
-            Sections =
-            [
-                new SettingsSection("Installs", [EngineDirectory, DefaultEngine]),
-                new SettingsSection("Opening a project", [BuildTool]),
-            ],
-        };
+        Page = PageOf([EngineDirectory, DefaultEngine, OnPath]);
     }
 
     /// <summary>The value that means work it out from what is installed.</summary>
@@ -79,10 +77,36 @@ public sealed class GodotSettingsSchema
     public SettingDescriptor<string> DefaultEngine { get; }
 
     /// <summary>
+    /// Whether the default engine can be run as godot from a terminal. Off unless a person
+    /// asks, since it changes their PATH.
+    /// </summary>
+    public SettingDescriptor<bool> OnPath { get; }
+
+    /// <summary>
     /// Which program builds C# before a project opens. A closed set, so a value outside
     /// it is refused and the layer below decides.
     /// </summary>
     public SettingDescriptor<string> BuildTool { get; }
 
     public SettingsPage Page { get; }
+
+    /// <summary>The same page with a row of the app's own under <see cref="OnPath"/>.</summary>
+    public SettingsPage PageWith(ISettingsRow belowOnPath)
+    {
+        ArgumentNullException.ThrowIfNull(belowOnPath);
+
+        return PageOf([EngineDirectory, DefaultEngine, OnPath, belowOnPath]);
+    }
+
+    private SettingsPage PageOf(IReadOnlyList<ISettingsRow> installs) => new()
+    {
+        Id = "godotEngines",
+        Title = "Godot engines",
+        Home = SettingsHome.Application,
+        Sections =
+        [
+            new SettingsSection("Installs", installs),
+            new SettingsSection("Opening a project", [BuildTool]),
+        ],
+    };
 }

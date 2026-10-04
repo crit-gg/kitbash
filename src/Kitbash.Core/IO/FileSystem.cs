@@ -128,9 +128,23 @@ public sealed class FileSystem : IFileSystem
 
     public void DeleteFile(string path)
     {
-        if (File.Exists(path))
+        if (File.Exists(path) || ReadLinkTarget(path) is not null)
         {
             File.Delete(path);
+        }
+    }
+
+    public void CreateSymbolicLink(string path, string target) => File.CreateSymbolicLink(path, target);
+
+    public string? ReadLinkTarget(string path)
+    {
+        try
+        {
+            return new FileInfo(path).LinkTarget;
+        }
+        catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+        {
+            return null;
         }
     }
 

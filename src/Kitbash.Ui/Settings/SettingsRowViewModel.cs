@@ -57,7 +57,10 @@ public abstract class SettingsRowViewModel : ObservableObject
 /// </summary>
 public sealed partial class SettingsReadoutRowViewModel : SettingsRowViewModel
 {
+    private readonly bool _hiddenWhenEmpty;
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsShown))]
     private IReadOnlyList<SettingsListEntry> _entries = [];
 
     public SettingsReadoutRowViewModel(SettingsReadoutRow row)
@@ -66,7 +69,11 @@ public sealed partial class SettingsReadoutRowViewModel : SettingsRowViewModel
         ArgumentNullException.ThrowIfNull(row);
 
         IsList = row.Style == SettingsReadoutStyle.List;
+        _hiddenWhenEmpty = row.HiddenWhenEmpty;
     }
+
+    /// <summary>False only for a row that asked to go while it reads nothing.</summary>
+    public bool IsShown => !_hiddenWhenEmpty || Entries.Count > 0;
 
     /// <summary>
     /// Which of the two presentations the row asked for. Fixed when the row is built,

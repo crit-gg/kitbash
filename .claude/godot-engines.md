@@ -530,8 +530,8 @@ configuration, so it belongs under the data directory.
 
 ### Symlinks, shortcuts and PATH
 
-Only relevant if we ever want an engine reachable from outside Kitbash. Reading it is
-worthwhile anyway, because it is a catalogue of what each platform charges.
+Read when the default engine was put on PATH, which the `kitbash-platform` skill covers. It
+is a catalogue of what each platform charges.
 
 **Windows symlinks need a privilege.** GodotEnv creates every symlink by running
 `cmd.exe /c mklink` elevated, and deletes them elevated too. Godot Launcher instead
@@ -776,7 +776,9 @@ out to `unzip` would add a dependency our own rules forbid assuming.
 and it gives the export template folder name for free.
 
 **Leave the person's shell, PATH and desktop alone unless asked.** Kitbash launches the
-engine itself, so it needs a path and nothing more. Everything GodotEnv does with
+engine itself, so it needs a path and nothing more. Putting the default on PATH was later
+asked for, and it is a setting that is off until turned on. The `kitbash-platform` skill has
+it, and it still edits no shell file. Everything GodotEnv does with
 `.bashrc`, the `GODOT` variable and the Start Menu is for a tool that has to be reachable
 from a terminal. Offering a desktop entry later is fine. Editing three shell files at
 install time is not.

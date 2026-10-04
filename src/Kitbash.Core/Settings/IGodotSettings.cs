@@ -28,6 +28,9 @@ public interface IGodotSettings
     /// <summary>Writes the default. Null clears it, which is what uninstalling it does.</summary>
     void SetDefaultEngine(Kitbash.Core.Godot.EngineId? value);
 
+    /// <summary>Whether the default engine is put on PATH as godot.</summary>
+    bool DefaultOnPath { get; }
+
     /// <summary>
     /// What builds a project's C# before the editor opens.
     /// <see cref="Kitbash.Core.Godot.GodotBuildTool.Auto"/> unless a person said.

@@ -352,6 +352,10 @@ as a value.
 | `Value`, the default | plain mono text where an editor would be | one fact, such as `Current version` |
 | `List` | a well of lines, each with a mark | a set, such as the known workspaces |
 
+**`HiddenWhenEmpty` leaves a readout out while it reads nothing**, for a row that only has
+something to say some of the time, such as the godot command under a toggle that is off. It is
+opt in, so an empty list elsewhere still shows as empty.
+
 **A description is optional here and required on a setting.** A fact whose name says the
 whole of it needs no sentence under it, and the window leaves the line out rather than
 drawing it empty, since an empty one still takes its height. `Current version` carries
@@ -464,7 +468,7 @@ other**, so none of those can be shared through a workspace's team config by acc
 |---|---|
 | `WindowSettingsSchema` | `window.nativeChrome` |
 | `ExternalToolsSettingsSchema` | `tools.git.path`, `tools.dotnet.path` |
-| `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.build` |
+| `GodotSettingsSchema` | `godot.engines.directory`, `godot.engines.default`, `godot.engines.onPath`, `godot.build`. The launcher adds a readout under `onPath` through `PageWith` |
 | `WorkspacesSettingsSchema` | `workspaces.directory` |
 | `WorkspaceGodotSettingsSchema` | `godot.engine` and `godot.repository`, the only ones in the `Workspace` home |
 | `UpdateSettingsSchema` | `updates.feed`, the launcher's, and **on no page** |

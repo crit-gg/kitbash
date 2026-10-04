@@ -58,20 +58,43 @@ internal sealed class Program
     /// <summary>
     /// Takes the url scheme back before the uninstaller deletes the program it names.
     /// Builds its own container, since this runs inside Velopack and the app is not up.
+    /// Also takes godot off PATH, since the shim it copied leaves with nothing to update it.
     /// </summary>
     private static void Forget(UpdateLog log)
     {
+        ServiceProvider services;
+
         try
         {
-            using var services = new ServiceCollection().AddKitbashPlatform().BuildServiceProvider();
-
-            services.GetRequiredService<IDesktopIntegration>().Remove();
+            services = new ServiceCollection().AddKitbashPlatform().BuildServiceProvider();
         }
         catch (Exception exception)
         {
-            // An uninstall carries on either way. What is left behind names a program that
-            // has gone, which the desktop reports for itself.
-            log.Say("the url scheme could not be taken back", exception);
+            log.Say("the uninstall hook could not start", exception);
+            return;
+        }
+
+        using (services)
+        {
+            try
+            {
+                services.GetRequiredService<IDesktopIntegration>().Remove();
+            }
+            catch (Exception exception)
+            {
+                // An uninstall carries on either way. What is left behind names a program that
+                // has gone, which the desktop reports for itself.
+                log.Say("the url scheme could not be taken back", exception);
+            }
+
+            try
+            {
+                services.GetRequiredService<ICommandFolder>().Forget("godot");
+            }
+            catch (Exception exception)
+            {
+                log.Say("godot could not be taken off PATH", exception);
+            }
         }
     }
 

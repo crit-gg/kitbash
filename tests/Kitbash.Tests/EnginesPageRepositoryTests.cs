@@ -317,6 +317,8 @@ public sealed class EnginesPageRepositoryTests
 
         public EngineId? DefaultEngine => null;
 
+        public bool DefaultOnPath => false;
+
         public GodotBuildTool BuildTool => GodotBuildTool.Auto;
 
         public void SetEngineDirectory(string value) => throw new NotSupportedException();
@@ -359,6 +361,8 @@ public sealed class EnginesPageRepositoryTests
         public string ExportTemplatesDirectory => "/templates";
 
         public string? FindEditor(string directory) => null;
+
+        public string CommandFor(string editor) => editor;
 
         public void Hide(string path)
         {

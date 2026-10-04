@@ -371,7 +371,7 @@
              other and the row shows the one its schema asked for, the same way a setting
              row holds every editor and shows one. -->
         <DataTemplate x:Key="ReadoutRow" DataType="s:SettingsReadoutRowViewModel">
-            <Border Classes="settingRow">
+            <Border Classes="settingRow" IsVisible="{Binding IsShown}">
                 <!-- The editor takes two thirds and the name and its note take one, and
                      both columns are shares, so the split holds at any width. A row asking
                      to sit below spans both columns and takes the second line instead. -->

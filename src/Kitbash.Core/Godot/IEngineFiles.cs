@@ -21,6 +21,11 @@ public interface IEngineFiles
     string? FindEditor(string directory);
 
     /// <summary>
+    /// The program a terminal should run for an editor, which can be a sibling of it.
+    /// </summary>
+    string CommandFor(string editor);
+
+    /// <summary>
     /// Hides a file from a person browsing the folder.
     /// </summary>
     void Hide(string path);

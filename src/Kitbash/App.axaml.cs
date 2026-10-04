@@ -559,6 +559,13 @@ public partial class App : Application
         // not waited on.
         var integration = services.GetRequiredService<IDesktopIntegration>();
         _ = Task.Run(integration.Install);
+
+        // Keeps godot on PATH following the default. The engines page reads again after every
+        // change it makes, and a slot update ends in that read too, so one event covers all.
+        var command = services.GetRequiredService<IEngineCommand>();
+        _ = Task.Run(() => command.SyncAsync(CancellationToken.None));
+        services.GetRequiredService<EnginesViewModel>().InstallsChanged +=
+            (_, _) => _ = Task.Run(() => command.SyncAsync(CancellationToken.None));
     }
 
     // The composition root. Everything the launcher needs is registered here and
@@ -586,6 +593,7 @@ public partial class App : Application
             .AddSingleton<IStartupSettings, StartupSettings>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
+            .AddSingleton<EngineCommandReadout>()
             .AddSingleton<LauncherSettingsSchema>()
             .AddSingleton(provider => provider.GetRequiredService<LauncherSettingsSchema>().Schema)
             .AddSingleton<IApplicationShutdown, AvaloniaApplicationShutdown>()

@@ -42,6 +42,12 @@ public sealed class SettingsReadoutRow : ISettingsRow
     /// <summary>Value unless it is a set of things. See <see cref="SettingsReadoutStyle"/>.</summary>
     public SettingsReadoutStyle Style { get; init; } = SettingsReadoutStyle.Value;
 
+    /// <summary>
+    /// Leaves the whole row out while it reads nothing, for a row that only has something to
+    /// say some of the time. Off by default, so an empty list still shows as empty.
+    /// </summary>
+    public bool HiddenWhenEmpty { get; init; }
+
     /// <summary>Beside the name by default, the way every other row is drawn.</summary>
     public SettingsRowLayout Layout { get; init; } = SettingsRowLayout.Beside;
 

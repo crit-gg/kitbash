@@ -22,7 +22,7 @@ namespace Kitbash.Core;
 /// </summary>
 public static class KitbashCoreServices
 {
-    /// <summary>Said by every factory here, so the five cannot drift apart.</summary>
+    /// <summary>Said by every factory here, so they cannot drift apart.</summary>
     private const string Unsupported =
         "Kitbash supports Windows and Linux on x64 and macOS on Apple silicon.";
 
@@ -126,6 +126,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IExecutableFinder, ExecutableFinder>();
         services.TryAddSingleton<IDesktopLauncherResolver, DesktopLauncherResolver>();
         services.TryAddSingleton(CreatePlatform);
+        services.TryAddSingleton(CreateCommandFolder);
         services.TryAddSingleton<ISingleInstance>(provider => new SingleInstance(
             ApplicationPaths.ApplicationName,
             provider.GetRequiredService<IUserDirectories>(),
@@ -227,6 +228,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IEngineUpdater, EngineUpdater>();
         services.AddKitbashExternalTools();
         services.TryAddSingleton<IGodotLauncher, GodotLauncher>();
+        services.TryAddSingleton<IEngineCommand, EngineCommand>();
         services.AddKitbashGodotProjects();
         services.AddEngineFiles();
 
@@ -253,7 +255,7 @@ public static class KitbashCoreServices
     }
 
     /// <summary>
-    /// The one part of engine handling that differs per OS. One of five places in this file
+    /// The one part of engine handling that differs per OS. One of the places in this file
     /// that test the running OS, and the file is still the only one allowed to.
     /// </summary>
     private static IServiceCollection AddEngineFiles(this IServiceCollection services)
@@ -478,6 +480,37 @@ public static class KitbashCoreServices
         if (OperatingSystem.IsMacOS())
         {
             return new MacWorkspaceOpenerFinder(environment, fileSystem, toolbox);
+        }
+
+        throw new PlatformNotSupportedException(Unsupported);
+    }
+
+    /// <summary>
+    /// Where this person's own commands go. Linux and macOS share the folder and the link,
+    /// and differ only in whether anything may put the folder on PATH.
+    /// </summary>
+    private static ICommandFolder CreateCommandFolder(IServiceProvider provider)
+    {
+        var files = provider.GetRequiredService<IFileSystem>();
+        var environment = provider.GetRequiredService<IEnvironment>();
+        var paths = provider.GetRequiredService<IPathRules>();
+
+        if (OperatingSystem.IsWindows())
+        {
+            return new WindowsCommandFolder(files, environment, provider.GetRequiredService<IUserDirectories>(), paths);
+        }
+
+        var bundle = provider.GetRequiredService<IBundleEnvironment>();
+        var processes = provider.GetRequiredService<IProcessRunner>();
+
+        if (OperatingSystem.IsLinux())
+        {
+            return new UnixCommandFolder(files, environment, bundle, processes, paths, new UnaskedPath());
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return new UnixCommandFolder(files, environment, bundle, processes, paths, new MacPathsRequest(processes));
         }
 
         throw new PlatformNotSupportedException(Unsupported);
