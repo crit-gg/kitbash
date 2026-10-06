@@ -331,25 +331,41 @@ Measured with timestamps on a 460 asset import: the lines came out across the ru
 196 of a captured 208 carry progress. `GodotProgressReader` reads them and
 `IProcessRunner.ReadLinesAsync` is what delivers them a line at a time.
 
-Two things that reading has to correct for, both measured rather than guessed. **Short
-phases either side of the work are ignored**, since opening the project and loading the
-editor declare five steps each and would sweep the bar again at both ends. The test is a
-step count rather than a phase name, because a name is Godot's own identifier and the
-real question is whether a phase is the work or the startup around it. **The finish is
-reported by the launcher**, since Godot's last phase declares the whole count and then
-takes one step, which left a full bar reading almost nothing.
+The printing is `EditorNode::progress_task_step` in `cmdline_mode`, which is the same call
+that steps the editor's modal, so the lines are the modal's tasks word for word. The
+percent is `step / (total + 1)`, never reaches 100, and is **not** what the bar shows.
 
-**The two phases are told apart and the item is shown.** Scanning and importing both
-declare the asset count and both are real work, so the dialog names which one is running
-and the mono line carries the count and the file being read, such as
-`312 / 520  big_311.png`. The scan is the one task name read, and anything else long
-enough to report reads as importing, so a rename costs a word rather than the progress.
+**The bar is two sweeps, Scanning then Importing, and both come from our own count of
+items.** Godot's percent starts over at every phase, and `reimport_files` runs three
+phases a person would see as one: a prepare loop printing one narrated line per file
+before any file is imported, the import itself, and then a second `reimport` task for the
+post import step that declares the whole count again. Following the percent swept the
+bar four times, and counting every line pinned the count at its total before the first
+file was read. So only an item line is a step, the fraction is items seen over the total
+declared, and **a phase reports nothing until it names its first item**, which keeps the
+prepare loop and the post import phase silent. Measured on 4.7.1 against a 55 file
+import, and `GodotProgressReaderTests` replays that shape.
 
-**Godot's own narration is left out and its items are kept.** A line carries one or the
-other and the two are told apart by the trailing dots: measured over a whole import,
-every message that is a sentence ends in them and no file name does. The narration says
-nothing a person waiting for their project needs, and the line it would go on is mono and
-holds values.
+**An item is told from narration by the trailing dots**: measured over a whole import,
+every message that is a sentence ends in them and no file name does. **A repeated line
+is not a step.** Godot prints the same item again each second it waits on one file in a
+threaded batch, so a line matching the last one in both percent and text is skipped.
+
+**Short phases either side of the work are ignored**, since opening the project and
+loading the editor declare five steps each. The test is a step count rather than a phase
+name, because a name is Godot's own identifier. **The finish is reported by the
+launcher** as a full bar, since a phase whose files sit in import groups names fewer items
+than it declared and never reaches the end on its own.
+
+**The two phases are told apart and the item is shown**, such as `312 / 520  big_311.png`.
+The scan is the one task name read, and anything else long enough to report reads as
+importing, so a rename costs a word rather than the progress.
+
+**The name shown during a threaded import is often wrong, and that is Godot's.** The wait
+loop in `reimport_files` prints `reimport_files[imported_count]` where it means
+`from + imported_count`, so every threaded batch after the first names files from the
+start of the sorted list. The editor's own modal shows the same names. It was decided to
+show what Godot prints rather than hide the name, and the count is right either way.
 
 A line it cannot read is skipped and nothing fails. An older engine that prints none of
 this leaves the bar indeterminate, which is what it was before.

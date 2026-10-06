@@ -156,7 +156,10 @@ internal sealed class GodotLauncher : IGodotLauncher
                     {
                         progress.Report(step);
                     }
-                }).ConfigureAwait(false);
+                },
+                // Godot can exit with a failure after printing that its import finished,
+                // and the import it reported is still usable.
+                () => reader.ImportFinished).ConfigureAwait(false);
 
             progress.Report(reader.Finished());
         }
@@ -341,7 +344,8 @@ internal sealed class GodotLauncher : IGodotLauncher
         string message,
         ProcessRequest request,
         CancellationToken cancellationToken,
-        Action<string>? onLine = null)
+        Action<string>? onLine = null,
+        Func<bool>? finishedAnyway = null)
     {
         ProcessOutput output;
 
@@ -356,7 +360,7 @@ internal sealed class GodotLauncher : IGodotLauncher
             throw new GodotLaunchException(stage, $"{request.FileName} could not be run.", exception);
         }
 
-        if (output.ExitCode != 0)
+        if (output.ExitCode != 0 && finishedAnyway?.Invoke() != true)
         {
             throw new GodotLaunchException(stage, message, Combined(output));
         }

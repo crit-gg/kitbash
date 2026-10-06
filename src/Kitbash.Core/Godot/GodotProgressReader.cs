@@ -17,10 +17,17 @@ public sealed partial class GodotProgressReader
     /// </summary>
     private const string ScanTask = "_update_scan_actions";
 
+    /// <summary>The task Godot runs to import what the scan found.</summary>
+    private const string ImportTask = "reimport";
+
     private string _task = string.Empty;
     private int _total;
     private int _done;
     private int _largest;
+    private string? _lastItem;
+
+    /// <summary>True once Godot has said its import ran to the end.</summary>
+    public bool ImportFinished { get; private set; }
 
     /// <summary>What the last readable line said, or null when it said nothing useful.</summary>
     public GodotLaunchStep? Read(string line)
@@ -31,6 +38,14 @@ public sealed partial class GodotProgressReader
         }
 
         var text = Colours().Replace(line, string.Empty);
+
+        if (Done().Match(text) is { Success: true } done && done.Groups[1].Value == ImportTask)
+        {
+            ImportFinished = true;
+
+            return null;
+        }
+
         var step = Step().Match(text);
 
         if (!step.Success)
@@ -46,6 +61,7 @@ public sealed partial class GodotProgressReader
             _task = task;
             _total = 0;
             _done = 0;
+            _lastItem = null;
         }
 
         // A phase says how many steps it has before it takes any of them.
@@ -53,9 +69,10 @@ public sealed partial class GodotProgressReader
         {
             _total = int.Parse(started.Groups[2].ValueSpan);
             _done = 0;
+            _lastItem = null;
             _largest = Math.Max(_largest, _total);
 
-            return _total > WorthShowing ? new GodotLaunchStep(StageOf(task), Count(), 0) : null;
+            return null;
         }
 
         // A short phase says nothing, so the bar holds what the work left it at rather
@@ -65,24 +82,33 @@ public sealed partial class GodotProgressReader
             return null;
         }
 
+        // Godot narrates in sentences ending in dots and names an item otherwise. Only an
+        // item is a step of the work, so a phase that narrates and names nothing is silent.
+        if (message.Length == 0 || message.EndsWith("...", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        // Godot prints the same line again each second it waits on one item.
+        var item = $"{step.Groups[1].Value}|{message}";
+
+        if (item == _lastItem)
+        {
+            return null;
+        }
+
+        _lastItem = item;
         _done++;
 
-        return new GodotLaunchStep(
-            StageOf(task),
-            Detail(message),
-            int.Parse(step.Groups[1].ValueSpan) / 100d);
+        var fraction = _total > 0
+            ? Math.Min(_done, _total) / (double)_total
+            : int.Parse(step.Groups[1].ValueSpan) / 100d;
+
+        return new GodotLaunchStep(StageOf(task), $"{Count()}  {message}".TrimStart(), fraction);
     }
 
     private static GodotLaunchStage StageOf(string task) =>
         task == ScanTask ? GodotLaunchStage.Scanning : GodotLaunchStage.Importing;
-
-    /// <summary>
-    /// The count, and the item beside it when the line names one.
-    /// </summary>
-    private string Detail(string message) =>
-        message.EndsWith("...", StringComparison.Ordinal) || message.Length == 0
-            ? Count()
-            : $"{Count()}  {message}".TrimStart();
 
     /// <summary>
     /// The step to report once the import has exited, which is a full bar.
@@ -98,6 +124,9 @@ public sealed partial class GodotProgressReader
 
     [GeneratedRegex(@"^\[\s*(\d+)%\s*\]\s*([A-Za-z_][A-Za-z0-9_]*)\s*\|\s*(.*)$")]
     private static partial Regex Step();
+
+    [GeneratedRegex(@"^\[\s*DONE\s*\]\s*([A-Za-z_][A-Za-z0-9_]*)\s*$")]
+    private static partial Regex Done();
 
     [GeneratedRegex(@"^Started\s+(.*?)\s*\((\d+)\s+steps?\)$")]
     private static partial Regex Started();
