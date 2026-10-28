@@ -361,8 +361,11 @@ the launcher page, and they are the reason the row looks the way it does.
 5. **Two groups, because they answer two questions.** Left is identity, which branch and
    what has changed in it. Right is the branch against its remote, how far ahead or behind
    and when it last looked.
-6. **One action, and one word for it.** The button says Update and the label says Updated,
-   whichever of the two things happened. **This is a deliberate change from the design,
+6. **One action, and one word for it, with the git menu beside it.** The button says Update
+   and the label says Updated, whichever of the two things happened. Its caret opens the git
+   menu, which holds Apply patch, and any later git action joins that menu rather than the
+   row. `StatusBarSplitButton` is the keyed theme, reaching the shared split button halves
+   through `DynamicResource` since they live in another document. The menu opens upwards. **This is a deliberate change from the design,
    which says fetch only and never writes.** It always fetches, and it takes the new
    commits when there is nothing local that taking them could cost. Pushing and resolving
    a conflict still belong to a git client. See the `kitbash-git` skill for the guards.

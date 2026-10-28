@@ -255,6 +255,9 @@ the problem:
 - `.claude/plans/splash-window.md` the window an app starts behind, why it depends on no
   styles at all and what that forbids. Read before touching `SplashWindow` or
   `SplashBackdrop`.
+- `.claude/plans/patch-apply.md` the git menu's Apply patch: the stash, `git am` and pop
+  sequence, every outcome, and how in progress work is kept. Read before touching
+  `IGitPatchApplier` or `ApplyPatchDialog`.
 - `.claude/plans/node-graph.md` the node graph: what the library owns, what an app owns, the
   performance rules and what is not built. The `kitbash-graphs` skill is the short form.
 - `.claude/plans/hoard-controls.md` the thirteen controls the library still lacks, taken

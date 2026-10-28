@@ -53,6 +53,7 @@ The services, all from `AddKitbashGit`:
 | `IGitBlobReader` | one file whole, as a revision holds it |
 | `IGitConflictReader` | the three versions a conflict leaves, and settling one |
 | `IGitMergeDrivers` | telling one repository to merge some paths with a command of its own |
+| `IGitPatchApplier` | a `git format-patch` file as a commit, around the person's own changes |
 | `IGitCloner`, `IGitUpdater`, `IGitStatusMonitor` | the launcher's own three |
 
 Porcelain v2, `git status --porcelain=v2 --branch --untracked-files=no`, is the format git
@@ -396,6 +397,24 @@ not a merge is accepted and ignored. Both kinds go down one path because of that
 
 `commit: false` leaves the undoing in the working tree and the index, which is how several
 reverts become one commit. A revert that conflicts leaves `GitMergeState.Reverting`.
+
+### Applying a patch
+
+`IGitPatchApplier` is the launcher's Apply patch. **It is `git stash push`, `git am` and
+`git stash pop --index`, and nothing else.** No environment variable, no temporary index and
+no plumbing, which was asked for in so many words. A failure rolls back with `git am --abort`,
+`git reset --merge` to the starting commit and the same pop.
+
+- **`reset --merge`, never `--hard`.** Measured: a file another program wrote during a run
+  survives the first and is lost to the second.
+- **A stash is found by its object name**, never assumed to be `stash@{0}`, and git makes none
+  when there is nothing to set aside, so the tip is compared before and after.
+- **A stash is only dropped by a pop that worked.** That is git's own rule and the whole of
+  how in progress work is never lost.
+- **An interrupted run leaves a stash marked `Kitbash: before applying`**, which the dialog
+  finds and puts back, and only onto a tree with no tracked changes.
+
+`.claude/plans/patch-apply.md` has the order, every outcome and what was measured.
 
 ### Conflict stages
 

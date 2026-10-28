@@ -1223,10 +1223,12 @@
 
                                     <TextBlock Classes="updateAge" Text="{Binding Git.UpdateLabel}" />
 
-                                    <!-- The only action in the bar, and one word for both of the things it does. -->
-                                    <Button Theme="{StaticResource StatusBarButton}"
-                                            Command="{Binding UpdateCommand}"
-                                            ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                                    <!-- The bar's one action, one word for both of the things it
+                                         does, and the git menu beside it for the rest. -->
+                                    <SplitButton Name="GitButton"
+                                                 Theme="{StaticResource StatusBarSplitButton}"
+                                                 Command="{Binding UpdateCommand}"
+                                                 ToolTip.Tip="Fetch, and pull when nothing has changed here">
                                         <StackPanel Orientation="Horizontal" Spacing="7">
                                             <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
                                                      Classes.spin="{Binding Git.IsUpdating}"
@@ -1236,7 +1238,13 @@
                                                        Foreground="{DynamicResource InkPrimary}"
                                                        VerticalAlignment="Center" />
                                         </StackPanel>
-                                    </Button>
+
+                                        <SplitButton.Flyout>
+                                            <MenuFlyout Placement="TopEdgeAlignedRight">
+                                                <MenuItem Header="Apply patch" Click="OnApplyPatchClick" />
+                                            </MenuFlyout>
+                                        </SplitButton.Flyout>
+                                    </SplitButton>
                                 </StackPanel>
                             </Grid>
                         </Panel>

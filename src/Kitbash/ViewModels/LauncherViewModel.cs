@@ -36,6 +36,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGitStatusMonitor _git;
     private readonly IGitUpdater _updater;
     private readonly IGitCloner _cloner;
+    private readonly IGitPatchApplier _patchApplier;
     private readonly IUiDispatcher _dispatcher;
     private readonly IEngineRequirementReader _requirements;
     private readonly IEngineStore _engines;
@@ -133,6 +134,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGitStatusMonitor git,
         IGitUpdater updater,
         IGitCloner cloner,
+        IGitPatchApplier patchApplier,
         IUiDispatcher dispatcher,
         IEngineRequirementReader requirements,
         IEngineStore engineStore,
@@ -169,6 +171,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(git);
         ArgumentNullException.ThrowIfNull(updater);
         ArgumentNullException.ThrowIfNull(cloner);
+        ArgumentNullException.ThrowIfNull(patchApplier);
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(engineStore);
@@ -194,6 +197,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _git = git;
         _updater = updater;
         _cloner = cloner;
+        _patchApplier = patchApplier;
         _dispatcher = dispatcher;
         _requirements = requirements;
         _engines = engineStore;
@@ -787,6 +791,28 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// </summary>
     public CloneWorkspaceViewModel NewClone() =>
         new(_cloner, _workspaceSettings.DefaultDirectory);
+
+    /// <summary>
+    /// A patch about to be applied to the open workspace, or null when none is open. The
+    /// dialog owns it, the way the clone dialog owns its own.
+    /// </summary>
+    public ApplyPatchViewModel? NewPatch() =>
+        _workspaces.Current is { } current ? new(_patchApplier, _files, current.Root) : null;
+
+    /// <summary>Reads the repository again and says the patch landed.</summary>
+    public async Task PatchAppliedAsync(ApplyPatchViewModel patch)
+    {
+        ArgumentNullException.ThrowIfNull(patch);
+
+        await _git.RefreshAsync();
+
+        _toasts.Post(new ToastRequest
+        {
+            Tier = ToastTier.Ok,
+            Title = "Patch applied",
+            Body = patch.Landed,
+        });
+    }
 
     /// <summary>
     /// A workspace about to be described, with this machine's usual folder already in it.

@@ -75,6 +75,79 @@
         </Style>
     </ControlTheme>
 
+    <!-- The same readout with a menu beside its one action. The halves are the shared split
+         button parts, reached by DynamicResource since they live in another document. -->
+    <ControlTheme x:Key="StatusBarSplitButton" TargetType="SplitButton">
+        <Setter Property="Height" Value="{DynamicResource HeightTooltip}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceNest2}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineSeam}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+        <Setter Property="Foreground" Value="{DynamicResource InkChip}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyUi}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontWeight" Value="{DynamicResource FontWeightMedium}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Arrow" />
+        <Setter Property="ClipToBounds" Value="False" />
+
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Root"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
+                        <Button Name="PART_PrimaryButton" Grid.Column="0"
+                                Theme="{DynamicResource SplitButtonLabelPart}"
+                                Padding="9,0"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+
+                        <Border Grid.Column="1" Name="PART_Divider" Width="1"
+                                Background="{TemplateBinding BorderBrush}" />
+
+                        <Button Name="PART_SecondaryButton" Grid.Column="2"
+                                Theme="{DynamicResource SplitButtonCaretPart}"
+                                Width="{DynamicResource HeightTooltip}">
+                            <ui:Icon Name="PART_Caret"
+                                     Glyph="ChevronDown"
+                                     Size="{DynamicResource IconSizeCompact}"
+                                     Foreground="{DynamicResource InkSecondary}"
+                                     RenderTransformOrigin="50%,50%"
+                                     RenderTransform="rotate(0deg)">
+                                <ui:Icon.Transitions>
+                                    <Transitions>
+                                        <TransformOperationsTransition Property="RenderTransform"
+                                                                       Duration="0:0:0.11"
+                                                                       Easing="CubicEaseOut" />
+                                    </Transitions>
+                                </ui:Icon.Transitions>
+                            </ui:Icon>
+                        </Button>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- The caret turns over while its menu is open. -->
+        <Style Selector="^:flyout-open /template/ ui|Icon#PART_Caret">
+            <Setter Property="RenderTransform" Value="rotate(180deg)" />
+        </Style>
+
+        <Style Selector="^:disabled">
+            <Setter Property="Background" Value="{DynamicResource SurfaceControlOff}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LineControlOff}" />
+            <Setter Property="Foreground" Value="{DynamicResource InkDisabled}" />
+        </Style>
+
+        <Style Selector="^:disabled /template/ Border#PART_Divider">
+            <Setter Property="Background" Value="{DynamicResource LineControlOff}" />
+        </Style>
+    </ControlTheme>
+
     </Styles.Resources>
 
     <!-- The readouts along the row. -->

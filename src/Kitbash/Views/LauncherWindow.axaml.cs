@@ -235,6 +235,21 @@ public partial class LauncherWindow : ChromelessWindow
         await AddWorkspaceFromFolderAsync();
     }
 
+    private async void OnApplyPatchClick(object? sender, RoutedEventArgs e)
+    {
+        if (Model?.NewPatch() is not { } patch)
+        {
+            return;
+        }
+
+        var dialog = new ApplyPatchDialog { DataContext = patch };
+
+        if (await dialog.ShowFor<bool>(this))
+        {
+            await Model.PatchAppliedAsync(patch);
+        }
+    }
+
     private async void OnCloneWorkspaceClick(object? sender, RoutedEventArgs e)
     {
         WorkspaceSelector.Flyout?.Hide();

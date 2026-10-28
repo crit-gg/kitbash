@@ -117,6 +117,28 @@
                     </StackPanel>
 
                     <TextBlock Classes="note"
+                               Text="The same action with the git menu beside it. The menu opens upwards, since the bar is at the foot of the window." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <SplitButton Theme="{StaticResource StatusBarSplitButton}" ToolTip.Tip="Fetch, and pull when nothing has changed here">
+                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                <ui:Icon Glyph="RefreshCw" Size="{DynamicResource IconSizeStatus}"
+                                         Foreground="{DynamicResource InkSecondary}" />
+                                <TextBlock Text="Update" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource InkPrimary}" />
+                            </StackPanel>
+
+                            <SplitButton.Flyout>
+                                <MenuFlyout Placement="TopEdgeAlignedRight">
+                                    <MenuItem Header="Apply patch" />
+                                </MenuFlyout>
+                            </SplitButton.Flyout>
+                        </SplitButton>
+
+                        <SplitButton Theme="{StaticResource StatusBarSplitButton}" Content="Disabled" IsEnabled="False" />
+                    </StackPanel>
+
+                    <TextBlock Classes="note"
                                Text="The readouts beside it. Each one carries a glyph as well as a colour, so none of them says its meaning in hue alone, and a count that is zero is not drawn at all. A conflict leaves the row and takes a chip, because it blocks work where the others only report it." />
 
                     <Border Classes="statusBarRow">
