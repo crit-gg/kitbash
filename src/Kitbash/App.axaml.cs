@@ -361,7 +361,6 @@ public partial class App : Application
             ShowMarkFrame = false,
             AppName = "Kitbash",
             AppVersion = version,
-            Description = "Godot, without the version wrangling.",
             FadeIn = SplashFade,
         };
 
