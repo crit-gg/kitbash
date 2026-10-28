@@ -56,8 +56,12 @@
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Name="Copy" Classes="ghost" Content="Copy details" />
 
-                <Button Grid.Column="2" Content="Dismiss"
-                        ui:Dialog.Role="Cancel" ui:Dialog.TakesFocus="True" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                    <Button Name="OpenAnyway" IsVisible="False" />
+
+                    <Button Content="Dismiss"
+                            ui:Dialog.Role="Cancel" ui:Dialog.TakesFocus="True" />
+                </StackPanel>
             </Grid>
         </ui:DialogFooter>
     </Grid>

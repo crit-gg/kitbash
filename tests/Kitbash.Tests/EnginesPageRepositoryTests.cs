@@ -360,6 +360,8 @@ public sealed class EnginesPageRepositoryTests
 
         public string ExportTemplatesDirectory => "/templates";
 
+        public string DataDirectoryFor(string editor) => "/data";
+
         public string? FindEditor(string directory) => null;
 
         public string CommandFor(string editor) => editor;

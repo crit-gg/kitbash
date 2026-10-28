@@ -119,4 +119,42 @@ public class ConfirmDialogTests
         Assert.False(Button(dialog, "Otherwise").IsVisible);
         Assert.Equal(DialogRole.Cancel, dialog.Chose);
     }
+
+    /// <summary>A wait holds yes off and counts down on the button, then gives it back.</summary>
+    [AvaloniaFact]
+    public void AWaitHoldsTheAcceptingButtonOffUntilItRunsOut()
+    {
+        var dialog = Open(ConfirmDialog.For(
+            "Open without building",
+            "Open the project without building?",
+            accept: "Yes",
+            weight: ConfirmWeight.Grave,
+            wait: TimeSpan.FromSeconds(1)));
+
+        var accept = Button(dialog, "Accept");
+
+        Assert.False(accept.IsEnabled);
+        Assert.Equal("Yes (1)", accept.Content);
+        Assert.True(Button(dialog, "Refuse").IsFocused);
+
+        // The headless dispatcher promotes a timer that is due only after it runs a job, so
+        // an empty one is posted once the second has passed.
+        Thread.Sleep(TimeSpan.FromMilliseconds(1200));
+        Dispatcher.UIThread.Post(() => { });
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(accept.IsEnabled);
+        Assert.Equal("Yes", accept.Content);
+    }
+
+    [AvaloniaFact]
+    public void NoWaitLeavesTheAcceptingButtonOn()
+    {
+        var dialog = Open(ConfirmDialog.For("Delete branch", "Delete this branch?", accept: "Delete"));
+
+        var accept = Button(dialog, "Accept");
+
+        Assert.True(accept.IsEnabled);
+        Assert.Equal("Delete", accept.Content);
+    }
 }

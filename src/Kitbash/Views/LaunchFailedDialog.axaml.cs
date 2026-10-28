@@ -13,6 +13,9 @@ public partial class LaunchFailedDialog : DialogWindow
     /// <summary>How long the button says Copied before it goes back to its own word.</summary>
     private static readonly TimeSpan Confirmation = TimeSpan.FromMilliseconds(1400);
 
+    /// <summary>How long Yes stays off when the question follows a failed build.</summary>
+    private static readonly TimeSpan SkipBuildWait = TimeSpan.FromSeconds(3);
+
     private bool _copying;
 
     public LaunchFailedDialog()
@@ -20,11 +23,32 @@ public partial class LaunchFailedDialog : DialogWindow
         InitializeComponent();
     }
 
-    public static async Task Show(Window owner, GodotLaunchException failure, GodotLaunchMode mode)
+    /// <returns>True when the person chose to open without building and confirmed it.</returns>
+    public static Task<bool> Show(Window owner, GodotLaunchException failure, GodotLaunchMode mode)
     {
         ArgumentNullException.ThrowIfNull(owner);
 
-        await For(failure, mode).ShowDialog(owner);
+        return For(failure, mode).ShowFor<bool>(owner);
+    }
+
+    /// <summary>
+    /// Asks before a project opens without its C# being built.
+    /// </summary>
+    /// <param name="waits">True holds Yes off for a few seconds, which follows a failed build.</param>
+    public static ConfirmDialog ConfirmSkippingBuild(GodotLaunchMode mode, bool waits)
+    {
+        var verb = mode == GodotLaunchMode.Play ? "run" : "open";
+        var title = mode == GodotLaunchMode.Play ? "Run" : "Open";
+
+        return ConfirmDialog.For(
+            $"{title} without building",
+            $"{title} the project without building?",
+            $"Only {verb} the project without first building if you know what you are doing. "
+            + "Godot will load the assemblies from the last good build, which may be missing "
+            + "or out of date.",
+            "Yes",
+            ConfirmWeight.Grave,
+            wait: waits ? SkipBuildWait : TimeSpan.Zero);
     }
 
     /// <summary>
@@ -106,7 +130,26 @@ public partial class LaunchFailedDialog : DialogWindow
         dialog.Copy.Content = label;
         dialog.Copy.Click += async (_, _) => await dialog.CopyAsync(output, label);
 
+        // A rebuild has no project to open, since the import that follows the build never ran.
+        if (failure.Stage == GodotLaunchStage.Building && mode != GodotLaunchMode.Rebuild)
+        {
+            dialog.OpenAnyway.Content = mode == GodotLaunchMode.Play ? "Run anyway" : "Open anyway";
+            dialog.OpenAnyway.IsVisible = true;
+            dialog.OpenAnyway.Click += async (_, _) => await dialog.ConfirmAsync(mode);
+        }
+
         return dialog;
+    }
+
+    /// <summary>
+    /// Asks over this dialog, so a person who refuses is back at the failure.
+    /// </summary>
+    private async Task ConfirmAsync(GodotLaunchMode mode)
+    {
+        if (await ConfirmSkippingBuild(mode, waits: true).ShowFor<bool>(this))
+        {
+            Close(true);
+        }
     }
 
     /// <summary>
@@ -138,27 +181,35 @@ public partial class LaunchFailedDialog : DialogWindow
     }
 
     /// <summary>
-    /// The lines worth reading out of a program's output, or all of it when none stand out.
+    /// The errors in a program's output, once each. The compiler's own outrank Godot's line
+    /// saying a build failed. With neither, everything but the warnings.
     /// </summary>
     private static string Problems(string output)
     {
-        var problems = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var lines = output.Split('\n').Select(raw => raw.Trim()).Where(line => line.Length > 0).ToList();
 
-        foreach (var raw in output.Split('\n'))
+        var compiler = lines.Where(IsCompilerError).Distinct(StringComparer.Ordinal).ToList();
+
+        if (compiler.Count > 0)
         {
-            var line = raw.TrimEnd('\r').Trim();
-
-            var isProblem = line.Contains(": error ", StringComparison.OrdinalIgnoreCase)
-                || line.StartsWith("ERROR:", StringComparison.Ordinal)
-                || line.StartsWith("SCRIPT ERROR:", StringComparison.Ordinal);
-
-            if (isProblem && seen.Add(line))
-            {
-                problems.Add(line);
-            }
+            return string.Join(Environment.NewLine, compiler);
         }
 
-        return problems.Count > 0 ? string.Join(Environment.NewLine, problems) : output;
+        var engine = lines.Where(IsEngineError).Distinct(StringComparer.Ordinal).ToList();
+
+        return string.Join(Environment.NewLine, engine.Count > 0 ? engine : lines.Where(line => !IsWarning(line)));
     }
+
+    // MSBuild writes every diagnostic as "origin: error CODE: text", the summary included.
+    private static bool IsCompilerError(string line) =>
+        line.Contains(": error ", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsEngineError(string line) =>
+        line.StartsWith("ERROR:", StringComparison.Ordinal)
+        || line.StartsWith("SCRIPT ERROR:", StringComparison.Ordinal);
+
+    private static bool IsWarning(string line) =>
+        line.Contains(": warning ", StringComparison.OrdinalIgnoreCase)
+        || line.StartsWith("WARNING:", StringComparison.Ordinal)
+        || line.EndsWith(" Warning(s)", StringComparison.Ordinal);
 }

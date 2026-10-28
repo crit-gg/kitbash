@@ -24,6 +24,17 @@ internal sealed class WindowsEngineFiles : IEngineFiles
     public string ExportTemplatesDirectory =>
         Path.Combine(_directories.ConfigurationFor("Godot"), "export_templates");
 
+    public string DataDirectoryFor(string editor)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(editor);
+
+        var folder = Path.GetDirectoryName(editor);
+
+        return folder is not null && IsSelfContained(folder)
+            ? Path.Combine(folder, "editor_data")
+            : _directories.ConfigurationFor("Godot");
+    }
+
     public EnginePlatform Platform => EnginePlatform.Windows;
 
     public EngineArchitecture Architecture => RuntimeInformation.OSArchitecture switch
@@ -94,4 +105,7 @@ internal sealed class WindowsEngineFiles : IEngineFiles
             File.SetAttributes(path, attributes | FileAttributes.Hidden);
         }
     }
+
+    private bool IsSelfContained(string folder) =>
+        _files.FileExists(Path.Combine(folder, "._sc_")) || _files.FileExists(Path.Combine(folder, "_sc_"));
 }

@@ -1463,8 +1463,39 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// </summary>
     public Func<GodotProject, GodotLaunchMode, Func<IProgress<GodotLaunchStep>, CancellationToken, Task>, Task<GodotLaunchOutcome>>? Launching { get; set; }
 
-    /// <summary>Reports a failed open. Set by the window, for the same reason.</summary>
-    public Func<GodotLaunchException, GodotLaunchMode, Task>? Failed { get; set; }
+    /// <summary>
+    /// Reports a failed open. Set by the window, for the same reason. True means the person
+    /// asked to open without building and confirmed it.
+    /// </summary>
+    public Func<GodotLaunchException, GodotLaunchMode, Task<bool>>? Failed { get; set; }
+
+    /// <summary>
+    /// Asks before opening without building, when nothing has failed yet. Set by the window.
+    /// </summary>
+    public Func<GodotLaunchMode, Task<bool>>? ConfirmingSkipBuild { get; set; }
+
+    /// <summary>
+    /// Opens without building the C#, once the person has confirmed it. A project that would
+    /// not build anyway opens the ordinary way and asks nothing.
+    /// </summary>
+    public async Task OpenWithoutBuilding(
+        InstalledEngine engine,
+        GodotProject project,
+        GodotLaunchMode mode,
+        EngineRequirement? requirement = null)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(project);
+
+        var builds = await Task.Run(() => _godotLauncher.Builds(engine, project)).ConfigureAwait(true);
+
+        if (builds && ConfirmingSkipBuild is { } confirm && !await confirm(mode).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        await OpenInGodot(engine, project, mode, requirement, skipBuild: builds).ConfigureAwait(true);
+    }
 
     /// <summary>
     /// Opens a project in an engine, building its C# and importing its assets first when
@@ -1474,11 +1505,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// What the workspace asked for. A newest pin is brought up to date before anything
     /// else runs, so the project opens in the build it will keep.
     /// </param>
+    /// <param name="skipBuild">True opens with whatever assemblies the last build left.</param>
     public async Task OpenInGodot(
         InstalledEngine engine,
         GodotProject project,
         GodotLaunchMode mode,
-        EngineRequirement? requirement = null)
+        EngineRequirement? requirement = null,
+        bool skipBuild = false)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(project);
@@ -1518,11 +1551,12 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                     }
 
                     await _godotLauncher.OpenAsync(
-                        opening, project, mode, new ShortenedDetail(progress, _paths), cancellation);
+                        opening, project, mode, skipBuild, new ShortenedDetail(progress, _paths), cancellation);
                 },
                 cancellation);
 
         var outcome = GodotLaunchOutcome.Finished;
+        var openWithoutBuilding = false;
 
         try
         {
@@ -1539,10 +1573,13 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         {
             if (Failed is { } report)
             {
-                await report(exception, mode);
+                openWithoutBuilding = await report(exception, mode);
             }
 
-            return;
+            if (!openWithoutBuilding)
+            {
+                return;
+            }
         }
         finally
         {
@@ -1560,6 +1597,15 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                     Body = updateFailure.Message,
                 });
             }
+        }
+
+        // The build failed and the person chose to go on without it. The failure dialog
+        // offers this only for a failed build, so skipping it cannot fail the same way again.
+        if (openWithoutBuilding)
+        {
+            await OpenInGodot(update?.Engine ?? engine, project, mode, requirement, skipBuild: true);
+
+            return;
         }
 
         // A rebuild that ended with Open in Editor pressed. It goes the ordinary way

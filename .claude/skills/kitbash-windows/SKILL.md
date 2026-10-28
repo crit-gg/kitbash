@@ -177,7 +177,9 @@ accepted on Enter, which is the opposite of what marking it asked for.
 in a mono well and a copy button hard left of the decision. `ui:ConfirmDialog.For` is one
 question with two answers, and `ConfirmWeight.Grave` is the form for something that cannot
 be undone: the accepting button goes red and cancelling becomes the ready one, so no
-keypress can answer yes.
+keypress can answer yes. `wait` holds the accepting button off for that long once the dialog
+opens, counting whole seconds down on it, as in `Yes (3)`. A headless test has to post a job
+after the wait, since the dispatcher promotes a due timer only after running one.
 
 **Both call the generated `InitializeComponent`.** Defining one that calls
 `AvaloniaXamlLoader.Load` leaves every named field null, which is the rule in

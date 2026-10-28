@@ -308,21 +308,50 @@ Godot 4 or `.import` for Godot 3, since a sidecar also names its source file and
 and neither says whether an import has run. Measured on the real game project: 399
 sidecars among 6560 files, answered in 20ms.
 
-**A step that fails stops everything and the editor never opens.** Opening anyway would
+**A step that fails stops everything and nothing opens on its own.** Opening anyway would
 put somebody in an editor whose assemblies are stale or missing, which is the failure the
 build exists to catch, and it would do it silently, since the editor has no idea a build
-was attempted. Turning the build off is a setting and a deliberate act, so the failure
-dialog offers no Retry and no Open anyway. Measured against a real broken project: the
-build throws, the import never runs, the editor never starts and nothing is written into
-the project.
+was attempted. Measured against a real broken project: the build throws, the import never
+runs, the editor never starts and nothing is written into the project.
+
+**A failed build offers Open anyway, behind a question that waits.** Asked for by the
+user. The button is on the failure dialog for Open in Editor and Play, where it reads Run
+anyway, and never for a rebuild, whose import never ran. It opens a grave `ConfirmDialog`
+over the failure, so refusing goes back to the failure, and Yes counts down from three
+before it can be pressed. Yes reopens through `OpenInGodot` with `skipBuild`, which skips
+the build alone: an import that is needed still runs. A failed import offers nothing.
+
+**Shift and click on Open Project skips the build without a failure first.** Both the
+engine strip and each workspace card. `ShiftClick` in `Kitbash/Views` reads Shift off the
+tunnelled pointer or key event and handles the split button's own `Click`, which is what
+stops its command, since `SplitButton` runs the command only for an unhandled click. The
+same question is asked with no wait. A project that would not build anyway, because it has
+no C#, the engine is not .NET or `godot.build` is off, opens the ordinary way and asks
+nothing, which is what `IGodotLauncher.Builds` answers.
 
 **The failure dialog shows the errors and copies the log**, which are deliberately two
 different things. Measured on a two error build, dotnet writes 13 lines, opens with
 restore chatter and prints every error twice, once inline and once in its summary, so the
-well shows the error lines deduplicated and falls back to everything when none stand out.
-The button takes the whole log and says which log it took, since the well is showing
-something shorter. It confirms on itself rather than through a toast, because a toast
-belongs to the window behind the modal.
+well shows the error lines deduplicated. **It never shows a warning.** Compiler errors
+outrank Godot's own `ERROR:` lines, and with neither the well shows everything but the
+warnings. dotnet is passed `WarningLevel=0` as well, which silences compiler warnings but
+not NuGet or analyzer ones. The button takes the whole log and says which log it took,
+since the well is showing something shorter. It confirms on itself rather than through a
+toast, because a toast belongs to the window behind the modal.
+
+**An editor build prints nothing worth reading, so its own log is read instead.**
+Measured on 4.7.1 against a broken project: `--build-solutions` exits 1 and writes only
+`ERROR: An EditorPlugin build callback failed.` and an `at:` line. Godot's build logger
+writes the compiler's lines to `<data>/mono/build_logs/<md5 of the solution path>_Debug/msbuild_log.txt`,
+in the same `file(line,col): error CODE: text` shape dotnet prints, with
+`msbuild_issues.csv` beside it. `<data>` is `IEngineFiles.DataDirectoryFor`, which is
+Godot's own data directory unless a `._sc_` or `_sc_` file beside the editor, or beside a
+macOS bundle, puts it in `editor_data` there. `GodotBuildLog` does not reproduce the hash.
+It takes the newest log written since the build started whose text names the project
+folder, compared with forward slashes and ignoring case, and the launcher appends it to
+the failure's output. Read from `GodotSharpDirs.cs`, `godotsharp_dirs.cpp` and
+`GodotBuildLogger.cs` in the 4.7.1 source. **Only the Linux path has been run.** The Windows
+path, the macOS path and self contained mode were read from the source and not tested.
 
 **The import reports real progress, because Godot prints its own.** Every step goes to
 standard output as `[  45% ] reimport | big_395.png`, with a `Started ... (520 steps)`

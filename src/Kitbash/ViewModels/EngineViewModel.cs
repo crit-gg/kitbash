@@ -240,6 +240,16 @@ public sealed partial class EngineViewModel : ViewModelBase
         return Task.CompletedTask;
     }
 
+    /// <summary>True where the button opens the project, the one place a build can be skipped.</summary>
+    public bool CanOpenWithoutBuilding => IsMatched && CanLaunch;
+
+    /// <summary>Opens in the editor without building the C# first, once the person confirms it.</summary>
+    [RelayCommand(CanExecute = nameof(CanOpenWithoutBuilding))]
+    private Task OpenWithoutBuilding() =>
+        Resolution is { Engine: { } engine } && Project is { } project && _launcher is not null
+            ? _launcher.OpenWithoutBuilding(engine, project, GodotLaunchMode.Editor, Resolution.Requirement)
+            : Task.CompletedTask;
+
     /// <summary>
     /// True on a mismatch, which is the one state with an engine that is not the right
     /// one. Everywhere else the button already opens or there is nothing to open with.

@@ -30,6 +30,8 @@ internal sealed class GodotLauncher : IGodotLauncher
     private readonly IGodotSettings _settings;
     private readonly IExternalTools _tools;
     private readonly IFileSystem _fileSystem;
+    private readonly IGodotBuildLog _buildLog;
+    private readonly TimeProvider _time;
 
     public GodotLauncher(
         IProcessRunner processes,
@@ -37,7 +39,9 @@ internal sealed class GodotLauncher : IGodotLauncher
         IGodotImports imports,
         IGodotSettings settings,
         IExternalTools tools,
-        IFileSystem fileSystem)
+        IFileSystem fileSystem,
+        IGodotBuildLog buildLog,
+        TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(processes);
         ArgumentNullException.ThrowIfNull(platform);
@@ -45,6 +49,8 @@ internal sealed class GodotLauncher : IGodotLauncher
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(fileSystem);
+        ArgumentNullException.ThrowIfNull(buildLog);
+        ArgumentNullException.ThrowIfNull(time);
 
         _processes = processes;
         _platform = platform;
@@ -52,12 +58,15 @@ internal sealed class GodotLauncher : IGodotLauncher
         _settings = settings;
         _tools = tools;
         _fileSystem = fileSystem;
+        _buildLog = buildLog;
+        _time = time;
     }
 
     public async Task OpenAsync(
         InstalledEngine engine,
         GodotProject project,
         GodotLaunchMode mode,
+        bool skipBuild,
         IProgress<GodotLaunchStep> progress,
         CancellationToken cancellationToken)
     {
@@ -73,7 +82,7 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         try
         {
-            await RebuildAsync(engine, project, mode, progress, cancellationToken)
+            await RebuildAsync(engine, project, mode, skipBuild, progress, cancellationToken)
                 .ConfigureAwait(false);
         }
         finally
@@ -114,17 +123,26 @@ internal sealed class GodotLauncher : IGodotLauncher
         }
     }
 
+    public bool Builds(InstalledEngine engine, GodotProject project)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(project);
+
+        return BuildToolFor(engine, project) is not null;
+    }
+
     /// <summary>Everything that has to finish before anything is started.</summary>
     private async Task RebuildAsync(
         InstalledEngine engine,
         GodotProject project,
         GodotLaunchMode mode,
+        bool skipBuild,
         IProgress<GodotLaunchStep> progress,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (BuildToolFor(engine, project) is { } tool)
+        if (!skipBuild && BuildToolFor(engine, project) is { } tool)
         {
             await BuildAsync(tool, engine, project, progress, cancellationToken).ConfigureAwait(false);
         }
@@ -301,17 +319,30 @@ internal sealed class GodotLauncher : IGodotLauncher
         progress.Report(new GodotLaunchStep(
             GodotLaunchStage.Building, Path.GetFileName(engine.Executable)));
 
-        // --build-solutions implies --editor and needs a project, so --quit is what makes
-        // it exit once the build is done.
-        await RunAsync(
-            GodotLaunchStage.Building,
-            "The C# build failed.",
-            ProcessRequest.CommandIn(
-                project.Directory,
-                engine.Executable,
-                "--path", project.Directory,
-                "--build-solutions", "--quit", "--quiet", "--no-header", "--headless"),
-            cancellationToken).ConfigureAwait(false);
+        var started = _time.GetUtcNow();
+
+        try
+        {
+            // --build-solutions implies --editor and needs a project, so --quit is what
+            // makes it exit once the build is done.
+            await RunAsync(
+                GodotLaunchStage.Building,
+                "The C# build failed.",
+                ProcessRequest.CommandIn(
+                    project.Directory,
+                    engine.Executable,
+                    "--path", project.Directory,
+                    "--build-solutions", "--quit", "--quiet", "--no-header", "--headless"),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (GodotLaunchException failure) when (failure.InnerException is null
+            && _buildLog.Read(engine, project, started) is { } log)
+        {
+            // Godot prints only that its build callback failed. The compiler's own lines
+            // are in the log it keeps.
+            throw new GodotLaunchException(
+                GodotLaunchStage.Building, failure.Message, Joined(failure.Output, log.TrimEnd()));
+        }
     }
 
     /// <summary>The solution, or the project file when there is no solution.</summary>
@@ -373,8 +404,9 @@ internal sealed class GodotLauncher : IGodotLauncher
 
         // The error stream first, since that is where the reason is and a build writes a
         // great deal to the other one.
-        return string.Join(
-            Environment.NewLine,
-            new[] { error, standard }.Where(part => part.Length > 0));
+        return Joined(error, standard);
     }
+
+    private static string Joined(params string[] parts) =>
+        string.Join(Environment.NewLine, parts.Where(part => part.Length > 0));
 }

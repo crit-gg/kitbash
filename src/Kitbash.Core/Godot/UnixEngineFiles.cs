@@ -22,6 +22,17 @@ internal sealed class UnixEngineFiles : IEngineFiles
     public string ExportTemplatesDirectory =>
         Path.Combine(_directories.StateFor("godot"), "export_templates");
 
+    public string DataDirectoryFor(string editor)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(editor);
+
+        var folder = Path.GetDirectoryName(editor);
+
+        return folder is not null && IsSelfContained(folder)
+            ? Path.Combine(folder, "editor_data")
+            : _directories.StateFor("godot");
+    }
+
     public EnginePlatform Platform => EnginePlatform.Linux;
 
     public EngineArchitecture Architecture => RuntimeInformation.OSArchitecture switch
@@ -59,4 +70,7 @@ internal sealed class UnixEngineFiles : IEngineFiles
     public void Hide(string path)
     {
     }
+
+    private bool IsSelfContained(string folder) =>
+        _files.FileExists(Path.Combine(folder, "._sc_")) || _files.FileExists(Path.Combine(folder, "_sc_"));
 }

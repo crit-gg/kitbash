@@ -36,4 +36,10 @@ public interface IEngineFiles
     /// would not read.
     /// </summary>
     string ExportTemplatesDirectory { get; }
+
+    /// <summary>
+    /// Godot's data directory as this editor uses it. A <c>._sc_</c> or <c>_sc_</c> file
+    /// beside the editor is Godot's self contained mode, which moves it to <c>editor_data</c> there.
+    /// </summary>
+    string DataDirectoryFor(string editor);
 }

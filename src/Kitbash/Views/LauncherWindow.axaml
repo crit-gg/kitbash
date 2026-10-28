@@ -325,6 +325,7 @@
                                              Classes.danger="{Binding Engine.IsMissing}"
                                              Content="{Binding Engine.Action}"
                                              Command="{Binding Engine.RunCommand}"
+                                         views:ShiftClick.Command="{Binding Engine.OpenWithoutBuildingCommand}"
                                              IsVisible="{Binding Engine.HasAction}"
                                              VerticalAlignment="Center">
                                   <SplitButton.Flyout>
@@ -550,6 +551,7 @@
                                          Classes.danger="{Binding Engine.IsMissing}"
                                          Content="{Binding Engine.Action}"
                                          Command="{Binding Engine.RunCommand}"
+                                         views:ShiftClick.Command="{Binding Engine.OpenWithoutBuildingCommand}"
                                          IsVisible="{Binding Engine.HasAction}"
                                          VerticalAlignment="Center">
                                 <SplitButton.Flyout>

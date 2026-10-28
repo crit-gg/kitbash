@@ -50,6 +50,9 @@ public partial class LauncherWindow : ChromelessWindow
 
                 model.Failed ??= (failure, mode) => LaunchFailedDialog.Show(this, failure, mode);
 
+                model.ConfirmingSkipBuild ??= mode =>
+                    LaunchFailedDialog.ConfirmSkippingBuild(mode, waits: false).ShowFor<bool>(this);
+
                 model.AskingInputs ??= form => ToolInputsDialog.AskAsync(this, form);
 
                 model.RunningScript ??= (subject, work) => ToolRunDialog.RunAsync(this, subject, work);
