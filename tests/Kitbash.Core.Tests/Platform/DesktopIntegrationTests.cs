@@ -69,32 +69,92 @@ public sealed class DesktopIntegrationTests : IDisposable
     }
 
     [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
-    public void AnEntrySomebodyElseWroteIsLeftAlone()
+    public void AManagersEntryOpensLinksAndKeepsWhatItKnowsTheAppBy()
     {
         Bundle();
-
-        // What Gearlever writes when it installs the AppImage, keys and all.
-        var theirs = $"""
-            [Desktop Entry]
-            Type=Application
-            Name=Kitbash (1.2.3)
-            Icon={_root}/.icons/kitbash
-            TryExec={Image}
-            Exec=env DESKTOPINTEGRATION=1 {Image}
-            Terminal=false
-            X-AppImage-Version=1.2.3
-            """;
-
-        Directory.CreateDirectory(Path.GetDirectoryName(EntryFile)!);
-        File.WriteAllText(EntryFile, theirs);
+        WriteGearLeverEntry();
 
         Integration().Install();
 
-        Assert.Equal(theirs, File.ReadAllText(EntryFile));
+        var entry = File.ReadAllText(EntryFile);
 
-        // Nothing of ours goes beside it either, so no icon is left behind for an entry
-        // that points at its own.
+        // Gear Lever finds its app and its settings by these, so they stay exactly as written.
+        Assert.Contains("Name=Kitbash\n", entry, StringComparison.Ordinal);
+        Assert.Contains($"Icon={_root}/.icons/kitbash\n", entry, StringComparison.Ordinal);
+        Assert.Contains($"TryExec={Image}\n", entry, StringComparison.Ordinal);
+        Assert.Contains($"Exec=env DESKTOPINTEGRATION=1 {Image} %u\n", entry, StringComparison.Ordinal);
+        Assert.Contains("MimeType=x-scheme-handler/kitbash;", entry, StringComparison.Ordinal);
+
+        // The copy running now, which a Velopack update put there without Gear Lever knowing.
+        Assert.Contains("X-AppImage-Version=1.3.0\n", entry, StringComparison.Ordinal);
+        Assert.Contains("Comment=Game data tools\n", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("1.2.3", entry, StringComparison.Ordinal);
+
+        Assert.Contains($"[Desktop Action Safe]\nName=Safe mode\nExec={Image} --safe\n", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("X-Kitbash-Entry", entry, StringComparison.Ordinal);
+
+        // Nothing of ours goes beside it, so no icon is left behind for an entry that
+        // points at its own.
         Assert.False(File.Exists(IconFile));
+
+        var list = File.ReadAllText(AssociationFile);
+
+        Assert.Contains("[Default Applications]\nx-scheme-handler/kitbash=kitbash.desktop\n", list, StringComparison.Ordinal);
+        Assert.Contains("[Added Associations]\nx-scheme-handler/kitbash=kitbash.desktop;\n", list, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AManagersEntryIsLeftAloneOnceItIsUpToDate()
+    {
+        Bundle();
+        WriteGearLeverEntry();
+
+        Integration().Install();
+
+        var first = File.ReadAllText(EntryFile);
+        var written = File.GetLastWriteTimeUtc(EntryFile);
+
+        Integration().Install();
+
+        Assert.Equal(first, File.ReadAllText(EntryFile));
+        Assert.Equal(written, File.GetLastWriteTimeUtc(EntryFile));
+        Assert.Single(first.Split('\n'), line => line.Contains("%u", StringComparison.Ordinal));
+        Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(EntryFile)!, ".*"));
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AManagerNamingItsEntryAnotherWayTakesOverFromOurs()
+    {
+        Bundle();
+        Integration().Install();
+
+        Assert.True(File.Exists(EntryFile));
+
+        // AppImageLauncher names its entry after a hash of the path.
+        var theirs = Path.Combine(DataHome, "applications", "appimagekit_0123abcd-Kitbash.desktop");
+
+        File.WriteAllText(theirs, $"""
+            [Desktop Entry]
+            Type=Application
+            Name=Kitbash
+            Exec={Image} %u
+            TryExec={Image}
+            MimeType=x-scheme-handler/kitbash;
+            X-AppImage-Identifier=0123abcd
+
+            """);
+
+        Integration().Install();
+
+        Assert.False(File.Exists(EntryFile));
+
+        var list = File.ReadAllText(AssociationFile);
+
+        // Ours is gone from both, so exactly one entry claims the scheme.
+        Assert.Equal(
+            "[Added Associations]\nx-scheme-handler/kitbash=appimagekit_0123abcd-Kitbash.desktop;\n\n"
+                + "[Default Applications]\nx-scheme-handler/kitbash=appimagekit_0123abcd-Kitbash.desktop\n",
+            list);
     }
 
     [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
@@ -192,7 +252,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     }
 
     [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
-    public void TheSchemeIsNamedOnceHoweverOftenItRuns()
+    public void TheSchemeIsNamedOncePerSectionHoweverOftenItRuns()
     {
         Bundle();
 
@@ -201,23 +261,95 @@ public sealed class DesktopIntegrationTests : IDisposable
         integration.Install();
         integration.Install();
 
-        var lines = File.ReadAllText(AssociationFile).Split('\n');
+        var list = File.ReadAllText(AssociationFile);
 
-        Assert.Single(lines, line =>
-            line.StartsWith("x-scheme-handler/kitbash=", StringComparison.Ordinal));
+        Assert.Equal(
+            "[Added Associations]\nx-scheme-handler/kitbash=kitbash.desktop;\n\n"
+                + "[Default Applications]\nx-scheme-handler/kitbash=kitbash.desktop\n",
+            list);
     }
 
     [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
-    public void AnEntrySomebodyElseWroteTakesNoAssociationEither()
+    public void TheEntryGoesFirstAmongTheAssociationsAlreadyThere()
+    {
+        Bundle();
+
+        Directory.CreateDirectory(ConfigHome);
+        File.WriteAllText(AssociationFile, """
+            [Added Associations]
+            x-scheme-handler/kitbash=other.desktop;kitbash.desktop;
+
+            """);
+
+        Integration().Install();
+
+        Assert.Contains(
+            "x-scheme-handler/kitbash=kitbash.desktop;other.desktop;\n",
+            File.ReadAllText(AssociationFile),
+            StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AListThatIsAReadOnlyLinkIsSurvivedAndKept()
+    {
+        Bundle();
+
+        // What home-manager leaves: a link into a store nobody may write.
+        var store = Path.Combine(_root, "store", "mimeapps.list");
+        Directory.CreateDirectory(Path.GetDirectoryName(store)!);
+        File.WriteAllText(store, "[Default Applications]\ntext/plain=someone.desktop\n");
+
+        // The skip has already returned off Linux, which the platform analyzer cannot see.
+        if (OperatingSystem.IsLinux())
+        {
+            File.SetUnixFileMode(store, UnixFileMode.UserRead);
+        }
+
+        Directory.CreateDirectory(ConfigHome);
+        File.CreateSymbolicLink(AssociationFile, store);
+
+        Integration().Install();
+
+        Assert.True(File.Exists(EntryFile));
+        Assert.Equal(store, new FileInfo(AssociationFile).LinkTarget);
+        Assert.Equal("[Default Applications]\ntext/plain=someone.desktop\n", File.ReadAllText(store));
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AnEntrySomebodyElseWroteForAnotherFileIsLeftAlone()
     {
         Bundle();
 
         Directory.CreateDirectory(Path.GetDirectoryName(EntryFile)!);
-        File.WriteAllText(EntryFile, "[Desktop Entry]\nName=Kitbash\n");
+        File.WriteAllText(EntryFile, "[Desktop Entry]\nName=Kitbash\nTryExec=/somewhere/else\n");
 
         Integration().Install();
 
+        Assert.Equal("[Desktop Entry]\nName=Kitbash\nTryExec=/somewhere/else\n", File.ReadAllText(EntryFile));
         Assert.False(File.Exists(AssociationFile));
+    }
+
+    /// <summary>What Gear Lever writes when it installs the AppImage, keys and all.</summary>
+    private void WriteGearLeverEntry()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(EntryFile)!);
+        File.WriteAllText(EntryFile, $"""
+            [Desktop Entry]
+            Type=Application
+            Name=Kitbash
+            Comment=Kitbash 1.2.3
+            Icon={_root}/.icons/kitbash
+            TryExec={Image}
+            Exec=env DESKTOPINTEGRATION=1 {Image}
+            Terminal=false
+            X-AppImage-Version=1.2.3
+            X-AppImage-Name=Kitbash
+
+            [Desktop Action Safe]
+            Name=Safe mode
+            Exec={Image} --safe
+
+            """);
     }
 
     /// <summary>The files the AppImage runtime would have mounted and pointed at.</summary>
@@ -225,6 +357,9 @@ public sealed class DesktopIntegrationTests : IDisposable
     {
         Directory.CreateDirectory(Mount);
         File.WriteAllBytes(Path.Combine(Mount, ".DirIcon"), [0x89, 0x50, 0x4E, 0x47]);
+        File.WriteAllText(
+            Path.Combine(Mount, "Kitbash.desktop"),
+            "[Desktop Entry]\nName=Kitbash\nComment=Game data tools\nExec=Kitbash %u\nX-AppImage-Version=1.3.0\n");
         File.WriteAllText(Image, "not really an AppImage");
     }
 

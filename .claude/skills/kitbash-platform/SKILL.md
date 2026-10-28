@@ -208,16 +208,42 @@ the variable itself rather than going through `IUserDirectories`, because the ro
 is the data root and not Kitbash's folder inside it. The icon is `$APPDIR/.DirIcon`, the
 specification's own name for it whatever `--icon` was called.
 
-**An entry we did not write is never touched.** Ours carries `X-Kitbash-Entry=true` on its
-last line, and a file without that mark stops `Install` before either the entry or the icon
-is written. An AppImage manager names its entry after the app as well, so Gearlever writes
-that same `kitbash.desktop`, and theirs holds keys ours does not. Overwriting one took
-Kitbash out of Gearlever's list entirely.
+**An AppImage manager's entry is used, never replaced.** Gear Lever and AppImageLauncher both
+copy the entry inside the AppImage into the menu and set `TryExec` to the AppImage, so an
+unmarked entry whose `TryExec` is `$APPIMAGE` is theirs for this very file. Gear Lever names it
+`kitbash.desktop`, after `Name`, and AppImageLauncher `appimagekit_<md5>-Kitbash.desktop`. Match
+on `TryExec`, never on `Exec`, since Gear Lever's starts with `env DESKTOPINTEGRATION=1`.
+Overwriting one once took Kitbash out of Gear Lever's list entirely.
 
-**`TryExec` is there for the manager rather than for the desktop.** Gearlever lists an
+When there is one, Kitbash writes no entry and no icon of its own, deletes the one it wrote
+before if there is one, and **refreshes four keys in theirs**: `%u` on the end of `Exec` when no
+field code is there, the scheme in `MimeType`, and `Comment` and `X-AppImage-Version` copied
+from `$APPDIR/Kitbash.desktop`. That last pair is the reason: a Velopack update replaces the
+AppImage in place and the manager never rewrites its entry, so it would show the version it
+installed forever. **Everything Gear Lever knows the app by is left alone**: the file name,
+`Name`, which keys its settings, `TryExec`, `Icon`, the `env` part and arguments of `Exec`, and
+every other group. Gear Lever strips field codes from what it shows as arguments and keeps them
+when it rewrites `Exec`, so `%u` survives it.
+
+**An unmarked entry for some other file stops everything**, as it always did, since writing ours
+would mean writing over it.
+
+**Entries are written beside themselves and renamed into place.** KDE's client side check for a
+changed entry reads the folder's modified time, which an edit in place leaves alone.
+
+**The entry inside the AppImage is ours too.** `build/release.sh` builds the `.AppDir` itself,
+since vpk 1.2.0 takes a folder with that ending as it is and its own entry has no `%u` and no
+`MimeType`. vpk still adds `UpdateNix` and `sq.version` to `usr/bin`, and `AppRun` is a copy of
+the one vpk writes. A manager installing Kitbash after that ships gets an entry that opens links
+with no help from here. `sq.version` then says `mainExe` is `usr/bin/Kitbash` where it used to
+say `Kitbash`. Neither the managed locator nor `UpdateNix` reads it on Linux, both working from
+`$APPIMAGE` and `/usr/bin/`, but no update has been taken through such a package yet.
+
+**`TryExec` is there for the manager rather than for the desktop.** Gear Lever lists an
 installed AppImage only when the entry's `TryExec` names a file that exists, so an entry
-without it is skipped. It is a path and not a command line, so it carries no quoting, while
-`Exec` keeps the quoting the specification asks for.
+without it is skipped. GLib also drops an entry whose `TryExec` or `Exec` does not resolve. It is
+a path and not a command line, so it carries no quoting, while `Exec` keeps the quoting the
+specification asks for.
 
 **The entry also carries the url scheme.** `Exec` ends in `%u`, the field code for one url,
 and without it the desktop drops the link and Kitbash opens with nothing to show. A
@@ -225,13 +251,41 @@ and without it the desktop drops the link and Kitbash opens with nothing to show
 semicolon is required because the key is a list.
 
 **Saying it can is not saying it does.** `$XDG_CONFIG_HOME/mimeapps.list` gains
-`x-scheme-handler/kitbash=kitbash.desktop` under `[Default Applications]`, which is what
-`xdg-mime default` writes. It is a person's own file and holds their choices for everything
-else, so it is read, amended and written back: every other section, key and comment survives,
-and a run that changes nothing writes nothing. **`update-desktop-database` is deliberately
-not run.** It builds `mimeinfo.cache`, which is a fallback, and an explicit default is read
-first, so skipping it costs nothing and drops a dependency on `desktop-file-utils` being
-installed.
+`x-scheme-handler/kitbash=<entry>` under `[Default Applications]`, which is what `xdg-mime
+default` writes, and `x-scheme-handler/kitbash=<entry>;` first under `[Added Associations]`,
+which is what KDE's own setter writes too. Both are needed:
+
+- **GLib never reads `MimeType` lines to build associations.** Only `mimeinfo.cache` and
+  `[Added Associations]` give it one. Measured here with `gio mime`: the default alone lists no
+  registered application, and with the association it lists exactly one.
+- **The portal asks which app to use unless exactly one is associated**, for any scheme but the
+  web and mail ones. Every Flatpak and Snap app opens a link through it, Firefox's snap
+  included, and so does Chrome from version 148 even unsandboxed.
+- Measured here over throwaway XDG folders: KDE, `gio open` and xdg-open's generic path all
+  honour the default even for an entry with no `MimeType` line, and KDE rebuilds its own cache
+  on the next lookup, so nothing has to be run.
+
+An entry of ours that was just deleted is dropped from the association list, and every other
+name in it is kept. It is a person's own file and holds their choices for everything else, so
+it is read, amended and written back **in place, never renamed over**: home-manager keeps it as
+a read only link into the Nix store, where a write fails and is survived and a rename would
+swap the link for a file. Every other section, key and comment survives, and a run that changes
+nothing writes nothing.
+
+**A desktop specific list wins and is left alone.** `kde-mimeapps.list`, `gnome-mimeapps.list`
+and the rest, one per `XDG_CURRENT_DESKTOP` component, are read before `mimeapps.list` by
+GLib, KDE and xdg-mime alike, and may hold only defaults. One naming another program for the
+scheme is a person's choice, so Kitbash never writes or reads them.
+
+**`update-desktop-database` and `kbuildsycoca` are deliberately not run.** The association
+line does what `mimeinfo.cache` would, and KDE checks its own cache against the folders every
+1.5 seconds of lookups. Skipping both drops a dependency on `desktop-file-utils`.
+
+**What cannot be fixed from here.** xdg-open's generic path, which is any session with no
+desktop it knows, such as COSMIC, Hyprland or sway, splits `Exec` on spaces, so an AppImage
+whose path holds one does not open there. It also needs xdg-utils installed. The research
+behind this section read GLib, KService, kded, KIO, exo, libqtxdg, xdg-desktop-portal, snapd,
+Firefox, Chromium, AppImageLauncher and Gear Lever at their 2026-10-28 sources. Only KDE was run.
 
 **Windows registers a scheme and nothing else.** `WindowsDesktopIntegration` writes
 `HKCU\Software\Classes\kitbash`, per user so nothing needs elevation, with the empty

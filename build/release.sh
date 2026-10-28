@@ -142,6 +142,14 @@ echo "Kitbash $version into $feed"
 release() {
   local os=$1 runtime=$2 exe=$3 icon=$4 extra=("${@:5}")
   local out="$root/publish/$os"
+  local pack_dir="$out" publish_dir="$out"
+
+  # vpk takes a folder ending in .AppDir as it is, so Linux builds its own and the menu
+  # entry inside the AppImage is ours to write.
+  if [ "$os" = linux ]; then
+    pack_dir="$out/$pack_id.AppDir"
+    publish_dir="$pack_dir/usr/bin"
+  fi
 
   rm -rf "$out"
 
@@ -151,8 +159,12 @@ release() {
     --configuration Release \
     --runtime "$runtime" \
     --self-contained \
-    --output "$(to_native "$out")" \
+    --output "$(to_native "$publish_dir")" \
     -p:Version="$version"
+
+  if [ "$os" = linux ]; then
+    write_appdir "$pack_dir" "$exe" "$root/$icon"
+  fi
 
   # The channel is left at its default, which is the OS short name, so this writes
   # releases.linux.json and releases.win.json beside the packages.
@@ -164,7 +176,7 @@ release() {
     --packTitle "$pack_title" \
     --packAuthors "$pack_authors" \
     --packVersion "$version" \
-    --packDir "$(to_native "$out")" \
+    --packDir "$(to_native "$pack_dir")" \
     --runtime "$runtime" \
     --mainExe "$exe" \
     --icon "$(to_native "$root/$icon")" \
@@ -172,9 +184,51 @@ release() {
     "${extra[@]}"
 }
 
-# --categories is Linux only and names a freedesktop menu section. It defaults to
-# Utility, which is not where a person looks for this.
-linux_release() { release linux linux-x64 Kitbash icons/icon_256x256.png --categories Development; }
+# Everything in an AppDir but the program, which publish has already put in usr/bin. vpk 1.2.0
+# adds only UpdateNix and sq.version beside it. AppRun is the one vpk writes itself, and
+# IBundleEnvironment relies on it exporting PATH and nothing else.
+write_appdir() {
+  local dir=$1 exe=$2 icon=$3
+
+  cp "$icon" "$dir/$pack_id.png"
+  cp "$icon" "$dir/.DirIcon"
+  mkdir -p "$dir/usr/share/icons/hicolor/scalable/apps"
+  cp "$icon" "$dir/usr/share/icons/hicolor/scalable/apps/$pack_id.png"
+
+  # Gear Lever and AppImageLauncher copy this into the menu, keys and all. %u and MimeType
+  # are what let it open a kitbash link. Comment carries no version, so a copy never goes
+  # stale, and the launcher writes the same Comment into an entry it refreshes.
+  cat > "$dir/$pack_id.desktop" <<ENTRY
+[Desktop Entry]
+Type=Application
+Name=$pack_title
+X-AppImage-Version=$version
+Comment=Game data tools
+Icon=$pack_id
+Exec=$exe %u
+StartupWMClass=$pack_id
+Categories=Development;
+MimeType=x-scheme-handler/kitbash;
+ENTRY
+
+  sed "s/@PACK_ID@/$pack_id/g" > "$dir/AppRun" <<'APPRUN'
+#!/bin/sh
+if [ ! -z "$APPIMAGE" ] && [ ! -z "$APPDIR" ]; then
+    MD5=$(echo -n "file://$APPIMAGE" | md5sum | cut -d' ' -f1)
+    cp "$APPDIR/@PACK_ID@.png" "$HOME/.cache/thumbnails/normal/$MD5.png" >/dev/null 2>&1
+    cp "$APPDIR/@PACK_ID@.png" "$HOME/.cache/thumbnails/large/$MD5.png" >/dev/null 2>&1
+    xdg-icon-resource forceupdate >/dev/null 2>&1
+fi
+HERE="$(dirname "$(readlink -f "${0}")")"
+export PATH="${HERE}"/usr/bin/:"${PATH}"
+EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1 | sed 's/\\s/ /g')
+exec "${EXEC}" "$@"
+APPRUN
+
+  chmod +x "$dir/AppRun"
+}
+
+linux_release() { release linux linux-x64 Kitbash icons/icon_256x256.png; }
 
 # vpk signs its own binaries at points inside the pack, so signing is an argument to it
 # rather than a pass over the finished feed. Unsigned is still a supported release.

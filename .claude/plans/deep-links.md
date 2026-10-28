@@ -110,25 +110,41 @@ the launcher. There was no way to write it without one.
 
 ### Linux
 
-`LinuxDesktopIntegration`, which already wrote the desktop entry. Two lines were added to it:
+Two halves, and either one is enough on its own for a given install.
+
+**The entry inside the AppImage.** `build/release.sh` builds the `.AppDir` itself so the
+entry vpk would have written gains the two lines a handler needs:
 
 ```
-Exec="<appimage>" %u
+Exec=Kitbash %u
 MimeType=x-scheme-handler/kitbash;
 ```
 
 `%u` is the field code for one url. Without it the desktop drops the link and Kitbash opens
-with nothing to show. The trailing semicolon is required, since `MimeType` is a list.
+with nothing to show. The trailing semicolon is required, since `MimeType` is a list. Gear
+Lever and AppImageLauncher both copy that entry into the menu with every key kept and only the
+program path rewritten, so an AppImage a manager installs opens links whatever Kitbash does.
 
-Then `$XDG_CONFIG_HOME/mimeapps.list` gains
-`x-scheme-handler/kitbash=kitbash.desktop` under `[Default Applications]`. Every other
-section, key and comment in that file is left exactly as it was, and a run that changes
-nothing writes nothing.
+**What the launcher writes at each start**, in `LinuxDesktopIntegration`:
 
-**`update-desktop-database` is deliberately not run.** It builds `mimeinfo.cache`, which is
-consulted for the list of programs that can open a type and as a fallback default. An
-explicit default in `mimeapps.list` is read first and is enough on its own, and skipping it
-means no dependency on `desktop-file-utils` being installed.
+1. An unmarked entry in `$XDG_DATA_HOME/applications` whose `TryExec` is `$APPIMAGE` is a
+   manager's. Kitbash deletes its own entry if it wrote one, so one entry claims the scheme, and
+   brings four keys of theirs up to the running copy: `%u` in `Exec`, the scheme in
+   `MimeType`, and `Comment` and `X-AppImage-Version` from the entry inside the AppImage. A
+   Velopack update replaces the AppImage without the manager knowing, so this is what keeps
+   its entry current. Nothing Gear Lever recognises the app by is touched.
+2. With none, Kitbash writes its own `kitbash.desktop`, as before.
+3. Either way `$XDG_CONFIG_HOME/mimeapps.list` names that entry twice:
+   `x-scheme-handler/kitbash=<entry>` under `[Default Applications]` and
+   `x-scheme-handler/kitbash=<entry>;` first under `[Added Associations]`. Every other
+   section, key and comment in that file is left exactly as it was, and a run that changes
+   nothing writes nothing.
+
+**The association is what Flatpak, Snap and Chrome need.** They open a link through the
+desktop portal, which asks which app to use unless exactly one is associated, and GLib learns
+an association only from `[Added Associations]` or `mimeinfo.cache`, never from a `MimeType`
+line. `update-desktop-database` and `kbuildsycoca` are not run, and the `kitbash-platform`
+skill has why and the whole of the rules.
 
 ### macOS
 
@@ -185,6 +201,10 @@ Development is on Linux. Everything below was run on this machine.
 | the whole chain on Linux | two isolated copies, real windows: the second exited 0 and the first opened its settings window |
 | cross process file locking on this filesystem | a standalone program, since the unit tests hold both instances in one process |
 | the desktop entry, the mimeapps.list edit and its idempotence | `DesktopIntegrationTests`, over a real data root |
+| a Gear Lever and an AppImageLauncher entry refreshed, ours removed, a read only list survived | `DesktopIntegrationTests` |
+| the entry and `AppRun` inside the AppImage | `build/release.sh linux` into a scratch feed, extracted and compared with vpk's own |
+| KDE, `gio open` and xdg-open's generic path finding the handler | throwaway XDG folders over a probe scheme, on Plasma 6 |
+| the association giving GLib exactly one registered app | `gio mime` over the same folders |
 | the pipe handover, the empty message and the one byte case | `SingleInstanceTests`, over a real pipe |
 | link parsing and every refusal | `DeepLinkTests` |
 | the settings page target | `SettingsPageLinkTests`, the real window over a three page schema |
@@ -198,11 +218,12 @@ the packages, not measured.
 
 ## What is not built
 
-- **A person using an AppImage manager gets no handler.** `LinuxDesktopIntegration` leaves an
-  entry it did not write alone, and vpk offers no way to put a `MimeType` line into the entry
-  inside the AppImage, where `--categories` is the only knob. A manager writing its entry
-  under a different name is fine, since ours is then written beside it. Only the exact name
-  collision loses.
+- **No update has been taken through a package built from our own `.AppDir`.** `sq.version`
+  names `usr/bin/Kitbash` as the main program there, where vpk's own AppDir named `Kitbash`.
+  Neither Velopack's managed locator nor `UpdateNix` reads that field on Linux, by their own
+  code and strings, but the first release after this is the first real test.
+- **A Gear Lever entry from before this change opens links only after one launch** of a copy
+  carrying it, since that is when the entry is refreshed.
 - **The portable Windows build registers itself like any other copy.** Run it once from a
   folder that is later deleted and the scheme names nothing. The alternative was for it to
   register nothing at all, and registering the copy that ran is what Linux does.

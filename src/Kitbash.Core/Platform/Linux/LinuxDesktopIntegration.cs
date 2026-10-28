@@ -3,9 +3,9 @@ using Kitbash.Core.IO;
 namespace Kitbash.Core.Platform.Linux;
 
 /// <summary>
-/// Writes a desktop entry and an icon for the running AppImage, so it appears in the
-/// menu instead of being a file somebody has to find again, and names Kitbash as the
-/// program that opens a <c>kitbash</c> link.
+/// Puts the running AppImage in the menu and names it as the program that opens a
+/// <c>kitbash</c> link. An entry an AppImage manager wrote for it is kept up to date
+/// instead of being joined by a second one.
 /// </summary>
 internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 {
@@ -20,7 +20,16 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     private const string Mark = "X-Kitbash-Entry=true";
 
     private const string EntryName = "kitbash";
+    private const string EntryExtension = ".desktop";
     private const string IconSize = "256x256";
+
+    private const string EntryGroup = "[Desktop Entry]";
+
+    /// <summary>Copied from the entry inside the AppImage into a manager's, so neither goes stale.</summary>
+    private static readonly string[] BundledKeys = ["Comment", "X-AppImage-Version"];
+
+    /// <summary>The field codes that pass a file or a url, per the desktop entry specification.</summary>
+    private static readonly string[] FieldCodes = ["%u", "%U", "%f", "%F"];
 
     /// <summary>The mime type a url scheme is named by, which is the shared mime info rule.</summary>
     private const string SchemeType = "x-scheme-handler/" + DeepLink.Scheme;
@@ -28,6 +37,10 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     /// <summary>Where a person's own default program per mime type is kept.</summary>
     private const string AssociationFile = "mimeapps.list";
     private const string DefaultsSection = "[Default Applications]";
+
+    // GLib finds no handler from a MimeType line without a cache Kitbash does not build, and
+    // the portal asks which app to use unless exactly one is associated.
+    private const string AddedSection = "[Added Associations]";
 
     private readonly IFileSystem _fileSystem;
     private readonly IEnvironment _environment;
@@ -52,14 +65,27 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         try
         {
-            if (!Ours())
+            var entry = ManagerEntry(image);
+            string? removed = null;
+
+            if (entry is null)
             {
-                return;
+                if (!Ours())
+                {
+                    return;
+                }
+
+                WriteIcon();
+                WriteEntry(image);
+                entry = EntryFile;
+            }
+            else
+            {
+                removed = RemoveOwnEntry(entry);
+                Refresh(entry);
             }
 
-            WriteIcon();
-            WriteEntry(image);
-            WriteAssociation();
+            WriteAssociation(Path.GetFileName(entry), removed);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -88,6 +114,128 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         return !_fileSystem.FileExists(file)
             || _fileSystem.ReadAllText(file).Contains(Mark, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// An entry somebody else wrote for this very file. Gear Lever and AppImageLauncher both
+    /// set TryExec to the AppImage, and neither names its entry the same way.
+    /// </summary>
+    private string? ManagerEntry(string image)
+    {
+        var folder = ApplicationsFolder;
+
+        if (!_fileSystem.DirectoryExists(folder))
+        {
+            return null;
+        }
+
+        foreach (var file in _fileSystem.EnumerateFiles(folder, recursive: false))
+        {
+            if (!file.EndsWith(EntryExtension, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            string text;
+
+            try
+            {
+                text = _fileSystem.ReadAllText(file);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            if (!text.Contains(Mark, StringComparison.Ordinal) && Value(Lines(text), "TryExec") == image)
+            {
+                return file;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// One entry claims the scheme, so ours goes once a manager has written its own.
+    /// Answers the id of the entry removed, or null when there was none of ours.
+    /// </summary>
+    private string? RemoveOwnEntry(string managed)
+    {
+        var file = EntryFile;
+
+        if (file == managed || !_fileSystem.FileExists(file)
+            || !_fileSystem.ReadAllText(file).Contains(Mark, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        _fileSystem.DeleteFile(file);
+
+        return Path.GetFileName(file);
+    }
+
+    /// <summary>
+    /// Brings a manager's entry up to the copy that is running, which a Velopack update
+    /// replaced without the manager knowing. Gear Lever recognises its app by the file name,
+    /// Name, TryExec and the rest of Exec, so none of those change.
+    /// </summary>
+    private void Refresh(string file)
+    {
+        var lines = Lines(_fileSystem.ReadAllText(file));
+        var changed = false;
+
+        if (Value(lines, "Exec") is { } exec && !TakesUrl(exec))
+        {
+            changed |= Set(lines, "Exec", exec + " %u");
+        }
+
+        var types = Value(lines, "MimeType") ?? string.Empty;
+
+        if (!types.Split(';').Contains(SchemeType, StringComparer.Ordinal))
+        {
+            var separator = types.Length == 0 || types.EndsWith(';') ? string.Empty : ";";
+
+            changed |= Set(lines, "MimeType", $"{types}{separator}{SchemeType};");
+        }
+
+        if (BundledEntry() is { } bundled)
+        {
+            foreach (var key in BundledKeys)
+            {
+                if (Value(bundled, key) is { } value)
+                {
+                    changed |= Set(lines, key, value);
+                }
+            }
+        }
+
+        if (changed)
+        {
+            Replace(file, string.Join('\n', lines));
+        }
+    }
+
+    /// <summary>The entry the AppImage carries at its root, or null outside one.</summary>
+    private List<string>? BundledEntry()
+    {
+        var mount = _environment.GetVariable(MountPoint);
+
+        if (string.IsNullOrWhiteSpace(mount) || !_fileSystem.DirectoryExists(mount))
+        {
+            return null;
+        }
+
+        var file = _fileSystem
+            .EnumerateFiles(mount, recursive: false)
+            .FirstOrDefault(path => path.EndsWith(EntryExtension, StringComparison.Ordinal));
+
+        return file is null ? null : Lines(_fileSystem.ReadAllText(file));
+    }
+
+    private static bool TakesUrl(string exec) =>
+        exec
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Any(word => FieldCodes.Contains(word, StringComparer.Ordinal));
 
     /// <summary>
     /// The hicolor theme under the data root. The icon is whatever was passed to the
@@ -133,8 +281,29 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
             return;
         }
 
-        _fileSystem.CreateDirectory(Path.Combine(DataRoot, "applications"));
-        _fileSystem.WriteAllText(file, wanted);
+        _fileSystem.CreateDirectory(ApplicationsFolder);
+        Replace(file, wanted);
+    }
+
+    /// <summary>
+    /// Written beside the file and renamed over it. KDE notices a changed entry by the
+    /// folder's modified time, which an edit in place leaves alone.
+    /// </summary>
+    private void Replace(string file, string contents)
+    {
+        var staged = Path.Combine(
+            Path.GetDirectoryName(file)!,
+            $".{Path.GetFileName(file)}.{Guid.NewGuid():n}.tmp");
+
+        try
+        {
+            _fileSystem.WriteAllText(staged, contents);
+            _fileSystem.MoveFile(staged, file, overwrite: true);
+        }
+        finally
+        {
+            _fileSystem.DeleteFile(staged);
+        }
     }
 
     /// <summary>
@@ -147,7 +316,7 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         [Desktop Entry]
         Type=Application
         Name=Kitbash
-        Comment=Godot, without the version wrangling.
+        Comment=Game data tools
         Icon={EntryName}
         Exec={Quote(image)} %u
         TryExec={image}
@@ -158,19 +327,91 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         """;
 
+    private static List<string> Lines(string text) => text.Split('\n').ToList();
+
+    /// <summary>The value of a key in the main group, ignoring every localised form of it.</summary>
+    private static string? Value(List<string> lines, string key)
+    {
+        if (Group(lines) is not (var start, var end))
+        {
+            return null;
+        }
+
+        for (var index = start; index < end; index++)
+        {
+            if (KeyOf(lines[index]) == key)
+            {
+                return lines[index][(lines[index].IndexOf('=') + 1)..].Trim();
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Sets a key in the main group, adding it at the end when absent. False means it already held that.</summary>
+    private static bool Set(List<string> lines, string key, string value)
+    {
+        if (Group(lines) is not (var start, var end))
+        {
+            return false;
+        }
+
+        var wanted = $"{key}={value}";
+
+        for (var index = start; index < end; index++)
+        {
+            if (KeyOf(lines[index]) != key)
+            {
+                continue;
+            }
+
+            if (lines[index] == wanted)
+            {
+                return false;
+            }
+
+            lines[index] = wanted;
+
+            return true;
+        }
+
+        lines.Insert(BeforeTrailingBlanks(lines, start, end), wanted);
+
+        return true;
+    }
+
+    /// <summary>The lines after the main group heading, up to the next heading. Null when there is none.</summary>
+    private static (int Start, int End)? Group(List<string> lines)
+    {
+        var heading = lines.FindIndex(line => line.Trim() == EntryGroup);
+
+        return heading < 0 ? null : (heading + 1, SectionEnd(lines, heading));
+    }
+
+    /// <summary>The key of a key value line, which the specification lets carry spaces around the equals sign.</summary>
+    private static string? KeyOf(string line)
+    {
+        var equals = line.IndexOf('=');
+
+        return equals < 0 || line.TrimStart().StartsWith('#') ? null : line[..equals].Trim();
+    }
+
     /// <summary>
-    /// Names this entry as what opens a kitbash link. The MimeType line above only says
-    /// the entry can, and a desktop reads the default from here.
+    /// Names this entry as what opens a kitbash link. Edited in place, since home-manager
+    /// keeps the file as a read only link and replacing it would take that link away.
     /// </summary>
-    private void WriteAssociation()
+    private void WriteAssociation(string id, string? removed)
     {
         var file = Path.Combine(ConfigRoot, AssociationFile);
 
         var lines = _fileSystem.FileExists(file)
-            ? _fileSystem.ReadAllText(file).Split('\n').ToList()
+            ? Lines(_fileSystem.ReadAllText(file))
             : [];
 
-        if (!Associate(lines))
+        var added = Associate(lines, AddedSection, existing => First(existing, id, removed));
+        var defaulted = Associate(lines, DefaultsSection, _ => id);
+
+        if (!added && !defaulted)
         {
             return;
         }
@@ -180,13 +421,25 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     }
 
     /// <summary>
-    /// Puts the association into the lines of a mimeapps.list, leaving every other
-    /// section and every other key exactly as it was. False means it was already there.
+    /// An association list with this entry first and every other one kept after it,
+    /// except an entry of ours that was just removed.
     /// </summary>
-    private static bool Associate(List<string> lines)
+    private static string First(string? existing, string id, string? removed)
     {
-        var wanted = $"{SchemeType}={EntryName}.desktop";
-        var section = lines.FindIndex(line => line.Trim() == DefaultsSection);
+        var others = (existing ?? string.Empty)
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(other => other != id && other != removed);
+
+        return string.Join(';', [id, .. others]) + ";";
+    }
+
+    /// <summary>
+    /// Puts the scheme's key into one section of a mimeapps.list, leaving every other
+    /// section and every other key exactly as it was. False means it already held that.
+    /// </summary>
+    private static bool Associate(List<string> lines, string heading, Func<string?, string> value)
+    {
+        var section = lines.FindIndex(line => line.Trim() == heading);
 
         if (section < 0)
         {
@@ -195,20 +448,14 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
                 lines.Add(string.Empty);
             }
 
-            lines.Add(DefaultsSection);
-            lines.Add(wanted);
+            lines.Add(heading);
+            lines.Add($"{SchemeType}={value(null)}");
             lines.Add(string.Empty);
 
             return true;
         }
 
-        // Everything up to the next section heading belongs to this section.
-        var end = section + 1;
-
-        while (end < lines.Count && !lines[end].TrimStart().StartsWith('['))
-        {
-            end++;
-        }
+        var end = SectionEnd(lines, section);
 
         var existing = lines.FindIndex(
             section + 1,
@@ -217,19 +464,13 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         if (existing < 0)
         {
-            // Back over the blank lines that separate this section from the next, so the
-            // key lands under the ones already here rather than against the next heading.
-            var last = end;
-
-            while (last > section + 1 && lines[last - 1].Trim().Length == 0)
-            {
-                last--;
-            }
-
-            lines.Insert(last, wanted);
+            lines.Insert(BeforeTrailingBlanks(lines, section + 1, end), $"{SchemeType}={value(null)}");
 
             return true;
         }
+
+        var current = lines[existing][(lines[existing].IndexOf('=') + 1)..].Trim();
+        var wanted = $"{SchemeType}={value(current)}";
 
         if (lines[existing] == wanted)
         {
@@ -241,7 +482,38 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         return true;
     }
 
-    private string EntryFile => Path.Combine(DataRoot, "applications", EntryName + ".desktop");
+    /// <summary>Everything up to the next section heading belongs to this section.</summary>
+    private static int SectionEnd(List<string> lines, int heading)
+    {
+        var end = heading + 1;
+
+        while (end < lines.Count && !lines[end].TrimStart().StartsWith('['))
+        {
+            end++;
+        }
+
+        return end;
+    }
+
+    /// <summary>
+    /// Back over the blank lines that separate a section from the next, so a key lands
+    /// under the ones already there rather than against the next heading.
+    /// </summary>
+    private static int BeforeTrailingBlanks(List<string> lines, int start, int end)
+    {
+        var last = end;
+
+        while (last > start && lines[last - 1].Trim().Length == 0)
+        {
+            last--;
+        }
+
+        return last;
+    }
+
+    private string ApplicationsFolder => Path.Combine(DataRoot, "applications");
+
+    private string EntryFile => Path.Combine(ApplicationsFolder, EntryName + EntryExtension);
 
     /// <summary>
     /// The Exec value, quoted the way the desktop entry specification asks, so a path
