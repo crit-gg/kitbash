@@ -41,6 +41,13 @@ internal sealed class WorkspaceNameResolver : IWorkspaceNameResolver
             ?? FolderName(root);
     }
 
+    public string? TeamName(string root)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+
+        return ConfiguredName(root, SettingsLayer.TeamShared) ?? GodotProjectName(root);
+    }
+
     /// <summary>
     /// The user layer, so renaming from the launcher never shows up as a change to a
     /// committed file. The team layer still names it for everybody who has no name of

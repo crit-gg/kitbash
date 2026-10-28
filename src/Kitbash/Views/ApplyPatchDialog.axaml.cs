@@ -25,8 +25,15 @@ public partial class ApplyPatchDialog : DialogWindow
 
         if (Model is { } model)
         {
-            await model.CheckSetAsideAsync();
+            await model.PrepareAsync();
         }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        Model?.Discard();
+
+        base.OnClosed(e);
     }
 
     // The frame's close glyph and Escape both arrive here, and neither may stop git part way.

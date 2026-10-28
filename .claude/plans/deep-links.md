@@ -22,6 +22,7 @@ segment is not, because a page id is camel case and a version has dots in it.
 | `kitbash://tool/<id>` | the workspace page opens with that tool's card scrolled to |
 | `kitbash://tools/repository?add=<address>` | a dialog asks, and only then does the list gain it |
 | `kitbash://engines/repository?add=<address>&name=<name>` | the same for an engine repository, which a workspace names by `<name>` |
+| `kitbash://git/patch?url=<address>&workspace=<name>` | Apply patch opens on that patch, downloaded, for the workspace with that team name |
 
 Anything else raises a toast saying Kitbash does not know the link. **The link is never read
 back out into the toast**, since it came from a web page.
@@ -63,6 +64,15 @@ workspace naming it installs its builds. Only a repository on github.com is take
 defaults to the repository's own name, and a name the global list already holds is refused
 with a toast, since a workspace could not then say which it means. Written to the global
 list alone. `.claude/plans/engine-repositories.md` has the rest.
+
+**Patch.** `git/patch` needs both values and refuses either missing with a toast. **Only https
+is downloaded**, since anything on the network path could change a patch over plain http,
+and an http link is refused with a toast before anything is fetched. `workspace` is a team
+name, the one in the project's committed config or its `project.godot`, so it means the same
+project for everybody whatever they renamed theirs. No match is a toast. One match is opened
+first and the dialog names it. Several put a choice in the dialog with none chosen. **The
+download is the one thing a link does on its own**, a read into the cache, and Apply patch
+still has to be pressed. `.claude/plans/patch-apply.md` has the rest.
 
 ## Registration
 

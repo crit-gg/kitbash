@@ -77,6 +77,29 @@ next to it are both in the way, since git treats neighbouring changes as overlap
 `applypatch-msg` hook refusing, an untracked file where the patch adds one, a plain diff, a
 patch already applied. An older stash entry of the person's own survives a run.
 
+## From a link
+
+`kitbash://git/patch?url=<https address>&workspace=<team name>`, built after the menu item.
+The deep links plan has the grammar and the refusals.
+
+- **The workspace is named by its team name**, `IWorkspaceNameResolver.TeamName`: the name
+  in the committed team config, then the Godot project's. **A person's own rename and the
+  folder name never answer**, since each is that person's alone. `IWorkspaceRegistry.CalledByTeam`
+  matches it ignoring case among folders that are there.
+- **One match is opened first**, so the launcher behind the dialog is that project. Several
+  put a choice in the dialog, each with its folder, and nothing is chosen until the person
+  picks. Whichever it went into is the open one once it lands.
+- **The download happens as the dialog opens**, and the dialog shows the whole address under
+  Patch from. Nothing is applied until Apply.
+- **`IGitPatchDownloader` fetches over https alone into `<cache>/patches/<random>/<name>`**,
+  where the name is the address's last segment when that is a plain file name, since the
+  stash is named after it, and `downloaded.patch` otherwise. The folder is cleared before each
+  download and the file is deleted when the dialog closes.
+- **64 MiB is the most it takes**, stopped as the count passes it whatever the server said.
+  The check is repeated after the download returns, since the block that passes the limit can
+  be the last one. A test caught that.
+- **A private repository cannot be read**, since nothing here signs in to a host.
+
 ## Set aside work
 
 A run stopped between steps 7 and 9, which takes a crash or a power cut, leaves the

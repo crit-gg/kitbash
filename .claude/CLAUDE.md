@@ -353,7 +353,9 @@ person a trip through System Settings on first install. No update has been taken
 runs anything on its own**: `clone` fills the clone dialog, `settings/<pageId>` opens the
 settings window on a page, `engine/<version>` reveals that build on the engines page, and
 `tools/repository?add=` asks in a dialog before the global list gains anything, since that is
-how a program gets onto the machine. `tool/<id>` scrolls to a card. Windows writes a per user
+how a program gets onto the machine. `tool/<id>` scrolls to a card. `git/patch?url=&workspace=`
+downloads a patch over https into Apply patch for the workspace with that team name, and
+applies nothing until Apply is pressed. Windows writes a per user
 registry key, Linux puts `%u` and a `MimeType` line in the desktop entry it already wrote and
 names itself in `mimeapps.list`, and macOS declares `CFBundleURLTypes` in an `Info.plist`
 `build/release.sh` now writes whole. **Windows and Linux start a second copy with the link as

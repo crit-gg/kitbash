@@ -123,6 +123,19 @@ internal sealed class WorkspaceRegistry : IWorkspaceRegistry
         Refresh();
     }
 
+    public IReadOnlyList<Workspace> CalledByTeam(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        var wanted = name.Trim();
+
+        return
+        [
+            .. All.Where(workspace => workspace.Exists
+                && string.Equals(_names.TeamName(workspace.Root), wanted, StringComparison.OrdinalIgnoreCase)),
+        ];
+    }
+
     public void Rename(string root, string? name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);

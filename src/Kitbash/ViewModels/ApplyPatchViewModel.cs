@@ -2,21 +2,26 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Humanizer;
 using Kitbash.Core.Git;
 using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
 using Kitbash.Ui.Controls;
 
 namespace Kitbash.ViewModels;
 
 /// <summary>
-/// One patch being applied to one workspace. Reads the file once it is picked, says what it
-/// will change, and applies it.
+/// One patch being applied to one workspace. Reads the file once it is picked, or downloads
+/// it when a link named an address, says what it will change, and applies it.
 /// </summary>
 public partial class ApplyPatchViewModel : ViewModelBase
 {
     private const string NothingChanged = "Nothing was changed.";
 
     private readonly IGitPatchApplier _applier;
+    private readonly IGitPatchDownloader _downloader;
     private readonly IFileSystem _files;
-    private readonly string _root;
+    private readonly WebAddress? _source;
+
+    /// <summary>The file a download landed in, deleted when the dialog closes.</summary>
+    private string? _downloaded;
 
     /// <summary>Counts reads, so one that finishes after a newer pick is dropped.</summary>
     private int _reads;
@@ -53,16 +58,47 @@ public partial class ApplyPatchViewModel : ViewModelBase
     [ObservableProperty]
     private string _setAsideDetail = string.Empty;
 
-    public ApplyPatchViewModel(IGitPatchApplier applier, IFileSystem files, string root)
+    [ObservableProperty]
+    private WorkspaceViewModel? _target;
+
+    [ObservableProperty]
+    private bool _isDownloading;
+
+    /// <param name="targets">Where it may go. One is chosen already, and several wait for a pick.</param>
+    /// <param name="source">The address a link named, or null when the person picks a file.</param>
+    public ApplyPatchViewModel(
+        IGitPatchApplier applier,
+        IGitPatchDownloader downloader,
+        IFileSystem files,
+        IReadOnlyList<WorkspaceViewModel> targets,
+        WebAddress? source = null)
     {
         ArgumentNullException.ThrowIfNull(applier);
+        ArgumentNullException.ThrowIfNull(downloader);
         ArgumentNullException.ThrowIfNull(files);
-        ArgumentException.ThrowIfNullOrWhiteSpace(root);
+        ArgumentNullException.ThrowIfNull(targets);
+        ArgumentOutOfRangeException.ThrowIfZero(targets.Count);
 
         _applier = applier;
+        _downloader = downloader;
         _files = files;
-        _root = root;
+        _source = source;
+
+        Targets = targets;
+        _target = targets.Count == 1 ? targets[0] : null;
     }
+
+    public IReadOnlyList<WorkspaceViewModel> Targets { get; }
+
+    /// <summary>True when the person has to say which workspace, since several carry the name.</summary>
+    public bool HasChoice => Targets.Count > 1;
+
+    public string TargetName => Target?.Name ?? string.Empty;
+
+    public bool IsFromLink => _source is not null;
+
+    /// <summary>Where a link's patch comes from, in full, so a person sees it before anything runs.</summary>
+    public string Source => _source?.ToString() ?? string.Empty;
 
     /// <summary>The sentence the toast says once the patch has landed.</summary>
     public string Landed { get; private set; } = string.Empty;
@@ -79,7 +115,9 @@ public partial class ApplyPatchViewModel : ViewModelBase
 
     public bool CanEdit => !IsWorking;
 
-    public bool CanApply => HasPreview && !IsWorking && !HasSetAside;
+    public bool IsBusy => IsWorking || IsDownloading;
+
+    public bool CanApply => HasPreview && !IsWorking && !IsDownloading && !HasSetAside && Target is not null;
 
     public bool HasNotice => Notice.Length > 0;
 
@@ -87,19 +125,53 @@ public partial class ApplyPatchViewModel : ViewModelBase
 
     public bool HasSetAside => SetAside.Length > 0;
 
-    /// <summary>Looks for work an interrupted run left set aside. Called as the dialog opens.</summary>
+    /// <summary>
+    /// Looks for work an interrupted run left set aside, then downloads the patch a link
+    /// named. Called as the dialog opens.
+    /// </summary>
+    public async Task PrepareAsync()
+    {
+        await CheckSetAsideAsync().ConfigureAwait(true);
+
+        if (_source is { } source)
+        {
+            await DownloadAsync(source).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Deletes what a link downloaded. Called as the dialog closes.</summary>
+    public void Discard()
+    {
+        if (_downloaded is { } file)
+        {
+            _downloader.Discard(file);
+            _downloaded = null;
+        }
+    }
+
+    /// <summary>Looks for work an interrupted run left set aside in the chosen workspace.</summary>
     public async Task CheckSetAsideAsync()
     {
-        var label = await Task.Run(() => _applier.ReadSetAsideAsync(_root)).ConfigureAwait(true);
+        if (Target?.Workspace.Root is not { } root)
+        {
+            SetAside = string.Empty;
 
-        SetAside = label ?? string.Empty;
-        SetAsideDetail = "Put them back before applying another patch.";
+            return;
+        }
+
+        var label = await Task.Run(() => _applier.ReadSetAsideAsync(root)).ConfigureAwait(true);
+
+        if (Target?.Workspace.Root == root)
+        {
+            SetAside = label ?? string.Empty;
+            SetAsideDetail = "Put them back before applying another patch.";
+        }
     }
 
     /// <summary>Puts back what an interrupted run set aside, when that is safe.</summary>
     public async Task RestoreAsync()
     {
-        if (IsWorking || !HasSetAside)
+        if (IsWorking || !HasSetAside || Target?.Workspace.Root is not { } root)
         {
             return;
         }
@@ -108,7 +180,7 @@ public partial class ApplyPatchViewModel : ViewModelBase
 
         try
         {
-            var outcome = await Task.Run(() => _applier.RestoreAsync(_root)).ConfigureAwait(true);
+            var outcome = await Task.Run(() => _applier.RestoreAsync(root)).ConfigureAwait(true);
 
             switch (outcome)
             {
@@ -136,7 +208,7 @@ public partial class ApplyPatchViewModel : ViewModelBase
     /// <summary>Applies the patch. True when it landed, and the reason is on screen otherwise.</summary>
     public async Task<bool> ApplyAsync()
     {
-        if (!CanApply)
+        if (!CanApply || Target?.Workspace.Root is not { } root)
         {
             return false;
         }
@@ -148,7 +220,7 @@ public partial class ApplyPatchViewModel : ViewModelBase
         try
         {
             var file = PatchFile.Trim();
-            var result = await Task.Run(() => _applier.ApplyAsync(_root, file)).ConfigureAwait(true);
+            var result = await Task.Run(() => _applier.ApplyAsync(root, file)).ConfigureAwait(true);
 
             if (result.Outcome == GitPatchOutcome.Applied)
             {
@@ -196,12 +268,60 @@ public partial class ApplyPatchViewModel : ViewModelBase
     {
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(IsBusy));
+    }
+
+    partial void OnIsDownloadingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanApply));
+        OnPropertyChanged(nameof(IsBusy));
+    }
+
+    partial void OnTargetChanged(WorkspaceViewModel? value)
+    {
+        OnPropertyChanged(nameof(TargetName));
+        OnPropertyChanged(nameof(CanApply));
+        Tell(AlertTier.Error, string.Empty, string.Empty);
+        _ = CheckSetAsideAsync();
     }
 
     partial void OnSetAsideChanged(string value)
     {
         OnPropertyChanged(nameof(HasSetAside));
         OnPropertyChanged(nameof(CanApply));
+    }
+
+    private async Task DownloadAsync(WebAddress source)
+    {
+        IsDownloading = true;
+
+        try
+        {
+            _downloaded = await Task.Run(() => _downloader.DownloadAsync(source)).ConfigureAwait(true);
+            PatchFile = _downloaded;
+        }
+        catch (GitPatchDownloadException exception)
+        {
+            Details = exception.Message;
+
+            switch (exception.Failure)
+            {
+                case GitPatchDownloadFailure.NotSecure:
+                    Tell(AlertTier.Error, "Kitbash only downloads a patch over https.", NothingChanged);
+                    break;
+                case GitPatchDownloadFailure.TooLarge:
+                    Tell(AlertTier.Error, "This patch is too large to download.",
+                        $"Kitbash takes a patch of up to {_downloader.Limit / (1024 * 1024)} MB.");
+                    break;
+                default:
+                    Tell(AlertTier.Error, "The patch could not be downloaded.", "Check the link with your developer.");
+                    break;
+            }
+        }
+        finally
+        {
+            IsDownloading = false;
+        }
     }
 
     /// <summary>Reads and parses the file off the UI thread, since a patch can be large.</summary>
@@ -227,6 +347,12 @@ public partial class ApplyPatchViewModel : ViewModelBase
 
         Preview = preview;
         FileProblem = problem;
+
+        // A link's patch has no field on screen to carry the problem, so the alert does.
+        if (IsFromLink && problem.Length > 0)
+        {
+            Tell(AlertTier.Error, problem, "Check the link with your developer.");
+        }
     }
 
     private (GitPatchPreview? Preview, string Problem) Parse(string path)

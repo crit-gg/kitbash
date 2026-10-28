@@ -545,6 +545,10 @@ public partial class LauncherWindow : ChromelessWindow
                 await AddRepositoryFromLinkAsync(link.Value("add"));
                 break;
 
+            case "git" when Names(link.First, "patch"):
+                await ApplyPatchFromLinkAsync(link.Value("url"), link.Value("workspace"));
+                break;
+
             case "engines" when Names(link.First, "repository"):
                 await AddEngineRepositoryFromLinkAsync(link.Value("add"), link.Value("name"));
                 break;
@@ -586,6 +590,68 @@ public partial class LauncherWindow : ChromelessWindow
         if (await dialog.ShowFor<bool>(this) && dialog.Root is { } root)
         {
             await model.AddWorkspaceAsync(root);
+        }
+    }
+
+    /// <summary>
+    /// Opens Apply patch on the patch a link named, for the workspace whose team name it
+    /// gave. The patch downloads as the dialog opens and nothing is applied until Apply.
+    /// </summary>
+    private async Task ApplyPatchFromLinkAsync(string? url, string? workspace)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var address)
+            || (address.Scheme != Uri.UriSchemeHttps && address.Scheme != Uri.UriSchemeHttp))
+        {
+            Say(ToastTier.Warn, "That link did not name a patch");
+
+            return;
+        }
+
+        if (address.Scheme != Uri.UriSchemeHttps)
+        {
+            Say(ToastTier.Warn, "Kitbash only downloads a patch over https");
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(workspace))
+        {
+            Say(ToastTier.Warn, "That link did not name a workspace");
+
+            return;
+        }
+
+        var targets = await model.WorkspacesCalledAsync(workspace);
+
+        if (targets.Count == 0)
+        {
+            Say(
+                ToastTier.Warn,
+                $"No workspace here is called {Short(workspace.Trim())}",
+                "Add the project to Kitbash first.");
+
+            return;
+        }
+
+        // One match is opened first, so everything behind the dialog is that project. A
+        // switch rebuilds the list, so the match is read again from the new one.
+        if (targets.Count == 1)
+        {
+            await model.OpenWorkspaceAsync(targets[0]);
+            targets = await model.WorkspacesCalledAsync(workspace);
+        }
+
+        var patch = model.NewPatchFromLink(WebAddress.Parse(address), targets);
+        var dialog = new ApplyPatchDialog { DataContext = patch };
+
+        if (await dialog.ShowFor<bool>(this))
+        {
+            await model.PatchAppliedAsync(patch);
         }
     }
 

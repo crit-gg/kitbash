@@ -28,6 +28,12 @@ public interface IWorkspaceRegistry
 
     void SetCurrent(string root);
 
+    /// <summary>
+    /// The workspaces on the list whose team name is this one, ignoring case, and whose
+    /// folder is there. Reads files, so call it off the UI thread.
+    /// </summary>
+    IReadOnlyList<Workspace> CalledByTeam(string name);
+
     /// <summary>Reads names and states from disk again.</summary>
     void Refresh();
 }

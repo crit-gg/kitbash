@@ -664,6 +664,7 @@ public partial class App : Application
                 provider.GetRequiredService<IGitUpdater>(),
                 provider.GetRequiredService<IGitCloner>(),
                 provider.GetRequiredService<IGitPatchApplier>(),
+                provider.GetRequiredService<IGitPatchDownloader>(),
                 provider.GetRequiredService<IUiDispatcher>(),
                 provider.GetRequiredService<IEngineRequirementReader>(),
                 provider.GetRequiredService<IEngineStore>(),

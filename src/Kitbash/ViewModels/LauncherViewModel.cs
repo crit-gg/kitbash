@@ -37,6 +37,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGitUpdater _updater;
     private readonly IGitCloner _cloner;
     private readonly IGitPatchApplier _patchApplier;
+    private readonly IGitPatchDownloader _patchDownloader;
     private readonly IUiDispatcher _dispatcher;
     private readonly IEngineRequirementReader _requirements;
     private readonly IEngineStore _engines;
@@ -135,6 +136,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGitUpdater updater,
         IGitCloner cloner,
         IGitPatchApplier patchApplier,
+        IGitPatchDownloader patchDownloader,
         IUiDispatcher dispatcher,
         IEngineRequirementReader requirements,
         IEngineStore engineStore,
@@ -172,6 +174,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(updater);
         ArgumentNullException.ThrowIfNull(cloner);
         ArgumentNullException.ThrowIfNull(patchApplier);
+        ArgumentNullException.ThrowIfNull(patchDownloader);
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(engineStore);
@@ -198,6 +201,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _updater = updater;
         _cloner = cloner;
         _patchApplier = patchApplier;
+        _patchDownloader = patchDownloader;
         _dispatcher = dispatcher;
         _requirements = requirements;
         _engines = engineStore;
@@ -797,12 +801,40 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     /// dialog owns it, the way the clone dialog owns its own.
     /// </summary>
     public ApplyPatchViewModel? NewPatch() =>
-        _workspaces.Current is { } current ? new(_patchApplier, _files, current.Root) : null;
+        Workspaces.FirstOrDefault(workspace => workspace.IsCurrent) is { } current
+            ? new(_patchApplier, _patchDownloader, _files, [current])
+            : null;
 
-    /// <summary>Reads the repository again and says the patch landed.</summary>
+    /// <summary>A patch a link named, for one of the workspaces carrying the name it gave.</summary>
+    public ApplyPatchViewModel NewPatchFromLink(WebAddress source, IReadOnlyList<WorkspaceViewModel> targets) =>
+        new(_patchApplier, _patchDownloader, _files, targets, source);
+
+    /// <summary>
+    /// The workspaces on the list whose team name is this one, so a link means the same
+    /// project for everybody whatever they renamed theirs.
+    /// </summary>
+    public async Task<IReadOnlyList<WorkspaceViewModel>> WorkspacesCalledAsync(string teamName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(teamName);
+
+        var found = await Task.Run(() => _workspaces.CalledByTeam(teamName)).ConfigureAwait(true);
+        var roots = found.Select(workspace => workspace.Root).ToHashSet(StringComparer.Ordinal);
+
+        return [.. Workspaces.Where(workspace => roots.Contains(workspace.Workspace.Root))];
+    }
+
+    /// <summary>
+    /// Opens the workspace the patch went into when it is not the open one, reads the
+    /// repository again and says the patch landed.
+    /// </summary>
     public async Task PatchAppliedAsync(ApplyPatchViewModel patch)
     {
         ArgumentNullException.ThrowIfNull(patch);
+
+        if (patch.Target is { } target && _workspaces.Current?.Root != target.Workspace.Root)
+        {
+            await SwitchToAsync(target);
+        }
 
         await _git.RefreshAsync();
 

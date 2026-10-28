@@ -11,6 +11,12 @@ public interface IWorkspaceNameResolver
     string Resolve(string root);
 
     /// <summary>
+    /// The name everybody on the team sees: the team config's, then the Godot project's.
+    /// Null when neither names it. A person's own rename and the folder are never read.
+    /// </summary>
+    string? TeamName(string root);
+
+    /// <summary>
     /// Names the workspace for this person alone, in the user layer, so nothing a
     /// colleague sees changes. Blank takes the name away and the order above decides again.
     /// </summary>

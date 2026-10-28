@@ -42,6 +42,47 @@
             </ui:Alert>
 
             <StackPanel Spacing="7">
+                <TextBlock Classes="fieldLabel" Text="Workspace" />
+
+                <TextBlock Name="TargetText" Classes="fieldNote" Text="{Binding TargetName}"
+                           IsVisible="{Binding !HasChoice}" />
+
+                <ComboBox Name="TargetChoice"
+                          ItemsSource="{Binding Targets}"
+                          SelectedItem="{Binding Target}"
+                          PlaceholderText="Choose a workspace"
+                          HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding CanEdit}"
+                          IsVisible="{Binding HasChoice}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WorkspaceViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Path}"
+                                           FontFamily="{DynamicResource FontFamilyMono}"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           Foreground="{DynamicResource InkMuted}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+
+            <!-- A link's patch is shown by where it comes from, in full, before anything runs. -->
+            <StackPanel Spacing="7" IsVisible="{Binding IsFromLink}">
+                <TextBlock Classes="fieldLabel" Text="Patch from" />
+
+                <SelectableTextBlock Name="SourceText"
+                                     Text="{Binding Source}"
+                                     FontFamily="{DynamicResource FontFamilyMono}"
+                                     FontSize="{DynamicResource FontSizeSmall}"
+                                     Foreground="{DynamicResource InkSecondary}"
+                                     TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="7" IsVisible="{Binding !IsFromLink}">
                 <TextBlock Classes="fieldLabel" Text="Patch file" />
 
                 <ui:PathField Name="PatchField"
@@ -100,10 +141,12 @@
                 </ui:Alert.Actions>
             </ui:Alert>
 
-            <StackPanel Spacing="8" IsVisible="{Binding IsWorking}">
+            <StackPanel Spacing="8" IsVisible="{Binding IsBusy}">
                 <ProgressBar IsIndeterminate="True" />
 
-                <TextBlock Classes="fieldNote" Text="Applying" />
+                <TextBlock Classes="fieldNote" Text="Downloading" IsVisible="{Binding IsDownloading}" />
+
+                <TextBlock Classes="fieldNote" Text="Applying" IsVisible="{Binding IsWorking}" />
             </StackPanel>
         </StackPanel>
 

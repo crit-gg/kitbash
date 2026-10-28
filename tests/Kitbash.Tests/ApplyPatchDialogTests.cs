@@ -5,6 +5,8 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Kitbash.Core.Git;
 using Kitbash.Core.IO;
+using Kitbash.Core.Platform;
+using Kitbash.Core.Workspaces;
 using Kitbash.Ui.Controls;
 using Kitbash.ViewModels;
 using Kitbash.Views;
@@ -40,6 +42,7 @@ public sealed class ApplyPatchDialogTests : IDisposable
 
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "kitbash-apply-" + Path.GetRandomFileName());
     private readonly FakeApplier _applier = new();
+    private readonly FakeDownloader _downloader = new();
 
     public ApplyPatchDialogTests()
     {
@@ -57,9 +60,18 @@ public sealed class ApplyPatchDialogTests : IDisposable
         return file;
     }
 
-    private (ApplyPatchDialog Dialog, ApplyPatchViewModel Model) Open()
+    private WorkspaceViewModel Workspace(string name = "Game", string folder = "game") =>
+        new(new Workspace(Path.Combine(_folder, folder), name, Exists: true, HasRepository: true), isCurrent: false, "~/" + folder);
+
+    private (ApplyPatchDialog Dialog, ApplyPatchViewModel Model) Open(
+        IReadOnlyList<WorkspaceViewModel>? targets = null, string? source = null)
     {
-        var model = new ApplyPatchViewModel(_applier, new FileSystem(), _folder);
+        var model = new ApplyPatchViewModel(
+            _applier,
+            _downloader,
+            new FileSystem(),
+            targets ?? [Workspace()],
+            source is null ? null : WebAddress.Parse(source));
         var dialog = new ApplyPatchDialog { DataContext = model };
 
         dialog.Show();
@@ -206,6 +218,58 @@ public sealed class ApplyPatchDialogTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void ALinksPatchDownloadsAsTheDialogOpensAndSaysWhereFrom()
+    {
+        _downloader.File = Patch();
+
+        var (dialog, model) = Open(source: "https://example.invalid/team/fix.patch");
+
+        Assert.Equal("https://example.invalid/team/fix.patch", Named<SelectableTextBlock>(dialog, "SourceText").Text);
+        Assert.False(Named<PathField>(dialog, "PatchField").IsEffectivelyVisible);
+        Assert.Equal("Fix the door", Named<TextBlock>(dialog, "SubjectText").Text);
+        Assert.True(Named<Button>(dialog, "ApplyButton").IsEnabled);
+
+        dialog.Close();
+        Settle();
+
+        Assert.Equal([_downloader.File], _downloader.Discarded);
+        Assert.True(model.IsFromLink);
+    }
+
+    [AvaloniaFact]
+    public void ADownloadThatFailsSaysSoAndOffersNothing()
+    {
+        _downloader.Failure = new GitPatchDownloadException(GitPatchDownloadFailure.TooLarge, "too big");
+
+        var (dialog, _) = Open(source: "https://example.invalid/fix.patch");
+
+        Assert.Equal("This patch is too large to download.", Notice(dialog).Title);
+        Assert.False(Named<Button>(dialog, "ApplyButton").IsEnabled);
+    }
+
+    /// <summary>Two of a person's workspaces carry the name a link gave, so nothing is chosen for them.</summary>
+    [AvaloniaFact]
+    public void SeveralMatchesWaitForAPick()
+    {
+        _downloader.File = Patch();
+        var first = Workspace("Game", "game");
+        var second = Workspace("Game", "game-copy");
+
+        var (dialog, model) = Open([first, second], "https://example.invalid/fix.patch");
+        var choice = Named<ComboBox>(dialog, "TargetChoice");
+
+        Assert.True(choice.IsEffectivelyVisible);
+        Assert.Null(choice.SelectedItem);
+        Assert.False(Named<Button>(dialog, "ApplyButton").IsEnabled);
+
+        choice.SelectedItem = second;
+        Settle();
+
+        Assert.Same(second, model.Target);
+        Assert.True(Named<Button>(dialog, "ApplyButton").IsEnabled);
+    }
+
+    [AvaloniaFact]
     public void TheLaunchersUpdateButtonCarriesTheGitMenu()
     {
         var window = new LauncherWindow();
@@ -248,6 +312,22 @@ public sealed class ApplyPatchDialogTests : IDisposable
 
             return Task.FromResult(GitRestoreOutcome.Restored);
         }
+    }
+
+    private sealed class FakeDownloader : IGitPatchDownloader
+    {
+        public string File { get; set; } = string.Empty;
+
+        public GitPatchDownloadException? Failure { get; set; }
+
+        public List<string> Discarded { get; } = [];
+
+        public long Limit => 64L * 1024 * 1024;
+
+        public Task<string> DownloadAsync(WebAddress address, CancellationToken cancellation = default) =>
+            Failure is { } failure ? Task.FromException<string>(failure) : Task.FromResult(File);
+
+        public void Discard(string path) => Discarded.Add(path);
     }
 
     private sealed class NoGit : IGitRunner
