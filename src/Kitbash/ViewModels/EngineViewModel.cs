@@ -281,6 +281,29 @@ public sealed partial class EngineViewModel : ViewModelBase
             ? _launcher.OpenInGodot(engine, project, mode, Resolution.Requirement)
             : Task.CompletedTask;
 
+    /// <summary>
+    /// Starts what a link asked for. False when the engine is not the one asked for, since
+    /// a link never installs and never opens anyway.
+    /// </summary>
+    public async Task<bool> LaunchFromLinkAsync(GodotLaunchMode mode, bool builds)
+    {
+        if (!IsMatched || !CanLaunch)
+        {
+            return false;
+        }
+
+        if (mode == GodotLaunchMode.Editor && !builds)
+        {
+            await OpenWithoutBuilding();
+        }
+        else
+        {
+            await Launch(mode);
+        }
+
+        return true;
+    }
+
     [RelayCommand]
     private void OpenProjectFolder()
     {

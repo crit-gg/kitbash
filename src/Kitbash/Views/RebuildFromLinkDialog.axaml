@@ -1,0 +1,69 @@
+<ui:DialogWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:vm="clr-namespace:Kitbash.ViewModels"
+                 xmlns:ui="clr-namespace:Kitbash.Ui.Controls;assembly=Kitbash.Ui"
+                 x:Class="Kitbash.Views.RebuildFromLinkDialog"
+                 x:DataType="vm:RebuildFromLinkViewModel"
+                 Title="Clean rebuild"
+                 Width="440" SizeToContent="Height"
+                 FontFamily="{StaticResource FontFamilyUi}"
+                 FontSize="{StaticResource FontSizeBody}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <ui:WindowTitleBar Grid.Row="0" Title="Clean rebuild" />
+
+        <StackPanel Grid.Row="1" Margin="16,16,16,14" Spacing="12">
+            <Grid ColumnDefinitions="20,*" ColumnSpacing="11">
+                <ui:Icon Grid.Column="0" Glyph="InfoCircle" Size="20"
+                         Foreground="{DynamicResource Accent}"
+                         VerticalAlignment="Top" />
+
+                <StackPanel Grid.Column="1" Spacing="6">
+                    <TextBlock Name="Heading"
+                               Text="{Binding Heading}"
+                               FontSize="{DynamicResource FontSizeSubhead}"
+                               FontWeight="{DynamicResource FontWeightStrong}"
+                               Foreground="{DynamicResource InkPrimary}"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Text="A link asked for this. The import cache is deleted and every asset is imported again, which can take a while."
+                               FontSize="{DynamicResource FontSizeControl}"
+                               LineHeight="19"
+                               Foreground="{DynamicResource InkSecondary}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <ComboBox Name="TargetChoice"
+                      Margin="31,0,0,0"
+                      ItemsSource="{Binding Targets}"
+                      SelectedItem="{Binding Target}"
+                      PlaceholderText="Choose a workspace"
+                      HorizontalAlignment="Stretch"
+                      IsVisible="{Binding HasChoice}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Path}"
+                                       FontFamily="{DynamicResource FontFamilyMono}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Foreground="{DynamicResource InkMuted}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Cancel is ready, since a web page wrote the question. -->
+        <ui:DialogFooter Grid.Row="2">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Name="CancelButton" Content="Cancel" ui:Dialog.Role="Cancel" ui:Dialog.TakesFocus="True" />
+                <Button Name="RebuildButton" Content="Rebuild" Classes="primary" ui:Dialog.Role="Accept"
+                        IsEnabled="{Binding CanRebuild}" />
+            </StackPanel>
+        </ui:DialogFooter>
+    </Grid>
+</ui:DialogWindow>

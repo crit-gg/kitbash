@@ -349,21 +349,24 @@ only when it is itself on a Mac. **Nothing is signed or notarized on macOS**, wh
 person a trip through System Settings on first install. No update has been taken yet. The
 `kitbash-updates` skill has the rest.
 
-**`kitbash://` links open the launcher.** Four verbs and **none of them clones, installs or
-runs anything on its own**: `clone` fills the clone dialog, `settings/<pageId>` opens the
+**`kitbash://` links open the launcher.** **None of them clones or installs anything on its
+own**, and only a workspace link starts anything: `clone` fills the clone dialog, `settings/<pageId>` opens the
 settings window on a page, `engine/<version>` reveals that build on the engines page, and
 `tools/repository?add=` asks in a dialog before the global list gains anything, since that is
 how a program gets onto the machine. `tool/<id>` scrolls to a card. `git/patch?url=&workspace=`
 downloads a patch over https into Apply patch for the workspace that name means, its team
-name, Godot project name or first commit, and applies nothing until Apply is pressed. Copy
-patch link in the git menu writes one, behind the Show developer features setting. Windows writes a per user
+name, Godot project name or first commit, and applies nothing until Apply is pressed.
+`workspace/<name>` opens that workspace by the same name, and `/edit`, `/edit?build=false` and
+`/play` then start the engine straight away, only on a matched engine, while `/rebuild` asks
+first. Copy patch link in the git menu writes the first kind and Copy link on the engine menu
+writes the second, both behind the Show developer features setting. Windows writes a per user
 registry key, Linux puts `%u` and a `MimeType` line in the desktop entry it already wrote and
 names itself in `mimeapps.list`, and macOS declares `CFBundleURLTypes` in an `Info.plist`
 `build/release.sh` now writes whole. **Windows and Linux start a second copy with the link as
 an argument**, so `ISingleInstance` carries it to the copy that is already running, while
 macOS raises an activation instead. **A second copy also exits cleanly now**, where it used to
-dump core after handing over. Verified end to end on Linux with two real copies. Copy patch link is the one
-link maker so far, and `.claude/plans/deep-links.md` has the whole of it.
+dump core after handing over. Verified end to end on Linux with two real copies. Copy patch link and Copy link
+are the link makers so far, and `.claude/plans/deep-links.md` has the whole of it.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes each runtime, and at start the app checks its feed and replaces

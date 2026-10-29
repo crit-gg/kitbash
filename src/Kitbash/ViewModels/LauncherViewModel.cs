@@ -833,6 +833,98 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         return [.. Workspaces.Where(workspace => roots.Contains(workspace.Workspace.Root))];
     }
 
+    /// <summary>
+    /// Opens a workspace a link named and starts what it asked for. Starts nothing unless
+    /// the engine is the one the workspace asks for, and the strip then says why.
+    /// </summary>
+    /// <param name="mode">What to start, or null to open the workspace alone.</param>
+    public async Task LaunchFromLinkAsync(WorkspaceViewModel workspace, GodotLaunchMode? mode, bool builds)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+
+        if (workspace.IsMissing)
+        {
+            _toasts.Post(new ToastRequest { Tier = ToastTier.Warn, Title = "That workspace folder has gone" });
+
+            return;
+        }
+
+        // A link can land while the first load is still running, so this one waits for it.
+        if (workspace.CanSwitch)
+        {
+            await SwitchAsync(workspace, waits: true).ConfigureAwait(true);
+        }
+        else if (mode is not null)
+        {
+            await RefreshEngineAsync().ConfigureAwait(true);
+        }
+
+        Page = WorkspacePage;
+
+        if (mode is not { } wanted || await Engine.LaunchFromLinkAsync(wanted, builds).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        _toasts.Post(Engine.Project is null
+            ? new ToastRequest { Tier = ToastTier.Warn, Title = "That workspace has no Godot project" }
+            : new ToastRequest
+            {
+                Tier = ToastTier.Warn,
+                Title = "That link could not open the project",
+                Body = "Its engine is not ready. The engine strip says what it needs.",
+            });
+    }
+
+    /// <summary>Opens the workspaces page, for a link whose name matches more than one.</summary>
+    public void ShowManyFromLink()
+    {
+        Page = WorkspacesPage;
+
+        _toasts.Post(new ToastRequest
+        {
+            Tier = ToastTier.Warn,
+            Title = "More than one workspace matches that link",
+            Body = "Open the one you meant.",
+        });
+    }
+
+    /// <summary>
+    /// A link to the open workspace, named the way every teammate's copy will find it.
+    /// Null with no workspace open or nothing to name it by.
+    /// </summary>
+    public async Task<string?> WorkspaceLinkAsync(GodotLaunchMode? mode, bool builds = true)
+    {
+        if (Workspaces.FirstOrDefault(workspace => workspace.IsCurrent) is not { } current)
+        {
+            return null;
+        }
+
+        var name = await Task.Run(() => _linkNames.ForAsync(current.Workspace.Root)).ConfigureAwait(true);
+
+        if (name is null)
+        {
+            _toasts.Post(new ToastRequest
+            {
+                Tier = ToastTier.Warn,
+                Title = "This workspace has nothing a link can name it by",
+                Body = "Add a workspace.name to its team config, or commit to its repository.",
+            });
+
+            return null;
+        }
+
+        return WorkspaceDeepLink.Write(name, mode, builds);
+    }
+
+    /// <summary>Says the link is on the clipboard.</summary>
+    public void WorkspaceLinkCopied() => _toasts.Post(new ToastRequest
+    {
+        Tier = ToastTier.Ok,
+        Title = "Link copied",
+        Body = "Anyone with this workspace in Kitbash can open it.",
+    });
+
     /// <summary>Whether the git menu offers the features for the people who make patches and links.</summary>
     [ObservableProperty]
     private bool _showsDeveloperFeatures;
@@ -1000,9 +1092,10 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         return workspace.CanSwitch ? SwitchAsync(workspace) : Task.CompletedTask;
     }
 
-    private async Task SwitchAsync(WorkspaceViewModel workspace)
+    /// <param name="waits">True waits out a load already running, where false drops the switch.</param>
+    private async Task SwitchAsync(WorkspaceViewModel workspace, bool waits = false)
     {
-        await LoadAsync(() => _workspaces.SetCurrent(workspace.Workspace.Root)).ConfigureAwait(true);
+        await LoadAsync(() => _workspaces.SetCurrent(workspace.Workspace.Root), waits).ConfigureAwait(true);
 
         // A workspace just opened may follow a build that moved since it was last open.
         _ = CheckEngineAsync(refresh: false);

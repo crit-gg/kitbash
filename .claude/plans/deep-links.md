@@ -1,8 +1,9 @@
 # Deep links
 
 `kitbash://` links. A page, a README or a chat message carries one, a person clicks it,
-and the launcher shows what it names. Four verbs, and **not one of them clones, installs
-or runs anything on its own**.
+and the launcher shows what it names. **No link clones or installs anything on its own.**
+A workspace link is the one that starts something: it opens the editor or runs the game
+without asking, and asks before a clean rebuild.
 
 The rules that govern registration are in the `kitbash-platform` skill, the packaging half
 is in `kitbash-updates`, and the settings page target is in `kitbash-settings`. This file
@@ -23,6 +24,11 @@ segment is not, because a page id is camel case and a version has dots in it.
 | `kitbash://tools/repository?add=<address>` | a dialog asks, and only then does the list gain it |
 | `kitbash://engines/repository?add=<address>&name=<name>` | the same for an engine repository, which a workspace names by `<name>` |
 | `kitbash://git/patch?url=<address>&workspace=<name>` | Apply patch opens on that patch, downloaded, for the workspace that name means |
+| `kitbash://workspace/<name>` | the workspace page opens on that workspace |
+| `kitbash://workspace/<name>/edit` | the same, then the editor opens, building C# first |
+| `kitbash://workspace/<name>/edit?build=false` | the same without building, after the usual question when there is C# to build |
+| `kitbash://workspace/<name>/play` | the same, then the project runs |
+| `kitbash://workspace/<name>/rebuild` | a dialog asks, then the clean rebuild runs |
 
 Anything else raises a toast saying Kitbash does not know the link. **The link is never read
 back out into the toast**, since it came from a web page.
@@ -74,6 +80,19 @@ everybody whatever they renamed theirs. No match is a toast that never reads the
 first and the dialog names it. Several put a choice in the dialog with none chosen. **The
 download is the one thing a link does on its own**, a read into the cache, and Apply patch
 still has to be pressed. `.claude/plans/patch-apply.md` has the rest.
+
+**Workspace.** `WorkspaceDeepLink` reads and writes the link, and the action is folded to
+lower case. `<name>` means what it means for `git/patch`, through `IWorkspaceLinkNames`. The
+workspace becomes the open one and the workspace page is shown, waiting out a load already
+running so a link that lands during start up still switches. **Edit and play start straight
+away**, and only on a matched engine: a missing or mismatched one leaves the page showing the
+strip, which already offers Install or Open anyway, and a toast says the link could not run.
+**A link never installs an engine and never opens anyway.** `build=false` goes through
+`OpenWithoutBuilding`, so it asks exactly what Shift click asks. **Rebuild asks first** in
+`RebuildFromLinkDialog`, with Cancel ready, since it deletes the import cache. Several matches
+start nothing: the workspaces page opens with a toast, except for a rebuild, whose dialog holds
+the choice with none chosen. Copy link on the workspace page's engine menu writes all five,
+behind the Show developer features setting.
 
 ## Registration
 
@@ -228,9 +247,12 @@ the packages, not measured.
 - **The portable Windows build registers itself like any other copy.** Run it once from a
   folder that is later deleted and the scheme names nothing. The alternative was for it to
   register nothing at all, and registering the copy that ran is what Linux does.
-- **One verb has a link maker and the rest do not.** Copy patch link in the git menu writes
-  `git/patch` links through `DeepLink.Write`, shown only with `launcher.developer` on. Every
-  other verb's link is one somebody typed.
+- **Two verbs have a link maker and the rest do not.** Copy patch link in the git menu writes
+  `git/patch` links and Copy link on the engine menu writes `workspace` links, both shown only
+  with `launcher.developer` on. Every other verb's link is one somebody typed.
+- **No workspace link has been followed end to end.** The parser, the dialog and the menu are
+  tested headlessly. Switching and launching need a whole `LauncherViewModel`, which no test
+  builds.
 - **The other uses were considered and refused**, on purpose: a link to one record inside a
   tool, and a Godot editor plugin linking back. Neither is built and neither is planned here.
 - **An OAuth redirect is not one of these and must not become one.** `github-login.md` chose
@@ -246,6 +268,9 @@ A link comes from a web page, so every part of it is somebody else's.
   already in the registry, an engine by a version pattern, a tool by an id, a page by an id.
   The only free text a link carries is a repository address, and both of those go through a
   parser that refuses anything but the schemes it names.
-- **Nothing runs without a person.** No clone, no install, no script, no engine start.
+- **Nothing installs or clones without a person.** No clone, no install, no script.
   Adding a repository is the one thing that writes, and it has a dialog of its own.
+- **A workspace link starts the engine on a project already on this machine.** That is the
+  project's own code, in a workspace the person added. It runs only on the engine the
+  workspace asks for, and a rebuild, which deletes the import cache, asks first.
 - **The link is never echoed** into a toast or a log line a person reads.

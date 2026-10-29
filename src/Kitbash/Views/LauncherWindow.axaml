@@ -573,6 +573,15 @@
                                         <MenuItem Header="Open project folder"
                                                   Command="{Binding Engine.OpenProjectFolderCommand}"
                                                   IsEnabled="{Binding Engine.CanOpenProject}" />
+                                        <MenuItem Name="CopyWorkspaceLink" Header="Copy link"
+                                                  IsVisible="{Binding ShowsDeveloperFeatures}"
+                                                  IsEnabled="{Binding Engine.CanOpenProject}">
+                                            <MenuItem Header="Open workspace" Click="OnCopyOpenLinkClick" />
+                                            <MenuItem Header="Open in editor" Click="OnCopyEditLinkClick" />
+                                            <MenuItem Header="Open without building" Click="OnCopyEditWithoutBuildingLinkClick" />
+                                            <MenuItem Header="Play" Click="OnCopyPlayLinkClick" />
+                                            <MenuItem Header="Clean rebuild" Click="OnCopyRebuildLinkClick" />
+                                        </MenuItem>
                                     </MenuFlyout>
                                 </SplitButton.Flyout>
                             </SplitButton>

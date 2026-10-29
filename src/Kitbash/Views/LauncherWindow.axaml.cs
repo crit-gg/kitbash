@@ -15,6 +15,7 @@ using Kitbash.Ui.Settings;
 using Kitbash.Ui.Toasts;
 using Kitbash.Updates;
 using Kitbash.ViewModels;
+using Kitbash.Workspaces;
 
 namespace Kitbash.Views;
 
@@ -267,6 +268,34 @@ public partial class LauncherWindow : ChromelessWindow
         {
             model.PatchLinkCopied();
         }
+    }
+
+    private async void OnCopyOpenLinkClick(object? sender, RoutedEventArgs e) =>
+        await CopyWorkspaceLinkAsync(null);
+
+    private async void OnCopyEditLinkClick(object? sender, RoutedEventArgs e) =>
+        await CopyWorkspaceLinkAsync(GodotLaunchMode.Editor);
+
+    private async void OnCopyEditWithoutBuildingLinkClick(object? sender, RoutedEventArgs e) =>
+        await CopyWorkspaceLinkAsync(GodotLaunchMode.Editor, builds: false);
+
+    private async void OnCopyPlayLinkClick(object? sender, RoutedEventArgs e) =>
+        await CopyWorkspaceLinkAsync(GodotLaunchMode.Play);
+
+    private async void OnCopyRebuildLinkClick(object? sender, RoutedEventArgs e) =>
+        await CopyWorkspaceLinkAsync(GodotLaunchMode.Rebuild);
+
+    private async Task CopyWorkspaceLinkAsync(GodotLaunchMode? mode, bool builds = true)
+    {
+        if (Model is not { } model
+            || await model.WorkspaceLinkAsync(mode, builds) is not { } link
+            || Clipboard is not { } clipboard)
+        {
+            return;
+        }
+
+        await clipboard.SetValueAsync(DataFormat.Text, link);
+        model.WorkspaceLinkCopied();
     }
 
     private async void OnCloneWorkspaceClick(object? sender, RoutedEventArgs e)
@@ -535,8 +564,8 @@ public partial class LauncherWindow : ChromelessWindow
     }
 
     /// <summary>
-    /// Does what a kitbash link asks for. Every verb ends in something on screen, and none
-    /// of them clones, installs or runs anything without a person pressing a button.
+    /// Does what a kitbash link asks for. Every verb ends in something on screen. Only a
+    /// workspace link starts anything unasked, the editor or the game.
     /// </summary>
     public async Task FollowAsync(DeepLink link)
     {
@@ -570,6 +599,10 @@ public partial class LauncherWindow : ChromelessWindow
 
             case "engines" when Names(link.First, "repository"):
                 await AddEngineRepositoryFromLinkAsync(link.Value("add"), link.Value("name"));
+                break;
+
+            case WorkspaceDeepLink.Verb when WorkspaceDeepLink.TryParse(link, out var workspace):
+                await WorkspaceFromLinkAsync(workspace);
                 break;
 
             default:
@@ -669,6 +702,50 @@ public partial class LauncherWindow : ChromelessWindow
         {
             await model.PatchAppliedAsync(patch);
         }
+    }
+
+    /// <summary>
+    /// Opens the workspace a link named and starts what it asked for. Several matches start
+    /// nothing, except a rebuild, which asks first and holds the choice.
+    /// </summary>
+    private async Task WorkspaceFromLinkAsync(WorkspaceDeepLink link)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+
+        var targets = await model.WorkspacesCalledAsync(link.Name);
+
+        if (targets.Count == 0)
+        {
+            Say(ToastTier.Warn, "No workspace here matches that link", "Add the project to Kitbash first.");
+
+            return;
+        }
+
+        var target = targets[0];
+
+        if (link.Mode == GodotLaunchMode.Rebuild)
+        {
+            var rebuild = new RebuildFromLinkViewModel(targets);
+            var dialog = new RebuildFromLinkDialog { DataContext = rebuild };
+
+            if (!await dialog.ShowFor<bool>(this) || rebuild.Target is not { } chosen)
+            {
+                return;
+            }
+
+            target = chosen;
+        }
+        else if (targets.Count > 1)
+        {
+            model.ShowManyFromLink();
+
+            return;
+        }
+
+        await model.LaunchFromLinkAsync(target, link.Mode, link.Builds);
     }
 
     private async Task ShowEngineFromLinkAsync(string? version)

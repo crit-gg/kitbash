@@ -65,6 +65,11 @@ public sealed class DeepLinkRoutingTests
     [InlineData("kitbash://engine/4.7.1")]
     [InlineData("kitbash://tool/foundry")]
     [InlineData("kitbash://tools/repository?add=https://example.com/tools")]
+    [InlineData("kitbash://workspace/Slopworks")]
+    [InlineData("kitbash://workspace/Slopworks/edit?build=false")]
+    [InlineData("kitbash://workspace/Slopworks/play")]
+    [InlineData("kitbash://workspace/Slopworks/rebuild")]
+    [InlineData("kitbash://workspace/Slopworks/delete")]
     public async Task AWindowWithNoModelSurvivesEveryVerb(string text)
     {
         await Follow(new LauncherWindow(), text);
