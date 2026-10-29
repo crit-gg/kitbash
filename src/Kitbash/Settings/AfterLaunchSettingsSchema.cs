@@ -9,10 +9,12 @@ namespace Kitbash.Settings;
 /// </summary>
 public sealed class AfterLaunchSettingsSchema
 {
-    public AfterLaunchSettingsSchema(ToolActionsEditor tools, StartupSettingsSchema startup)
+    public AfterLaunchSettingsSchema(
+        ToolActionsEditor tools, StartupSettingsSchema startup, DeveloperSettingsSchema developer)
     {
         ArgumentNullException.ThrowIfNull(tools);
         ArgumentNullException.ThrowIfNull(startup);
+        ArgumentNullException.ThrowIfNull(developer);
 
         AfterProjectManager = Action(
             "launcher.after.projectManager",
@@ -64,6 +66,7 @@ public sealed class AfterLaunchSettingsSchema
                     [AfterProjectManager, AfterEditor, AfterPlay]),
                 new SettingsSection("When starting a Kitbash tool", [AfterTool, ToolsThatDiffer]),
                 new SettingsSection("When opening an external tool", [AfterExternalTool]),
+                developer.Section,
             ],
         };
     }

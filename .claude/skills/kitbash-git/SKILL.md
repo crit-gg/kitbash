@@ -415,7 +415,9 @@ no plumbing, which was asked for in so many words. A failure rolls back with `gi
   finds and puts back, and only onto a tree with no tracked changes.
 
 **A `kitbash://git/patch` link downloads one first**, through `IGitPatchDownloader`, over https
-only and into the cache, for the workspace whose team name the link gives.
+only and into the cache, for the workspace the link names. **A project's identity across
+clones is its first commit**, `rev-list --max-parents=0 HEAD`, when no team or Godot name
+says it: the smallest root by ordinal is written, and any root matches.
 
 `.claude/plans/patch-apply.md` has the order, every outcome and what was measured.
 

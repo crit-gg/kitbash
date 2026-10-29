@@ -99,7 +99,11 @@ public partial class LauncherWindow : ChromelessWindow
             // shows up when the window that changed it closes.
             if (value is { } windows)
             {
-                windows.Closed += (_, _) => _ = Model?.RefreshOpenInAsync();
+                windows.Closed += (_, _) =>
+                {
+                    _ = Model?.RefreshOpenInAsync();
+                    _ = Model?.RefreshDeveloperFeaturesAsync();
+                };
             }
         }
     }
@@ -247,6 +251,21 @@ public partial class LauncherWindow : ChromelessWindow
         if (await dialog.ShowFor<bool>(this))
         {
             await Model.PatchAppliedAsync(patch);
+        }
+    }
+
+    private async void OnCopyPatchLinkClick(object? sender, RoutedEventArgs e)
+    {
+        if (Model is not { } model || await model.NewPatchLinkAsync() is not { } link)
+        {
+            return;
+        }
+
+        var dialog = new CopyPatchLinkDialog { DataContext = link };
+
+        if (await dialog.ShowFor<bool>(this))
+        {
+            model.PatchLinkCopied();
         }
     }
 
@@ -630,10 +649,7 @@ public partial class LauncherWindow : ChromelessWindow
 
         if (targets.Count == 0)
         {
-            Say(
-                ToastTier.Warn,
-                $"No workspace here is called {Short(workspace.Trim())}",
-                "Add the project to Kitbash first.");
+            Say(ToastTier.Warn, "No workspace here matches that link", "Add the project to Kitbash first.");
 
             return;
         }

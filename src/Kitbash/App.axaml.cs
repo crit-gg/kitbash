@@ -589,6 +589,8 @@ public partial class App : Application
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<DeveloperSettingsSchema>()
+            .AddSingleton<IDeveloperSettings, DeveloperSettings>()
             .AddSingleton<IStartupSettings, StartupSettings>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
@@ -665,6 +667,8 @@ public partial class App : Application
                 provider.GetRequiredService<IGitCloner>(),
                 provider.GetRequiredService<IGitPatchApplier>(),
                 provider.GetRequiredService<IGitPatchDownloader>(),
+                provider.GetRequiredService<IWorkspaceLinkNames>(),
+                provider.GetRequiredService<IDeveloperSettings>(),
                 provider.GetRequiredService<IUiDispatcher>(),
                 provider.GetRequiredService<IEngineRequirementReader>(),
                 provider.GetRequiredService<IEngineStore>(),

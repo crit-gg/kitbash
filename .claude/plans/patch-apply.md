@@ -79,13 +79,20 @@ patch already applied. An older stash entry of the person's own survives a run.
 
 ## From a link
 
-`kitbash://git/patch?url=<https address>&workspace=<team name>`, built after the menu item.
+`kitbash://git/patch?url=<https address>&workspace=<name>`, built after the menu item.
 The deep links plan has the grammar and the refusals.
 
-- **The workspace is named by its team name**, `IWorkspaceNameResolver.TeamName`: the name
-  in the committed team config, then the Godot project's. **A person's own rename and the
-  folder name never answer**, since each is that person's alone. `IWorkspaceRegistry.CalledByTeam`
-  matches it ignoring case among folders that are there.
+- **A link names a workspace through `IWorkspaceLinkNames`**: the name in the committed team
+  config, then the Godot project's, then the repository's first commit. **A person's own
+  rename, the folder name and the remote's name never answer**, since each can differ from
+  one person or one remote to the next. The first commit is the same in every clone with
+  nothing to set up, which is why it is the fallback and not a generated id, which someone
+  would have to commit and push before it meant anything.
+- **The first commit is `rev-list --max-parents=0 HEAD`.** A history that merged unrelated
+  ones has several. A link writes the smallest by ordinal, and a workspace matches when the
+  link's commit is any of its roots. Git only runs for a value of 40 or 64 hex digits, so a
+  link carrying a name never costs a process per workspace. A fork shares the commit, and the
+  dialog's choice of workspace covers that. A shallow clone has a different one.
 - **One match is opened first**, so the launcher behind the dialog is that project. Several
   put a choice in the dialog, each with its folder, and nothing is chosen until the person
   picks. Whichever it went into is the open one once it lands.
@@ -99,6 +106,16 @@ The deep links plan has the grammar and the refusals.
   The check is repeated after the download returns, since the block that passes the limit can
   be the last one. A test caught that.
 - **A private repository cannot be read**, since nothing here signs in to a host.
+
+## Making a link
+
+**Copy patch link** is the git menu's second item, shown only when `launcher.developer` is on,
+which is Show developer features in the Advanced section of the Launcher settings page and
+off by default. It is reread whenever the settings window closes, so it needs no restart.
+The dialog takes an https address, names the open workspace the way a link will, says so when
+that name is the first commit, and shows the link before Copy link puts it on the clipboard and
+a toast says so. A folder with no name and no commit cannot have a link, and the dialog says
+what would give it one.
 
 ## Set aside work
 

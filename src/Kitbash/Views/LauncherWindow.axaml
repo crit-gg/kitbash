@@ -1242,6 +1242,8 @@
                                         <SplitButton.Flyout>
                                             <MenuFlyout Placement="TopEdgeAlignedRight">
                                                 <MenuItem Header="Apply patch" Click="OnApplyPatchClick" />
+                                                <MenuItem Header="Copy patch link" Click="OnCopyPatchLinkClick"
+                                                          IsVisible="{Binding ShowsDeveloperFeatures}" />
                                             </MenuFlyout>
                                         </SplitButton.Flyout>
                                     </SplitButton>

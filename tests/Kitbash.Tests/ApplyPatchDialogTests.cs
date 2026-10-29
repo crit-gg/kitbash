@@ -277,7 +277,7 @@ public sealed class ApplyPatchDialogTests : IDisposable
 
         var menu = Assert.IsType<MenuFlyout>(button.Flyout);
 
-        Assert.Equal(["Apply patch"], menu.Items.Cast<MenuItem>().Select(item => item.Header));
+        Assert.Equal("Apply patch", menu.Items.Cast<MenuItem>().First().Header);
     }
 
     private sealed class FakeApplier : IGitPatchApplier

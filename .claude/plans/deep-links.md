@@ -22,7 +22,7 @@ segment is not, because a page id is camel case and a version has dots in it.
 | `kitbash://tool/<id>` | the workspace page opens with that tool's card scrolled to |
 | `kitbash://tools/repository?add=<address>` | a dialog asks, and only then does the list gain it |
 | `kitbash://engines/repository?add=<address>&name=<name>` | the same for an engine repository, which a workspace names by `<name>` |
-| `kitbash://git/patch?url=<address>&workspace=<name>` | Apply patch opens on that patch, downloaded, for the workspace with that team name |
+| `kitbash://git/patch?url=<address>&workspace=<name>` | Apply patch opens on that patch, downloaded, for the workspace that name means |
 
 Anything else raises a toast saying Kitbash does not know the link. **The link is never read
 back out into the toast**, since it came from a web page.
@@ -67,9 +67,10 @@ list alone. `.claude/plans/engine-repositories.md` has the rest.
 
 **Patch.** `git/patch` needs both values and refuses either missing with a toast. **Only https
 is downloaded**, since anything on the network path could change a patch over plain http,
-and an http link is refused with a toast before anything is fetched. `workspace` is a team
-name, the one in the project's committed config or its `project.godot`, so it means the same
-project for everybody whatever they renamed theirs. No match is a toast. One match is opened
+and an http link is refused with a toast before anything is fetched. `workspace` is
+`IWorkspaceLinkNames`: the team name in the project's committed config, then its
+`project.godot` name, then the repository's first commit, so it means the same project for
+everybody whatever they renamed theirs. No match is a toast that never reads the name back. One match is opened
 first and the dialog names it. Several put a choice in the dialog with none chosen. **The
 download is the one thing a link does on its own**, a read into the cache, and Apply patch
 still has to be pressed. `.claude/plans/patch-apply.md` has the rest.
@@ -227,8 +228,9 @@ the packages, not measured.
 - **The portable Windows build registers itself like any other copy.** Run it once from a
   folder that is later deleted and the scheme names nothing. The alternative was for it to
   register nothing at all, and registering the copy that ran is what Linux does.
-- **Nothing emits a link yet.** There is no Copy link action anywhere in the app, so every
-  link is one somebody typed. That is the next thing worth building and it is not here.
+- **One verb has a link maker and the rest do not.** Copy patch link in the git menu writes
+  `git/patch` links through `DeepLink.Write`, shown only with `launcher.developer` on. Every
+  other verb's link is one somebody typed.
 - **The other uses were considered and refused**, on purpose: a link to one record inside a
   tool, and a Godot editor plugin linking back. Neither is built and neither is planned here.
 - **An OAuth redirect is not one of these and must not become one.** `github-login.md` chose

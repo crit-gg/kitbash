@@ -303,8 +303,8 @@ public static class KitbashCoreServices
     }
 
     /// <summary>
-    /// Making a workspace from nothing, which is more than listing one: it writes a Godot
-    /// project and runs git, so it takes both of those as well.
+    /// Making a workspace from nothing, and what a link calls one. Both run git as well as
+    /// reading the list, so this takes git and the Godot project writer too.
     /// </summary>
     public static IServiceCollection AddKitbashWorkspaceCreation(this IServiceCollection services)
     {
@@ -316,6 +316,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IGitInitializer, GitInitializer>();
         services.TryAddSingleton<IGodotProjectWriter, GodotProjectWriter>();
         services.TryAddSingleton<IWorkspaceMaker, WorkspaceMaker>();
+        services.TryAddSingleton<IWorkspaceLinkNames, WorkspaceLinkNames>();
 
         return services;
     }

@@ -50,6 +50,35 @@ public sealed class DeepLink
     }
 
     /// <summary>
+    /// The text of a link, with every part escaped, so <see cref="TryParse"/> gives back
+    /// exactly the verb, segments and values written.
+    /// </summary>
+    public static string Write(
+        string verb, IReadOnlyList<string> segments, IReadOnlyList<KeyValuePair<string, string>> query)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(verb);
+        ArgumentNullException.ThrowIfNull(segments);
+        ArgumentNullException.ThrowIfNull(query);
+
+        var text = new System.Text.StringBuilder($"{Scheme}://{Uri.EscapeDataString(verb)}");
+
+        foreach (var segment in segments)
+        {
+            text.Append('/').Append(Uri.EscapeDataString(segment));
+        }
+
+        for (var at = 0; at < query.Count; at++)
+        {
+            text.Append(at == 0 ? '?' : '&')
+                .Append(Uri.EscapeDataString(query[at].Key))
+                .Append('=')
+                .Append(Uri.EscapeDataString(query[at].Value));
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
     /// True when the text is a link. Both shapes a desktop may hand over are taken, the
     /// one with an authority such as <c>kitbash://engine/4.7.1</c> and the one without.
     /// </summary>

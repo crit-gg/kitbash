@@ -38,6 +38,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGitCloner _cloner;
     private readonly IGitPatchApplier _patchApplier;
     private readonly IGitPatchDownloader _patchDownloader;
+    private readonly IWorkspaceLinkNames _linkNames;
+    private readonly IDeveloperSettings _developer;
     private readonly IUiDispatcher _dispatcher;
     private readonly IEngineRequirementReader _requirements;
     private readonly IEngineStore _engines;
@@ -137,6 +139,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGitCloner cloner,
         IGitPatchApplier patchApplier,
         IGitPatchDownloader patchDownloader,
+        IWorkspaceLinkNames linkNames,
+        IDeveloperSettings developer,
         IUiDispatcher dispatcher,
         IEngineRequirementReader requirements,
         IEngineStore engineStore,
@@ -175,6 +179,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(cloner);
         ArgumentNullException.ThrowIfNull(patchApplier);
         ArgumentNullException.ThrowIfNull(patchDownloader);
+        ArgumentNullException.ThrowIfNull(linkNames);
+        ArgumentNullException.ThrowIfNull(developer);
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(requirements);
         ArgumentNullException.ThrowIfNull(engineStore);
@@ -202,6 +208,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _cloner = cloner;
         _patchApplier = patchApplier;
         _patchDownloader = patchDownloader;
+        _linkNames = linkNames;
+        _developer = developer;
         _dispatcher = dispatcher;
         _requirements = requirements;
         _engines = engineStore;
@@ -252,6 +260,8 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         {
             Page = WorkspacePage;
         }
+
+        _showsDeveloperFeatures = developer.ShowsDeveloperFeatures;
 
         // Not part of the read above, which runs before the window exists and has to stay
         // quick. This one probes every install and can run a process.
@@ -810,18 +820,50 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         new(_patchApplier, _patchDownloader, _files, targets, source);
 
     /// <summary>
-    /// The workspaces on the list whose team name is this one, so a link means the same
-    /// project for everybody whatever they renamed theirs.
+    /// The workspaces on the list a link's name means, so a link means the same project
+    /// for everybody whatever they renamed theirs.
     /// </summary>
-    public async Task<IReadOnlyList<WorkspaceViewModel>> WorkspacesCalledAsync(string teamName)
+    public async Task<IReadOnlyList<WorkspaceViewModel>> WorkspacesCalledAsync(string linkName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(teamName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(linkName);
 
-        var found = await Task.Run(() => _workspaces.CalledByTeam(teamName)).ConfigureAwait(true);
+        var found = await Task.Run(() => _linkNames.MatchAsync(linkName)).ConfigureAwait(true);
         var roots = found.Select(workspace => workspace.Root).ToHashSet(StringComparer.Ordinal);
 
         return [.. Workspaces.Where(workspace => roots.Contains(workspace.Workspace.Root))];
     }
+
+    /// <summary>Whether the git menu offers the features for the people who make patches and links.</summary>
+    [ObservableProperty]
+    private bool _showsDeveloperFeatures;
+
+    /// <summary>Reads the developer setting again, since the settings window may have changed it.</summary>
+    public async Task RefreshDeveloperFeaturesAsync() =>
+        ShowsDeveloperFeatures = await Task.Run(() => _developer.ShowsDeveloperFeatures).ConfigureAwait(true);
+
+    /// <summary>
+    /// A patch link about to be made for the open workspace, named the way every teammate's
+    /// copy will find it. Null with no workspace open.
+    /// </summary>
+    public async Task<CopyPatchLinkViewModel?> NewPatchLinkAsync()
+    {
+        if (Workspaces.FirstOrDefault(workspace => workspace.IsCurrent) is not { } current)
+        {
+            return null;
+        }
+
+        var name = await Task.Run(() => _linkNames.ForAsync(current.Workspace.Root)).ConfigureAwait(true);
+
+        return new CopyPatchLinkViewModel(current.Name, name);
+    }
+
+    /// <summary>Says the link is on the clipboard.</summary>
+    public void PatchLinkCopied() => _toasts.Post(new ToastRequest
+    {
+        Tier = ToastTier.Ok,
+        Title = "Patch link copied",
+        Body = "Anyone with Kitbash can open it to apply the patch.",
+    });
 
     /// <summary>
     /// Opens the workspace the patch went into when it is not the open one, reads the

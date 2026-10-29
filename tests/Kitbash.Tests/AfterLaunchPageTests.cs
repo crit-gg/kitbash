@@ -41,6 +41,7 @@ public sealed class AfterLaunchPageTests : IDisposable
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<DeveloperSettingsSchema>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IApplicationRestart>(new FakeRestart())
             .BuildServiceProvider();
@@ -55,6 +56,28 @@ public sealed class AfterLaunchPageTests : IDisposable
         if (Directory.Exists(_root))
         {
             Directory.Delete(_root, recursive: true);
+        }
+    }
+
+    /// <summary>The developer switch is the page's last section, a toggle that starts off.</summary>
+    [AvaloniaFact]
+    public async Task TheDeveloperSwitchIsLastAndOff()
+    {
+        var (window, model) = await Shown();
+
+        try
+        {
+            var section = model.Page!.Sections[^1];
+            var row = Assert.IsType<SettingValueRowViewModel>(Assert.Single(section.Rows));
+
+            Assert.Equal("ADVANCED", section.Title);
+            Assert.Equal("launcher.developer", row.Key);
+            Assert.True(row.IsToggle);
+            Assert.False(_services.GetRequiredService<DeveloperSettingsSchema>().ShowDeveloperFeatures.Default);
+        }
+        finally
+        {
+            window.Close();
         }
     }
 

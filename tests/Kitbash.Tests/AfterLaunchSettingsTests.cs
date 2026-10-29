@@ -37,6 +37,7 @@ public sealed class AfterLaunchSettingsTests : IDisposable
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<DeveloperSettingsSchema>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IAfterLaunchSettings, AfterLaunchSettings>()
             .BuildServiceProvider();

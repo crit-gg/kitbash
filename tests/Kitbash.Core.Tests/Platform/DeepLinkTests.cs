@@ -106,4 +106,20 @@ public sealed class DeepLinkTests
 
         Assert.False(DeepLink.TryParse(long_, out _));
     }
+
+    /// <summary>A link written here reads back as exactly what was written, whatever an address holds.</summary>
+    [Fact]
+    public void AWrittenLinkReadsBackWhole()
+    {
+        const string address = "https://drop.example.invalid/download File?id=a&b=c=d";
+
+        var text = DeepLink.Write("git", ["patch"], [new("url", address), new("workspace", "Door Game")]);
+
+        Assert.StartsWith("kitbash://git/patch?url=https%3A%2F%2F", text, StringComparison.Ordinal);
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal("git", link.Verb);
+        Assert.Equal(["patch"], link.Segments);
+        Assert.Equal(address, link.Value("url"));
+        Assert.Equal("Door Game", link.Value("workspace"));
+    }
 }
