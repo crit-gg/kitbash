@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 using Kitbash.Core.IO;
@@ -5,22 +6,37 @@ using Kitbash.Core.IO;
 namespace Kitbash.Core.Platform.Windows;
 
 /// <summary>
-/// Names the running copy as the program that opens a <c>kitbash</c> link. Setup.exe
-/// already writes the shortcut and the uninstall entry, so this is the whole of what
-/// Windows needs here.
+/// Names the running copy as the program that opens a <c>kitbash</c> link, and offers it
+/// for a <c>project.godot</c>. Setup.exe already writes the shortcut and the uninstall entry.
 /// </summary>
 // Per user, under HKEY_CURRENT_USER, so nothing here needs elevation and a second person
 // signed in keeps their own answer.
 [SupportedOSPlatform("windows")]
-internal sealed class WindowsDesktopIntegration : IDesktopIntegration
+internal sealed partial class WindowsDesktopIntegration : IDesktopIntegration
 {
-    private const string ClassesKey = @"Software\Classes\" + DeepLink.Scheme;
+    private const string Classes = @"Software\Classes\";
+
+    private const string SchemeKey = Classes + DeepLink.Scheme;
 
     /// <summary>The value that makes the key a url scheme rather than a file type.</summary>
     private const string ProtocolValue = "URL Protocol";
 
     /// <summary>The form Windows expects, which shows in the dialog naming the program.</summary>
     private const string Description = "URL:Kitbash Protocol";
+
+    // Windows associates by extension, and in Godot 4 only project.godot carries this one.
+    private const string ExtensionKey = Classes + ".godot";
+
+    private const string ProgId = "Kitbash.GodotProject";
+
+    private const string ProgIdKey = Classes + ProgId;
+
+    private const string ProjectDescription = "Godot project";
+
+    /// <summary>Lists a program in Open with without making it the default.</summary>
+    private const string OpenWithKey = ExtensionKey + @"\OpenWithProgids";
+
+    private const int AssociationsChanged = 0x08000000;
 
     private readonly IEnvironment _environment;
     private readonly IFileSystem _fileSystem;
@@ -34,7 +50,9 @@ internal sealed class WindowsDesktopIntegration : IDesktopIntegration
         _fileSystem = fileSystem;
     }
 
-    public void Install()
+    // A choice made in the Open with dialog is kept under UserChoice, which outranks the
+    // default written here and cannot be written by a program.
+    public void Install(bool projectsByDefault)
     {
         if (Program() is not { } program)
         {
@@ -42,34 +60,50 @@ internal sealed class WindowsDesktopIntegration : IDesktopIntegration
         }
 
         // The whole command line, quoted, so a path holding a space still names one
-        // program and the link stays one argument.
+        // program and the argument stays one argument.
         var command = $"\"{program}\" \"%1\"";
+        var icon = $"{program},0";
 
         try
         {
-            using var scheme = Registry.CurrentUser.CreateSubKey(ClassesKey);
+            var changed = false;
 
-            if (Current(scheme) == command)
+            using (var scheme = Registry.CurrentUser.CreateSubKey(SchemeKey))
             {
-                return;
+                changed |= Ensure(scheme, null, Description);
+                changed |= Ensure(scheme, ProtocolValue, string.Empty);
+                changed |= EnsureSub(scheme, "DefaultIcon", icon);
+                changed |= EnsureSub(scheme, @"shell\open\command", command);
             }
 
-            scheme.SetValue(null, Description);
-            scheme.SetValue(ProtocolValue, string.Empty);
-
-            using (var icon = scheme.CreateSubKey("DefaultIcon"))
+            using (var type = Registry.CurrentUser.CreateSubKey(ProgIdKey))
             {
-                icon.SetValue(null, $"{program},0");
+                changed |= Ensure(type, null, ProjectDescription);
+                changed |= EnsureSub(type, "DefaultIcon", icon);
+                changed |= EnsureSub(type, @"shell\open\command", command);
             }
 
-            using var open = scheme.CreateSubKey(@"shell\open\command");
+            using (var openWith = Registry.CurrentUser.CreateSubKey(OpenWithKey))
+            {
+                changed |= Ensure(openWith, ProgId, string.Empty);
+            }
 
-            open.SetValue(null, command);
+            using (var extension = Registry.CurrentUser.CreateSubKey(ExtensionKey))
+            {
+                changed |= projectsByDefault
+                    ? Ensure(extension, null, ProgId)
+                    : GiveBack(extension);
+            }
+
+            if (changed)
+            {
+                Announce();
+            }
         }
         catch (Exception exception) when (Survivable(exception))
         {
-            // The app works without deep links, so a registry that will not take this is
-            // survived rather than reported.
+            // The app works without deep links or file types, so a registry that will not
+            // take this is survived rather than reported.
         }
     }
 
@@ -77,12 +111,28 @@ internal sealed class WindowsDesktopIntegration : IDesktopIntegration
     {
         try
         {
-            Registry.CurrentUser.DeleteSubKeyTree(ClassesKey, throwOnMissingSubKey: false);
+            Registry.CurrentUser.DeleteSubKeyTree(SchemeKey, throwOnMissingSubKey: false);
+            Registry.CurrentUser.DeleteSubKeyTree(ProgIdKey, throwOnMissingSubKey: false);
+
+            using (var openWith = Registry.CurrentUser.OpenSubKey(OpenWithKey, writable: true))
+            {
+                openWith?.DeleteValue(ProgId, throwOnMissingValue: false);
+            }
+
+            using (var extension = Registry.CurrentUser.OpenSubKey(ExtensionKey, writable: true))
+            {
+                if (extension is not null)
+                {
+                    GiveBack(extension);
+                }
+            }
+
+            Announce();
         }
         catch (Exception exception) when (Survivable(exception))
         {
             // An uninstall carries on. A key left behind points at a program that has
-            // gone, which Windows reports for itself the next time somebody follows a link.
+            // gone, which Windows reports for itself the next time somebody uses it.
         }
     }
 
@@ -96,13 +146,44 @@ internal sealed class WindowsDesktopIntegration : IDesktopIntegration
             ? path
             : null;
 
-    /// <summary>What the key already names, so an unchanged launch writes nothing.</summary>
-    private static string? Current(RegistryKey scheme)
+    /// <summary>Writes a string value only when it differs, so an unchanged launch writes nothing.</summary>
+    private static bool Ensure(RegistryKey key, string? name, string value)
     {
-        using var open = scheme.OpenSubKey(@"shell\open\command");
+        if (key.GetValue(name) as string == value)
+        {
+            return false;
+        }
 
-        return open?.GetValue(null) as string;
+        key.SetValue(name, value);
+
+        return true;
     }
+
+    private static bool EnsureSub(RegistryKey key, string path, string value)
+    {
+        using var sub = key.CreateSubKey(path);
+
+        return Ensure(sub, null, value);
+    }
+
+    /// <summary>Clears the extension's default only when it names this program.</summary>
+    private static bool GiveBack(RegistryKey extension)
+    {
+        if (extension.GetValue(null) as string != ProgId)
+        {
+            return false;
+        }
+
+        extension.DeleteValue(string.Empty, throwOnMissingValue: false);
+
+        return true;
+    }
+
+    /// <summary>Explorer caches associations until it is told they changed.</summary>
+    private static void Announce() => SHChangeNotify(AssociationsChanged, 0, IntPtr.Zero, IntPtr.Zero);
+
+    [LibraryImport("shell32.dll")]
+    private static partial void SHChangeNotify(int eventId, uint flags, IntPtr item1, IntPtr item2);
 
     private static bool Survivable(Exception exception) =>
         exception is UnauthorizedAccessException or IOException

@@ -233,6 +233,7 @@ public static class KitbashCoreServices
         services.TryAddSingleton<IGodotBuildLog, GodotBuildLog>();
         services.TryAddSingleton<IGodotLauncher, GodotLauncher>();
         services.TryAddSingleton<IEngineCommand, EngineCommand>();
+        services.TryAddSingleton<IProjectFileRouter, ProjectFileRouter>();
         services.AddKitbashGodotProjects();
         services.AddEngineFiles();
 

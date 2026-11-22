@@ -3,9 +3,9 @@ using Kitbash.Core.IO;
 namespace Kitbash.Core.Platform.Linux;
 
 /// <summary>
-/// Puts the running AppImage in the menu and names it as the program that opens a
-/// <c>kitbash</c> link. An entry an AppImage manager wrote for it is kept up to date
-/// instead of being joined by a second one.
+/// Puts the running AppImage in the menu, names it as the program that opens a
+/// <c>kitbash</c> link and offers it for a <c>project.godot</c>. An entry an AppImage
+/// manager wrote for it is kept up to date instead of being joined by a second one.
 /// </summary>
 internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 {
@@ -34,6 +34,33 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     /// <summary>The mime type a url scheme is named by, which is the shared mime info rule.</summary>
     private const string SchemeType = "x-scheme-handler/" + DeepLink.Scheme;
 
+    /// <summary>The name Godot's own package gives a project file, so the two agree.</summary>
+    private const string ProjectType = "application/x-godot-project";
+
+    private static readonly string[] HandledTypes = [SchemeType, ProjectType];
+
+    /// <summary>Under the data root's mime folder, which only the shared mime info database reads.</summary>
+    private const string MimePackage = "kitbash-godot-project.xml";
+
+    /// <summary>Builds the database a definition is read from. Writes only under the folder it is given.</summary>
+    private const string MimeDatabaseTool = "update-mime-database";
+
+    // Copied from misc/dist/linux/org.godotengine.Godot.xml in the Godot source, so a machine
+    // with Godot's package installed reads the same type twice and merges it.
+    private const string MimeDefinition =
+        $"""
+        <?xml version="1.0"?>
+        <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+          <mime-type type="{ProjectType}">
+            <comment>Godot Engine project</comment>
+            <sub-class-of type="text/plain"/>
+            <icon name="x-godot-project"/>
+            <glob pattern="{ProjectFileArgument.FileName}"/>
+          </mime-type>
+        </mime-info>
+
+        """;
+
     /// <summary>Where a person's own default program per mime type is kept.</summary>
     private const string AssociationFile = "mimeapps.list";
     private const string DefaultsSection = "[Default Applications]";
@@ -44,17 +71,27 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
     private readonly IFileSystem _fileSystem;
     private readonly IEnvironment _environment;
+    private readonly IExecutableFinder _executables;
+    private readonly IProcessRunner _processes;
 
-    public LinuxDesktopIntegration(IFileSystem fileSystem, IEnvironment environment)
+    public LinuxDesktopIntegration(
+        IFileSystem fileSystem,
+        IEnvironment environment,
+        IExecutableFinder executables,
+        IProcessRunner processes)
     {
         ArgumentNullException.ThrowIfNull(fileSystem);
         ArgumentNullException.ThrowIfNull(environment);
+        ArgumentNullException.ThrowIfNull(executables);
+        ArgumentNullException.ThrowIfNull(processes);
 
         _fileSystem = fileSystem;
         _environment = environment;
+        _executables = executables;
+        _processes = processes;
     }
 
-    public void Install()
+    public void Install(bool projectsByDefault)
     {
         var image = _environment.GetVariable(ImagePath);
 
@@ -85,7 +122,8 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
                 Refresh(entry);
             }
 
-            WriteAssociation(Path.GetFileName(entry), removed);
+            WriteMimeType();
+            WriteAssociation(Path.GetFileName(entry), removed, projectsByDefault);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -191,11 +229,15 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         var types = Value(lines, "MimeType") ?? string.Empty;
 
-        if (!types.Split(';').Contains(SchemeType, StringComparer.Ordinal))
+        foreach (var type in HandledTypes)
         {
-            var separator = types.Length == 0 || types.EndsWith(';') ? string.Empty : ";";
+            if (!types.Split(';').Contains(type, StringComparer.Ordinal))
+            {
+                var separator = types.Length == 0 || types.EndsWith(';') ? string.Empty : ";";
 
-            changed |= Set(lines, "MimeType", $"{types}{separator}{SchemeType};");
+                types = $"{types}{separator}{type};";
+                changed |= Set(lines, "MimeType", types);
+            }
         }
 
         if (BundledEntry() is { } bundled)
@@ -321,7 +363,7 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
         Exec={Quote(image)} %u
         TryExec={image}
         Categories=Development;
-        MimeType={SchemeType};
+        MimeType={SchemeType};{ProjectType};
         Terminal=false
         {Mark}
 
@@ -397,10 +439,47 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     }
 
     /// <summary>
-    /// Names this entry as what opens a kitbash link. Edited in place, since home-manager
-    /// keeps the file as a read only link and replacing it would take that link away.
+    /// Defines the project type for a machine without Godot's own package. A desktop reads
+    /// only the built database, so the tool runs when the definition changes. It writes
+    /// under the folder it is given and needs no elevation. Without it the type stays unknown.
     /// </summary>
-    private void WriteAssociation(string id, string? removed)
+    private void WriteMimeType()
+    {
+        var root = Path.Combine(DataRoot, "mime");
+        var folder = Path.Combine(root, "packages");
+        var file = Path.Combine(folder, MimePackage);
+
+        if (_fileSystem.FileExists(file) && _fileSystem.ReadAllText(file) == MimeDefinition)
+        {
+            return;
+        }
+
+        _fileSystem.CreateDirectory(folder);
+        Replace(file, MimeDefinition);
+
+        if (_executables.Find(MimeDatabaseTool) is not { } tool)
+        {
+            return;
+        }
+
+        try
+        {
+            _processes.Run(ProcessRequest.Command(tool, root));
+        }
+        catch (ProcessStartException)
+        {
+            // The type stays unknown until something else builds the database.
+        }
+    }
+
+    /// <summary>
+    /// Names this entry as what opens a kitbash link, and as what opens a project file when
+    /// asked to. Edited in place, since home-manager keeps the file as a read only link and
+    /// replacing it would take that link away.
+    /// </summary>
+    // Offering without claiming writes no project line. GLib makes the first app a user list
+    // names the default when no default is set, so any line here would claim it.
+    private void WriteAssociation(string id, string? removed, bool projectsByDefault)
     {
         var file = Path.Combine(ConfigRoot, AssociationFile);
 
@@ -408,10 +487,21 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
             ? Lines(_fileSystem.ReadAllText(file))
             : [];
 
-        var added = Associate(lines, AddedSection, existing => First(existing, id, removed));
-        var defaulted = Associate(lines, DefaultsSection, _ => id);
+        var changed = Associate(lines, AddedSection, SchemeType, existing => First(existing, id, removed));
+        changed |= Associate(lines, DefaultsSection, SchemeType, _ => id);
 
-        if (!added && !defaulted)
+        if (projectsByDefault)
+        {
+            changed |= Associate(lines, AddedSection, ProjectType, existing => First(existing, id, removed));
+            changed |= Associate(lines, DefaultsSection, ProjectType, _ => id);
+        }
+        else
+        {
+            changed |= Dissociate(lines, AddedSection, ProjectType, id, removed);
+            changed |= Dissociate(lines, DefaultsSection, ProjectType, id, removed);
+        }
+
+        if (!changed)
         {
             return;
         }
@@ -434,10 +524,10 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
     }
 
     /// <summary>
-    /// Puts the scheme's key into one section of a mimeapps.list, leaving every other
+    /// Puts one type's key into one section of a mimeapps.list, leaving every other
     /// section and every other key exactly as it was. False means it already held that.
     /// </summary>
-    private static bool Associate(List<string> lines, string heading, Func<string?, string> value)
+    private static bool Associate(List<string> lines, string heading, string type, Func<string?, string> value)
     {
         var section = lines.FindIndex(line => line.Trim() == heading);
 
@@ -449,28 +539,24 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
             }
 
             lines.Add(heading);
-            lines.Add($"{SchemeType}={value(null)}");
+            lines.Add($"{type}={value(null)}");
             lines.Add(string.Empty);
 
             return true;
         }
 
         var end = SectionEnd(lines, section);
-
-        var existing = lines.FindIndex(
-            section + 1,
-            end - section - 1,
-            line => line.TrimStart().StartsWith(SchemeType + "=", StringComparison.Ordinal));
+        var existing = KeyLine(lines, section, end, type);
 
         if (existing < 0)
         {
-            lines.Insert(BeforeTrailingBlanks(lines, section + 1, end), $"{SchemeType}={value(null)}");
+            lines.Insert(BeforeTrailingBlanks(lines, section + 1, end), $"{type}={value(null)}");
 
             return true;
         }
 
         var current = lines[existing][(lines[existing].IndexOf('=') + 1)..].Trim();
-        var wanted = $"{SchemeType}={value(current)}";
+        var wanted = $"{type}={value(current)}";
 
         if (lines[existing] == wanted)
         {
@@ -481,6 +567,55 @@ internal sealed class LinuxDesktopIntegration : IDesktopIntegration
 
         return true;
     }
+
+    /// <summary>
+    /// Takes this entry, and one of ours just removed, off one type's key in one section.
+    /// Every other name stays, and a key left naming nothing goes. False means nothing changed.
+    /// </summary>
+    private static bool Dissociate(List<string> lines, string heading, string type, string id, string? removed)
+    {
+        var section = lines.FindIndex(line => line.Trim() == heading);
+
+        if (section < 0)
+        {
+            return false;
+        }
+
+        var existing = KeyLine(lines, section, SectionEnd(lines, section), type);
+
+        if (existing < 0)
+        {
+            return false;
+        }
+
+        var names = lines[existing][(lines[existing].IndexOf('=') + 1)..]
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var kept = names.Where(name => name != id && name != removed).ToArray();
+
+        if (kept.Length == names.Length)
+        {
+            return false;
+        }
+
+        if (kept.Length == 0)
+        {
+            lines.RemoveAt(existing);
+        }
+        else
+        {
+            lines[existing] = $"{type}={string.Join(';', kept)};";
+        }
+
+        return true;
+    }
+
+    /// <summary>The line holding a type's key inside a section, or minus one.</summary>
+    private static int KeyLine(List<string> lines, int section, int end, string type) =>
+        lines.FindIndex(
+            section + 1,
+            end - section - 1,
+            line => line.TrimStart().StartsWith(type + "=", StringComparison.Ordinal));
 
     /// <summary>Everything up to the next section heading belongs to this section.</summary>
     private static int SectionEnd(List<string> lines, int heading)

@@ -613,6 +613,10 @@ public partial class LauncherWindow : ChromelessWindow
         }
     }
 
+    /// <summary>Opens a project file the desktop handed over.</summary>
+    public Task OpenProjectFileAsync(ProjectFileArgument file) =>
+        Model?.OpenProjectFileAsync(file) ?? Task.CompletedTask;
+
     /// <summary>
     /// Opens the clone dialog with the address a link carried already in it. Nothing is
     /// cloned until the dialog is answered.

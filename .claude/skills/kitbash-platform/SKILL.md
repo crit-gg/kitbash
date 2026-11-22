@@ -301,6 +301,19 @@ and the entry is rewritten or replaced at the next launch instead. macOS keeps
 `NoDesktopIntegration`, since an application bundle in Applications is already in Launchpad
 and Spotlight and `Info.plist` declares the scheme.
 
+**A `project.godot` is the integration's third job.** Kitbash is always offered for one and
+is the default only when `launcher.projectFiles.default` says so, so `Install` takes that
+flag. Linux writes `mime/packages/kitbash-godot-project.xml` under the data root, Godot's own
+`application/x-godot-project` definition copied, runs `update-mime-database` on that folder
+when it is installed, and adds the type to the entry's `MimeType`. **Offering writes no
+mimeapps.list line for the type**, since GLib takes the first app a user list names as the
+default when none is set. Claiming puts the entry first under both sections, and giving it
+back takes only our id off. Windows writes the `Kitbash.GodotProject` ProgId and lists it under
+`.godot\OpenWithProgids`, and the extension's default only when claiming. A choice in Windows'
+own dialog lives under `UserChoice` and outranks it. macOS declares `public.godot`, the
+identifier Godot exports, at rank `Alternate`, and **cannot be made the default yet**.
+`.claude/plans/project-files.md` has the rest.
+
 **A copy that is not packaged registers nothing.** Linux stops when `$APPIMAGE` is unset, and
 Windows stops when `IEnvironment.GetProcessCommand` is anything but one path that exists, so
 a `dotnet run` copy takes over no scheme on the machine somebody is working on.

@@ -34,6 +34,124 @@ public sealed class DesktopIntegrationTests : IDisposable
 
     private readonly List<ServiceProvider> _providers = [];
 
+    private readonly FakePrograms _programs = new();
+
+    private string MimePackage => Path.Combine(DataHome, "mime", "packages", "kitbash-godot-project.xml");
+
+    private const string ProjectType = "application/x-godot-project";
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void TheEntryOffersItselfForAProjectWithoutClaimingIt()
+    {
+        Bundle();
+        Integration().Install(projectsByDefault: false);
+
+        Assert.Contains(
+            $"MimeType=x-scheme-handler/kitbash;{ProjectType};",
+            File.ReadAllText(EntryFile),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(ProjectType, File.ReadAllText(AssociationFile), StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void TheProjectTypeIsDefinedAndTheDatabaseBuiltOnce()
+    {
+        Bundle();
+        _programs.Present = true;
+
+        var integration = Integration();
+
+        integration.Install(projectsByDefault: false);
+        integration.Install(projectsByDefault: false);
+
+        var definition = File.ReadAllText(MimePackage);
+
+        Assert.Contains($"type=\"{ProjectType}\"", definition, StringComparison.Ordinal);
+        Assert.Contains("<glob pattern=\"project.godot\"/>", definition, StringComparison.Ordinal);
+
+        var run = Assert.Single(_programs.Ran);
+        Assert.Equal([Path.Combine(DataHome, "mime")], run.Arguments);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void NoDatabaseToolStillWritesTheDefinition()
+    {
+        Bundle();
+        Integration().Install(projectsByDefault: false);
+
+        Assert.True(File.Exists(MimePackage));
+        Assert.Empty(_programs.Ran);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void ClaimingProjectsNamesTheEntryFirstAndAsTheDefault()
+    {
+        Bundle();
+
+        Directory.CreateDirectory(ConfigHome);
+        File.WriteAllText(AssociationFile, $"[Added Associations]\n{ProjectType}=godot.desktop;\n");
+
+        Integration().Install(projectsByDefault: true);
+
+        var list = File.ReadAllText(AssociationFile);
+
+        Assert.Contains($"{ProjectType}=kitbash.desktop;godot.desktop;\n", list, StringComparison.Ordinal);
+        Assert.Contains($"[Default Applications]\nx-scheme-handler/kitbash=kitbash.desktop\n{ProjectType}=kitbash.desktop\n", list, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void GivingTheDefaultBackKeepsEveryOtherChoice()
+    {
+        Bundle();
+
+        var integration = Integration();
+
+        Directory.CreateDirectory(ConfigHome);
+        File.WriteAllText(AssociationFile, $"[Added Associations]\n{ProjectType}=godot.desktop;\n");
+
+        integration.Install(projectsByDefault: true);
+        integration.Install(projectsByDefault: false);
+
+        var list = File.ReadAllText(AssociationFile);
+
+        Assert.Contains($"[Added Associations]\n{ProjectType}=godot.desktop;\n", list, StringComparison.Ordinal);
+        Assert.DoesNotContain($"{ProjectType}=kitbash.desktop", list, StringComparison.Ordinal);
+        Assert.Contains("x-scheme-handler/kitbash=kitbash.desktop", list, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = LinuxOnly, SkipUnless = nameof(OnLinux))]
+    public void AManagersEntryGainsTheProjectType()
+    {
+        Bundle();
+        WriteGearLeverEntry();
+
+        Integration().Install(projectsByDefault: false);
+
+        Assert.Contains(
+            $"x-scheme-handler/kitbash;{ProjectType};",
+            File.ReadAllText(EntryFile),
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>Stands in for PATH and for starting a program, so no test runs the real tool.</summary>
+    private sealed class FakePrograms : IExecutableFinder, IProcessRunner
+    {
+        public bool Present { get; set; }
+
+        public List<ProcessRequest> Ran { get; } = [];
+
+        public string? Find(string fileName) => Present ? "/usr/bin/" + fileName : null;
+
+        public void Run(ProcessRequest request) => Ran.Add(request);
+
+        public Task<ProcessOutput> ReadAsync(ProcessRequest request, CancellationToken cancellation = default) =>
+            throw new NotSupportedException();
+
+        public Task<ProcessOutput> ReadLinesAsync(
+            ProcessRequest request, Action<string> onLine, CancellationToken cancellation = default) =>
+            throw new NotSupportedException();
+    }
+
     public void Dispose()
     {
         foreach (var provider in _providers)
@@ -54,7 +172,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     public void AFirstInstallWritesAnEntryAManagerCanRead()
     {
         Bundle();
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var entry = File.ReadAllText(EntryFile);
 
@@ -74,7 +192,7 @@ public sealed class DesktopIntegrationTests : IDisposable
         Bundle();
         WriteGearLeverEntry();
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var entry = File.ReadAllText(EntryFile);
 
@@ -109,12 +227,12 @@ public sealed class DesktopIntegrationTests : IDisposable
         Bundle();
         WriteGearLeverEntry();
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var first = File.ReadAllText(EntryFile);
         var written = File.GetLastWriteTimeUtc(EntryFile);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.Equal(first, File.ReadAllText(EntryFile));
         Assert.Equal(written, File.GetLastWriteTimeUtc(EntryFile));
@@ -126,7 +244,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     public void AManagerNamingItsEntryAnotherWayTakesOverFromOurs()
     {
         Bundle();
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.True(File.Exists(EntryFile));
 
@@ -144,7 +262,7 @@ public sealed class DesktopIntegrationTests : IDisposable
 
             """);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.False(File.Exists(EntryFile));
 
@@ -172,7 +290,7 @@ public sealed class DesktopIntegrationTests : IDisposable
             X-Kitbash-Entry=true
             """);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.Contains($"TryExec={Image}", File.ReadAllText(EntryFile), StringComparison.Ordinal);
     }
@@ -181,7 +299,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     public void NoBundleWritesNothing()
     {
         Bundle();
-        Integration(null).Install();
+        Integration(null).Install(projectsByDefault: false);
 
         Assert.False(File.Exists(EntryFile));
         Assert.False(File.Exists(IconFile));
@@ -191,7 +309,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     public void TheEntrySaysItOpensAKitbashLink()
     {
         Bundle();
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var entry = File.ReadAllText(EntryFile);
 
@@ -205,7 +323,7 @@ public sealed class DesktopIntegrationTests : IDisposable
     public void TheEntryIsMadeTheDefaultForTheScheme()
     {
         Bundle();
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var list = File.ReadAllText(AssociationFile);
 
@@ -233,7 +351,7 @@ public sealed class DesktopIntegrationTests : IDisposable
         Directory.CreateDirectory(ConfigHome);
         File.WriteAllText(AssociationFile, theirs);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         var list = File.ReadAllText(AssociationFile);
 
@@ -258,8 +376,8 @@ public sealed class DesktopIntegrationTests : IDisposable
 
         var integration = Integration();
 
-        integration.Install();
-        integration.Install();
+        integration.Install(projectsByDefault: false);
+        integration.Install(projectsByDefault: false);
 
         var list = File.ReadAllText(AssociationFile);
 
@@ -281,7 +399,7 @@ public sealed class DesktopIntegrationTests : IDisposable
 
             """);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.Contains(
             "x-scheme-handler/kitbash=kitbash.desktop;other.desktop;\n",
@@ -308,7 +426,7 @@ public sealed class DesktopIntegrationTests : IDisposable
         Directory.CreateDirectory(ConfigHome);
         File.CreateSymbolicLink(AssociationFile, store);
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.True(File.Exists(EntryFile));
         Assert.Equal(store, new FileInfo(AssociationFile).LinkTarget);
@@ -323,7 +441,7 @@ public sealed class DesktopIntegrationTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(EntryFile)!);
         File.WriteAllText(EntryFile, "[Desktop Entry]\nName=Kitbash\nTryExec=/somewhere/else\n");
 
-        Integration().Install();
+        Integration().Install(projectsByDefault: false);
 
         Assert.Equal("[Desktop Entry]\nName=Kitbash\nTryExec=/somewhere/else\n", File.ReadAllText(EntryFile));
         Assert.False(File.Exists(AssociationFile));
@@ -384,6 +502,8 @@ public sealed class DesktopIntegrationTests : IDisposable
         // TryAdd means the first registration wins, so this is the environment the
         // integration reads and the real filesystem writes under it.
         services.AddSingleton<IEnvironment>(new FakeEnvironment(variables));
+        services.AddSingleton<IExecutableFinder>(_programs);
+        services.AddSingleton<IProcessRunner>(_programs);
         services.AddKitbashPlatform();
 
         var provider = services.BuildServiceProvider();

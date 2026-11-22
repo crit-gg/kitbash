@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.Themes.Fluent;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,8 +35,8 @@ public partial class App : Application
     private ServiceProvider? _services;
 
     /// <summary>
-    /// A link with nowhere to go yet. A desktop can hand one over before the launcher has
-    /// a window, so it waits here rather than being dropped. UI thread only.
+    /// A link or a project file with nowhere to go yet. A desktop can hand one over before
+    /// the launcher has a window, so it waits here rather than being dropped. UI thread only.
     /// </summary>
     private string? _pending;
 
@@ -93,10 +94,10 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.ShutdownRequested += (_, _) => _services?.Dispose();
 
-            // Windows and Linux hand a link over as an ordinary argument to a new copy.
-            // Read before the lock, since the copy that already holds it is the one that
-            // has to be given the link.
-            _pending = desktop.Args?.FirstOrDefault(argument => DeepLink.TryParse(argument, out _));
+            // Windows and Linux hand a link or a file over as an ordinary argument to a new
+            // copy. Read before the lock, since the copy that already holds it is the one
+            // that has to be given it.
+            _pending = desktop.Args?.Select(Request).FirstOrDefault(request => request is not null);
 
             // Before the update and before any window. A copy that is not the first has
             // already asked the first to come forward, so it leaves without drawing.
@@ -167,27 +168,50 @@ public partial class App : Application
 
             // A copy running an older build sends one byte rather than a link, so what
             // arrives is checked before it is kept.
-            if (!DeepLink.TryParse(message, out _))
+            if (Request(message) is not { } request)
             {
                 return;
             }
 
-            _pending = message;
+            _pending = request;
             Follow(window);
         });
 
     /// <summary>
-    /// macOS hands a link to the app that is already running rather than starting another
-    /// copy. Windows and Linux reach the same place through the arguments instead.
+    /// A link as it came, or a project file as a full path. Null for anything else, which
+    /// is never followed.
+    /// </summary>
+    private static string? Request(string? argument)
+    {
+        if (DeepLink.TryParse(argument, out _))
+        {
+            return argument;
+        }
+
+        return ProjectFileArgument.TryParse(argument, out var file) ? file.Path : null;
+    }
+
+    /// <summary>
+    /// macOS hands a link or a file to the app that is already running rather than starting
+    /// another copy. Windows and Linux reach the same place through the arguments instead.
     /// </summary>
     private void OnActivated(object? sender, ActivatedEventArgs e)
     {
-        if (e is not ProtocolActivatedEventArgs { Kind: ActivationKind.OpenUri } opened)
+        var request = e switch
+        {
+            ProtocolActivatedEventArgs { Kind: ActivationKind.OpenUri } opened => Request(opened.Uri.ToString()),
+            FileActivatedEventArgs { Kind: ActivationKind.File } files => files.Files
+                .Select(file => Request(file.TryGetLocalPath()))
+                .FirstOrDefault(path => path is not null),
+            _ => null,
+        };
+
+        if (request is null)
         {
             return;
         }
 
-        _pending = opened.Uri.ToString();
+        _pending = request;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
         {
@@ -211,6 +235,10 @@ public partial class App : Application
         if (DeepLink.TryParse(text, out var link))
         {
             _ = launcher.FollowAsync(link);
+        }
+        else if (ProjectFileArgument.TryParse(text, out var file))
+        {
+            _ = launcher.OpenProjectFileAsync(file);
         }
     }
 
@@ -553,11 +581,32 @@ public partial class App : Application
         // The launcher is up, so anything a link asked for on the way in can happen now.
         Follow(window);
 
-        // Writes the menu entry and the url scheme this desktop needs. Touches a disk and
-        // matters to nothing else that happens here, so it goes off the UI thread and is
-        // not waited on.
+        // Writes the menu entry, the url scheme and the project file type off the UI thread,
+        // not waited on. Runs again when the settings window closes, since the project file
+        // default changes there.
         var integration = services.GetRequiredService<IDesktopIntegration>();
-        _ = Task.Run(integration.Install);
+        var projectFiles = services.GetRequiredService<ProjectFileSettingsSchema>();
+        var settings = services.GetRequiredService<IApplicationSettings>();
+
+        void Integrate() => _ = Task.Run(() =>
+        {
+            bool byDefault;
+
+            try
+            {
+                byDefault = projectFiles.OpenByDefault.Read(settings.Global);
+            }
+            catch (SettingsFileUnreadableException)
+            {
+                // Writing on a guess could take the default away, so the next launch tries again.
+                return;
+            }
+
+            integration.Install(byDefault);
+        });
+
+        Integrate();
+        services.GetRequiredService<ISettingsWindows>().Closed += (_, _) => Integrate();
 
         // Keeps godot on PATH following the default. The engines page reads again after every
         // change it makes, and a slot update ends in that read too, so one event covers all.
@@ -589,6 +638,7 @@ public partial class App : Application
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<ProjectFileSettingsSchema>()
             .AddSingleton<DeveloperSettingsSchema>()
             .AddSingleton<IDeveloperSettings, DeveloperSettings>()
             .AddSingleton<IStartupSettings, StartupSettings>()
@@ -678,6 +728,7 @@ public partial class App : Application
                 provider.GetRequiredService<IGodotSettings>(),
                 provider.GetRequiredService<IGodotLauncher>(),
                 provider.GetRequiredService<IGodotProjectReader>(),
+                provider.GetRequiredService<IProjectFileRouter>(),
                 provider.GetRequiredService<IWorkspaceMaker>(),
                 provider.GetRequiredService<IToastService>(),
                 provider.GetRequiredService<IPlatformServices>(),

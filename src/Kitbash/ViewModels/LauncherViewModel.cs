@@ -55,6 +55,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
     private readonly IGodotSettings _godot;
     private readonly IGodotLauncher _godotLauncher;
     private readonly IGodotProjectReader _projects;
+    private readonly IProjectFileRouter _projectFiles;
     private readonly IWorkspaceMaker _maker;
     private readonly IInstalledTools _installed;
     private readonly IProvidedTools _provided;
@@ -150,6 +151,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         IGodotSettings godot,
         IGodotLauncher godotLauncher,
         IGodotProjectReader projects,
+        IProjectFileRouter projectFiles,
         IWorkspaceMaker maker,
         IToastService toasts,
         IPlatformServices platform,
@@ -190,6 +192,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(godot);
         ArgumentNullException.ThrowIfNull(godotLauncher);
         ArgumentNullException.ThrowIfNull(projects);
+        ArgumentNullException.ThrowIfNull(projectFiles);
         ArgumentNullException.ThrowIfNull(maker);
         ArgumentNullException.ThrowIfNull(toasts);
         ArgumentNullException.ThrowIfNull(platform);
@@ -219,6 +222,7 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
         _godot = godot;
         _godotLauncher = godotLauncher;
         _projects = projects;
+        _projectFiles = projectFiles;
         _maker = maker;
         _installed = installed;
         _provided = provided;
@@ -875,6 +879,84 @@ public partial class LauncherViewModel : ViewModelBase, IDisposable
                 Body = "Its engine is not ready. The engine strip says what it needs.",
             });
     }
+
+    /// <summary>
+    /// Opens a project file the desktop handed over. A workspace's own project goes the way
+    /// that workspace does. Any other is started in the engine it asks for with nothing first.
+    /// </summary>
+    public async Task OpenProjectFileAsync(ProjectFileArgument file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+
+        var roots = Workspaces
+            .Where(workspace => !workspace.IsMissing)
+            .Select(workspace => workspace.Workspace.Root)
+            .ToArray();
+
+        ProjectFileRoute route;
+
+        try
+        {
+            route = await Task.Run(() => _projectFiles.RouteAsync(file, roots, CancellationToken.None))
+                .ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+            or EngineStoreException)
+        {
+            Warn("Could not open that project", exception.Message);
+
+            return;
+        }
+
+        switch (route)
+        {
+            case { Kind: ProjectFileRouteKind.Workspace, WorkspaceRoot: { } root }
+                when Workspaces.FirstOrDefault(workspace => workspace.Workspace.Root == root) is { } workspace:
+                await LaunchFromLinkAsync(workspace, GodotLaunchMode.Editor, builds: true).ConfigureAwait(true);
+                break;
+
+            case { Kind: ProjectFileRouteKind.Engine, Engine: { } engine, Project: { } project }:
+                StartEditor(engine, project);
+                break;
+
+            case { Kind: ProjectFileRouteKind.NotInstalled, Requirement: { Version: { } version } requirement }:
+                Warn(
+                    $"Godot {version}{(requirement.NeedsDotnet ? " .NET" : string.Empty)} is not installed",
+                    "Install it on the engines page to open this project.");
+                break;
+
+            case { Kind: ProjectFileRouteKind.Unsupported }:
+                Warn("Kitbash opens Godot 4 projects only");
+                break;
+
+            case { Kind: ProjectFileRouteKind.NoVersion }:
+                Warn("That project does not say which Godot it needs");
+                break;
+
+            default:
+                Warn("That project file has gone");
+                break;
+        }
+    }
+
+    private void StartEditor(InstalledEngine engine, GodotProject project)
+    {
+        try
+        {
+            _godotLauncher.StartEditor(engine, project);
+        }
+        catch (GodotLaunchException exception)
+        {
+            _toasts.Post(new ToastRequest { Tier = ToastTier.Error, Title = exception.Message });
+
+            return;
+        }
+
+        _actions.Apply(_afterLaunch.AfterEditor);
+    }
+
+    private void Warn(string title, string? body = null) =>
+        _toasts.Post(new ToastRequest { Tier = ToastTier.Warn, Title = title, Body = body });
 
     /// <summary>Opens the workspaces page, for a link whose name matches more than one.</summary>
     public void ShowManyFromLink()

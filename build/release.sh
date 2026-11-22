@@ -196,7 +196,7 @@ write_appdir() {
   cp "$icon" "$dir/usr/share/icons/hicolor/scalable/apps/$pack_id.png"
 
   # Gear Lever and AppImageLauncher copy this into the menu, keys and all. %u and MimeType
-  # are what let it open a kitbash link. Comment carries no version, so a copy never goes
+  # are what let it open a kitbash link and be offered for a project.godot. Comment carries no version, so a copy never goes
   # stale, and the launcher writes the same Comment into an entry it refreshes.
   cat > "$dir/$pack_id.desktop" <<ENTRY
 [Desktop Entry]
@@ -208,7 +208,7 @@ Icon=$pack_id
 Exec=$exe %u
 StartupWMClass=$pack_id
 Categories=Development;
-MimeType=x-scheme-handler/kitbash;
+MimeType=x-scheme-handler/kitbash;application/x-godot-project;
 ENTRY
 
   sed "s/@PACK_ID@/$pack_id/g" > "$dir/AppRun" <<'APPRUN'
@@ -243,11 +243,14 @@ win_release() {
 # --icon must be an icns here, which vpk enforces. --mainExe names the program inside the
 # publish output, and vpk builds the .app around it.
 #
-# The bundle declares the kitbash url scheme, and CFBundleURLTypes is the only way to say
-# so, which means handing vpk the whole Info.plist. It copies the file in unchanged, it
+# The bundle declares the kitbash url scheme and the project file, and the plist is the only
+# way to say either, which means handing vpk the whole Info.plist. It copies the file in unchanged, it
 # substitutes nothing, and it refuses --plist and --bundleId together, so the identifier
 # and both versions are written here. Everything below is what vpk 1.2.0 generates on its
-# own, plus the URL types block.
+# own, plus the URL types block and the document types.
+#
+# public.godot is the identifier Godot's own bundle exports for the extension. Importing the
+# same one means both apps name one type, and Alternate offers Kitbash without claiming it.
 #
 # CFBundleShortVersionString carries a fourth part where CFBundleVersion does not, which is
 # vpk's own choice. Velopack reads neither at runtime, since it keeps its own sq.version.
@@ -303,6 +306,41 @@ osx_release() {
         <array>
           <string>kitbash</string>
         </array>
+      </dict>
+    </array>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeName</key>
+        <string>Godot project</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>LSHandlerRank</key>
+        <string>Alternate</string>
+        <key>LSItemContentTypes</key>
+        <array>
+          <string>public.godot</string>
+        </array>
+      </dict>
+    </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+      <dict>
+        <key>UTTypeIdentifier</key>
+        <string>public.godot</string>
+        <key>UTTypeDescription</key>
+        <string>Godot project</string>
+        <key>UTTypeConformsTo</key>
+        <array>
+          <string>public.data</string>
+        </array>
+        <key>UTTypeTagSpecification</key>
+        <dict>
+          <key>public.filename-extension</key>
+          <array>
+            <string>godot</string>
+          </array>
+        </dict>
       </dict>
     </array>
   </dict>

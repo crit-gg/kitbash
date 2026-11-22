@@ -249,6 +249,9 @@ the problem:
 - `.claude/plans/deep-links.md` the `kitbash://` links, what each verb does, how each desktop
   registers the scheme and how the link reaches the running copy. Read before touching
   `IDesktopIntegration`, `ISingleInstance`, `DeepLink` or `LauncherWindow.FollowAsync`.
+- `.claude/plans/project-files.md` opening a `project.godot` from the desktop: a workspace's
+  own project goes the workspace way, any other starts in the engine it asks for with nothing
+  first. Read before touching `IProjectFileRouter` or the file half of `IDesktopIntegration`.
 - `.claude/plans/projects-window.md` the welcome window every app opens with, what the app
   gets to define about it and where it departs from the design. Read before touching
   `Kitbash.Ui/Projects` or `Kitbash.Core/Projects`.
@@ -367,6 +370,14 @@ an argument**, so `ISingleInstance` carries it to the copy that is already runni
 macOS raises an activation instead. **A second copy also exits cleanly now**, where it used to
 dump core after handing over. Verified end to end on Linux with two real copies. Copy patch link and Copy link
 are the link makers so far, and `.claude/plans/deep-links.md` has the whole of it.
+
+**A `project.godot` opens from the desktop.** Kitbash is always offered in Open with and is
+the default only when `launcher.projectFiles.default` says so. A workspace's own project opens
+the way the `/edit` link does. Any other is started in the installed engine its version and
+C# flag ask for, with no build, no import and no workspace added, and nothing else stands in.
+Linux defines the type under the data root and builds the database itself. **macOS cannot be
+made the default yet, and neither the Windows nor the macOS half has been run.**
+`.claude/plans/project-files.md` has the whole of it.
 
 **The launcher installs and updates itself, and updates are on.** Velopack packages it,
 `build/release.sh` publishes each runtime, and at start the app checks its feed and replaces

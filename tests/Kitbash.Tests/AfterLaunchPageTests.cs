@@ -41,6 +41,7 @@ public sealed class AfterLaunchPageTests : IDisposable
             .AddSingleton<IAfterLaunchOverrides, AfterLaunchOverrides>()
             .AddSingleton<ToolActionsEditor>()
             .AddSingleton<StartupSettingsSchema>()
+            .AddSingleton<ProjectFileSettingsSchema>()
             .AddSingleton<DeveloperSettingsSchema>()
             .AddSingleton<AfterLaunchSettingsSchema>()
             .AddSingleton<IApplicationRestart>(new FakeRestart())

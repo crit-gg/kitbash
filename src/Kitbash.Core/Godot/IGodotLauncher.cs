@@ -20,6 +20,12 @@ public interface IGodotLauncher
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Starts the editor on a project detached, with no build and no import first.
+    /// </summary>
+    /// <exception cref="GodotLaunchException">The editor would not start.</exception>
+    void StartEditor(InstalledEngine engine, GodotProject project);
+
+    /// <summary>
     /// Whether opening this project in this engine builds its C# first. Reads settings, so
     /// call it off the UI thread.
     /// </summary>

@@ -102,7 +102,19 @@ internal sealed class GodotLauncher : IGodotLauncher
         }
 
         progress.Report(new GodotLaunchStep(GodotLaunchStage.Starting));
+        Start(engine, project, mode);
+    }
 
+    public void StartEditor(InstalledEngine engine, GodotProject project)
+    {
+        ArgumentNullException.ThrowIfNull(engine);
+        ArgumentNullException.ThrowIfNull(project);
+
+        Start(engine, project, GodotLaunchMode.Editor);
+    }
+
+    private void Start(InstalledEngine engine, GodotProject project, GodotLaunchMode mode)
+    {
         // Running is no flag at all, so editing is the one that adds an argument.
         string[] arguments = mode == GodotLaunchMode.Editor
             ? ["--path", project.Directory, "--editor"]
